@@ -2,10 +2,14 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AntecipacaoController;
+use App\Http\Controllers\ConvenioController;
+use App\Http\Controllers\EspecialidadeController;
 use App\Http\Controllers\ConciliacaoController;
 use App\Http\Controllers\GuiaController;
 use App\Http\Controllers\LancamentoController;
+use App\Http\Controllers\PacienteController;
 use App\Http\Controllers\SolicitacaoController;
+use App\Http\Controllers\ProfissionalController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -15,6 +19,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
+
+    Route::get('/pacientes', [PacienteController::class, 'index']);
+    Route::get('/profissionais', [ProfissionalController::class, 'index']);
+    Route::get('/especialidades', [EspecialidadeController::class, 'index']);
+    Route::get('/convenios', [ConvenioController::class, 'index']);
 
     Route::get('/solicitacoes', [SolicitacaoController::class, 'index']);
     Route::post('/solicitacoes', [SolicitacaoController::class, 'store']);

@@ -1,0 +1,654 @@
+import { Fragment, useEffect, useMemo, useState, type FormEvent } from 'react'
+import { translateStatus } from '../../lib/statusLabels'
+import { useConvenios, useEspecialidades, usePacientes, useProfissionais } from '../../lib/queries/useReferenceData'
+import {
+  getHttpErrorMessage,
+  useCriarGuia,
+  useFinalizarGuia,
+  useGuias,
+  useNegarGuia,
+} from './useGuias'
+import type { GuiaFilters, GuiaFinalizarForm, GuiaForm } from './types'
+
+const defaultFilters: GuiaFilters = {
+  status: '',
+  convenio_id: '',
+  paciente_id: '',
+  validade_senha_vencendo_em_dias: '',
+}
+
+const emptyForm: GuiaForm = {
+  solicitacao_id: '',
+  convenio_id: '',
+  paciente_id: '',
+  profissional_id: '',
+  especialidade_id: '',
+  numero_guia: `GUIA-${Date.now()}`,
+  tipo_terapia: 'especializada',
+  data_solicitacao: new Date().toISOString().slice(0, 10),
+}
+
+const emptyFinalizeForm: GuiaFinalizarForm = {
+  senha: '',
+  validade_senha: '',
+}
+
+function selectClasses() {
+  return 'w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20'
+}
+
+function statusTone(status: string) {
+  switch (status) {
+    case 'finalized':
+      return 'bg-emerald-400/15 text-emerald-100 border-emerald-400/20'
+    case 'denied':
+      return 'bg-rose-400/15 text-rose-100 border-rose-400/20'
+    default:
+      return 'bg-cyan-400/15 text-cyan-100 border-cyan-400/20'
+  }
+}
+
+export function GuiasPage() {
+  const [filters, setFilters] = useState(defaultFilters)
+  const [draftFilters, setDraftFilters] = useState(defaultFilters)
+  const [page, setPage] = useState(1)
+  const [form, setForm] = useState<GuiaForm>(emptyForm)
+  const [formError, setFormError] = useState<string | null>(null)
+  const [activeFinalizeId, setActiveFinalizeId] = useState<number | null>(null)
+  const [finalizeDraft, setFinalizeDraft] = useState<GuiaFinalizarForm>(emptyFinalizeForm)
+  const [finalizeError, setFinalizeError] = useState<string | null>(null)
+
+  const conveniosQuery = useConvenios()
+  const especialidadesQuery = useEspecialidades()
+  const pacientesQuery = usePacientes({ convenio_id: form.convenio_id })
+  const profissionaisQuery = useProfissionais({ especialidade_id: form.especialidade_id })
+  const guiasQuery = useGuias(filters, page)
+  const criarGuia = useCriarGuia()
+  const finalizarGuia = useFinalizarGuia()
+  const negarGuia = useNegarGuia()
+
+  const convenios = useMemo(() => conveniosQuery.data ?? [], [conveniosQuery.data])
+  const especialidades = useMemo(() => especialidadesQuery.data ?? [], [especialidadesQuery.data])
+  const pacientes = useMemo(() => pacientesQuery.data ?? [], [pacientesQuery.data])
+  const profissionais = useMemo(
+    () => profissionaisQuery.data ?? [],
+    [profissionaisQuery.data],
+  )
+  const guias = guiasQuery.data?.data ?? []
+  const totalPages = guiasQuery.data?.meta?.last_page ?? 1
+
+  const formIsReady =
+    convenios.length > 0 &&
+    especialidades.length > 0 &&
+    pacientes.length > 0 &&
+    profissionais.length > 0 &&
+    form.convenio_id !== '' &&
+    form.paciente_id !== '' &&
+    form.profissional_id !== '' &&
+    form.especialidade_id !== ''
+
+  useEffect(() => {
+    if (convenios.length === 0 || especialidades.length === 0) {
+      return
+    }
+
+    setForm((current) => ({
+      ...current,
+      convenio_id: current.convenio_id || String(convenios[0].id),
+      especialidade_id: current.especialidade_id || String(especialidades[0].id),
+    }))
+  }, [convenios, especialidades])
+
+  useEffect(() => {
+    if (pacientes.length === 0) {
+      return
+    }
+
+    setForm((current) => {
+      const hasSelected = pacientes.some((paciente) => String(paciente.id) === current.paciente_id)
+      return hasSelected ? current : { ...current, paciente_id: String(pacientes[0].id) }
+    })
+  }, [pacientes])
+
+  useEffect(() => {
+    if (profissionais.length === 0) {
+      return
+    }
+
+    setForm((current) => {
+      const hasSelected = profissionais.some(
+        (profissional) => String(profissional.id) === current.profissional_id,
+      )
+      return hasSelected ? current : { ...current, profissional_id: String(profissionais[0].id) }
+    })
+  }, [profissionais])
+
+  const handleFilterSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setPage(1)
+    setFilters(draftFilters)
+  }
+
+  const handleCreateSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setFormError(null)
+
+    try {
+      await criarGuia.mutateAsync(form)
+      setForm((current) => ({
+        ...emptyForm,
+        convenio_id: current.convenio_id,
+        especialidade_id: current.especialidade_id,
+        paciente_id: current.paciente_id,
+        profissional_id: current.profissional_id,
+      }))
+    } catch (error) {
+      setFormError(getHttpErrorMessage(error, 'Não foi possível criar a guia.'))
+    }
+  }
+
+  const toggleVencendoBadge = () => {
+    const nextValue = draftFilters.validade_senha_vencendo_em_dias === '7' ? '' : '7'
+    setPage(1)
+    setFilters((current) => ({
+      ...current,
+      validade_senha_vencendo_em_dias: nextValue,
+    }))
+    setDraftFilters((current) => ({
+      ...current,
+      validade_senha_vencendo_em_dias: nextValue,
+    }))
+  }
+
+  const handleFinalizeSubmit = async (guideId: number) => {
+    setFinalizeError(null)
+
+    try {
+      const payload: GuiaFinalizarForm = {
+        senha: finalizeDraft.senha,
+        ...(finalizeDraft.validade_senha ? { validade_senha: finalizeDraft.validade_senha } : {}),
+      }
+
+      await finalizarGuia.mutateAsync({
+        id: guideId,
+        payload,
+      })
+      setActiveFinalizeId(null)
+      setFinalizeDraft(emptyFinalizeForm)
+    } catch (error) {
+      setFinalizeError(getHttpErrorMessage(error, 'Não foi possível finalizar a guia.'))
+    }
+  }
+
+  return (
+    <div className="space-y-8" data-testid="guias-page">
+      <section className="space-y-4">
+        <div>
+          <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Guias</p>
+          <h2 className="mt-2 text-3xl font-semibold text-white">
+            Controle da guia e do prazo de senha
+          </h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
+            O filtro de validade vencendo já está visível como destaque de uso, não escondido
+            num campo genérico.
+          </p>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <article className="rounded-3xl border border-white/10 bg-slate-950/40 p-4">
+            <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Total na página</p>
+            <p className="mt-2 text-2xl font-semibold text-white">{guias.length}</p>
+          </article>
+          <article className="rounded-3xl border border-white/10 bg-slate-950/40 p-4">
+            <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Status ativo</p>
+            <p className="mt-2 text-2xl font-semibold text-white">
+              {filters.status || 'Todos'}
+            </p>
+          </article>
+          <article className="rounded-3xl border border-white/10 bg-slate-950/40 p-4">
+            <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Convênio</p>
+            <p className="mt-2 text-2xl font-semibold text-white">
+              {convenios.find((item) => String(item.id) === filters.convenio_id)?.nome ?? 'Todos'}
+            </p>
+          </article>
+          <article className="rounded-3xl border border-cyan-300/30 bg-cyan-400/10 p-4">
+            <p className="text-xs uppercase tracking-[0.25em] text-cyan-100/80">
+              Validade vencendo
+            </p>
+            <button
+              type="button"
+              onClick={toggleVencendoBadge}
+              className={[
+                'mt-2 inline-flex rounded-full border px-3 py-1 text-sm font-semibold transition',
+                filters.validade_senha_vencendo_em_dias === '7'
+                  ? 'border-cyan-200/50 bg-cyan-300/20 text-white'
+                  : 'border-cyan-200/20 bg-white/5 text-cyan-50 hover:bg-white/10',
+              ].join(' ')}
+            >
+              {filters.validade_senha_vencendo_em_dias === '7'
+                ? 'Vencendo em 7 dias'
+                : 'Mostrar vencendo em 7 dias'}
+            </button>
+          </article>
+        </div>
+      </section>
+
+      <section className="grid gap-6 xl:grid-cols-[1.05fr_1.4fr]">
+        <form
+          onSubmit={handleCreateSubmit}
+          className="space-y-4 rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6"
+        >
+          <div>
+            <h3 className="text-lg font-semibold text-white">Nova guia</h3>
+            <p className="text-sm text-slate-300">Cadastro manual com dados reais da API.</p>
+          </div>
+
+          <label className="block space-y-2">
+            <span className="text-sm font-medium text-slate-200">Convênio</span>
+            <select
+              value={form.convenio_id}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  convenio_id: event.target.value,
+                  paciente_id: '',
+                }))
+              }
+              className={selectClasses()}
+              data-testid="guia-convenio"
+            >
+              {convenios.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.nome}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block space-y-2">
+            <span className="text-sm font-medium text-slate-200">Paciente</span>
+            <select
+              value={form.paciente_id}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  paciente_id: event.target.value,
+                }))
+              }
+              className={selectClasses()}
+              data-testid="guia-paciente"
+            >
+              {pacientes.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.nome} · {item.carteirinha}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block space-y-2">
+            <span className="text-sm font-medium text-slate-200">Profissional</span>
+            <select
+              value={form.profissional_id}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  profissional_id: event.target.value,
+                }))
+              }
+              className={selectClasses()}
+              data-testid="guia-profissional"
+            >
+              {profissionais.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.nome}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block space-y-2">
+            <span className="text-sm font-medium text-slate-200">Especialidade</span>
+            <select
+              value={form.especialidade_id}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  especialidade_id: event.target.value,
+                  profissional_id: '',
+                }))
+              }
+              className={selectClasses()}
+              data-testid="guia-especialidade"
+            >
+              {especialidades.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.nome}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block space-y-2">
+            <span className="text-sm font-medium text-slate-200">Número da guia</span>
+            <input
+              value={form.numero_guia}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, numero_guia: event.target.value }))
+              }
+              className={selectClasses()}
+              data-testid="guia-numero"
+            />
+          </label>
+
+          <label className="block space-y-2">
+            <span className="text-sm font-medium text-slate-200">Tipo de terapia</span>
+            <select
+              value={form.tipo_terapia}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, tipo_terapia: event.target.value }))
+              }
+              className={selectClasses()}
+              data-testid="guia-tipo-terapia"
+            >
+              <option value="especializada">Especializada</option>
+              <option value="convencional">Convencional</option>
+            </select>
+          </label>
+
+          <label className="block space-y-2">
+            <span className="text-sm font-medium text-slate-200">Data da solicitação</span>
+            <input
+              type="date"
+              value={form.data_solicitacao}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, data_solicitacao: event.target.value }))
+              }
+              className={selectClasses()}
+              data-testid="guia-data-solicitacao"
+            />
+          </label>
+
+          {formError ? (
+            <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+              {formError}
+            </p>
+          ) : null}
+
+          <button
+            type="submit"
+            disabled={criarGuia.isPending || !formIsReady}
+            className="inline-flex w-full items-center justify-center rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:opacity-60"
+            data-testid="guia-submit"
+          >
+            {criarGuia.isPending ? 'Salvando...' : 'Criar guia'}
+          </button>
+        </form>
+
+        <section className="space-y-4 rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-white">Filtros e lista</h3>
+              <p className="text-sm text-slate-300">
+                Status, convênio, paciente e prazo aparecem do jeito que a equipe usa.
+              </p>
+            </div>
+
+            <form className="grid gap-3 md:grid-cols-2 xl:grid-cols-4" onSubmit={handleFilterSubmit}>
+              <label className="space-y-2">
+                <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Status</span>
+                <select
+                  value={draftFilters.status}
+                  onChange={(event) =>
+                    setDraftFilters((current) => ({ ...current, status: event.target.value }))
+                  }
+                  className={selectClasses()}
+                  data-testid="guia-filtro-status"
+                >
+                  <option value="">Todos</option>
+                  <option value="under_review">Em análise</option>
+                  <option value="finalized">Finalizada</option>
+                  <option value="denied">Negada</option>
+                </select>
+              </label>
+
+              <label className="space-y-2">
+                <span className="text-xs uppercase tracking-[0.25em] text-slate-400">
+                  Convênio
+                </span>
+                <select
+                  value={draftFilters.convenio_id}
+                  onChange={(event) =>
+                    setDraftFilters((current) => ({
+                      ...current,
+                      convenio_id: event.target.value,
+                    }))
+                  }
+                  className={selectClasses()}
+                  data-testid="guia-filtro-convenio"
+                >
+                  <option value="">Todos</option>
+                  {convenios.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.nome}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="space-y-2">
+                <span className="text-xs uppercase tracking-[0.25em] text-slate-400">
+                  Paciente
+                </span>
+                <select
+                  value={draftFilters.paciente_id}
+                  onChange={(event) =>
+                    setDraftFilters((current) => ({
+                      ...current,
+                      paciente_id: event.target.value,
+                    }))
+                  }
+                  className={selectClasses()}
+                  data-testid="guia-filtro-paciente"
+                >
+                  <option value="">Todos</option>
+                  {pacientes.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.nome}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <button
+                type="submit"
+                className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+              >
+                Aplicar
+              </button>
+            </form>
+          </div>
+
+          {guiasQuery.isLoading ? (
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
+              Carregando guias...
+            </div>
+          ) : guiasQuery.isError ? (
+            <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-100">
+              Não foi possível carregar a lista.
+            </div>
+          ) : (
+            <div className="overflow-hidden rounded-3xl border border-white/10">
+              <table className="w-full border-collapse text-left text-sm">
+                <thead className="bg-white/5 text-xs uppercase tracking-[0.25em] text-slate-400">
+                  <tr>
+                    <th className="px-4 py-3">Número</th>
+                    <th className="px-4 py-3">Paciente</th>
+                    <th className="px-4 py-3">Convênio</th>
+                    <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3">Senha</th>
+                    <th className="px-4 py-3">Ações</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/10 bg-slate-950/30">
+                {guias.map((guia) => (
+                  <Fragment key={guia.id}>
+                    <tr key={guia.id} data-testid={`guia-row-${guia.id}`}>
+                        <td className="px-4 py-4 font-medium text-white">{guia.numero_guia}</td>
+                        <td className="px-4 py-4 text-slate-200">
+                          {pacientes.find((item) => item.id === guia.paciente_id)?.nome ??
+                            guia.paciente_id}
+                        </td>
+                        <td className="px-4 py-4 text-slate-200">
+                          {convenios.find((item) => item.id === guia.convenio_id)?.nome ??
+                            guia.convenio_id}
+                        </td>
+                        <td className="px-4 py-4">
+                          <span
+                            className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${statusTone(
+                              guia.status,
+                            )}`}
+                            data-testid={`guia-status-${guia.id}`}
+                          >
+                            {translateStatus('guias', guia.status)}
+                          </span>
+                        </td>
+                        <td className="px-4 py-4 text-slate-200">
+                          {guia.validade_senha ?? '-'}
+                        </td>
+                        <td className="px-4 py-4">
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1.5 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-400/20 disabled:opacity-50"
+                              onClick={() => {
+                                setActiveFinalizeId(guia.id)
+                                setFinalizeDraft({
+                                  senha: '',
+                                  validade_senha: '',
+                                })
+                                setFinalizeError(null)
+                              }}
+                              disabled={guia.status !== 'under_review' || finalizarGuia.isPending}
+                              data-testid={`guia-finalizar-${guia.id}`}
+                            >
+                              Finalizar
+                            </button>
+                            <button
+                              type="button"
+                              className="rounded-full border border-rose-400/30 bg-rose-400/10 px-3 py-1.5 text-xs font-semibold text-rose-100 transition hover:bg-rose-400/20 disabled:opacity-50"
+                              onClick={() => negarGuia.mutate(guia.id)}
+                              disabled={negarGuia.isPending || guia.status !== 'under_review'}
+                              data-testid={`guia-negar-${guia.id}`}
+                            >
+                              Negar
+                            </button>
+                          </div>
+                        </td>
+                    </tr>
+                    {activeFinalizeId === guia.id ? (
+                      <tr key={`${guia.id}-finalize`}>
+                          <td colSpan={6} className="bg-slate-950/50 px-4 py-4">
+                            <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto] md:items-end">
+                              <label className="space-y-2">
+                                <span className="text-xs uppercase tracking-[0.25em] text-slate-400">
+                                  Senha
+                                </span>
+                                <input
+                                  value={finalizeDraft.senha}
+                                  onChange={(event) =>
+                                    setFinalizeDraft((current) => ({
+                                      ...current,
+                                      senha: event.target.value,
+                                    }))
+                                  }
+                                  className={selectClasses()}
+                                  placeholder="ABC123"
+                                  data-testid={`guia-senha-${guia.id}`}
+                                />
+                              </label>
+                              <label className="space-y-2">
+                                <span className="text-xs uppercase tracking-[0.25em] text-slate-400">
+                                  Validade senha
+                                </span>
+                                <input
+                                  type="date"
+                                  value={finalizeDraft.validade_senha ?? ''}
+                                  onChange={(event) =>
+                                    setFinalizeDraft((current) => ({
+                                      ...current,
+                                      validade_senha: event.target.value,
+                                    }))
+                                  }
+                                  className={selectClasses()}
+                                  data-testid={`guia-validade-${guia.id}`}
+                                />
+                              </label>
+                              <div className="flex gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleFinalizeSubmit(guia.id)}
+                                  className="rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
+                                  data-testid={`guia-finalizar-confirmar-${guia.id}`}
+                                >
+                                  Confirmar
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setActiveFinalizeId(null)}
+                                  className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+                                >
+                                  Cancelar
+                                </button>
+                              </div>
+                            </div>
+                            {finalizeError ? (
+                              <p className="mt-3 rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+                                {finalizeError}
+                              </p>
+                            ) : null}
+                          </td>
+                      </tr>
+                    ) : null}
+                  </Fragment>
+                ))}
+                  {guias.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-4 py-8 text-center text-slate-300">
+                        Nenhuma guia encontrada.
+                      </td>
+                    </tr>
+                  ) : null}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between gap-3">
+            <button
+              type="button"
+              className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10 disabled:opacity-50"
+              onClick={() => setPage((current) => Math.max(1, current - 1))}
+              disabled={page <= 1 || guiasQuery.isFetching}
+            >
+              Anterior
+            </button>
+
+            <p className="text-sm text-slate-300">
+              Página {page} de {totalPages}
+            </p>
+
+            <button
+              type="button"
+              className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10 disabled:opacity-50"
+              onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+              disabled={page >= totalPages || guiasQuery.isFetching}
+            >
+              Próxima
+            </button>
+          </div>
+        </section>
+      </section>
+    </div>
+  )
+}

@@ -30,11 +30,14 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (axios.isAxiosError(error) && error.response?.status === 401) {
-      useAuthStore.getState().logout()
-      if (redirectToLogin) {
-        redirectToLogin()
-      } else if (typeof window !== 'undefined') {
-        window.location.assign('/login')
+      const requestUrl = String(error.config?.url ?? '')
+      if (!requestUrl.includes('/login')) {
+        useAuthStore.getState().logout()
+        if (redirectToLogin) {
+          redirectToLogin()
+        } else if (typeof window !== 'undefined') {
+          window.location.assign('/login')
+        }
       }
     }
 

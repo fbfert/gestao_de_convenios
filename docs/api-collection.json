@@ -1,0 +1,273 @@
+{
+  "info": {
+    "_postman_id": "b5c2e0d8-4a74-4c6f-9f94-8b6f4f0c9a50",
+    "name": "Gestao de Convenios API",
+    "description": "Collection do Bloco 5 com exemplos baseados nos seeders da Clínica Exemplo.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost" },
+    { "key": "token", "value": "" },
+    { "key": "solicitacao_id", "value": "1" },
+    { "key": "guia_id", "value": "1" },
+    { "key": "antecipacao_id", "value": "1" },
+    { "key": "conciliacao_id", "value": "1" },
+    { "key": "unimed_id", "value": "1" },
+    { "key": "sc_saude_id", "value": "2" },
+    { "key": "celos_id", "value": "3" },
+    { "key": "fisioterapia_id", "value": "1" },
+    { "key": "fono_id", "value": "2" },
+    { "key": "aba_id", "value": "3" },
+    { "key": "paciente_unimed_id", "value": "1" },
+    { "key": "paciente_sc_id", "value": "2" },
+    { "key": "paciente_celos_id", "value": "3" },
+    { "key": "profissional_fisio_id", "value": "1" },
+    { "key": "profissional_fono_id", "value": "2" },
+    { "key": "profissional_aba_id", "value": "3" }
+  ],
+  "item": [
+    {
+      "name": "Solicitacoes",
+      "item": [
+        {
+          "name": "Listar solicitacoes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/solicitacoes?status=under_review&convenio_id={{unimed_id}}"
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "url": "{{baseUrl}}/api/solicitacoes?status=under_review&convenio_id={{unimed_id}}"
+              },
+              "code": 200,
+              "status": "OK",
+              "body": "{\n  \"data\": [\n    {\n      \"id\": 1,\n      \"status\": \"under_review\",\n      \"convenio_id\": 1,\n      \"paciente_id\": 1,\n      \"profissional_id\": 1,\n      \"especialidade_id\": 1,\n      \"medico_solicitante\": \"Dr. Carlos Almeida\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Criar solicitacao",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paciente_id\": {{paciente_unimed_id}},\n  \"profissional_id\": {{profissional_fisio_id}},\n  \"especialidade_id\": {{fisioterapia_id}},\n  \"convenio_id\": {{unimed_id}},\n  \"medico_solicitante\": \"Dr. Carlos Almeida\",\n  \"solicitado_em\": \"2026-07-09\"\n}"
+            },
+            "url": "{{baseUrl}}/api/solicitacoes"
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "url": "{{baseUrl}}/api/solicitacoes"
+              },
+              "code": 201,
+              "status": "Created",
+              "body": "{\n  \"data\": {\n    \"id\": 10,\n    \"status\": \"under_review\",\n    \"convenio_id\": 1,\n    \"medico_solicitante\": \"Dr. Carlos Almeida\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Detalhar solicitacao",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/solicitacoes/{{solicitacao_id}}"
+          }
+        },
+        {
+          "name": "Aprovar solicitacao",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/solicitacoes/{{solicitacao_id}}/aprovar"
+          }
+        },
+        {
+          "name": "Negar solicitacao",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/solicitacoes/{{solicitacao_id}}/negar"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Guias",
+      "item": [
+        {
+          "name": "Listar guias",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/guias?status=finalized&validade_senha_vencendo_em_dias=7"
+          }
+        },
+        {
+          "name": "Criar guia",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"solicitacao_id\": null,\n  \"convenio_id\": {{unimed_id}},\n  \"paciente_id\": {{paciente_unimed_id}},\n  \"profissional_id\": {{profissional_fisio_id}},\n  \"especialidade_id\": {{fisioterapia_id}},\n  \"numero_guia\": \"GUIA-API-001\",\n  \"tipo_terapia\": \"especializada\",\n  \"data_solicitacao\": \"2026-07-09\"\n}"
+            },
+            "url": "{{baseUrl}}/api/guias"
+          }
+        },
+        {
+          "name": "Detalhar guia",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/guias/{{guia_id}}"
+          }
+        },
+        {
+          "name": "Finalizar guia",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"senha\": \"ABC123\"\n}"
+            },
+            "url": "{{baseUrl}}/api/guias/{{guia_id}}/finalizar"
+          }
+        },
+        {
+          "name": "Negar guia",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"observacoes\": \"Documento incompleto\"\n}"
+            },
+            "url": "{{baseUrl}}/api/guias/{{guia_id}}/negar"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Antecipacoes",
+      "item": [
+        {
+          "name": "Listar antecipacoes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/antecipacoes?status=open&paciente_id={{paciente_unimed_id}}&convenio_id={{unimed_id}}"
+          }
+        },
+        {
+          "name": "Detalhar antecipacao",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/antecipacoes/{{antecipacao_id}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Lancamentos",
+      "item": [
+        {
+          "name": "Criar lancamento",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"profissional_id\": {{profissional_fisio_id}},\n  \"data_sessao\": \"2026-07-09\"\n}"
+            },
+            "url": "{{baseUrl}}/api/antecipacoes/{{antecipacao_id}}/lancamentos"
+          }
+        },
+        {
+          "name": "Listar lancamentos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/lancamentos?profissional_id={{profissional_fisio_id}}&data_sessao=2026-07-09"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Conciliacoes",
+      "item": [
+        {
+          "name": "Gerar conciliacao para guia",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/guias/{{guia_id}}/conciliacao"
+          }
+        },
+        {
+          "name": "Listar conciliacoes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/conciliacoes?convenio_id={{unimed_id}}&especialidade_id={{fisioterapia_id}}&profissional_id={{profissional_fisio_id}}&status=pending"
+          }
+        },
+        {
+          "name": "Marcar conciliacao como conferida",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/conciliacoes/{{conciliacao_id}}/marcar-conferido"
+          }
+        },
+        {
+          "name": "Marcar conciliacao como paga",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/conciliacoes/{{conciliacao_id}}/marcar-pago"
+          }
+        }
+      ]
+    }
+  ]
+}

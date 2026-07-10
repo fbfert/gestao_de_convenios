@@ -1,0 +1,15 @@
+{
+  "folders": [
+    {
+      "path": "api"
+    },
+    {
+      "path": "web"
+    }
+  ],
+  "settings": {
+    "files.insertFinalNewline": true,
+    "files.trimTrailingWhitespace": true
+  }
+}
+

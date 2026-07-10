@@ -1,0 +1,14 @@
+schema: spec-driven
+context: |
+  Project: Gestão de Convênios
+  Stack: Laravel 11 API, React + TypeScript + Vite web app, MariaDB via Docker Compose.
+  Domain: multi-tenant healthcare/therapy convênios workflow.
+  Core rules: status values stay in English in the API/database; translation happens only in the UI.
+  ADRs and docs live in docs/; OpenSpec specs live in openspec/specs.
+  Regras de convênio e valores são dado configurável, nunca hardcoded em services/controllers.
+rules:
+  proposal:
+    - Keep proposals aligned with docs/decisoes-arquitetura.md and docs/schema.md.
+    - Explicitly call out non-goals and spec updates.
+  tasks:
+    - Break work into reviewable chunks and keep implementation out of specs.

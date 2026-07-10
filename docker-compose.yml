@@ -1,0 +1,30 @@
+services:
+  mariadb:
+    image: mariadb:11
+    container_name: gestao-convenios-db
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: gestao_convenios
+      MARIADB_USER: gestao_convenios
+      MARIADB_PASSWORD: gestao_convenios
+      MARIADB_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    volumes:
+      - gestao_convenios_db_data:/var/lib/mysql
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: gestao-convenios-phpmyadmin
+    restart: unless-stopped
+    environment:
+      PMA_HOST: mariadb
+      PMA_USER: gestao_convenios
+      PMA_PASSWORD: gestao_convenios
+    ports:
+      - "8081:80"
+    depends_on:
+      - mariadb
+
+volumes:
+  gestao_convenios_db_data:

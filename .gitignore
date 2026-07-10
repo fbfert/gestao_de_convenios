@@ -1,0 +1,35 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# IDEs
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Logs
+*.log
+
+# PHP / Laravel
+api/vendor/
+api/.env
+api/.phpunit.result.cache
+api/bootstrap/cache/*.php
+api/storage/*.key
+api/storage/logs/
+api/public/storage
+vendor/
+
+# Node / Vite
+web/node_modules/
+web/dist/
+web/.env
+web/.vite/
+node_modules/
+dist/
+coverage/
+
+# Root env files
+.env
+.env.*
+

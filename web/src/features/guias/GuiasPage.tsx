@@ -3,6 +3,7 @@ import { translateStatus } from '../../lib/statusLabels'
 import { useConvenios, useEspecialidades, usePacientes, useProfissionais } from '../../lib/queries/useReferenceData'
 import {
   getHttpErrorMessage,
+  useGerarConciliacao,
   useCriarGuia,
   useFinalizarGuia,
   useGuias,
@@ -57,6 +58,7 @@ export function GuiasPage() {
   const [activeFinalizeId, setActiveFinalizeId] = useState<number | null>(null)
   const [finalizeDraft, setFinalizeDraft] = useState<GuiaFinalizarForm>(emptyFinalizeForm)
   const [finalizeError, setFinalizeError] = useState<string | null>(null)
+  const [conciliacaoError, setConciliacaoError] = useState<string | null>(null)
 
   const conveniosQuery = useConvenios()
   const especialidadesQuery = useEspecialidades()
@@ -66,6 +68,7 @@ export function GuiasPage() {
   const criarGuia = useCriarGuia()
   const finalizarGuia = useFinalizarGuia()
   const negarGuia = useNegarGuia()
+  const gerarConciliacao = useGerarConciliacao()
 
   const convenios = useMemo(() => conveniosQuery.data ?? [], [conveniosQuery.data])
   const especialidades = useMemo(() => especialidadesQuery.data ?? [], [especialidadesQuery.data])
@@ -177,6 +180,16 @@ export function GuiasPage() {
       setFinalizeDraft(emptyFinalizeForm)
     } catch (error) {
       setFinalizeError(getHttpErrorMessage(error, 'Não foi possível finalizar a guia.'))
+    }
+  }
+
+  const handleGerarConciliacao = async (guideId: number) => {
+    setConciliacaoError(null)
+
+    try {
+      await gerarConciliacao.mutateAsync(guideId)
+    } catch (error) {
+      setConciliacaoError(getHttpErrorMessage(error, 'Não foi possível gerar a conciliação.'))
     }
   }
 
@@ -478,6 +491,12 @@ export function GuiasPage() {
               Não foi possível carregar a lista.
             </div>
           ) : (
+            <div className="space-y-4">
+            {conciliacaoError ? (
+              <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+                {conciliacaoError}
+              </p>
+            ) : null}
             <div className="overflow-hidden rounded-3xl border border-white/10">
               <table className="w-full border-collapse text-left text-sm">
                 <thead className="bg-white/5 text-xs uppercase tracking-[0.25em] text-slate-400">
@@ -542,6 +561,15 @@ export function GuiasPage() {
                               data-testid={`guia-negar-${guia.id}`}
                             >
                               Negar
+                            </button>
+                            <button
+                              type="button"
+                              className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1.5 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-400/20 disabled:opacity-50"
+                              onClick={() => handleGerarConciliacao(guia.id)}
+                              disabled={gerarConciliacao.isPending || guia.status !== 'finalized'}
+                              data-testid={`guia-gerar-conciliacao-${guia.id}`}
+                            >
+                              Gerar conciliação
                             </button>
                           </div>
                         </td>
@@ -621,6 +649,7 @@ export function GuiasPage() {
                   ) : null}
                 </tbody>
               </table>
+            </div>
             </div>
           )}
 

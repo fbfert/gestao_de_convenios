@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '../../api/client'
 import { getHttpErrorMessage } from '../../lib/httpError'
+import { useGerarConciliacao as useGerarConciliacaoMutation } from '../conciliacao/useConciliacoes'
 import type {
   Guia,
   GuiaFilters,
@@ -76,6 +77,10 @@ export function useNegarGuia() {
       await queryClient.invalidateQueries({ queryKey: ['guias'] })
     },
   })
+}
+
+export function useGerarConciliacao() {
+  return useGerarConciliacaoMutation()
 }
 
 export { getHttpErrorMessage }

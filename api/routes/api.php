@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AntecipacaoController;
 use App\Http\Controllers\ConciliacaoController;
 use App\Http\Controllers\GuiaController;
@@ -7,6 +8,8 @@ use App\Http\Controllers\LancamentoController;
 use App\Http\Controllers\SolicitacaoController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
@@ -35,4 +38,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/conciliacoes', [ConciliacaoController::class, 'index']);
     Route::patch('/conciliacoes/{conciliacao}/marcar-conferido', [ConciliacaoController::class, 'marcarConferido']);
     Route::patch('/conciliacoes/{conciliacao}/marcar-pago', [ConciliacaoController::class, 'marcarPago']);
+
+    Route::post('/logout', [AuthController::class, 'logout']);
 });

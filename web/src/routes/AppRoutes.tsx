@@ -6,6 +6,7 @@ import { PlaceholderPage } from './PlaceholderPage'
 import { SolicitacoesPage } from '../features/solicitacoes/SolicitacoesPage'
 import { GuiasPage } from '../features/guias/GuiasPage'
 import { AntecipacoesPage } from '../features/antecipacoes/AntecipacoesPage'
+import { LancamentosPage } from '../features/lancamentos'
 
 export function AppRoutes() {
   return (
@@ -17,15 +18,7 @@ export function AppRoutes() {
           <Route path="/solicitacoes" element={<SolicitacoesPage />} />
           <Route path="/guias" element={<GuiasPage />} />
           <Route path="/antecipacoes" element={<AntecipacoesPage />} />
-          <Route
-            path="/lancamentos"
-            element={
-              <PlaceholderPage
-                title="Lançamentos"
-                description="Tela reservada para o próximo bloco, já conectada ao menu."
-              />
-            }
-          />
+          <Route path="/lancamentos" element={<LancamentosPage />} />
           <Route
             path="/conciliacao"
             element={

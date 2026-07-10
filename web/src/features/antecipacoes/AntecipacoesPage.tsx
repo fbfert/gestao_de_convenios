@@ -1,4 +1,5 @@
 import { useMemo, useState, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
 import { translateStatus } from '../../lib/statusLabels'
 import { useConvenios, usePacientes } from '../../lib/queries/useReferenceData'
 import { useAntecipacoes } from './useAntecipacoes'
@@ -132,6 +133,7 @@ export function AntecipacoesPage() {
                   <th className="px-4 py-3">Convênio</th>
                   <th className="px-4 py-3">Cota</th>
                   <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/10 bg-slate-950/30">
@@ -173,14 +175,23 @@ export function AntecipacoesPage() {
                         )}`}
                         data-testid={`antecipacao-status-${antecipacao.id}`}
                       >
-                        {translateStatus('antecipacoes', antecipacao.status)}
+                          {translateStatus('antecipacoes', antecipacao.status)}
                       </span>
+                    </td>
+                    <td className="px-4 py-4">
+                      <Link
+                        to={`/lancamentos?antecipacao_id=${antecipacao.id}`}
+                        className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/10"
+                        data-testid={`antecipacao-lancar-${antecipacao.id}`}
+                      >
+                        Registrar
+                      </Link>
                     </td>
                   </tr>
                 ))}
                 {antecipacoes.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-slate-300">
+                    <td colSpan={6} className="px-4 py-8 text-center text-slate-300">
                       Nenhuma antecipação encontrada.
                     </td>
                   </tr>

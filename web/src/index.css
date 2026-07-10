@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", "Segoe UI", sans-serif;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    background:
+      radial-gradient(circle at top, rgba(30, 41, 59, 0.25), transparent 42%),
+      linear-gradient(180deg, #07111f 0%, #0f172a 100%);
+  }
+
+  body {
+    min-height: 100vh;
+    margin: 0;
+    color: #e2e8f0;
+    background: transparent;
+  }
+
+  #root {
+    min-height: 100vh;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+}

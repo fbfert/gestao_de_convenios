@@ -81,10 +81,10 @@ class GuiaService
             $regra = ConvenioRegra::query()
                 ->where('convenio_id', $guia->convenio_id)
                 ->where('tipo_terapia', $guia->tipo_terapia)
-                ->where('vigente_desde', '<=', $dataFinalizacao)
+                ->whereDate('vigente_desde', '<=', $dataFinalizacao)
                 ->where(function ($query) use ($dataFinalizacao) {
                     $query->whereNull('vigente_ate')
-                        ->orWhere('vigente_ate', '>=', $dataFinalizacao);
+                        ->orWhereDate('vigente_ate', '>=', $dataFinalizacao);
                 })
                 ->orderByDesc('vigente_desde')
                 ->first();

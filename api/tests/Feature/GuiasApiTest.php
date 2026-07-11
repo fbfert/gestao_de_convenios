@@ -58,6 +58,24 @@ class GuiasApiTest extends TestCase
             ->assertJsonPath('message', 'Transição inválida de guia: finalized -> denied.');
     }
 
+    public function test_finaliza_via_http_sem_validade_senha_calculando_data_automaticamente(): void
+    {
+        $this->autenticar();
+
+        $guia = $this->postJson('/api/guias', $this->payloadGuia('Unimed'))
+            ->assertCreated()
+            ->json('data.id');
+
+        $response = $this->patchJson("/api/guias/{$guia}/finalizar", [
+            'senha' => 'ABC123',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.status', 'finalized')
+            ->assertJsonPath('data.senha', 'ABC123')
+            ->assertJsonPath('data.validade_senha', today()->copy()->addDays(30)->toDateString());
+    }
+
     public function test_filtro_de_validade_senha_vencendo_em_dias_funciona(): void
     {
         $this->autenticar();

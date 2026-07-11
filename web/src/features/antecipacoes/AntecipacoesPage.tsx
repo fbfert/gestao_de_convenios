@@ -149,11 +149,17 @@ export function AntecipacoesPage() {
                         antecipacao.convenio_id}
                     </td>
                     <td className="px-4 py-4 text-slate-200">
-                      <div className="space-y-2">
+                      <div className="space-y-2" data-testid={`antecipacao-cota-${antecipacao.id}`}>
                         <div className="flex items-center justify-between text-xs uppercase tracking-[0.25em] text-slate-400">
                           <span>{antecipacao.qtd_utilizada}</span>
                           <span>{antecipacao.qtd_autorizada}</span>
                         </div>
+                        <p
+                          className="text-sm font-semibold text-white"
+                          data-testid={`antecipacao-cota-text-${antecipacao.id}`}
+                        >
+                          {antecipacao.qtd_utilizada}/{antecipacao.qtd_autorizada}
+                        </p>
                         <div className="h-2 overflow-hidden rounded-full bg-white/10">
                           <div
                             className="h-full rounded-full bg-cyan-300"

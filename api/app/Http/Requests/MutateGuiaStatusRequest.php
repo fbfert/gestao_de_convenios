@@ -13,6 +13,10 @@ class MutateGuiaStatusRequest extends FormRequest
 
     public function rules(): array
     {
-        return [];
+        return [
+            'senha' => ['sometimes', 'string', 'max:255'],
+            'validade_senha' => ['nullable', 'date'],
+            'data_finalizacao' => ['nullable', 'date'],
+        ];
     }
 }

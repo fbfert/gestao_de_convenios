@@ -28,7 +28,7 @@ export function LoginPage() {
   }
 
   return (
-    <div className="grid min-h-screen place-items-center px-4 py-10">
+    <div className="grid min-h-screen place-items-center px-4 py-10" data-testid="login-page">
       <div className="w-full max-w-md rounded-[2rem] border border-white/10 bg-slate-950/80 p-8 shadow-2xl shadow-cyan-950/30 backdrop-blur">
         <div className="mb-8">
           <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">
@@ -53,6 +53,7 @@ export function LoginPage() {
               className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20"
               placeholder="admin@clinica-exemplo.test"
               autoComplete="email"
+              data-testid="login-email"
             />
           </label>
 
@@ -65,6 +66,7 @@ export function LoginPage() {
               className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20"
               placeholder="password"
               autoComplete="current-password"
+              data-testid="login-password"
             />
           </label>
 
@@ -78,6 +80,7 @@ export function LoginPage() {
             type="submit"
             disabled={login.isPending}
             className="inline-flex w-full items-center justify-center rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-70"
+            data-testid="login-submit"
           >
             {login.isPending ? 'Entrando...' : 'Entrar'}
           </button>

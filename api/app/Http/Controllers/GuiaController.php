@@ -44,7 +44,7 @@ class GuiaController extends Controller
 
     public function finalizar(MutateGuiaStatusRequest $request, Guia $guia): GuiaResource
     {
-        return new GuiaResource($this->service->finalizar($guia, $request->all()));
+        return new GuiaResource($this->service->finalizar($guia, $request->validated()));
     }
 
     public function negar(MutateGuiaStatusRequest $request, Guia $guia): GuiaResource

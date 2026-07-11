@@ -49,6 +49,8 @@ backend estar testado.
 - [ ] `ConciliacaoService` + teste feature
 - [ ] `ManualConnector` (implementação inicial da interface de conector)
 - [ ] `VerificarGuiasDiarioJob` agendado
+  - em produção, o cron do sistema deve executar `php artisan schedule:run` a
+    cada minuto
 
 ## 5. Backend — API
 
@@ -78,4 +80,3 @@ backend estar testado.
 - [ ] Levantar as regras reais dos 7-8 convênios e preencher
       `convenio_regras` / `tabela_valores`
 - [ ] Ajustar antes de migrar dado real de paciente/carteirinha
-

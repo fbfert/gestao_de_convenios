@@ -51,7 +51,8 @@ com teste automatizado antes de seguir para a próxima peça.
   - isso ficou aplicado em `AntecipacaoService` e coberto por teste
 - **Cron de produção**
   - o agendamento do job diário já está declarado no Laravel 11
-  - a execução real em produção ainda depende do cron/scheduler do ambiente
+  - em produção, o cron do sistema deve executar `php artisan schedule:run`
+    a cada minuto
   - essa pendência operacional já está refletida no roadmap do projeto
 
 ## Resultado do bloco

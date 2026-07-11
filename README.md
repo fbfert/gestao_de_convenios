@@ -46,3 +46,15 @@ Regras de convênio (frequência de lançamento, quantidade autorizada, validade
 de senha, valor por profissional) são **dado configurável, nunca código**.
 Nenhuma regra de negócio de convênio deve ser hardcoded em Service ou
 Controller — sempre lida de `convenio_regras` / `tabela_valores`.
+
+## Operação em produção
+
+- O scheduler do Laravel já está registrado em `api/routes/console.php`.
+- Em produção, o cron do sistema precisa executar:
+
+```bash
+* * * * * cd /caminho/do/projeto/api && php artisan schedule:run
+```
+
+- Isso é o que dispara o `VerificarGuiasDiarioJob` diariamente no horário
+  configurado no scheduler.

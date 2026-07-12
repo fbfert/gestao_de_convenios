@@ -9,6 +9,7 @@ import { LancamentosPage } from '../features/lancamentos'
 import { ConciliacaoPage } from '../features/conciliacao'
 import { MedicosPage } from '../features/medicos'
 import { PermissoesPage } from '../features/permissoes'
+import { UsuariosPage } from '../features/usuarios'
 
 export function AppRoutes() {
   return (
@@ -24,6 +25,7 @@ export function AppRoutes() {
           <Route path="/conciliacao" element={<ConciliacaoPage />} />
           <Route path="/medicos" element={<MedicosPage />} />
           <Route path="/permissoes" element={<PermissoesPage />} />
+          <Route path="/usuarios" element={<UsuariosPage />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/solicitacoes" replace />} />

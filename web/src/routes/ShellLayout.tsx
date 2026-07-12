@@ -9,6 +9,7 @@ const navItems = [
   { to: '/lancamentos', label: 'Lançamentos' },
   { to: '/conciliacao', label: 'Conciliação' },
   { to: '/medicos', label: 'Médicos' },
+  { to: '/usuarios', label: 'Usuários' },
   { to: '/permissoes', label: 'Permissões' },
 ]
 

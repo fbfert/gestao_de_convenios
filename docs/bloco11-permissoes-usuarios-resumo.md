@@ -34,6 +34,11 @@ Resumo do fechamento do CRUD de permissões por papel e do CRUD de usuários no 
   - [`web/src/features/permissoes/usePermissoes.ts`](../web/src/features/permissoes/usePermissoes.ts)
   - [`web/src/features/permissoes/types.ts`](../web/src/features/permissoes/types.ts)
   - [`web/src/features/permissoes/index.ts`](../web/src/features/permissoes/index.ts)
+- CRUD de usuários:
+  - [`web/src/features/usuarios/UsuariosPage.tsx`](../web/src/features/usuarios/UsuariosPage.tsx)
+  - [`web/src/features/usuarios/useUsuarios.ts`](../web/src/features/usuarios/useUsuarios.ts)
+  - [`web/src/features/usuarios/types.ts`](../web/src/features/usuarios/types.ts)
+  - [`web/src/features/usuarios/index.ts`](../web/src/features/usuarios/index.ts)
 - Navegação atualizada:
   - [`web/src/routes/ShellLayout.tsx`](../web/src/routes/ShellLayout.tsx)
   - [`web/src/routes/AppRoutes.tsx`](../web/src/routes/AppRoutes.tsx)
@@ -51,8 +56,9 @@ Resumo do fechamento do CRUD de permissões por papel e do CRUD de usuários no 
 - [`php artisan test --filter=UsuariosApiTest`](../api) passou com `6 passed / 17 assertions`
 - [`npm run build`](../web) passou
 - [`npm run lint`](../web) passou
+- `http://127.0.0.1:5173/usuarios` responde com a nova tela navegável no frontend local
 
 ## Estado atual
 
 - A tela de permissões está navegável no frontend local.
-- O CRUD de usuários está disponível na API e pronto para a próxima tela administrativa, se for necessária.
+- O CRUD de usuários está disponível na API e também na UI administrativa.

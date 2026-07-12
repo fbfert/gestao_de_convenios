@@ -1,6 +1,6 @@
 # Bloco 10 - Medicos e solicitacoes
 
-Resumo do ajuste de contrato que trocou `solicitacoes.medico_solicitante` por `solicitacoes.medico_id` com a nova tabela `medicos`.
+Resumo do ajuste de contrato que trocou `solicitacoes.medico_solicitante` por `solicitacoes.medico_id` com a nova tabela `medicos`, e do CRUD backend de medicos.
 
 ## O que entrou no backend
 
@@ -20,6 +20,10 @@ Resumo do ajuste de contrato que trocou `solicitacoes.medico_solicitante` por `s
   - [`api/app/Http/Controllers/MedicoController.php`](../api/app/Http/Controllers/MedicoController.php)
   - [`api/app/Http/Resources/MedicoResource.php`](../api/app/Http/Resources/MedicoResource.php)
   - [`api/routes/api.php`](../api/routes/api.php)
+- CRUD de medicos:
+  - [`api/app/Http/Requests/StoreMedicoRequest.php`](../api/app/Http/Requests/StoreMedicoRequest.php)
+  - [`api/app/Http/Requests/UpdateMedicoRequest.php`](../api/app/Http/Requests/UpdateMedicoRequest.php)
+  - [`api/app/Providers/AppServiceProvider.php`](../api/app/Providers/AppServiceProvider.php)
 - Seeders e testes:
   - [`api/database/seeders/MedicoSeeder.php`](../api/database/seeders/MedicoSeeder.php)
   - [`api/database/seeders/DatabaseSeeder.php`](../api/database/seeders/DatabaseSeeder.php)
@@ -45,12 +49,15 @@ Resumo do ajuste de contrato que trocou `solicitacoes.medico_solicitante` por `s
 - `medico_id` virou a fonte de verdade em solicitacoes.
 - `medico_solicitante` ficou apenas como coluna legada de transicao.
 - O campo de texto livre da tela foi substituido por select com dados reais da API.
-- O endpoint `GET /api/medicos` passou a servir como referencia para o formulario.
+- O endpoint `GET /api/medicos` passou a servir como referencia para o formulario e agora faz parte do CRUD de medicos.
+- `POST /api/medicos` e `PATCH /api/medicos/{medico}` ficaram protegidos por `medicos.manage`.
+- O binding de `medico` foi amarrado ao tenant no `AppServiceProvider` para garantir 404 cross-tenant.
 - O tenant context foi limpo no middleware para evitar vazamento entre requests e testes.
 
 ## Validacoes feitas
 
-- Backend: `php artisan test` passou com `54 passed / 248 assertions`.
+- Backend: `php artisan test --filter=MedicosApiTest` passou com `6 passed / 17 assertions`.
+- Backend: `php artisan test --filter=SolicitacoesApiTest` passou com `4 passed / 29 assertions`.
 - Frontend: `npm run build` passou.
 - Frontend: `npm run lint` passou.
 - E2E: testes individuais passaram:

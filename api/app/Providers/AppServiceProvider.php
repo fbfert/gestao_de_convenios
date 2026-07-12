@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Models\Guia;
 use App\Models\Antecipacao;
 use App\Models\ConciliacaoFinanceira;
+use App\Models\Medico;
 use App\Models\Solicitacao;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Route;
@@ -55,6 +56,15 @@ class AppServiceProvider extends ServiceProvider
             $tenantId = request()->user()?->tenant_id;
 
             return ConciliacaoFinanceira::query()
+                ->where('tenant_id', $tenantId)
+                ->whereKey($value)
+                ->firstOrFail();
+        });
+
+        Route::bind('medico', function ($value) {
+            $tenantId = request()->user()?->tenant_id;
+
+            return Medico::query()
                 ->where('tenant_id', $tenantId)
                 ->whereKey($value)
                 ->firstOrFail();

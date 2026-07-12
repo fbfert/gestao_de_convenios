@@ -59,6 +59,58 @@
               "body": "{\n  \"data\": [\n    {\n      \"id\": 1,\n      \"nome\": \"Dr. Carlos Almeida\",\n      \"crm\": \"CRM 123456\",\n      \"especialidade_medica\": \"Clínica Geral\",\n      \"telefone\": \"(11) 95555-0101\",\n      \"email\": \"carlos.almeida@clinica-exemplo.test\",\n      \"ativo\": true\n    }\n  ]\n}"
             }
           ]
+        },
+        {
+          "name": "Criar medico",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Dra. Laura Martins\",\n  \"crm\": \"CRM 777888\",\n  \"especialidade_medica\": \"Dermatologia\",\n  \"telefone\": \"(11) 95555-0199\",\n  \"email\": \"laura.martins@clinica-exemplo.test\",\n  \"ativo\": true\n}"
+            },
+            "url": "{{baseUrl}}/api/medicos"
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "url": "{{baseUrl}}/api/medicos"
+              },
+              "code": 201,
+              "status": "Created",
+              "body": "{\n  \"data\": {\n    \"id\": 4,\n    \"nome\": \"Dra. Laura Martins\",\n    \"crm\": \"CRM 777888\",\n    \"especialidade_medica\": \"Dermatologia\",\n    \"telefone\": \"(11) 95555-0199\",\n    \"email\": \"laura.martins@clinica-exemplo.test\",\n    \"ativo\": true\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Atualizar medico",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"telefone\": \"(11) 97777-0000\",\n  \"ativo\": false\n}"
+            },
+            "url": "{{baseUrl}}/api/medicos/{{medico_carlos_id}}"
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "PATCH",
+                "url": "{{baseUrl}}/api/medicos/{{medico_carlos_id}}"
+              },
+              "code": 200,
+              "status": "OK",
+              "body": "{\n  \"data\": {\n    \"id\": 1,\n    \"nome\": \"Dr. Carlos Almeida\",\n    \"crm\": \"CRM 123456\",\n    \"especialidade_medica\": \"Clínica Geral\",\n    \"telefone\": \"(11) 97777-0000\",\n    \"email\": \"carlos.almeida@clinica-exemplo.test\",\n    \"ativo\": false\n  }\n}"
+            }
+          ]
         }
       ]
     },

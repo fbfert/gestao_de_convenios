@@ -25,7 +25,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/profissionais', [ProfissionalController::class, 'index']);
     Route::get('/especialidades', [EspecialidadeController::class, 'index']);
     Route::get('/convenios', [ConvenioController::class, 'index']);
-    Route::get('/medicos', [MedicoController::class, 'index']);
+    Route::get('/medicos', [MedicoController::class, 'index'])->middleware('permission:medicos.manage');
+    Route::post('/medicos', [MedicoController::class, 'store'])->middleware('permission:medicos.manage');
+    Route::patch('/medicos/{medico}', [MedicoController::class, 'update'])->middleware('permission:medicos.manage');
 
     Route::get('/solicitacoes', [SolicitacaoController::class, 'index']);
     Route::post('/solicitacoes', [SolicitacaoController::class, 'store']);

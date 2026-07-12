@@ -6,6 +6,7 @@ use App\Models\Guia;
 use App\Models\Antecipacao;
 use App\Models\ConciliacaoFinanceira;
 use App\Models\Medico;
+use App\Models\Paciente;
 use App\Models\Solicitacao;
 use App\Models\User;
 use Illuminate\Support\ServiceProvider;
@@ -67,6 +68,15 @@ class AppServiceProvider extends ServiceProvider
             $tenantId = request()->user()?->tenant_id;
 
             return Medico::query()
+                ->where('tenant_id', $tenantId)
+                ->whereKey($value)
+                ->firstOrFail();
+        });
+
+        Route::bind('paciente', function ($value) {
+            $tenantId = request()->user()?->tenant_id;
+
+            return Paciente::query()
                 ->where('tenant_id', $tenantId)
                 ->whereKey($value)
                 ->firstOrFail();

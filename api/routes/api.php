@@ -26,6 +26,9 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::get('/pacientes', [PacienteController::class, 'index']);
+    Route::get('/pacientes/{paciente}', [PacienteController::class, 'show']);
+    Route::post('/pacientes', [PacienteController::class, 'store']);
+    Route::patch('/pacientes/{paciente}', [PacienteController::class, 'update']);
     Route::get('/profissionais', [ProfissionalController::class, 'index']);
     Route::get('/especialidades', [EspecialidadeController::class, 'index']);
     Route::get('/convenios', [ConvenioController::class, 'index']);

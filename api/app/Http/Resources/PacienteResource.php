@@ -12,8 +12,12 @@ class PacienteResource extends JsonResource
         return [
             'id' => $this->id,
             'nome' => $this->nome,
+            'cpf' => $this->cpf,
             'carteirinha' => $this->carteirinha,
             'convenio_id' => $this->convenio_id,
+            'telefone' => $this->telefone,
+            'clinica_agil_id' => $this->clinica_agil_id,
+            'ativo' => $this->ativo,
             'convenio' => $this->whenLoaded('convenio', fn () => [
                 'id' => $this->convenio->id,
                 'nome' => $this->convenio->nome,

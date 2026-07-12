@@ -3,6 +3,7 @@ import { LoginPage } from './LoginPage'
 import { ProtectedRoute } from './ProtectedRoute'
 import { ShellLayout } from './ShellLayout'
 import { SolicitacoesPage } from '../features/solicitacoes/SolicitacoesPage'
+import { PacientesPage } from '../features/pacientes'
 import { GuiasPage } from '../features/guias/GuiasPage'
 import { AntecipacoesPage } from '../features/antecipacoes/AntecipacoesPage'
 import { LancamentosPage } from '../features/lancamentos'
@@ -19,6 +20,7 @@ export function AppRoutes() {
         <Route element={<ShellLayout />}>
           <Route path="/" element={<Navigate to="/solicitacoes" replace />} />
           <Route path="/solicitacoes" element={<SolicitacoesPage />} />
+          <Route path="/pacientes" element={<PacientesPage />} />
           <Route path="/guias" element={<GuiasPage />} />
           <Route path="/antecipacoes" element={<AntecipacoesPage />} />
           <Route path="/lancamentos" element={<LancamentosPage />} />

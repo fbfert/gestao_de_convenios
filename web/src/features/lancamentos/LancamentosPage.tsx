@@ -23,6 +23,7 @@ export function LancamentosPage() {
   const [filters, setFilters] = useState(defaultFilters)
   const [draftFilters, setDraftFilters] = useState(defaultFilters)
   const [page, setPage] = useState(1)
+  const [isFormOpen, setIsFormOpen] = useState(false)
   const [form, setForm] = useState<LancamentoForm>({
     antecipacao_id: initialAntecipacaoId,
     profissional_id: '',
@@ -47,10 +48,7 @@ export function LancamentosPage() {
 
     setForm((current) => ({
       ...current,
-      antecipacao_id:
-        current.antecipacao_id ||
-        initialAntecipacaoId ||
-        String(antecipacoes[0].id),
+      antecipacao_id: current.antecipacao_id || initialAntecipacaoId || String(antecipacoes[0].id),
     }))
   }, [antecipacoes, initialAntecipacaoId])
 
@@ -61,9 +59,7 @@ export function LancamentosPage() {
 
     setForm((current) => ({
       ...current,
-      profissional_id:
-        current.profissional_id ||
-        String(profissionais[0].id),
+      profissional_id: current.profissional_id || String(profissionais[0].id),
     }))
   }, [profissionais])
 
@@ -73,231 +69,269 @@ export function LancamentosPage() {
     setFilters(draftFilters)
   }
 
+  const handleNew = () => {
+    setForm((current) => ({
+      ...current,
+      antecipacao_id: current.antecipacao_id || initialAntecipacaoId || current.antecipacao_id,
+    }))
+    setFormError(null)
+    setIsFormOpen(true)
+  }
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setFormError(null)
 
     try {
       await criarLancamento.mutateAsync(form)
+      setIsFormOpen(false)
     } catch (error) {
       setFormError(getHttpErrorMessage(error, 'Não foi possível registrar o lançamento.'))
     }
   }
 
+  const antecipacaoSelecionada = antecipacoes.find(
+    (antecipacao) => String(antecipacao.id) === form.antecipacao_id,
+  )
+
   return (
     <div className="space-y-8" data-testid="lancamentos-page">
-      <section>
-        <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Lançamentos</p>
-        <h2 className="mt-2 text-3xl font-semibold text-white">Registro de sessão</h2>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
-          Cada registro consome cota da antecipação escolhida e reflete de volta no
-          painel de antecipações.
-        </p>
-      </section>
-
-      <section className="grid gap-6 xl:grid-cols-[1.05fr_1.4fr]">
-        <form
-          onSubmit={handleSubmit}
-          className="space-y-4 rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6"
-        >
+      <section className="space-y-4">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-white">Novo lançamento</h3>
-            <p className="text-sm text-slate-300">
-              Selecione uma antecipação, o profissional e a data da sessão.
+            <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Lançamentos</p>
+            <h2 className="mt-2 text-3xl font-semibold text-white">Registro de sessão</h2>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
+              Cada registro consome cota da antecipação escolhida e reflete de volta no painel de
+              antecipações.
             </p>
           </div>
-
-          <label className="block space-y-2">
-            <span className="text-sm font-medium text-slate-200">Antecipação</span>
-            <select
-              value={form.antecipacao_id}
-              onChange={(event) =>
-                setForm((current) => ({ ...current, antecipacao_id: event.target.value }))
-              }
-              className={selectClasses()}
-              data-testid="lancamento-antecipacao"
-            >
-              {antecipacoes.map((antecipacao) => (
-                <option key={antecipacao.id} value={antecipacao.id}>
-                  #{antecipacao.id} · Paciente {antecipacao.paciente_id} · {antecipacao.status}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="block space-y-2">
-            <span className="text-sm font-medium text-slate-200">Profissional</span>
-            <select
-              value={form.profissional_id}
-              onChange={(event) =>
-                setForm((current) => ({ ...current, profissional_id: event.target.value }))
-              }
-              className={selectClasses()}
-              data-testid="lancamento-profissional"
-            >
-              {profissionais.map((profissional) => (
-                <option key={profissional.id} value={profissional.id}>
-                  {profissional.nome}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="block space-y-2">
-            <span className="text-sm font-medium text-slate-200">Data da sessão</span>
-            <input
-              type="date"
-              value={form.data_sessao}
-              onChange={(event) =>
-                setForm((current) => ({ ...current, data_sessao: event.target.value }))
-              }
-              className={selectClasses()}
-              data-testid="lancamento-data-sessao"
-            />
-          </label>
-
-          {formError ? (
-            <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
-              {formError}
-            </p>
-          ) : null}
 
           <button
-            type="submit"
-            disabled={criarLancamento.isPending}
-            className="inline-flex w-full items-center justify-center rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:opacity-60"
-            data-testid="lancamento-submit"
+            type="button"
+            onClick={handleNew}
+            className="rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
+            data-testid="lancamento-novo"
           >
-            {criarLancamento.isPending ? 'Salvando...' : 'Registrar lançamento'}
+            Novo
           </button>
-        </form>
+        </div>
+      </section>
 
-        <section className="space-y-4 rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <h3 className="text-lg font-semibold text-white">Filtros e lista</h3>
-              <p className="text-sm text-slate-300">
-                A lista acompanha profissional e data da sessão.
-              </p>
-            </div>
-
-            <form className="grid gap-3 md:grid-cols-3 xl:grid-cols-3" onSubmit={handleFilterSubmit}>
-              <label className="space-y-2">
-                <span className="text-xs uppercase tracking-[0.25em] text-slate-400">
-                  Profissional
-                </span>
-                <select
-                  value={draftFilters.profissional_id}
-                  onChange={(event) =>
-                    setDraftFilters((current) => ({ ...current, profissional_id: event.target.value }))
-                  }
-                  className={selectClasses()}
-                  data-testid="lancamento-filtro-profissional"
-                >
-                  <option value="">Todos</option>
-                  {profissionais.map((profissional) => (
-                    <option key={profissional.id} value={profissional.id}>
-                      {profissional.nome}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="space-y-2">
-                <span className="text-xs uppercase tracking-[0.25em] text-slate-400">
-                  Data sessão
-                </span>
-                <input
-                  type="date"
-                  value={draftFilters.data_sessao}
-                  onChange={(event) =>
-                    setDraftFilters((current) => ({ ...current, data_sessao: event.target.value }))
-                  }
-                  className={selectClasses()}
-                  data-testid="lancamento-filtro-data-sessao"
-                />
-              </label>
-
+      {isFormOpen ? (
+        <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-lg font-semibold text-white">Novo lançamento</h3>
+                <p className="text-sm text-slate-300">
+                  Selecione uma antecipação, o profissional e a data da sessão.
+                </p>
+              </div>
               <button
-                type="submit"
+                type="button"
+                onClick={() => setIsFormOpen(false)}
                 className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+                data-testid="lancamento-fechar"
               >
-                Aplicar
+                Fechar
               </button>
-            </form>
-          </div>
+            </div>
 
-          {lancamentosQuery.isLoading ? (
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
-              Carregando lançamentos...
-            </div>
-          ) : lancamentosQuery.isError ? (
-            <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-100">
-              Não foi possível carregar a lista.
-            </div>
-          ) : (
-            <div className="overflow-hidden rounded-3xl border border-white/10">
-              <table className="w-full border-collapse text-left text-sm">
-                <thead className="bg-white/5 text-xs uppercase tracking-[0.25em] text-slate-400">
-                  <tr>
-                    <th className="px-4 py-3">ID</th>
-                    <th className="px-4 py-3">Antecipação</th>
-                    <th className="px-4 py-3">Profissional</th>
-                    <th className="px-4 py-3">Data</th>
-                    <th className="px-4 py-3">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/10 bg-slate-950/30">
-                  {lancamentos.map((lancamento) => (
-                    <tr key={lancamento.id} data-testid={`lancamento-row-${lancamento.id}`}>
-                      <td className="px-4 py-4 font-medium text-white">#{lancamento.id}</td>
-                      <td className="px-4 py-4 text-slate-200">#{lancamento.antecipacao_id}</td>
-                      <td className="px-4 py-4 text-slate-200">
-                        {profissionais.find((item) => item.id === lancamento.profissional_id)?.nome ??
-                          lancamento.profissional_id}
-                      </td>
-                      <td className="px-4 py-4 text-slate-200">{lancamento.data_sessao}</td>
-                      <td className="px-4 py-4 text-slate-200">
-                        {translateStatus('lancamentos', lancamento.status)}
-                      </td>
-                    </tr>
-                  ))}
-                  {lancamentos.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="px-4 py-8 text-center text-slate-300">
-                        Nenhum lançamento encontrado.
-                      </td>
-                    </tr>
-                  ) : null}
-                </tbody>
-              </table>
-            </div>
-          )}
+            <label className="block space-y-2">
+              <span className="text-sm font-medium text-slate-200">Antecipação</span>
+              <select
+                value={form.antecipacao_id}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, antecipacao_id: event.target.value }))
+                }
+                className={selectClasses()}
+                data-testid="lancamento-antecipacao"
+              >
+                {antecipacoes.map((antecipacao) => (
+                  <option key={antecipacao.id} value={antecipacao.id}>
+                    #{antecipacao.id} · Paciente {antecipacao.paciente_id} · {antecipacao.status}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-          <div className="flex items-center justify-between gap-3">
+            <label className="block space-y-2">
+              <span className="text-sm font-medium text-slate-200">Profissional</span>
+              <select
+                value={form.profissional_id}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, profissional_id: event.target.value }))
+                }
+                className={selectClasses()}
+                data-testid="lancamento-profissional"
+              >
+                {profissionais.map((profissional) => (
+                  <option key={profissional.id} value={profissional.id}>
+                    {profissional.nome}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="block space-y-2">
+              <span className="text-sm font-medium text-slate-200">Data da sessão</span>
+              <input
+                type="date"
+                value={form.data_sessao}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, data_sessao: event.target.value }))
+                }
+                className={selectClasses()}
+                data-testid="lancamento-data-sessao"
+              />
+            </label>
+
+            {formError ? (
+              <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+                {formError}
+              </p>
+            ) : null}
+
+            <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-300">
+              {antecipacaoSelecionada
+                ? `Antecipação selecionada: #${antecipacaoSelecionada.id} · ${antecipacaoSelecionada.status}`
+                : 'Selecione uma antecipação para registrar a sessão.'}
+            </div>
+
             <button
-              type="button"
-              className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10 disabled:opacity-50"
-              onClick={() => setPage((current) => Math.max(1, current - 1))}
-              disabled={page <= 1 || lancamentosQuery.isFetching}
+              type="submit"
+              disabled={criarLancamento.isPending}
+              className="inline-flex w-full items-center justify-center rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:opacity-60"
+              data-testid="lancamento-submit"
             >
-              Anterior
+              {criarLancamento.isPending ? 'Salvando...' : 'Registrar lançamento'}
             </button>
-
-            <p className="text-sm text-slate-300">
-              Página {page} de {totalPages}
-            </p>
-
-            <button
-              type="button"
-              className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10 disabled:opacity-50"
-              onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
-              disabled={page >= totalPages || lancamentosQuery.isFetching}
-            >
-              Próxima
-            </button>
-          </div>
+          </form>
         </section>
+      ) : null}
+
+      <section className="space-y-4 rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-white">Filtros e lista</h3>
+            <p className="text-sm text-slate-300">
+              A lista acompanha profissional e data da sessão.
+            </p>
+          </div>
+
+          <form className="grid gap-3 md:grid-cols-3 xl:grid-cols-3" onSubmit={handleFilterSubmit}>
+            <label className="space-y-2">
+              <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Profissional</span>
+              <select
+                value={draftFilters.profissional_id}
+                onChange={(event) =>
+                  setDraftFilters((current) => ({ ...current, profissional_id: event.target.value }))
+                }
+                className={selectClasses()}
+                data-testid="lancamento-filtro-profissional"
+              >
+                <option value="">Todos</option>
+                {profissionais.map((profissional) => (
+                  <option key={profissional.id} value={profissional.id}>
+                    {profissional.nome}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="space-y-2">
+              <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Data sessão</span>
+              <input
+                type="date"
+                value={draftFilters.data_sessao}
+                onChange={(event) =>
+                  setDraftFilters((current) => ({ ...current, data_sessao: event.target.value }))
+                }
+                className={selectClasses()}
+                data-testid="lancamento-filtro-data-sessao"
+              />
+            </label>
+
+            <button
+              type="submit"
+              className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+            >
+              Aplicar
+            </button>
+          </form>
+        </div>
+
+        {lancamentosQuery.isLoading ? (
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
+            Carregando lançamentos...
+          </div>
+        ) : lancamentosQuery.isError ? (
+          <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-100">
+            Não foi possível carregar a lista.
+          </div>
+        ) : (
+          <div className="overflow-hidden rounded-3xl border border-white/10">
+            <table className="w-full border-collapse text-left text-sm">
+              <thead className="bg-white/5 text-xs uppercase tracking-[0.25em] text-slate-400">
+                <tr>
+                  <th className="px-4 py-3">ID</th>
+                  <th className="px-4 py-3">Antecipação</th>
+                  <th className="px-4 py-3">Profissional</th>
+                  <th className="px-4 py-3">Data</th>
+                  <th className="px-4 py-3">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/10 bg-slate-950/30">
+                {lancamentos.map((lancamento) => (
+                  <tr key={lancamento.id} data-testid={`lancamento-row-${lancamento.id}`}>
+                    <td className="px-4 py-4 font-medium text-white">#{lancamento.id}</td>
+                    <td className="px-4 py-4 text-slate-200">#{lancamento.antecipacao_id}</td>
+                    <td className="px-4 py-4 text-slate-200">
+                      {profissionais.find((item) => item.id === lancamento.profissional_id)?.nome ??
+                        lancamento.profissional_id}
+                    </td>
+                    <td className="px-4 py-4 text-slate-200">{lancamento.data_sessao}</td>
+                    <td className="px-4 py-4 text-slate-200">
+                      {translateStatus('lancamentos', lancamento.status)}
+                    </td>
+                  </tr>
+                ))}
+                {lancamentos.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-8 text-center text-slate-300">
+                      Nenhum lançamento encontrado.
+                    </td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <div className="flex items-center justify-between gap-3">
+          <button
+            type="button"
+            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10 disabled:opacity-50"
+            onClick={() => setPage((current) => Math.max(1, current - 1))}
+            disabled={page <= 1 || lancamentosQuery.isFetching}
+          >
+            Anterior
+          </button>
+
+          <p className="text-sm text-slate-300">
+            Página {page} de {totalPages}
+          </p>
+
+          <button
+            type="button"
+            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10 disabled:opacity-50"
+            onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+            disabled={page >= totalPages || lancamentosQuery.isFetching}
+          >
+            Próxima
+          </button>
+        </div>
       </section>
     </div>
   )

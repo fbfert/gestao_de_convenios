@@ -36,7 +36,7 @@ class AuthController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
-                'role' => $user->getRoleNames()->first(),
+                'role' => $user->roles()->first()?->name ?? $user->getRoleNames()->first(),
                 'tenant' => [
                     'id' => $user->tenant->id,
                     'nome' => $user->tenant->nome,

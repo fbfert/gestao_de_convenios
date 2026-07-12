@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use Spatie\Permission\PermissionRegistrar;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -24,5 +25,7 @@ class DatabaseSeeder extends Seeder
             PacienteSeeder::class,
             TabelaValorSeeder::class,
         ]);
+
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 }

@@ -34,7 +34,9 @@
     { "key": "profissional_fisio_id", "value": "1" },
     { "key": "profissional_fono_id", "value": "2" },
     { "key": "profissional_aba_id", "value": "3" },
-    { "key": "medico_carlos_id", "value": "1" }
+    { "key": "medico_carlos_id", "value": "1" },
+    { "key": "usuario_admin_id", "value": "1" },
+    { "key": "role_admin_name", "value": "admin" }
   ],
   "item": [
     {
@@ -109,6 +111,154 @@
               "code": 200,
               "status": "OK",
               "body": "{\n  \"data\": {\n    \"id\": 1,\n    \"nome\": \"Dr. Carlos Almeida\",\n    \"crm\": \"CRM 123456\",\n    \"especialidade_medica\": \"Clínica Geral\",\n    \"telefone\": \"(11) 97777-0000\",\n    \"email\": \"carlos.almeida@clinica-exemplo.test\",\n    \"ativo\": false\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Permissoes",
+      "item": [
+        {
+          "name": "Listar papéis",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/roles"
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "url": "{{baseUrl}}/api/roles"
+              },
+              "code": 200,
+              "status": "OK",
+              "body": "{\n  \"data\": [\n    { \"id\": 1, \"name\": \"admin\" },\n    { \"id\": 2, \"name\": \"funcionario\" },\n    { \"id\": 3, \"name\": \"profissional\" }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Listar permissões",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/permissions"
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "url": "{{baseUrl}}/api/permissions"
+              },
+              "code": 200,
+              "status": "OK",
+              "body": "{\n  \"data\": [\n    { \"name\": \"antecipacoes.view\", \"domain\": \"antecipacoes\" },\n    { \"name\": \"guias.view\", \"domain\": \"guias\" }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Atualizar permissões do papel",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"permissions\": [\n    \"solicitacoes.view\",\n    \"usuarios.manage\"\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/api/roles/{{role_admin_name}}/permissions"
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "PUT",
+                "url": "{{baseUrl}}/api/roles/{{role_admin_name}}/permissions"
+              },
+              "code": 200,
+              "status": "OK",
+              "body": "{\n  \"data\": {\n    \"role\": {\n      \"id\": 1,\n      \"name\": \"admin\"\n    },\n    \"permissions\": [\n      { \"name\": \"solicitacoes.view\", \"domain\": \"solicitacoes\" },\n      { \"name\": \"usuarios.manage\", \"domain\": \"usuarios\" }\n    ]\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Usuarios",
+      "item": [
+        {
+          "name": "Listar usuarios",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/usuarios"
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "url": "{{baseUrl}}/api/usuarios"
+              },
+              "code": 200,
+              "status": "OK",
+              "body": "{\n  \"data\": [\n    {\n      \"id\": 1,\n      \"name\": \"Admin Clínica Exemplo\",\n      \"email\": \"admin@clinica-exemplo.test\",\n      \"ativo\": true,\n      \"role\": \"admin\",\n      \"profissional_id\": null\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Criar usuario",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Usuário Profissional Novo\",\n  \"email\": \"usuario.profissional.novo@clinica-exemplo.test\",\n  \"password\": \"password\",\n  \"role\": \"profissional\",\n  \"profissional_id\": 1,\n  \"ativo\": true\n}"
+            },
+            "url": "{{baseUrl}}/api/usuarios"
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "url": "{{baseUrl}}/api/usuarios"
+              },
+              "code": 201,
+              "status": "Created",
+              "body": "{\n  \"data\": {\n    \"id\": 4,\n    \"name\": \"Usuário Profissional Novo\",\n    \"email\": \"usuario.profissional.novo@clinica-exemplo.test\",\n    \"ativo\": true,\n    \"role\": \"profissional\",\n    \"profissional_id\": 1\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Atualizar usuario",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Profissional Reclassificado\",\n  \"role\": \"funcionario\",\n  \"ativo\": false\n}"
+            },
+            "url": "{{baseUrl}}/api/usuarios/{{usuario_admin_id}}"
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "PATCH",
+                "url": "{{baseUrl}}/api/usuarios/{{usuario_admin_id}}"
+              },
+              "code": 200,
+              "status": "OK",
+              "body": "{\n  \"data\": {\n    \"id\": 1,\n    \"name\": \"Profissional Reclassificado\",\n    \"email\": \"admin@clinica-exemplo.test\",\n    \"ativo\": false,\n    \"role\": \"funcionario\",\n    \"profissional_id\": null\n  }\n}"
             }
           ]
         }

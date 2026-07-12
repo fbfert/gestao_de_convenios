@@ -3,12 +3,16 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AntecipacaoController;
 use App\Http\Controllers\ConvenioController;
+use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\RoleController;
+use App\Http\Controllers\RolePermissionController;
 use App\Http\Controllers\EspecialidadeController;
 use App\Http\Controllers\ConciliacaoController;
 use App\Http\Controllers\GuiaController;
 use App\Http\Controllers\MedicoController;
 use App\Http\Controllers\LancamentoController;
 use App\Http\Controllers\PacienteController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\SolicitacaoController;
 use App\Http\Controllers\ProfissionalController;
 use Illuminate\Http\Request;
@@ -28,6 +32,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/medicos', [MedicoController::class, 'index'])->middleware('permission:medicos.manage');
     Route::post('/medicos', [MedicoController::class, 'store'])->middleware('permission:medicos.manage');
     Route::patch('/medicos/{medico}', [MedicoController::class, 'update'])->middleware('permission:medicos.manage');
+
+    Route::get('/roles', [RoleController::class, 'index'])->middleware('permission:permissoes.manage');
+    Route::get('/permissions', [PermissionController::class, 'index'])->middleware('permission:permissoes.manage');
+    Route::get('/roles/{role}/permissions', [RolePermissionController::class, 'show'])->middleware('permission:permissoes.manage');
+    Route::put('/roles/{role}/permissions', [RolePermissionController::class, 'update'])->middleware('permission:permissoes.manage');
+
+    Route::get('/usuarios', [UserController::class, 'index'])->middleware('permission:usuarios.manage');
+    Route::post('/usuarios', [UserController::class, 'store'])->middleware('permission:usuarios.manage');
+    Route::patch('/usuarios/{usuario}', [UserController::class, 'update'])->middleware('permission:usuarios.manage');
 
     Route::get('/solicitacoes', [SolicitacaoController::class, 'index']);
     Route::post('/solicitacoes', [SolicitacaoController::class, 'store']);

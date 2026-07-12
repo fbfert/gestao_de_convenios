@@ -7,8 +7,10 @@ use App\Models\Antecipacao;
 use App\Models\ConciliacaoFinanceira;
 use App\Models\Medico;
 use App\Models\Solicitacao;
+use App\Models\User;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Route;
+use Spatie\Permission\Models\Role;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -67,6 +69,25 @@ class AppServiceProvider extends ServiceProvider
             return Medico::query()
                 ->where('tenant_id', $tenantId)
                 ->whereKey($value)
+                ->firstOrFail();
+        });
+
+        Route::bind('usuario', function ($value) {
+            $tenantId = request()->user()?->tenant_id;
+
+            return User::query()
+                ->where('tenant_id', $tenantId)
+                ->whereKey($value)
+                ->firstOrFail();
+        });
+
+        Route::bind('role', function ($value) {
+            $tenantId = request()->user()?->tenant_id;
+
+            return Role::query()
+                ->where('tenant_id', $tenantId)
+                ->where('guard_name', 'web')
+                ->where('name', $value)
                 ->firstOrFail();
         });
     }

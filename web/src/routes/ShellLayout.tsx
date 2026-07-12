@@ -8,6 +8,7 @@ const navItems = [
   { to: '/antecipacoes', label: 'Antecipações' },
   { to: '/lancamentos', label: 'Lançamentos' },
   { to: '/conciliacao', label: 'Conciliação' },
+  { to: '/medicos', label: 'Médicos' },
 ]
 
 export function ShellLayout() {

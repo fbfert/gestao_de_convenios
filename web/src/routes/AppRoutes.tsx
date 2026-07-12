@@ -7,6 +7,7 @@ import { GuiasPage } from '../features/guias/GuiasPage'
 import { AntecipacoesPage } from '../features/antecipacoes/AntecipacoesPage'
 import { LancamentosPage } from '../features/lancamentos'
 import { ConciliacaoPage } from '../features/conciliacao'
+import { MedicosPage } from '../features/medicos'
 
 export function AppRoutes() {
   return (
@@ -20,6 +21,7 @@ export function AppRoutes() {
           <Route path="/antecipacoes" element={<AntecipacoesPage />} />
           <Route path="/lancamentos" element={<LancamentosPage />} />
           <Route path="/conciliacao" element={<ConciliacaoPage />} />
+          <Route path="/medicos" element={<MedicosPage />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/solicitacoes" replace />} />

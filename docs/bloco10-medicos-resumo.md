@@ -1,6 +1,6 @@
 # Bloco 10 - Medicos e solicitacoes
 
-Resumo do ajuste de contrato que trocou `solicitacoes.medico_solicitante` por `solicitacoes.medico_id` com a nova tabela `medicos`, e do CRUD backend de medicos.
+Resumo do ajuste de contrato que trocou `solicitacoes.medico_solicitante` por `solicitacoes.medico_id` com a nova tabela `medicos`, do CRUD backend de medicos e da tela de médicos no frontend.
 
 ## O que entrou no backend
 
@@ -43,6 +43,12 @@ Resumo do ajuste de contrato que trocou `solicitacoes.medico_solicitante` por `s
   - [`web/src/lib/queries/useReferenceData.ts`](../web/src/lib/queries/useReferenceData.ts)
 - E2E ajustado para o novo contrato:
   - [`web/tests/e2e/mvp-flow.spec.ts`](../web/tests/e2e/mvp-flow.spec.ts)
+- Tela de médicos no frontend:
+  - [`web/src/features/medicos/MedicosPage.tsx`](../web/src/features/medicos/MedicosPage.tsx)
+  - [`web/src/features/medicos/useMedicos.ts`](../web/src/features/medicos/useMedicos.ts)
+  - [`web/src/features/medicos/types.ts`](../web/src/features/medicos/types.ts)
+  - [`web/src/routes/ShellLayout.tsx`](../web/src/routes/ShellLayout.tsx)
+  - [`web/src/routes/AppRoutes.tsx`](../web/src/routes/AppRoutes.tsx)
 
 ## Decisoes registradas
 
@@ -53,6 +59,7 @@ Resumo do ajuste de contrato que trocou `solicitacoes.medico_solicitante` por `s
 - `POST /api/medicos` e `PATCH /api/medicos/{medico}` ficaram protegidos por `medicos.manage`.
 - O binding de `medico` foi amarrado ao tenant no `AppServiceProvider` para garantir 404 cross-tenant.
 - O tenant context foi limpo no middleware para evitar vazamento entre requests e testes.
+- O frontend ganhou menu e rota própria para `Médicos`, com lista, formulário de criação/edição e desativação.
 
 ## Validacoes feitas
 
@@ -60,6 +67,7 @@ Resumo do ajuste de contrato que trocou `solicitacoes.medico_solicitante` por `s
 - Backend: `php artisan test --filter=SolicitacoesApiTest` passou com `4 passed / 29 assertions`.
 - Frontend: `npm run build` passou.
 - Frontend: `npm run lint` passou.
+- Frontend: `http://127.0.0.1:4174/medicos` responde e o endpoint `GET /api/medicos` retorna a lista do tenant local.
 - E2E: testes individuais passaram:
   - fluxo completo de negocio
   - isolamento cross-tenant via browser

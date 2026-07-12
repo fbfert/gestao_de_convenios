@@ -122,6 +122,71 @@ class GuiasApiTest extends TestCase
             ]);
     }
 
+    public function test_profissional_so_enxerga_guias_proprias_na_listagem(): void
+    {
+        $user = $this->autenticarProfissional();
+        $tenant = Tenant::query()->where('slug', 'clinica-exemplo')->firstOrFail();
+        $profissionalProprio = Profissional::query()->findOrFail($user->profissional_id);
+        $profissionalOutro = Profissional::query()->where('id', '!=', $profissionalProprio->id)->firstOrFail();
+
+        $guiaPropria = Guia::query()->create([
+            'tenant_id' => $tenant->id,
+            'solicitacao_id' => null,
+            'convenio_id' => $this->convenioIdPorNome('Unimed'),
+            'paciente_id' => $this->pacienteIdPorConvenio($this->convenioIdPorNome('Unimed')),
+            'profissional_id' => $profissionalProprio->id,
+            'especialidade_id' => $profissionalProprio->especialidade_id,
+            'numero_guia' => 'GUIA-PRIVADA-'.uniqid(),
+            'tipo_terapia' => 'especializada',
+            'status' => 'under_review',
+            'data_solicitacao' => today(),
+            'data_finalizacao' => null,
+            'senha' => null,
+            'validade_senha' => null,
+            'observacoes' => null,
+        ]);
+
+        $guiaOutra = Guia::query()->create([
+            'tenant_id' => $tenant->id,
+            'solicitacao_id' => null,
+            'convenio_id' => $this->convenioIdPorNome('SC Saúde'),
+            'paciente_id' => $this->pacienteIdPorConvenio($this->convenioIdPorNome('SC Saúde')),
+            'profissional_id' => $profissionalOutro->id,
+            'especialidade_id' => $profissionalOutro->especialidade_id,
+            'numero_guia' => 'GUIA-PRIVADA-'.uniqid(),
+            'tipo_terapia' => 'convencional',
+            'status' => 'under_review',
+            'data_solicitacao' => today(),
+            'data_finalizacao' => null,
+            'senha' => null,
+            'validade_senha' => null,
+            'observacoes' => null,
+        ]);
+
+        $this->getJson('/api/guias')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $guiaPropria->id)
+            ->assertJsonMissing(['id' => $guiaOutra->id]);
+    }
+
+    public function test_usuario_sem_permissao_recebe_403_na_listagem(): void
+    {
+        $tenant = Tenant::query()->where('slug', 'clinica-exemplo')->firstOrFail();
+        $user = User::query()->create([
+            'tenant_id' => $tenant->id,
+            'name' => 'Sem Permissão Guia',
+            'email' => 'sempermissao.guias@clinica-exemplo.test',
+            'password' => 'password',
+            'ativo' => true,
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $this->getJson('/api/guias')
+            ->assertForbidden();
+    }
+
     public function test_usuario_de_um_tenant_nao_enxerga_guia_de_outro_tenant_via_http(): void
     {
         $guiaOutroTenant = $this->criarGuiaDeOutroTenant();
@@ -136,6 +201,14 @@ class GuiasApiTest extends TestCase
     {
         $user = User::query()->where('email', 'admin@clinica-exemplo.test')->firstOrFail();
         Sanctum::actingAs($user);
+    }
+
+    private function autenticarProfissional(): User
+    {
+        $user = User::query()->where('email', 'profissional@clinica-exemplo.test')->firstOrFail();
+        Sanctum::actingAs($user);
+
+        return $user;
     }
 
     private function payloadGuia(string $convenioNome): array
@@ -154,6 +227,11 @@ class GuiasApiTest extends TestCase
             'tipo_terapia' => 'especializada',
             'data_solicitacao' => today()->toDateString(),
         ];
+    }
+
+    private function convenioIdPorNome(string $nome): int
+    {
+        return Convenio::query()->where('nome', $nome)->firstOrFail()->id;
     }
 
     private function pacienteIdPorConvenio(int $convenioId): int

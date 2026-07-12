@@ -7,16 +7,25 @@ use App\Exceptions\ConvenioRegraNaoEncontradaException;
 use App\Models\Antecipacao;
 use App\Models\ConvenioRegra;
 use App\Models\Guia;
+use App\Services\Concerns\AppliesOwnScope;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
 
 class AntecipacaoService
 {
+    use AppliesOwnScope;
+
     public function listar(array $filtros = [], int $perPage = 15): LengthAwarePaginator
     {
-        return Antecipacao::query()
-            ->with(['guia', 'paciente', 'convenio'])
+        $query = $this->aplicarEscopoOwn(
+            Antecipacao::query()->with(['guia', 'paciente', 'convenio']),
+            'antecipacoes.view',
+            'antecipacoes.viewOwn',
+            fn ($query, $user) => $query->whereHas('guia', fn ($guiaQuery) => $guiaQuery->where('profissional_id', $user->profissional_id))
+        );
+
+        return $query
             ->when(Arr::get($filtros, 'status'), fn ($query, $status) => $query->where('status', $status))
             ->when(Arr::get($filtros, 'paciente_id'), fn ($query, $pacienteId) => $query->where('paciente_id', $pacienteId))
             ->when(Arr::get($filtros, 'convenio_id'), fn ($query, $convenioId) => $query->where('convenio_id', $convenioId))

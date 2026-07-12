@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Convenio;
 use App\Models\Especialidade;
+use App\Models\Medico;
 use App\Models\Paciente;
 use App\Models\Profissional;
 use App\Models\Tenant;
@@ -29,6 +30,8 @@ class SolicitacoesApiTest extends TestCase
         $create->assertCreated()
             ->assertJsonPath('data.status', 'under_review')
             ->assertJsonPath('data.convenio_id', $payload['convenio_id']);
+        $this->assertSame($payload['medico_id'], $create->json('data.medico_id'));
+        $this->assertSame('Dr. Carlos Almeida', $create->json('data.medico.nome'));
 
         $id = $create->json('data.id');
 
@@ -40,7 +43,8 @@ class SolicitacoesApiTest extends TestCase
         $this->getJson("/api/solicitacoes/{$id}")
             ->assertOk()
             ->assertJsonPath('data.id', $id)
-            ->assertJsonPath('data.status', 'under_review');
+            ->assertJsonPath('data.status', 'under_review')
+            ->assertJsonPath('data.medico.nome', 'Dr. Carlos Almeida');
     }
 
     public function test_criacao_valida_campos_obrigatorios(): void
@@ -54,7 +58,7 @@ class SolicitacoesApiTest extends TestCase
                 'profissional_id',
                 'especialidade_id',
                 'convenio_id',
-                'medico_solicitante',
+                'medico_id',
                 'solicitado_em',
             ]);
     }
@@ -105,13 +109,14 @@ class SolicitacoesApiTest extends TestCase
         $convenio = Convenio::query()->where('nome', $convenioNome)->firstOrFail();
         $especialidade = Especialidade::query()->where('nome', 'Fisioterapia')->firstOrFail();
         $profissional = Profissional::query()->where('especialidade_id', $especialidade->id)->firstOrFail();
+        $medico = Medico::query()->where('nome', 'Dr. Carlos Almeida')->firstOrFail();
 
         return [
             'paciente_id' => $this->pacienteIdPorConvenio($convenio->id),
             'profissional_id' => $profissional->id,
             'especialidade_id' => $especialidade->id,
             'convenio_id' => $convenio->id,
-            'medico_solicitante' => 'Dr. Carlos Almeida',
+            'medico_id' => $medico->id,
             'solicitado_em' => today()->toDateString(),
         ];
     }
@@ -169,7 +174,15 @@ class SolicitacoesApiTest extends TestCase
             'profissional_id' => $profissional->id,
             'especialidade_id' => $especialidade->id,
             'convenio_id' => $convenio->id,
-            'medico_solicitante' => 'Dr. Externo',
+            'medico_id' => Medico::query()->create([
+                'tenant_id' => $tenant->id,
+                'nome' => 'Dr. Externo',
+                'crm' => 'CRM 999999',
+                'especialidade_medica' => 'Clínica Geral',
+                'telefone' => '(11) 90000-0000',
+                'email' => 'externo@clinica-externa.test',
+                'ativo' => true,
+            ])->id,
             'status' => 'under_review',
             'solicitado_em' => today(),
             'observacoes' => null,

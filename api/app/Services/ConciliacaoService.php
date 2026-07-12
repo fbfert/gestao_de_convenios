@@ -6,12 +6,15 @@ use App\Exceptions\ConciliacaoStatusInvalidoException;
 use App\Models\ConciliacaoFinanceira;
 use App\Models\Guia;
 use App\Models\Lancamento;
+use App\Services\Concerns\AppliesOwnScope;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
 
 class ConciliacaoService
 {
+    use AppliesOwnScope;
+
     public function __construct(
         private readonly TabelaValoresService $tabelaValoresService
     ) {
@@ -19,8 +22,14 @@ class ConciliacaoService
 
     public function listar(array $filtros = [], int $perPage = 15): LengthAwarePaginator
     {
-        return ConciliacaoFinanceira::query()
-            ->with(['guia', 'profissional'])
+        $query = $this->aplicarEscopoOwn(
+            ConciliacaoFinanceira::query()->with(['guia', 'profissional']),
+            'conciliacoes.view',
+            'conciliacoes.viewOwn',
+            fn ($query, $user) => $query->where('profissional_id', $user->profissional_id)
+        );
+
+        return $query
             ->when(Arr::get($filtros, 'convenio_id'), fn ($query, $convenioId) => $query->whereHas('guia', fn ($guiaQuery) => $guiaQuery->where('convenio_id', $convenioId)))
             ->when(Arr::get($filtros, 'especialidade_id'), fn ($query, $especialidadeId) => $query->whereHas('guia', fn ($guiaQuery) => $guiaQuery->where('especialidade_id', $especialidadeId)))
             ->when(Arr::get($filtros, 'profissional_id'), fn ($query, $profissionalId) => $query->where('profissional_id', $profissionalId))

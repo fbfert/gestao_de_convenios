@@ -6,6 +6,7 @@ use App\Exceptions\GuiaStatusInvalidoException;
 use App\Models\Guia;
 use App\Support\TenantContext;
 use App\Models\ConvenioRegra;
+use App\Services\Concerns\AppliesOwnScope;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
@@ -13,6 +14,8 @@ use RuntimeException;
 
 class GuiaService
 {
+    use AppliesOwnScope;
+
     public function __construct(
         private readonly AntecipacaoService $antecipacaoService
     ) {
@@ -20,8 +23,14 @@ class GuiaService
 
     public function listar(array $filtros = [], int $perPage = 15): LengthAwarePaginator
     {
-        return Guia::query()
-            ->with(['solicitacao', 'convenio', 'paciente', 'profissional', 'especialidade'])
+        $query = $this->aplicarEscopoOwn(
+            Guia::query()->with(['solicitacao', 'convenio', 'paciente', 'profissional', 'especialidade']),
+            'guias.view',
+            'guias.viewOwn',
+            fn ($query, $user) => $query->where('profissional_id', $user->profissional_id)
+        );
+
+        return $query
             ->when(Arr::get($filtros, 'status'), fn ($query, $status) => $query->where('status', $status))
             ->when(Arr::get($filtros, 'convenio_id'), fn ($query, $convenioId) => $query->where('convenio_id', $convenioId))
             ->when(Arr::get($filtros, 'paciente_id'), fn ($query, $pacienteId) => $query->where('paciente_id', $pacienteId))

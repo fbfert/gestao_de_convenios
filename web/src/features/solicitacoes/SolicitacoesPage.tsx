@@ -11,6 +11,7 @@ import type { SolicitacaoFilters, SolicitacaoForm } from './types'
 import {
   useConvenios,
   useEspecialidades,
+  useMedicos,
   usePacientes,
   useProfissionais,
 } from '../../lib/queries/useReferenceData'
@@ -27,7 +28,7 @@ const emptyForm: SolicitacaoForm = {
   profissional_id: '',
   especialidade_id: '',
   convenio_id: '',
-  medico_solicitante: 'Dr. Carlos Almeida',
+  medico_id: '',
   solicitado_em: new Date().toISOString().slice(0, 10),
   observacoes: '',
 }
@@ -56,6 +57,7 @@ export function SolicitacoesPage() {
 
   const conveniosQuery = useConvenios()
   const especialidadesQuery = useEspecialidades()
+  const medicosQuery = useMedicos()
   const pacientesQuery = usePacientes({ convenio_id: form.convenio_id })
   const profissionaisQuery = useProfissionais({ especialidade_id: form.especialidade_id })
   const solicitacoesQuery = useSolicitacoes(filters, page)
@@ -73,8 +75,9 @@ export function SolicitacoesPage() {
     () => profissionaisQuery.data ?? emptyArray,
     [profissionaisQuery.data],
   )
+  const medicos = useMemo(() => medicosQuery.data ?? emptyArray, [medicosQuery.data])
 
-  const formReady = convenios.length > 0 && especialidades.length > 0
+  const formReady = convenios.length > 0 && especialidades.length > 0 && medicos.length > 0
   const formIsComplete =
     formReady &&
     pacientes.length > 0 &&
@@ -82,7 +85,8 @@ export function SolicitacoesPage() {
     form.convenio_id !== '' &&
     form.especialidade_id !== '' &&
     form.paciente_id !== '' &&
-    form.profissional_id !== ''
+    form.profissional_id !== '' &&
+    form.medico_id !== ''
 
   useEffect(() => {
     if (!formReady) {
@@ -141,6 +145,24 @@ export function SolicitacoesPage() {
   }, [profissionais])
 
   useEffect(() => {
+    if (medicos.length === 0) {
+      return
+    }
+
+    setForm((current) => {
+      const hasSelected = medicos.some((medico) => String(medico.id) === current.medico_id)
+      if (hasSelected) {
+        return current
+      }
+
+      return {
+        ...current,
+        medico_id: String(medicos[0].id),
+      }
+    })
+  }, [medicos])
+
+  useEffect(() => {
     if (convenios.length === 0 || especialidades.length === 0) {
       return
     }
@@ -177,6 +199,7 @@ export function SolicitacoesPage() {
         especialidade_id: current.especialidade_id,
         paciente_id: current.paciente_id,
         profissional_id: current.profissional_id,
+        medico_id: current.medico_id,
       }))
     } catch (error) {
       setFormError(getHttpErrorMessage(error, 'Não foi possível criar a solicitação.'))
@@ -358,18 +381,27 @@ export function SolicitacoesPage() {
 
           <label className="block space-y-2">
             <span className="text-sm font-medium text-slate-200">Médico solicitante</span>
-            <input
-              value={form.medico_solicitante}
+            <select
+              value={form.medico_id}
               onChange={(event) =>
                 setForm((current) => ({
                   ...current,
-                  medico_solicitante: event.target.value,
+                  medico_id: event.target.value,
                 }))
               }
               className={selectClasses()}
-              placeholder="Dr. Carlos Almeida"
               data-testid="solicitacao-medico"
-            />
+              disabled={medicosQuery.isLoading || medicos.length === 0}
+            >
+              <option value="" disabled>
+                Selecione
+              </option>
+              {medicos.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.nome}
+                </option>
+              ))}
+            </select>
           </label>
 
           <label className="block space-y-2">
@@ -529,7 +561,7 @@ export function SolicitacoesPage() {
                         </span>
                       </td>
                       <td className="px-4 py-4 text-slate-200">
-                        {solicitacao.medico_solicitante}
+                        {solicitacao.medico?.nome ?? solicitacao.medico_id}
                       </td>
                       <td className="px-4 py-4">
                         <div className="flex flex-wrap gap-2">

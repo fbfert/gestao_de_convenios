@@ -15,7 +15,7 @@ return new class extends Migration
             $table->foreignId('profissional_id')->constrained('profissionais')->restrictOnDelete();
             $table->foreignId('especialidade_id')->constrained('especialidades')->restrictOnDelete();
             $table->foreignId('convenio_id')->constrained('convenios')->restrictOnDelete();
-            $table->string('medico_solicitante');
+            $table->string('medico_solicitante')->nullable();
             $table->enum('status', ['under_review', 'approved', 'denied'])->default('under_review');
             $table->date('solicitado_em');
             $table->text('observacoes')->nullable();

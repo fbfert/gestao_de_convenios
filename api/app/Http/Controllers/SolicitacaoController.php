@@ -21,29 +21,29 @@ class SolicitacaoController extends Controller
     public function index(Request $request): AnonymousResourceCollection
     {
         return SolicitacaoResource::collection(
-            $this->service->listar($request->only(['status', 'convenio_id']), (int) $request->integer('per_page', 15))
+            $this->service->listar($request->only(['status', 'convenio_id', 'medico_id']), (int) $request->integer('per_page', 15))
         );
     }
 
     public function store(StoreSolicitacaoRequest $request): JsonResponse
     {
-        return (new SolicitacaoResource($this->service->criar($request->validated())))
+        return (new SolicitacaoResource($this->service->criar($request->validated())->load(['paciente', 'profissional', 'especialidade', 'convenio', 'medico'])))
             ->response()
             ->setStatusCode(201);
     }
 
     public function show(Solicitacao $solicitacao): SolicitacaoResource
     {
-        return new SolicitacaoResource($solicitacao->load(['paciente', 'profissional', 'especialidade', 'convenio']));
+        return new SolicitacaoResource($solicitacao->load(['paciente', 'profissional', 'especialidade', 'convenio', 'medico']));
     }
 
     public function aprovar(MutateSolicitacaoStatusRequest $request, Solicitacao $solicitacao): SolicitacaoResource
     {
-        return new SolicitacaoResource($this->service->aprovar($solicitacao));
+        return new SolicitacaoResource($this->service->aprovar($solicitacao)->load(['paciente', 'profissional', 'especialidade', 'convenio', 'medico']));
     }
 
     public function negar(MutateSolicitacaoStatusRequest $request, Solicitacao $solicitacao): SolicitacaoResource
     {
-        return new SolicitacaoResource($this->service->negar($solicitacao));
+        return new SolicitacaoResource($this->service->negar($solicitacao)->load(['paciente', 'profissional', 'especialidade', 'convenio', 'medico']));
     }
 }

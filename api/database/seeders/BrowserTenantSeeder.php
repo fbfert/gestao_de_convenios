@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Convenio;
 use App\Models\Especialidade;
 use App\Models\Guia;
+use App\Models\Medico;
 use App\Models\Paciente;
 use App\Models\Profissional;
 use App\Models\Solicitacao;
@@ -70,6 +71,20 @@ class BrowserTenantSeeder extends Seeder
             ],
         );
 
+        $medico = Medico::query()->updateOrCreate(
+            [
+                'tenant_id' => $tenant->id,
+                'crm' => 'CRM 998877',
+            ],
+            [
+                'nome' => 'Dr. Carlos Beta',
+                'especialidade_medica' => 'Clínica Geral',
+                'telefone' => '(11) 98888-9001',
+                'email' => 'carlos.beta@clinica-beta.test',
+                'ativo' => true,
+            ],
+        );
+
         $paciente = Paciente::query()->updateOrCreate(
             [
                 'tenant_id' => $tenant->id,
@@ -92,7 +107,7 @@ class BrowserTenantSeeder extends Seeder
                 'profissional_id' => $profissional->id,
                 'especialidade_id' => $especialidade->id,
                 'convenio_id' => $convenio->id,
-                'medico_solicitante' => 'Dr. Carlos Beta',
+                'medico_id' => $medico->id,
                 'solicitado_em' => '2026-07-10',
             ],
             [

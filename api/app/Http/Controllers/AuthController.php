@@ -9,6 +9,7 @@ use Illuminate\Http\Response;
 use Illuminate\Http\Request;
 use Laravel\Sanctum\PersonalAccessToken;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\PermissionRegistrar;
 
 class AuthController extends Controller
 {
@@ -25,6 +26,8 @@ class AuthController extends Controller
             ], 401);
         }
 
+        app(PermissionRegistrar::class)->setPermissionsTeamId($user->tenant_id);
+
         $token = $user->createToken('api')->plainTextToken;
 
         return response()->json([
@@ -33,7 +36,7 @@ class AuthController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
-                'role' => $user->role,
+                'role' => $user->getRoleNames()->first(),
                 'tenant' => [
                     'id' => $user->tenant->id,
                     'nome' => $user->tenant->nome,

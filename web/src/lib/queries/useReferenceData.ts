@@ -33,6 +33,16 @@ export type PacienteRef = {
   }
 }
 
+export type MedicoRef = {
+  id: number
+  nome: string
+  crm: string
+  especialidade_medica: string
+  telefone: string
+  email: string | null
+  ativo: boolean
+}
+
 type ListResponse<T> = {
   data: T[]
 }
@@ -84,6 +94,16 @@ export function usePacientes(filtros?: { busca?: string; convenio_id?: string | 
         },
       })
 
+      return data.data
+    },
+  })
+}
+
+export function useMedicos() {
+  return useQuery({
+    queryKey: ['medicos'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<ListResponse<MedicoRef>>('/medicos')
       return data.data
     },
   })

@@ -56,10 +56,48 @@ class AntecipacoesApiTest extends TestCase
             ->assertNotFound();
     }
 
+    public function test_profissional_so_enxerga_suas_antecipacoes_na_listagem(): void
+    {
+        $user = $this->autenticarProfissional();
+        $tenant = Tenant::query()->where('slug', 'clinica-exemplo')->firstOrFail();
+        $profissionalProprio = Profissional::query()->findOrFail($user->profissional_id);
+        $profissionalOutro = Profissional::query()->where('id', '!=', $profissionalProprio->id)->firstOrFail();
+
+        $antecipacaoPropria = $this->criarAntecipacaoParaProfissional(
+            $tenant,
+            $profissionalProprio,
+            'Unimed',
+            'especializada',
+            'ANTE-PRIVADA-'.uniqid()
+        );
+
+        $antecipacaoOutra = $this->criarAntecipacaoParaProfissional(
+            $tenant,
+            $profissionalOutro,
+            'SC Saúde',
+            'convencional',
+            'ANTE-PRIVADA-'.uniqid()
+        );
+
+        $this->getJson('/api/antecipacoes')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $antecipacaoPropria->id)
+            ->assertJsonMissing(['id' => $antecipacaoOutra->id]);
+    }
+
     private function autenticar(): void
     {
         $user = User::query()->where('email', 'admin@clinica-exemplo.test')->firstOrFail();
         Sanctum::actingAs($user);
+    }
+
+    private function autenticarProfissional(): User
+    {
+        $user = User::query()->where('email', 'profissional@clinica-exemplo.test')->firstOrFail();
+        Sanctum::actingAs($user);
+
+        return $user;
     }
 
     private function criarAntecipacaoAberta(string $convenioNome, string $especialidadeNome, string $tipoTerapia): Antecipacao
@@ -110,6 +148,33 @@ class AntecipacoesApiTest extends TestCase
         ]);
 
         return $guia;
+    }
+
+    private function criarAntecipacaoParaProfissional(Tenant $tenant, Profissional $profissional, string $convenioNome, string $tipoTerapia, string $prefixoNumero): Antecipacao
+    {
+        $convenio = Convenio::query()->where('nome', $convenioNome)->firstOrFail();
+        $paciente = Paciente::query()->where('convenio_id', $convenio->id)->firstOrFail();
+
+        $guia = Guia::query()->create([
+            'tenant_id' => $tenant->id,
+            'solicitacao_id' => null,
+            'convenio_id' => $convenio->id,
+            'paciente_id' => $paciente->id,
+            'profissional_id' => $profissional->id,
+            'especialidade_id' => $profissional->especialidade_id,
+            'numero_guia' => $prefixoNumero,
+            'tipo_terapia' => $tipoTerapia,
+            'status' => 'under_review',
+            'data_solicitacao' => today(),
+            'data_finalizacao' => null,
+            'senha' => null,
+            'validade_senha' => null,
+            'observacoes' => null,
+        ]);
+
+        return app(GuiaService::class)->finalizar($guia, [
+            'senha' => 'ABC123',
+        ])->antecipacoes()->firstOrFail();
     }
 
     private function criarAntecipacaoDeOutroTenant(): Antecipacao

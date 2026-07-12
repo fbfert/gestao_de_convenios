@@ -68,7 +68,6 @@ class AuthApiTest extends TestCase
             'name' => 'Usuário Inativo',
             'email' => 'inativo@clinica-exemplo.test',
             'password' => 'password',
-            'role' => 'operador',
             'ativo' => false,
         ]);
 
@@ -91,7 +90,6 @@ class AuthApiTest extends TestCase
             'name' => 'Admin Inativo',
             'email' => 'admin@clinica-inativa.test',
             'password' => 'password',
-            'role' => 'admin',
             'ativo' => true,
         ]);
 

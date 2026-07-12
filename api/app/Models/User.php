@@ -6,10 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable, HasRoles;
 
     /**
      * IMPORTANTE: User não usa o trait BelongsToTenant/TenantScope.
@@ -21,7 +22,7 @@ class User extends Authenticatable
      * desenho precisa ser revisto (ex: login por slug+e-mail).
      */
     protected $fillable = [
-        'tenant_id', 'name', 'email', 'password', 'role', 'ativo',
+        'tenant_id', 'name', 'email', 'password', 'profissional_id', 'ativo',
     ];
 
     protected $hidden = [
@@ -32,10 +33,16 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
         'ativo' => 'boolean',
+        'profissional_id' => 'integer',
     ];
 
     public function tenant()
     {
         return $this->belongsTo(Tenant::class);
+    }
+
+    public function profissional()
+    {
+        return $this->belongsTo(Profissional::class);
     }
 }

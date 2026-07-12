@@ -6,6 +6,7 @@ use App\Http\Controllers\ConvenioController;
 use App\Http\Controllers\EspecialidadeController;
 use App\Http\Controllers\ConciliacaoController;
 use App\Http\Controllers\GuiaController;
+use App\Http\Controllers\MedicoController;
 use App\Http\Controllers\LancamentoController;
 use App\Http\Controllers\PacienteController;
 use App\Http\Controllers\SolicitacaoController;
@@ -24,6 +25,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/profissionais', [ProfissionalController::class, 'index']);
     Route::get('/especialidades', [EspecialidadeController::class, 'index']);
     Route::get('/convenios', [ConvenioController::class, 'index']);
+    Route::get('/medicos', [MedicoController::class, 'index']);
 
     Route::get('/solicitacoes', [SolicitacaoController::class, 'index']);
     Route::post('/solicitacoes', [SolicitacaoController::class, 'store']);

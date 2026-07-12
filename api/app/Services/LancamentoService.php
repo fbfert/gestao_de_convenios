@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Antecipacao;
 use App\Models\Lancamento;
 use App\Models\Profissional;
+use App\Services\Concerns\AppliesOwnScope;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
@@ -12,6 +13,8 @@ use Illuminate\Support\Facades\DB;
 
 class LancamentoService
 {
+    use AppliesOwnScope;
+
     public function __construct(
         private readonly AntecipacaoService $antecipacaoService
     ) {
@@ -19,8 +22,14 @@ class LancamentoService
 
     public function listar(array $filtros = [], int $perPage = 15): LengthAwarePaginator
     {
-        return Lancamento::query()
-            ->with(['antecipacao', 'profissional'])
+        $query = $this->aplicarEscopoOwn(
+            Lancamento::query()->with(['antecipacao', 'profissional']),
+            'lancamentos.view',
+            'lancamentos.viewOwn',
+            fn ($query, $user) => $query->where('profissional_id', $user->profissional_id)
+        );
+
+        return $query
             ->when(Arr::get($filtros, 'profissional_id'), fn ($query, $profissionalId) => $query->where('profissional_id', $profissionalId))
             ->when(Arr::get($filtros, 'data_sessao'), fn ($query, $dataSessao) => $query->whereDate('data_sessao', $dataSessao))
             ->orderByDesc('id')

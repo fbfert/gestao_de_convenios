@@ -1,7 +1,7 @@
 import { expect, test, type Page, type TestInfo } from '@playwright/test'
 
 async function login(page: Page) {
-  await page.goto('/login')
+  await page.goto('/login', { waitUntil: 'domcontentloaded' })
   await expect(page.getByTestId('login-page')).toBeVisible()
   await page.getByTestId('login-email').fill('admin@clinica-exemplo.test')
   await page.getByTestId('login-password').fill('password')
@@ -25,7 +25,7 @@ async function login(page: Page) {
 test('fluxo completo de negocio', async ({ page }, testInfo: TestInfo) => {
   await login(page)
 
-  await page.goto('/solicitacoes')
+  await page.goto('/solicitacoes', { waitUntil: 'domcontentloaded' })
   await expect(page.getByTestId('solicitacoes-page')).toBeVisible()
   await page.getByTestId('solicitacao-convenio').selectOption({ label: 'Unimed' })
   await page.getByTestId('solicitacao-especialidade').selectOption({ label: 'Fisioterapia' })
@@ -35,20 +35,75 @@ test('fluxo completo de negocio', async ({ page }, testInfo: TestInfo) => {
   await page
     .getByTestId('solicitacao-profissional')
     .selectOption({ label: 'Dra. Marina Tavares · Fisioterapia' })
-  await page.getByTestId('solicitacao-medico').fill('Dr. Carlos Almeida')
+  await expect(page.getByTestId('solicitacao-medico').locator('option')).toHaveCount(4)
+  await page.getByTestId('solicitacao-medico').selectOption({ label: 'Dr. Carlos Almeida' })
+  const solicitacaoResponsePromise = page.waitForResponse((response) => {
+    return response.request().method() === 'POST' && response.url().includes('/solicitacoes')
+  })
   await page.getByTestId('solicitacao-submit').click()
+  const solicitacaoResponse = await solicitacaoResponsePromise
+  const solicitacaoResponseText = await solicitacaoResponse.text()
+  console.log(
+    `[E2E] POST /solicitacoes => ${solicitacaoResponse.status()} :: ${solicitacaoResponseText}`,
+  )
+  await expect(
+    solicitacaoResponse.status(),
+    `POST /solicitacoes retornou ${solicitacaoResponse.status()} com corpo: ${solicitacaoResponseText}`,
+  ).toBe(201)
 
   const solicitacaoRow = page.locator('[data-testid^="solicitacao-row-"]').first()
   await expect(solicitacaoRow).toBeVisible()
   await expect(solicitacaoRow).toContainText('Em análise')
   const solicitacaoId = Number((await solicitacaoRow.getAttribute('data-testid'))?.replace('solicitacao-row-', ''))
+  const aprovarResponsePromise = page.waitForResponse((response) => {
+    return (
+      response.request().method() === 'PATCH' &&
+      response.url().includes(`/solicitacoes/${solicitacaoId}/aprovar`)
+    )
+  })
   await page.getByTestId(`solicitacao-aprovar-${solicitacaoId}`).click()
+  const aprovarResponse = await aprovarResponsePromise
+  const aprovarResponseText = await aprovarResponse.text()
+  console.log(
+    `[E2E] PATCH /solicitacoes/${solicitacaoId}/aprovar => ${aprovarResponse.status()} :: ${aprovarResponseText}`,
+  )
+  await expect(
+    aprovarResponse.status(),
+    `PATCH /solicitacoes/${solicitacaoId}/aprovar retornou ${aprovarResponse.status()} com corpo: ${aprovarResponseText}`,
+  ).toBe(200)
   await expect(page.getByTestId(`solicitacao-status-${solicitacaoId}`)).toContainText('Aprovada')
 
-  await page.goto('/guias')
+  const conveniosGuiasResponsePromise = page.waitForResponse((response) => {
+    return response.request().method() === 'GET' && response.url().includes('/convenios')
+  })
+  const especialidadesGuiasResponsePromise = page.waitForResponse((response) => {
+    return response.request().method() === 'GET' && response.url().includes('/especialidades')
+  })
+
+  await page.goto('/guias', { waitUntil: 'domcontentloaded' })
   await expect(page.getByTestId('guias-page')).toBeVisible()
+  await Promise.all([conveniosGuiasResponsePromise, especialidadesGuiasResponsePromise])
+  await expect(page.getByTestId('guia-convenio').locator('option')).toHaveCount(3)
+  await expect(page.getByTestId('guia-especialidade').locator('option')).toHaveCount(3)
+  const pacientesResponsePromise = page.waitForResponse((response) => {
+    return (
+      response.request().method() === 'GET' &&
+      response.url().includes('/pacientes?') &&
+      response.url().includes('convenio_id=1')
+    )
+  })
   await page.getByTestId('guia-convenio').selectOption({ label: 'Unimed' })
-  await page.getByTestId('guia-especialidade').selectOption({ label: 'Fisioterapia' })
+  const pacientesResponse = await pacientesResponsePromise
+  const pacientesResponseText = await pacientesResponse.text()
+  console.log(
+    `[E2E] GET /pacientes?convenio_id=1 => ${pacientesResponse.status()} :: ${pacientesResponseText}`,
+  )
+  await expect(
+    pacientesResponse.status(),
+    `GET /pacientes?convenio_id=1 retornou ${pacientesResponse.status()} com corpo: ${pacientesResponseText}`,
+  ).toBe(200)
+  await expect(page.getByTestId('guia-paciente').locator('option')).toHaveCount(2)
+  await expect(page.getByTestId('guia-profissional').locator('option')).toHaveCount(1)
   await page
     .getByTestId('guia-paciente')
     .selectOption({ label: 'Ana Paula Ribeiro · UNI-2026-0001' })
@@ -85,8 +140,10 @@ test('fluxo completo de negocio', async ({ page }, testInfo: TestInfo) => {
   ).toBe(200)
   await expect(page.getByTestId(`guia-status-${guideId}`)).toHaveText('Finalizada')
 
-  await page.goto('/antecipacoes')
+  await page.goto('/antecipacoes', { waitUntil: 'domcontentloaded' })
   await expect(page.getByTestId('antecipacoes-page')).toBeVisible()
+  await expect(page.getByTestId('antecipacao-filtro-convenio').locator('option')).toHaveCount(4)
+  await expect(page.getByTestId('antecipacao-filtro-paciente').locator('option')).toHaveCount(7)
   await page.getByTestId('antecipacao-filtro-convenio').selectOption({ label: 'Unimed' })
   await page
     .getByTestId('antecipacao-filtro-paciente')
@@ -101,9 +158,15 @@ test('fluxo completo de negocio', async ({ page }, testInfo: TestInfo) => {
     '0/1',
   )
 
-  await page.goto(`/lancamentos?antecipacao_id=${antecipacaoId}`)
+  await page.goto(`/lancamentos?antecipacao_id=${antecipacaoId}`, {
+    waitUntil: 'domcontentloaded',
+  })
   await expect(page.getByTestId('lancamentos-page')).toBeVisible()
+  await expect(page.getByTestId('lancamento-profissional').locator('option')).toHaveCount(3)
   await page.getByTestId('lancamento-profissional').selectOption({ label: 'Dra. Marina Tavares' })
+  await expect(page.getByTestId('lancamento-antecipacao')).toHaveValue(String(antecipacaoId))
+  await expect(page.getByTestId('lancamento-profissional')).toHaveValue('1')
+  await expect(page.getByTestId('lancamento-submit')).toBeEnabled()
   const lancamentoResponsePromise = page.waitForResponse((response) => {
     return (
       response.request().method() === 'POST' &&
@@ -124,7 +187,7 @@ test('fluxo completo de negocio', async ({ page }, testInfo: TestInfo) => {
     `POST /antecipacoes/${antecipacaoId}/lancamentos retornou ${lancamentoResponse.status()} com corpo: ${lancamentoResponseText}`,
   ).toBe(201)
 
-  await page.goto('/antecipacoes')
+  await page.goto('/antecipacoes', { waitUntil: 'domcontentloaded' })
   await page.getByTestId('antecipacao-filtro-convenio').selectOption({ label: 'Unimed' })
   await page
     .getByTestId('antecipacao-filtro-paciente')
@@ -134,7 +197,21 @@ test('fluxo completo de negocio', async ({ page }, testInfo: TestInfo) => {
     '1/1',
   )
 
-  await page.goto('/guias')
+  const guiasListResponsePromise = page.waitForResponse((response) => {
+    return response.request().method() === 'GET' && response.url().includes('/guias?')
+  })
+  await page.goto('/guias', { waitUntil: 'domcontentloaded' })
+  const guiasListResponse = await guiasListResponsePromise
+  const guiasListResponseText = await guiasListResponse.text()
+  console.log(
+    `[E2E] GET /guias => ${guiasListResponse.status()} :: ${guiasListResponseText}`,
+  )
+  await expect(
+    guiasListResponse.status(),
+    `GET /guias retornou ${guiasListResponse.status()} com corpo: ${guiasListResponseText}`,
+  ).toBe(200)
+  await expect(page.getByTestId(`guia-status-${guideId}`)).toHaveText('Finalizada')
+  await expect(page.getByTestId(`guia-gerar-conciliacao-${guideId}`)).toBeEnabled()
   const conciliacaoResponsePromise = page.waitForResponse((response) => {
     return (
       response.request().method() === 'POST' &&
@@ -159,7 +236,7 @@ test('fluxo completo de negocio', async ({ page }, testInfo: TestInfo) => {
     return response.request().method() === 'GET' && response.url().includes('/conciliacoes')
   })
 
-  await page.goto('/conciliacao')
+  await page.goto('/conciliacao', { waitUntil: 'domcontentloaded' })
 
   const conciliacaoListResponse = await conciliacaoListResponsePromise
   const conciliacaoListResponseText = await conciliacaoListResponse.text()
@@ -192,16 +269,15 @@ test('fluxo completo de negocio', async ({ page }, testInfo: TestInfo) => {
   await page.getByTestId('shell-logout').click()
   await expect(page).toHaveURL(/\/login$/)
   console.log('[E2E] logout done')
-  await page.goto('/')
+  await page.goto('/', { waitUntil: 'domcontentloaded' })
   await expect(page).toHaveURL(/\/login$/)
   console.log('[E2E] redirect after logout done')
-  await page.close()
 })
 
 test('isolamento cross-tenant via browser', async ({ page }) => {
   await login(page)
 
-  await page.goto('/guias')
+  await page.goto('/guias', { waitUntil: 'domcontentloaded' })
   await expect(page.getByTestId('guias-page')).toBeVisible()
   const clean = await page.getByTestId('guias-page').evaluate((node, needle) => {
     return !node.textContent?.includes(String(needle))
@@ -211,7 +287,7 @@ test('isolamento cross-tenant via browser', async ({ page }) => {
 })
 
 test('guard de rota sem autenticacao', async ({ page }) => {
-  await page.goto('/guias')
+  await page.goto('/guias', { waitUntil: 'domcontentloaded' })
   await expect(page).toHaveURL(/\/login$/)
   await expect(page.getByTestId('login-page')).toBeVisible()
   await expect(page.getByTestId('guias-page')).toHaveCount(0)

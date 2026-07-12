@@ -22,6 +22,10 @@ especialidades
 profissionais
   id, tenant_id, nome, especialidade_id (FK), conselho_registro, ativo
 
+medicos
+  id, tenant_id, nome, crm, especialidade_medica, telefone, email (nullable),
+  ativo
+
 convenios
   id, tenant_id, nome, connector_type (manual|api|scraping),
   connector_config (json, nullable), ativo
@@ -41,7 +45,7 @@ pacientes
 
 solicitacoes
   id, tenant_id, paciente_id (FK), profissional_id (FK), especialidade_id (FK),
-  convenio_id (FK), medico_solicitante (string),
+  convenio_id (FK), medico_id (FK, nullable),
   status (under_review|approved|denied),
   solicitado_em (date), observacoes (text, nullable)
 
@@ -172,4 +176,3 @@ financeiro_lancamentos
 O `guia_id` nullable em `agendamentos` é o ponto de fusão: a sessão agendada
 passa a consumir a `antecipacao` diretamente, eliminando o lançamento duplicado
 que existe hoje entre agenda e controle de convênio.
-

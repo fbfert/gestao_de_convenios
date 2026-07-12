@@ -36,6 +36,7 @@ export function useCriarSolicitacao() {
         profissional_id: Number(payload.profissional_id),
         especialidade_id: Number(payload.especialidade_id),
         convenio_id: Number(payload.convenio_id),
+        medico_id: Number(payload.medico_id),
       })
 
       return data.data

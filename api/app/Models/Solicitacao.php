@@ -14,10 +14,11 @@ class Solicitacao extends Model
 
     protected $fillable = [
         'tenant_id', 'paciente_id', 'profissional_id', 'especialidade_id',
-        'convenio_id', 'medico_solicitante', 'status', 'solicitado_em', 'observacoes',
+        'convenio_id', 'medico_id', 'status', 'solicitado_em', 'observacoes',
     ];
 
     protected $casts = [
+        'medico_id' => 'integer',
         'solicitado_em' => 'date',
     ];
 
@@ -39,6 +40,11 @@ class Solicitacao extends Model
     public function convenio()
     {
         return $this->belongsTo(Convenio::class);
+    }
+
+    public function medico()
+    {
+        return $this->belongsTo(Medico::class);
     }
 
     public function guia()

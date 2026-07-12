@@ -33,9 +33,35 @@
     { "key": "paciente_celos_id", "value": "3" },
     { "key": "profissional_fisio_id", "value": "1" },
     { "key": "profissional_fono_id", "value": "2" },
-    { "key": "profissional_aba_id", "value": "3" }
+    { "key": "profissional_aba_id", "value": "3" },
+    { "key": "medico_carlos_id", "value": "1" }
   ],
   "item": [
+    {
+      "name": "Medicos",
+      "item": [
+        {
+          "name": "Listar medicos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/medicos"
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "url": "{{baseUrl}}/api/medicos"
+              },
+              "code": 200,
+              "status": "OK",
+              "body": "{\n  \"data\": [\n    {\n      \"id\": 1,\n      \"nome\": \"Dr. Carlos Almeida\",\n      \"crm\": \"CRM 123456\",\n      \"especialidade_medica\": \"Clínica Geral\",\n      \"telefone\": \"(11) 95555-0101\",\n      \"email\": \"carlos.almeida@clinica-exemplo.test\",\n      \"ativo\": true\n    }\n  ]\n}"
+            }
+          ]
+        }
+      ]
+    },
     {
       "name": "Solicitacoes",
       "item": [
@@ -55,7 +81,7 @@
               },
               "code": 200,
               "status": "OK",
-              "body": "{\n  \"data\": [\n    {\n      \"id\": 1,\n      \"status\": \"under_review\",\n      \"convenio_id\": 1,\n      \"paciente_id\": 1,\n      \"profissional_id\": 1,\n      \"especialidade_id\": 1,\n      \"medico_solicitante\": \"Dr. Carlos Almeida\"\n    }\n  ]\n}"
+              "body": "{\n  \"data\": [\n    {\n      \"id\": 1,\n      \"status\": \"under_review\",\n      \"convenio_id\": 1,\n      \"paciente_id\": 1,\n      \"profissional_id\": 1,\n      \"especialidade_id\": 1,\n      \"medico_id\": 1,\n      \"medico\": {\n        \"id\": 1,\n        \"nome\": \"Dr. Carlos Almeida\",\n        \"crm\": \"CRM 123456\",\n        \"especialidade_medica\": \"Clínica Geral\"\n      }\n    }\n  ]\n}"
             }
           ]
         },
@@ -68,7 +94,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"paciente_id\": {{paciente_unimed_id}},\n  \"profissional_id\": {{profissional_fisio_id}},\n  \"especialidade_id\": {{fisioterapia_id}},\n  \"convenio_id\": {{unimed_id}},\n  \"medico_solicitante\": \"Dr. Carlos Almeida\",\n  \"solicitado_em\": \"2026-07-09\"\n}"
+              "raw": "{\n  \"paciente_id\": {{paciente_unimed_id}},\n  \"profissional_id\": {{profissional_fisio_id}},\n  \"especialidade_id\": {{fisioterapia_id}},\n  \"convenio_id\": {{unimed_id}},\n  \"medico_id\": {{medico_carlos_id}},\n  \"solicitado_em\": \"2026-07-09\"\n}"
             },
             "url": "{{baseUrl}}/api/solicitacoes"
           },
@@ -81,7 +107,7 @@
               },
               "code": 201,
               "status": "Created",
-              "body": "{\n  \"data\": {\n    \"id\": 10,\n    \"status\": \"under_review\",\n    \"convenio_id\": 1,\n    \"medico_solicitante\": \"Dr. Carlos Almeida\"\n  }\n}"
+              "body": "{\n  \"data\": {\n    \"id\": 10,\n    \"status\": \"under_review\",\n    \"convenio_id\": 1,\n    \"medico_id\": 1,\n    \"medico\": {\n      \"id\": 1,\n      \"nome\": \"Dr. Carlos Almeida\",\n      \"crm\": \"CRM 123456\",\n      \"especialidade_medica\": \"Clínica Geral\"\n    }\n  }\n}"
             }
           ]
         },

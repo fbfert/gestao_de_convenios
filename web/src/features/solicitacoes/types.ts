@@ -4,7 +4,13 @@ export type Solicitacao = {
   profissional_id: number
   especialidade_id: number
   convenio_id: number
-  medico_solicitante: string
+  medico_id: number
+  medico?: {
+    id: number
+    nome: string
+    crm: string
+    especialidade_medica: string
+  }
   status: string
   solicitado_em: string
   observacoes: string | null
@@ -39,7 +45,7 @@ export type SolicitacaoForm = {
   profissional_id: string
   especialidade_id: string
   convenio_id: string
-  medico_solicitante: string
+  medico_id: string
   solicitado_em: string
   observacoes: string
 }

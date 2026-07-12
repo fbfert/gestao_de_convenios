@@ -6,6 +6,7 @@ use App\Models\Convenio;
 use App\Models\Especialidade;
 use App\Models\Guia;
 use App\Models\Lancamento;
+use App\Models\Medico;
 use App\Models\Paciente;
 use App\Models\Profissional;
 use App\Models\Solicitacao;
@@ -29,6 +30,7 @@ class FluxoConvenioCompletoTest extends TestCase
         $convenio = Convenio::query()->where('nome', 'Unimed')->firstOrFail();
         $especialidade = Especialidade::query()->where('nome', 'Fisioterapia')->firstOrFail();
         $profissional = Profissional::query()->where('nome', 'Dra. Marina Tavares')->firstOrFail();
+        $medico = Medico::query()->where('nome', 'Dr. Carlos Almeida')->firstOrFail();
         $paciente = Paciente::query()->where('nome', 'Ana Paula Ribeiro')->firstOrFail();
 
         $solicitacao = Solicitacao::query()->create([
@@ -37,7 +39,7 @@ class FluxoConvenioCompletoTest extends TestCase
             'profissional_id' => $profissional->id,
             'especialidade_id' => $especialidade->id,
             'convenio_id' => $convenio->id,
-            'medico_solicitante' => 'Dr. Carlos Almeida',
+            'medico_id' => $medico->id,
             'status' => 'approved',
             'solicitado_em' => today(),
             'observacoes' => null,

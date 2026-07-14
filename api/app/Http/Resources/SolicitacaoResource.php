@@ -22,6 +22,14 @@ class SolicitacaoResource extends JsonResource
                 'crm' => $this->medico->crm,
                 'especialidade_medica' => $this->medico->especialidade_medica,
             ]),
+            'paciente' => $this->whenLoaded('paciente', fn () => [
+                'id' => $this->paciente->id,
+                'nome' => $this->paciente->nome,
+                'carteirinha' => $this->paciente->carteirinha,
+            ]),
+            'guia' => $this->relationLoaded('guia') && $this->guia
+                ? GuiaResource::make($this->guia)
+                : null,
             'status' => $this->status,
             'solicitado_em' => $this->solicitado_em?->toDateString(),
             'observacoes' => $this->observacoes,

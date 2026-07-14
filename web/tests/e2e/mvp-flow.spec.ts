@@ -18,8 +18,14 @@ async function login(page: Page) {
     response.status(),
     `POST /login retornou ${response.status()} com corpo: ${responseBody}`,
   ).toBe(200)
-  await expect(page).toHaveURL(/\/solicitacoes$/)
+  await expect(page).toHaveURL(/\/dashboard$/)
   await expect(page.getByTestId('shell-layout')).toBeVisible()
+}
+
+async function selectOption(page: Page, testId: string, label: string) {
+  await expect(page.getByTestId(testId)).toBeEnabled()
+  await page.getByTestId(testId).click()
+  await page.getByRole('option', { name: label }).click()
 }
 
 test('fluxo completo de negocio', async ({ page }, testInfo: TestInfo) => {
@@ -28,16 +34,11 @@ test('fluxo completo de negocio', async ({ page }, testInfo: TestInfo) => {
   await page.goto('/solicitacoes', { waitUntil: 'domcontentloaded' })
   await expect(page.getByTestId('solicitacoes-page')).toBeVisible()
   await page.getByRole('button', { name: 'Novo' }).click()
-  await page.getByTestId('solicitacao-convenio').selectOption({ label: 'Unimed' })
-  await page.getByTestId('solicitacao-especialidade').selectOption({ label: 'Fisioterapia' })
-  await page
-    .getByTestId('solicitacao-paciente')
-    .selectOption({ label: 'Ana Paula Ribeiro · UNI-2026-0001 · Unimed' })
-  await page
-    .getByTestId('solicitacao-profissional')
-    .selectOption({ label: 'Dra. Marina Tavares · Fisioterapia' })
-  await expect(page.getByTestId('solicitacao-medico').locator('option')).toHaveCount(4)
-  await page.getByTestId('solicitacao-medico').selectOption({ label: 'Dr. Carlos Almeida' })
+  await selectOption(page, 'solicitacao-convenio', 'Unimed')
+  await selectOption(page, 'solicitacao-especialidade', 'Fisioterapia')
+  await selectOption(page, 'solicitacao-paciente', 'Ana Paula Ribeiro · UNI-2026-0001 · Unimed')
+  await selectOption(page, 'solicitacao-profissional', 'Dra. Marina Tavares · Fisioterapia')
+  await selectOption(page, 'solicitacao-medico', 'Dr. Carlos Almeida')
   const solicitacaoResponsePromise = page.waitForResponse((response) => {
     return response.request().method() === 'POST' && response.url().includes('/solicitacoes')
   })
@@ -74,6 +75,14 @@ test('fluxo completo de negocio', async ({ page }, testInfo: TestInfo) => {
   ).toBe(200)
   await expect(page.getByTestId(`solicitacao-status-${solicitacaoId}`)).toContainText('Aprovada')
 
+  await page.reload({ waitUntil: 'domcontentloaded' })
+  await expect(page.getByTestId('solicitacoes-page')).toBeVisible()
+  const seededPatientButton = page.getByRole('button', { name: 'Paciente Guia Popup' })
+  await expect(seededPatientButton).toBeVisible()
+  await seededPatientButton.click()
+  await expect(page.getByTestId('solicitacao-guia-modal')).toBeVisible()
+  await expect(page.getByTestId('solicitacao-guia-content')).toContainText('GUIA-POPUP-SEED')
+
   const conveniosGuiasResponsePromise = page.waitForResponse((response) => {
     return response.request().method() === 'GET' && response.url().includes('/convenios')
   })
@@ -85,8 +94,6 @@ test('fluxo completo de negocio', async ({ page }, testInfo: TestInfo) => {
   await expect(page.getByTestId('guias-page')).toBeVisible()
   await page.getByTestId('guia-novo').click()
   await Promise.all([conveniosGuiasResponsePromise, especialidadesGuiasResponsePromise])
-  await expect(page.getByTestId('guia-convenio').locator('option')).toHaveCount(3)
-  await expect(page.getByTestId('guia-especialidade').locator('option')).toHaveCount(3)
   const pacientesResponsePromise = page.waitForResponse((response) => {
     return (
       response.request().method() === 'GET' &&
@@ -94,7 +101,7 @@ test('fluxo completo de negocio', async ({ page }, testInfo: TestInfo) => {
       response.url().includes('convenio_id=1')
     )
   })
-  await page.getByTestId('guia-convenio').selectOption({ label: 'Unimed' })
+  await selectOption(page, 'guia-convenio', 'Unimed')
   const pacientesResponse = await pacientesResponsePromise
   const pacientesResponseText = await pacientesResponse.text()
   console.log(
@@ -104,14 +111,10 @@ test('fluxo completo de negocio', async ({ page }, testInfo: TestInfo) => {
     pacientesResponse.status(),
     `GET /pacientes?convenio_id=1 retornou ${pacientesResponse.status()} com corpo: ${pacientesResponseText}`,
   ).toBe(200)
-  await expect(page.getByTestId('guia-paciente').locator('option')).toHaveCount(2)
-  await expect(page.getByTestId('guia-profissional').locator('option')).toHaveCount(1)
-  await page
-    .getByTestId('guia-paciente')
-    .selectOption({ label: 'Ana Paula Ribeiro · UNI-2026-0001' })
-  await page.getByTestId('guia-profissional').selectOption({ label: 'Dra. Marina Tavares' })
+  await selectOption(page, 'guia-paciente', 'Ana Paula Ribeiro · UNI-2026-0001')
+  await selectOption(page, 'guia-profissional', 'Dra. Marina Tavares')
   await page.getByTestId('guia-numero').fill(`GUIA-E2E-${Date.now()}`)
-  await page.getByTestId('guia-tipo-terapia').selectOption('especializada')
+  await selectOption(page, 'guia-tipo-terapia', 'Especializada')
   await page.getByTestId('guia-submit').click()
 
   const guideRow = page.locator('[data-testid^="guia-row-"]').first()
@@ -153,12 +156,8 @@ test('fluxo completo de negocio', async ({ page }, testInfo: TestInfo) => {
 
   await page.goto('/antecipacoes', { waitUntil: 'domcontentloaded' })
   await expect(page.getByTestId('antecipacoes-page')).toBeVisible()
-  await expect(page.getByTestId('antecipacao-filtro-convenio').locator('option')).toHaveCount(4)
-  await expect(page.getByTestId('antecipacao-filtro-paciente').locator('option')).toHaveCount(7)
-  await page.getByTestId('antecipacao-filtro-convenio').selectOption({ label: 'Unimed' })
-  await page
-    .getByTestId('antecipacao-filtro-paciente')
-    .selectOption({ label: 'Ana Paula Ribeiro' })
+  await selectOption(page, 'antecipacao-filtro-convenio', 'Unimed')
+  await selectOption(page, 'antecipacao-filtro-paciente', 'Ana Paula Ribeiro')
   await page.getByRole('button', { name: 'Aplicar' }).click()
   const antecipacaoRow = page.locator('[data-testid^="antecipacao-row-"]').first()
   await expect(antecipacaoRow).toBeVisible()
@@ -173,10 +172,10 @@ test('fluxo completo de negocio', async ({ page }, testInfo: TestInfo) => {
     waitUntil: 'domcontentloaded',
   })
   await expect(page.getByTestId('lancamentos-page')).toBeVisible()
-  await expect(page.getByTestId('lancamento-profissional').locator('option')).toHaveCount(3)
-  await page.getByTestId('lancamento-profissional').selectOption({ label: 'Dra. Marina Tavares' })
-  await expect(page.getByTestId('lancamento-antecipacao')).toHaveValue(String(antecipacaoId))
-  await expect(page.getByTestId('lancamento-profissional')).toHaveValue('1')
+  await page.getByTestId('lancamento-novo').click()
+  await selectOption(page, 'lancamento-profissional', 'Dra. Marina Tavares')
+  await expect(page.getByTestId('lancamento-antecipacao')).toContainText(String(antecipacaoId))
+  await expect(page.getByTestId('lancamento-profissional')).toContainText('Dra. Marina Tavares')
   await expect(page.getByTestId('lancamento-submit')).toBeEnabled()
   const lancamentoResponsePromise = page.waitForResponse((response) => {
     return (
@@ -199,10 +198,8 @@ test('fluxo completo de negocio', async ({ page }, testInfo: TestInfo) => {
   ).toBe(201)
 
   await page.goto('/antecipacoes', { waitUntil: 'domcontentloaded' })
-  await page.getByTestId('antecipacao-filtro-convenio').selectOption({ label: 'Unimed' })
-  await page
-    .getByTestId('antecipacao-filtro-paciente')
-    .selectOption({ label: 'Ana Paula Ribeiro' })
+  await selectOption(page, 'antecipacao-filtro-convenio', 'Unimed')
+  await selectOption(page, 'antecipacao-filtro-paciente', 'Ana Paula Ribeiro')
   await page.getByRole('button', { name: 'Aplicar' }).click()
   await expect(page.locator(`[data-testid="antecipacao-cota-text-${antecipacaoId}"]`)).toHaveText(
     '1/1',

@@ -14,7 +14,19 @@ class SolicitacaoService
     public function listar(array $filtros = [], int $perPage = 15): LengthAwarePaginator
     {
         return Solicitacao::query()
-            ->with(['paciente', 'profissional', 'especialidade', 'convenio', 'medico'])
+            ->with([
+                'paciente',
+                'profissional',
+                'especialidade',
+                'convenio',
+                'medico',
+                'guia.paciente',
+                'guia.convenio',
+                'guia.profissional',
+                'guia.especialidade',
+                'guia.antecipacoes',
+                'guia.conciliacoes',
+            ])
             ->when(Arr::get($filtros, 'status'), fn ($query, $status) => $query->where('status', $status))
             ->when(Arr::get($filtros, 'convenio_id'), fn ($query, $convenioId) => $query->where('convenio_id', $convenioId))
             ->when(Arr::get($filtros, 'medico_id'), fn ($query, $medicoId) => $query->where('medico_id', $medicoId))

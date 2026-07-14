@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Convenio;
 use App\Models\Especialidade;
+use App\Models\Guia;
 use App\Models\Medico;
 use App\Models\Paciente;
 use App\Models\Profissional;
@@ -34,17 +35,38 @@ class SolicitacoesApiTest extends TestCase
         $this->assertSame('Dr. Carlos Almeida', $create->json('data.medico.nome'));
 
         $id = $create->json('data.id');
+        $tenantId = Tenant::query()->where('slug', 'clinica-exemplo')->value('id');
+
+        $guia = Guia::query()->create([
+            'tenant_id' => $tenantId,
+            'solicitacao_id' => $id,
+            'convenio_id' => $payload['convenio_id'],
+            'paciente_id' => $payload['paciente_id'],
+            'profissional_id' => $payload['profissional_id'],
+            'especialidade_id' => $payload['especialidade_id'],
+            'numero_guia' => 'GUIA-SOLICITACAO-'.uniqid(),
+            'tipo_terapia' => 'convencional',
+            'status' => 'under_review',
+            'data_solicitacao' => today(),
+            'data_finalizacao' => null,
+            'senha' => null,
+            'validade_senha' => null,
+            'observacoes' => null,
+        ]);
 
         $this->getJson('/api/solicitacoes?status=under_review&convenio_id='.$payload['convenio_id'])
             ->assertOk()
             ->assertJsonPath('data.0.id', $id)
-            ->assertJsonPath('data.0.status', 'under_review');
+            ->assertJsonPath('data.0.status', 'under_review')
+            ->assertJsonPath('data.0.guia.id', $guia->id)
+            ->assertJsonPath('data.0.guia.numero_guia', $guia->numero_guia);
 
         $this->getJson("/api/solicitacoes/{$id}")
             ->assertOk()
             ->assertJsonPath('data.id', $id)
             ->assertJsonPath('data.status', 'under_review')
-            ->assertJsonPath('data.medico.nome', 'Dr. Carlos Almeida');
+            ->assertJsonPath('data.medico.nome', 'Dr. Carlos Almeida')
+            ->assertJsonPath('data.guia.id', $guia->id);
     }
 
     public function test_criacao_valida_campos_obrigatorios(): void

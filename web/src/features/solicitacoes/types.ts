@@ -1,3 +1,5 @@
+import type { Guia } from '../guias/types'
+
 export type Solicitacao = {
   id: number
   paciente_id: number
@@ -11,9 +13,15 @@ export type Solicitacao = {
     crm: string
     especialidade_medica: string
   }
+  paciente?: {
+    id: number
+    nome: string
+    carteirinha: string
+  }
   status: string
   solicitado_em: string
   observacoes: string | null
+  guia?: Guia | null
 }
 
 export type PaginatedResponse<T> = {

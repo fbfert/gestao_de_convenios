@@ -8,7 +8,7 @@ import {
   useNegarSolicitacao,
   useSolicitacoes,
 } from './useSolicitacoes'
-import type { SolicitacaoFilters, SolicitacaoForm } from './types'
+import type { Solicitacao, SolicitacaoFilters, SolicitacaoForm } from './types'
 import {
   useConvenios,
   useEspecialidades,
@@ -16,6 +16,7 @@ import {
   usePacientes,
   useProfissionais,
 } from '../../lib/queries/useReferenceData'
+import { SolicitacaoGuiaModal } from './SolicitacaoGuiaModal'
 
 const emptyArray: never[] = []
 
@@ -54,6 +55,7 @@ export function SolicitacoesPage() {
   const [draftFilters, setDraftFilters] = useState(defaultFilters)
   const [page, setPage] = useState(1)
   const [isFormOpen, setIsFormOpen] = useState(false)
+  const [selectedSolicitacao, setSelectedSolicitacao] = useState<Solicitacao | null>(null)
   const [form, setForm] = useState<SolicitacaoForm>(emptyForm)
   const [formError, setFormError] = useState<string | null>(null)
 
@@ -560,8 +562,16 @@ export function SolicitacoesPage() {
                   <tr key={solicitacao.id} data-testid={`solicitacao-row-${solicitacao.id}`}>
                     <td className="px-4 py-4 font-medium text-white">#{solicitacao.id}</td>
                     <td className="px-4 py-4 text-slate-200">
-                      {pacientes.find((item) => item.id === solicitacao.paciente_id)?.nome ??
-                        solicitacao.paciente_id}
+                      <button
+                        type="button"
+                        className="text-left font-medium text-cyan-100 underline decoration-cyan-400/40 underline-offset-4 transition hover:text-cyan-50"
+                        onClick={() => setSelectedSolicitacao(solicitacao)}
+                        data-testid={`solicitacao-paciente-${solicitacao.id}`}
+                      >
+                        {solicitacao.paciente?.nome ??
+                          pacientes.find((item) => item.id === solicitacao.paciente_id)?.nome ??
+                          solicitacao.paciente_id}
+                      </button>
                     </td>
                     <td className="px-4 py-4 text-slate-200">
                       {convenios.find((item) => item.id === solicitacao.convenio_id)?.nome ??
@@ -640,6 +650,11 @@ export function SolicitacoesPage() {
           </button>
         </div>
       </section>
+
+      <SolicitacaoGuiaModal
+        solicitacao={selectedSolicitacao}
+        onClose={() => setSelectedSolicitacao(null)}
+      />
     </div>
   )
 }

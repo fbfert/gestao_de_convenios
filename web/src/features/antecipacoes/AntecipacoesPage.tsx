@@ -1,5 +1,6 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
+import { Select } from '../../components/ui/Select'
 import { translateStatus } from '../../lib/statusLabels'
 import { useConvenios, usePacientes } from '../../lib/queries/useReferenceData'
 import { useAntecipacoes } from './useAntecipacoes'
@@ -55,7 +56,7 @@ export function AntecipacoesPage() {
         <form className="grid gap-3 md:grid-cols-3 xl:grid-cols-4" onSubmit={handleFilterSubmit}>
           <label className="space-y-2">
             <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Status</span>
-            <select
+            <Select
               value={draftFilters.status}
               onChange={(event) =>
                 setDraftFilters((current) => ({ ...current, status: event.target.value }))
@@ -66,12 +67,12 @@ export function AntecipacoesPage() {
               <option value="">Todos</option>
               <option value="open">Aberta</option>
               <option value="closed">Fechada</option>
-            </select>
+            </Select>
           </label>
 
           <label className="space-y-2">
             <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Paciente</span>
-            <select
+            <Select
               value={draftFilters.paciente_id}
               onChange={(event) =>
                 setDraftFilters((current) => ({ ...current, paciente_id: event.target.value }))
@@ -85,12 +86,12 @@ export function AntecipacoesPage() {
                   {item.nome}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
 
           <label className="space-y-2">
             <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Convênio</span>
-            <select
+            <Select
               value={draftFilters.convenio_id}
               onChange={(event) =>
                 setDraftFilters((current) => ({ ...current, convenio_id: event.target.value }))
@@ -104,7 +105,7 @@ export function AntecipacoesPage() {
                   {item.nome}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
 
           <button

@@ -5,6 +5,9 @@ namespace App\Providers;
 use App\Models\Guia;
 use App\Models\Antecipacao;
 use App\Models\ConciliacaoFinanceira;
+use App\Models\Convenio;
+use App\Models\ConvenioRegra;
+use App\Models\TabelaValor;
 use App\Models\Medico;
 use App\Models\Paciente;
 use App\Models\Solicitacao;
@@ -28,6 +31,20 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Route::bind('convenio', function ($value) {
+            return Convenio::query()
+                ->where('tenant_id', request()->user()?->tenant_id)
+                ->whereKey($value)
+                ->firstOrFail();
+        });
+
+        Route::bind('regra', function ($value) {
+            return ConvenioRegra::query()->where('tenant_id', request()->user()?->tenant_id)->whereKey($value)->firstOrFail();
+        });
+        Route::bind('valor', function ($value) {
+            return TabelaValor::query()->where('tenant_id', request()->user()?->tenant_id)->whereKey($value)->firstOrFail();
+        });
+
         Route::bind('solicitacao', function ($value) {
             $tenantId = request()->user()?->tenant_id;
 

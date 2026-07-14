@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { Select } from '../../components/ui/Select'
 import {
   getHttpErrorMessage,
   useAtualizarUsuario,
@@ -308,7 +309,7 @@ export function UsuariosPage() {
 
             <label className="block space-y-2">
               <span className="text-sm font-medium text-slate-200">Papel</span>
-              <select
+              <Select
                 value={form.role}
                 onChange={(event) => handleRoleChange(event.target.value)}
                 className={selectClasses()}
@@ -323,13 +324,13 @@ export function UsuariosPage() {
                     {role.name}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
 
             {form.role === 'profissional' ? (
               <label className="block space-y-2">
                 <span className="text-sm font-medium text-slate-200">Profissional vinculado</span>
-                <select
+                <Select
                   value={form.profissional_id}
                   onChange={(event) =>
                     setForm((current) => ({ ...current, profissional_id: event.target.value }))
@@ -347,7 +348,7 @@ export function UsuariosPage() {
                       {profissional.especialidade?.nome ? ` · ${profissional.especialidade.nome}` : ''}
                     </option>
                   ))}
-                </select>
+                </Select>
               </label>
             ) : null}
 

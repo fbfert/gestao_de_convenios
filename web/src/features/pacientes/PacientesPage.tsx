@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useConvenios } from '../../lib/queries/useReferenceData'
+import { Select } from '../../components/ui/Select'
 import { getHttpErrorMessage, useAtualizarPaciente, useCriarPaciente, usePacientesCrud } from './usePacientes'
 import type { Paciente, PacienteForm } from './types'
 
@@ -247,7 +248,7 @@ export function PacientesPage() {
 
             <label className="block space-y-2">
               <span className="text-sm font-medium text-slate-200">Convênio</span>
-              <select
+              <Select
                 value={form.convenio_id}
                 onChange={(event) =>
                   setForm((current) => ({ ...current, convenio_id: event.target.value }))
@@ -264,7 +265,7 @@ export function PacientesPage() {
                     {convenio.nome}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
 
             <label className="block space-y-2">

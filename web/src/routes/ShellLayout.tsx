@@ -6,6 +6,7 @@ const navItems = [
   { to: '/solicitacoes', label: 'Solicitações' },
   { to: '/pacientes', label: 'Pacientes' },
   { to: '/guias', label: 'Guias' },
+  { to: '/convenios', label: 'Convênios' },
   { to: '/antecipacoes', label: 'Antecipações' },
   { to: '/lancamentos', label: 'Lançamentos' },
   { to: '/conciliacao', label: 'Conciliação' },

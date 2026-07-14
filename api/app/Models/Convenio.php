@@ -10,7 +10,7 @@ class Convenio extends Model
 {
     use BelongsToTenant, HasFactory;
 
-    protected $fillable = ['tenant_id', 'nome', 'connector_type', 'connector_config', 'ativo'];
+    protected $fillable = ['tenant_id', 'nome', 'descricao', 'connector_type', 'connector_config', 'ativo'];
 
     protected $casts = [
         'connector_config' => 'array',

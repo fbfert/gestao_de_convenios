@@ -11,6 +11,7 @@
     "test:e2e": "php ../api/artisan migrate:fresh --seed --env=testing --force && playwright test"
   },
   "dependencies": {
+    "@headlessui/react": "^2.2.10",
     "@tailwindcss/vite": "^4.3.2",
     "@tanstack/react-query": "^5.101.2",
     "axios": "^1.18.1",

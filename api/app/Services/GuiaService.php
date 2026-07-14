@@ -67,7 +67,15 @@ class GuiaService
 
     public function buscar(int $id): Guia
     {
-        return Guia::query()->with(['solicitacao', 'convenio', 'paciente', 'profissional', 'especialidade'])->findOrFail($id);
+        return Guia::query()->with([
+            'solicitacao',
+            'convenio',
+            'paciente',
+            'profissional',
+            'especialidade',
+            'antecipacoes',
+            'conciliacoes',
+        ])->findOrFail($id);
     }
 
     public function finalizar(Guia $guia, array $dados): Guia

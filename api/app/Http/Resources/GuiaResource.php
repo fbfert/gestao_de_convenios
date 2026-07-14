@@ -24,6 +24,33 @@ class GuiaResource extends JsonResource
             'senha' => $this->senha,
             'validade_senha' => $this->validade_senha?->toDateString(),
             'observacoes' => $this->observacoes,
+            'paciente' => $this->whenLoaded('paciente', fn () => [
+                'id' => $this->paciente->id,
+                'nome' => $this->paciente->nome,
+                'carteirinha' => $this->paciente->carteirinha,
+            ]),
+            'convenio' => $this->whenLoaded('convenio', fn () => [
+                'id' => $this->convenio->id,
+                'nome' => $this->convenio->nome,
+            ]),
+            'profissional' => $this->whenLoaded('profissional', fn () => [
+                'id' => $this->profissional->id,
+                'nome' => $this->profissional->nome,
+            ]),
+            'especialidade' => $this->whenLoaded('especialidade', fn () => [
+                'id' => $this->especialidade->id,
+                'nome' => $this->especialidade->nome,
+            ]),
+            'antecipacoes' => $this->whenLoaded('antecipacoes', fn () => $this->antecipacoes->map(fn ($antecipacao) => [
+                'id' => $antecipacao->id,
+                'qtd_autorizada' => $antecipacao->qtd_autorizada,
+                'qtd_utilizada' => $antecipacao->qtd_utilizada,
+                'status' => $antecipacao->status,
+            ])->values()),
+            'conciliacoes' => $this->whenLoaded('conciliacoes', fn () => $this->conciliacoes->map(fn ($conciliacao) => [
+                'id' => $conciliacao->id,
+                'status' => $conciliacao->status,
+            ])->values()),
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];

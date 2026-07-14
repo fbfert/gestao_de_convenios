@@ -27,6 +27,17 @@ export function useGuias(filters: GuiaFilters, page: number) {
   })
 }
 
+export function useGuia(id: number | null) {
+  return useQuery({
+    queryKey: ['guias', id],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ data: Guia }>(`/guias/${id}`)
+      return data.data
+    },
+    enabled: id !== null,
+  })
+}
+
 export function useCriarGuia() {
   const queryClient = useQueryClient()
 

@@ -27,6 +27,7 @@ test('fluxo completo de negocio', async ({ page }, testInfo: TestInfo) => {
 
   await page.goto('/solicitacoes', { waitUntil: 'domcontentloaded' })
   await expect(page.getByTestId('solicitacoes-page')).toBeVisible()
+  await page.getByRole('button', { name: 'Novo' }).click()
   await page.getByTestId('solicitacao-convenio').selectOption({ label: 'Unimed' })
   await page.getByTestId('solicitacao-especialidade').selectOption({ label: 'Fisioterapia' })
   await page
@@ -82,6 +83,7 @@ test('fluxo completo de negocio', async ({ page }, testInfo: TestInfo) => {
 
   await page.goto('/guias', { waitUntil: 'domcontentloaded' })
   await expect(page.getByTestId('guias-page')).toBeVisible()
+  await page.getByTestId('guia-novo').click()
   await Promise.all([conveniosGuiasResponsePromise, especialidadesGuiasResponsePromise])
   await expect(page.getByTestId('guia-convenio').locator('option')).toHaveCount(3)
   await expect(page.getByTestId('guia-especialidade').locator('option')).toHaveCount(3)
@@ -115,6 +117,15 @@ test('fluxo completo de negocio', async ({ page }, testInfo: TestInfo) => {
   const guideRow = page.locator('[data-testid^="guia-row-"]').first()
   await expect(guideRow).toBeVisible()
   const guideId = Number((await guideRow.getAttribute('data-testid'))?.replace('guia-row-', ''))
+  const guiaDetailResponsePromise = page.waitForResponse((response) => {
+    return response.request().method() === 'GET' && response.url().includes(`/guias/${guideId}`)
+  })
+  await guideRow.getByRole('link').click()
+  const guiaDetailResponse = await guiaDetailResponsePromise
+  expect(guiaDetailResponse.status()).toBe(200)
+  await expect(page).toHaveURL(new RegExp(`/guias/${guideId}$`))
+  await expect(page.getByTestId('guia-detalhe-page')).toBeVisible()
+  await expect(page.getByText('Carteirinha: UNI-2026-0001')).toBeVisible()
   await page.getByTestId(`guia-finalizar-${guideId}`).click()
   await page.getByTestId(`guia-senha-${guideId}`).fill('ABC123')
   await page.screenshot({
@@ -138,7 +149,7 @@ test('fluxo completo de negocio', async ({ page }, testInfo: TestInfo) => {
     finalizeResponse.status(),
     `PATCH /guias/${guideId}/finalizar retornou ${finalizeResponse.status()} com corpo: ${finalizeResponseText}`,
   ).toBe(200)
-  await expect(page.getByTestId(`guia-status-${guideId}`)).toHaveText('Finalizada')
+  await expect(page.getByText('Finalizada', { exact: true })).toBeVisible()
 
   await page.goto('/antecipacoes', { waitUntil: 'domcontentloaded' })
   await expect(page.getByTestId('antecipacoes-page')).toBeVisible()
@@ -272,6 +283,51 @@ test('fluxo completo de negocio', async ({ page }, testInfo: TestInfo) => {
   await page.goto('/', { waitUntil: 'domcontentloaded' })
   await expect(page).toHaveURL(/\/login$/)
   console.log('[E2E] redirect after logout done')
+})
+
+test('detalhe de guia abre pela lista e atualiza após finalizar', async ({ page }) => {
+  await login(page)
+
+  await page.goto('/guias', { waitUntil: 'domcontentloaded' })
+  await expect(page.getByTestId('guias-page')).toBeVisible()
+  await page.getByTestId('guia-novo').click()
+  await expect(page.getByTestId('guia-convenio')).toBeVisible()
+  await page.getByTestId('guia-numero').fill(`GUIA-DETALHE-${Date.now()}`)
+
+  const createResponsePromise = page.waitForResponse((response) => {
+    return response.request().method() === 'POST' && response.url().includes('/guias')
+  })
+  await page.getByTestId('guia-submit').click()
+  const createResponse = await createResponsePromise
+  expect(createResponse.status()).toBe(201)
+  const guideId = (await createResponse.json()).data.id as number
+
+  const guideRow = page.getByTestId(`guia-row-${guideId}`)
+  await expect(guideRow).toBeVisible()
+  const detailResponsePromise = page.waitForResponse((response) => {
+    return response.request().method() === 'GET' && response.url().includes(`/guias/${guideId}`)
+  })
+  await guideRow.getByRole('link').click()
+  expect((await detailResponsePromise).status()).toBe(200)
+  await expect(page).toHaveURL(new RegExp(`/guias/${guideId}$`))
+  await expect(page.getByTestId('guia-detalhe-page')).toBeVisible()
+  await page.getByTestId(`guia-finalizar-${guideId}`).click()
+  await page.getByTestId(`guia-senha-${guideId}`).fill('DETALHE123')
+
+  const finalizeResponsePromise = page.waitForResponse((response) => {
+    return response.request().method() === 'PATCH' && response.url().includes(`/guias/${guideId}/finalizar`)
+  })
+  await page.getByTestId(`guia-finalizar-confirmar-${guideId}`).click()
+  expect((await finalizeResponsePromise).status()).toBe(200)
+  await expect(page.getByText('Finalizada', { exact: true })).toBeVisible()
+})
+
+test('detalhe de guia inexistente exibe erro tratado', async ({ page }) => {
+  await login(page)
+
+  await page.goto('/guias/999999', { waitUntil: 'domcontentloaded' })
+
+  await expect(page.getByText('Não foi possível encontrar esta guia.')).toBeVisible()
 })
 
 test('isolamento cross-tenant via browser', async ({ page }) => {

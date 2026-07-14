@@ -63,6 +63,21 @@ class TabelaValoresServiceTest extends TestCase
         $service->obterValorVigente($guia);
     }
 
+    public function test_criar_encerra_valor_vigente_em_cada_nivel_da_cascata(): void
+    {
+        $service = app(TabelaValoresService::class);
+        $convenio = Convenio::query()->where('nome', 'Celos')->firstOrFail();
+        $especialidade = Especialidade::query()->where('nome', 'Fisioterapia')->firstOrFail();
+        $profissional = Profissional::query()->where('nome', 'Dra. Marina Tavares')->firstOrFail();
+
+        foreach ([[null, null], [$especialidade->id, null], [$especialidade->id, $profissional->id]] as [$especialidadeId, $profissionalId]) {
+            $anterior = $service->criar($convenio, ['especialidade_id' => $especialidadeId, 'profissional_id' => $profissionalId, 'valor' => 100, 'vigente_desde' => '2026-01-01']);
+            $nova = $service->criar($convenio, ['especialidade_id' => $especialidadeId, 'profissional_id' => $profissionalId, 'valor' => 200, 'vigente_desde' => '2026-02-01']);
+            $this->assertSame('2026-01-31', $anterior->fresh()->vigente_ate->toDateString());
+            $this->assertNull($nova->vigente_ate);
+        }
+    }
+
     private function novaGuia(string $convenioNome, string $especialidadeNome): Guia
     {
         $convenio = Convenio::query()->where('nome', $convenioNome)->firstOrFail();

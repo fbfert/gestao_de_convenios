@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\Convenio;
+use App\Models\ConciliacaoFinanceira;
+use App\Models\Antecipacao;
 use App\Models\Especialidade;
 use App\Models\Guia;
 use App\Models\Paciente;
@@ -103,6 +105,55 @@ class GuiasApiTest extends TestCase
         $response->assertOk()
             ->assertJsonPath('data.0.id', $guiaCurta)
             ->assertJsonMissing(['id' => $guiaLonga]);
+    }
+
+    public function test_detalhe_expoe_relacionamentos_da_guia(): void
+    {
+        $this->autenticar();
+
+        $guia = Guia::query()->create([
+            'tenant_id' => Tenant::query()->where('slug', 'clinica-exemplo')->value('id'),
+            ...$this->payloadGuia('Unimed'),
+            'status' => 'finalized',
+            'data_finalizacao' => today(),
+            'senha' => 'DETALHE123',
+            'validade_senha' => today()->addDays(7),
+            'observacoes' => null,
+        ]);
+
+        $antecipacao = Antecipacao::query()->create([
+            'tenant_id' => $guia->tenant_id,
+            'guia_id' => $guia->id,
+            'paciente_id' => $guia->paciente_id,
+            'convenio_id' => $guia->convenio_id,
+            'ciclo_inicio' => today(),
+            'ciclo_fim' => today(),
+            'qtd_autorizada' => 10,
+            'qtd_utilizada' => 3,
+            'status' => 'open',
+        ]);
+
+        $conciliacao = ConciliacaoFinanceira::query()->create([
+            'tenant_id' => $guia->tenant_id,
+            'guia_id' => $guia->id,
+            'profissional_id' => $guia->profissional_id,
+            'quantidade' => 3,
+            'valor_unitario' => 100,
+            'valor_total' => 300,
+            'status' => 'pending',
+        ]);
+
+        $this->getJson("/api/guias/{$guia->id}")
+            ->assertOk()
+            ->assertJsonPath('data.paciente.id', $guia->paciente_id)
+            ->assertJsonPath('data.paciente.carteirinha', Paciente::query()->findOrFail($guia->paciente_id)->carteirinha)
+            ->assertJsonPath('data.convenio.id', $guia->convenio_id)
+            ->assertJsonPath('data.profissional.id', $guia->profissional_id)
+            ->assertJsonPath('data.especialidade.id', $guia->especialidade_id)
+            ->assertJsonPath('data.antecipacoes.0.id', $antecipacao->id)
+            ->assertJsonPath('data.antecipacoes.0.qtd_utilizada', 3)
+            ->assertJsonPath('data.conciliacoes.0.id', $conciliacao->id)
+            ->assertJsonPath('data.conciliacoes.0.status', 'pending');
     }
 
     public function test_criacao_valida_campos_obrigatorios(): void

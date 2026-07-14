@@ -4,13 +4,15 @@ import { ProtectedRoute } from './ProtectedRoute'
 import { ShellLayout } from './ShellLayout'
 import { SolicitacoesPage } from '../features/solicitacoes/SolicitacoesPage'
 import { PacientesPage } from '../features/pacientes'
-import { GuiasPage } from '../features/guias/GuiasPage'
+import { GuiaDetalhePage, GuiasPage } from '../features/guias'
 import { AntecipacoesPage } from '../features/antecipacoes/AntecipacoesPage'
 import { LancamentosPage } from '../features/lancamentos'
 import { ConciliacaoPage } from '../features/conciliacao'
 import { MedicosPage } from '../features/medicos'
 import { PermissoesPage } from '../features/permissoes'
 import { UsuariosPage } from '../features/usuarios'
+import { ConveniosPage, ConvenioDetalhePage } from '../features/convenios/ConveniosPage'
+import { ConvenioAjudaPage } from '../features/convenios/ConvenioAjudaPage'
 
 export function AppRoutes() {
   return (
@@ -22,6 +24,10 @@ export function AppRoutes() {
           <Route path="/solicitacoes" element={<SolicitacoesPage />} />
           <Route path="/pacientes" element={<PacientesPage />} />
           <Route path="/guias" element={<GuiasPage />} />
+          <Route path="/guias/:id" element={<GuiaDetalhePage />} />
+          <Route path="/convenios" element={<ConveniosPage />} />
+          <Route path="/convenios/ajuda" element={<ConvenioAjudaPage />} />
+          <Route path="/convenios/:id" element={<ConvenioDetalhePage />} />
           <Route path="/antecipacoes" element={<AntecipacoesPage />} />
           <Route path="/lancamentos" element={<LancamentosPage />} />
           <Route path="/conciliacao" element={<ConciliacaoPage />} />

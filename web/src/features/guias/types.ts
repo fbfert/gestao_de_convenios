@@ -13,6 +13,33 @@ export type Guia = {
   senha: string | null
   validade_senha: string | null
   observacoes: string | null
+  paciente?: GuiaPaciente
+  convenio?: GuiaReferencia
+  profissional?: GuiaReferencia
+  especialidade?: GuiaReferencia
+  antecipacoes?: GuiaAntecipacao[]
+  conciliacoes?: GuiaConciliacao[]
+}
+
+export type GuiaReferencia = {
+  id: number
+  nome: string
+}
+
+export type GuiaPaciente = GuiaReferencia & {
+  carteirinha: string
+}
+
+export type GuiaAntecipacao = {
+  id: number
+  qtd_autorizada: number
+  qtd_utilizada: number
+  status: string
+}
+
+export type GuiaConciliacao = {
+  id: number
+  status: string
 }
 
 export type PaginatedResponse<T> = {

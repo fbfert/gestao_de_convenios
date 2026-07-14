@@ -1,5 +1,6 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import { translateStatus } from '../../lib/statusLabels'
+import { Select } from '../../components/ui/Select'
 import { useConvenios, useEspecialidades, useProfissionais } from '../../lib/queries/useReferenceData'
 import {
   getHttpErrorMessage,
@@ -133,7 +134,7 @@ export function ConciliacaoPage() {
         <form className="grid gap-3 md:grid-cols-2 xl:grid-cols-4" onSubmit={handleFilterSubmit}>
           <label className="space-y-2">
             <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Convênio</span>
-            <select
+            <Select
               value={draftFilters.convenio_id}
               onChange={(event) =>
                 setDraftFilters((current) => ({ ...current, convenio_id: event.target.value }))
@@ -147,14 +148,14 @@ export function ConciliacaoPage() {
                   {item.nome}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
 
           <label className="space-y-2">
             <span className="text-xs uppercase tracking-[0.25em] text-slate-400">
               Especialidade (via guia)
             </span>
-            <select
+            <Select
               value={draftFilters.especialidade_id}
               onChange={(event) =>
                 setDraftFilters((current) => ({ ...current, especialidade_id: event.target.value }))
@@ -168,12 +169,12 @@ export function ConciliacaoPage() {
                   {item.nome}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
 
           <label className="space-y-2">
             <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Profissional</span>
-            <select
+            <Select
               value={draftFilters.profissional_id}
               onChange={(event) =>
                 setDraftFilters((current) => ({ ...current, profissional_id: event.target.value }))
@@ -187,12 +188,12 @@ export function ConciliacaoPage() {
                   {item.nome}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
 
           <label className="space-y-2">
             <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Status</span>
-            <select
+            <Select
               value={draftFilters.status}
               onChange={(event) =>
                 setDraftFilters((current) => ({ ...current, status: event.target.value }))
@@ -204,7 +205,7 @@ export function ConciliacaoPage() {
               <option value="pending">Pendente</option>
               <option value="reviewed">Conferida</option>
               <option value="paid">Paga</option>
-            </select>
+            </Select>
           </label>
 
           <button
@@ -348,4 +349,3 @@ export function ConciliacaoPage() {
     </div>
   )
 }
-

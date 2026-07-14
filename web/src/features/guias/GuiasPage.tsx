@@ -1,15 +1,17 @@
-import { Fragment, useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
+import { Select } from '../../components/ui/Select'
 import { translateStatus } from '../../lib/statusLabels'
 import { useConvenios, useEspecialidades, usePacientes, useProfissionais } from '../../lib/queries/useReferenceData'
 import {
   getHttpErrorMessage,
   useGerarConciliacao,
   useCriarGuia,
-  useFinalizarGuia,
   useGuias,
-  useNegarGuia,
 } from './useGuias'
-import type { GuiaFilters, GuiaFinalizarForm, GuiaForm } from './types'
+import type { GuiaFilters, GuiaForm } from './types'
+import { GuiaStatusActions } from './GuiaStatusActions'
+import { SENHA_VENCENDO_EM_DIAS } from './senhaValidade'
 
 const defaultFilters: GuiaFilters = {
   status: '',
@@ -27,11 +29,6 @@ const emptyForm: GuiaForm = {
   numero_guia: `GUIA-${Date.now()}`,
   tipo_terapia: 'especializada',
   data_solicitacao: new Date().toISOString().slice(0, 10),
-}
-
-const emptyFinalizeForm: GuiaFinalizarForm = {
-  senha: '',
-  validade_senha: '',
 }
 
 function selectClasses() {
@@ -56,9 +53,6 @@ export function GuiasPage() {
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [form, setForm] = useState<GuiaForm>(emptyForm)
   const [formError, setFormError] = useState<string | null>(null)
-  const [activeFinalizeId, setActiveFinalizeId] = useState<number | null>(null)
-  const [finalizeDraft, setFinalizeDraft] = useState<GuiaFinalizarForm>(emptyFinalizeForm)
-  const [finalizeError, setFinalizeError] = useState<string | null>(null)
   const [conciliacaoError, setConciliacaoError] = useState<string | null>(null)
 
   const conveniosQuery = useConvenios()
@@ -67,8 +61,6 @@ export function GuiasPage() {
   const profissionaisQuery = useProfissionais({ especialidade_id: form.especialidade_id })
   const guiasQuery = useGuias(filters, page)
   const criarGuia = useCriarGuia()
-  const finalizarGuia = useFinalizarGuia()
-  const negarGuia = useNegarGuia()
   const gerarConciliacao = useGerarConciliacao()
 
   const convenios = useMemo(() => conveniosQuery.data ?? [], [conveniosQuery.data])
@@ -156,7 +148,8 @@ export function GuiasPage() {
   }
 
   const toggleVencendoBadge = () => {
-    const nextValue = draftFilters.validade_senha_vencendo_em_dias === '7' ? '' : '7'
+    const threshold = String(SENHA_VENCENDO_EM_DIAS)
+    const nextValue = draftFilters.validade_senha_vencendo_em_dias === threshold ? '' : threshold
     setPage(1)
     setFilters((current) => ({
       ...current,
@@ -166,26 +159,6 @@ export function GuiasPage() {
       ...current,
       validade_senha_vencendo_em_dias: nextValue,
     }))
-  }
-
-  const handleFinalizeSubmit = async (guideId: number) => {
-    setFinalizeError(null)
-
-    try {
-      const payload: GuiaFinalizarForm = {
-        senha: finalizeDraft.senha,
-        ...(finalizeDraft.validade_senha ? { validade_senha: finalizeDraft.validade_senha } : {}),
-      }
-
-      await finalizarGuia.mutateAsync({
-        id: guideId,
-        payload,
-      })
-      setActiveFinalizeId(null)
-      setFinalizeDraft(emptyFinalizeForm)
-    } catch (error) {
-      setFinalizeError(getHttpErrorMessage(error, 'Não foi possível finalizar a guia.'))
-    }
   }
 
   const handleGerarConciliacao = async (guideId: number) => {
@@ -245,14 +218,14 @@ export function GuiasPage() {
               onClick={toggleVencendoBadge}
               className={[
                 'mt-2 inline-flex rounded-full border px-3 py-1 text-sm font-semibold transition',
-                filters.validade_senha_vencendo_em_dias === '7'
+                filters.validade_senha_vencendo_em_dias === String(SENHA_VENCENDO_EM_DIAS)
                   ? 'border-cyan-200/50 bg-cyan-300/20 text-white'
                   : 'border-cyan-200/20 bg-white/5 text-cyan-50 hover:bg-white/10',
               ].join(' ')}
             >
-              {filters.validade_senha_vencendo_em_dias === '7'
-                ? 'Vencendo em 7 dias'
-                : 'Mostrar vencendo em 7 dias'}
+              {filters.validade_senha_vencendo_em_dias === String(SENHA_VENCENDO_EM_DIAS)
+                ? `Vencendo em ${SENHA_VENCENDO_EM_DIAS} dias`
+                : `Mostrar vencendo em ${SENHA_VENCENDO_EM_DIAS} dias`}
             </button>
           </article>
         </div>
@@ -278,7 +251,7 @@ export function GuiasPage() {
 
             <label className="block space-y-2">
               <span className="text-sm font-medium text-slate-200">Convênio</span>
-              <select
+              <Select
                 value={form.convenio_id}
                 onChange={(event) =>
                   setForm((current) => ({
@@ -295,12 +268,12 @@ export function GuiasPage() {
                     {item.nome}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
 
             <label className="block space-y-2">
               <span className="text-sm font-medium text-slate-200">Paciente</span>
-              <select
+              <Select
                 value={form.paciente_id}
                 onChange={(event) =>
                   setForm((current) => ({
@@ -316,12 +289,12 @@ export function GuiasPage() {
                     {item.nome} · {item.carteirinha}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
 
             <label className="block space-y-2">
               <span className="text-sm font-medium text-slate-200">Profissional</span>
-              <select
+              <Select
                 value={form.profissional_id}
                 onChange={(event) =>
                   setForm((current) => ({
@@ -337,12 +310,12 @@ export function GuiasPage() {
                     {item.nome}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
 
             <label className="block space-y-2">
               <span className="text-sm font-medium text-slate-200">Especialidade</span>
-              <select
+              <Select
                 value={form.especialidade_id}
                 onChange={(event) =>
                   setForm((current) => ({
@@ -359,7 +332,7 @@ export function GuiasPage() {
                     {item.nome}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
 
             <label className="block space-y-2">
@@ -374,7 +347,7 @@ export function GuiasPage() {
 
             <label className="block space-y-2">
               <span className="text-sm font-medium text-slate-200">Tipo de terapia</span>
-              <select
+              <Select
                 value={form.tipo_terapia}
                 onChange={(event) => setForm((current) => ({ ...current, tipo_terapia: event.target.value }))}
                 className={selectClasses()}
@@ -382,7 +355,7 @@ export function GuiasPage() {
               >
                 <option value="especializada">Especializada</option>
                 <option value="convencional">Convencional</option>
-              </select>
+              </Select>
             </label>
 
             <label className="block space-y-2">
@@ -426,7 +399,7 @@ export function GuiasPage() {
           <form className="grid gap-3 md:grid-cols-2 xl:grid-cols-4" onSubmit={handleFilterSubmit}>
             <label className="space-y-2">
               <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Status</span>
-              <select
+              <Select
                 value={draftFilters.status}
                 onChange={(event) =>
                   setDraftFilters((current) => ({ ...current, status: event.target.value }))
@@ -438,12 +411,12 @@ export function GuiasPage() {
                 <option value="under_review">Em análise</option>
                 <option value="finalized">Finalizada</option>
                 <option value="denied">Negada</option>
-              </select>
+              </Select>
             </label>
 
             <label className="space-y-2">
               <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Convênio</span>
-              <select
+              <Select
                 value={draftFilters.convenio_id}
                 onChange={(event) =>
                   setDraftFilters((current) => ({
@@ -460,12 +433,12 @@ export function GuiasPage() {
                     {item.nome}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
 
             <label className="space-y-2">
               <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Paciente</span>
-              <select
+              <Select
                 value={draftFilters.paciente_id}
                 onChange={(event) =>
                   setDraftFilters((current) => ({ ...current, paciente_id: event.target.value }))
@@ -479,7 +452,7 @@ export function GuiasPage() {
                     {item.nome}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
 
             <button
@@ -520,9 +493,12 @@ export function GuiasPage() {
                 </thead>
                 <tbody className="divide-y divide-white/10 bg-slate-950/30">
                   {guias.map((guia) => (
-                    <Fragment key={guia.id}>
-                      <tr data-testid={`guia-row-${guia.id}`}>
-                        <td className="px-4 py-4 font-medium text-white">{guia.numero_guia}</td>
+                    <tr key={guia.id} data-testid={`guia-row-${guia.id}`}>
+                      <td className="px-4 py-4 font-medium text-white">
+                        <Link to={`/guias/${guia.id}`} className="text-cyan-100 underline decoration-cyan-300/40 underline-offset-4 hover:text-cyan-50">
+                          {guia.numero_guia}
+                        </Link>
+                      </td>
                         <td className="px-4 py-4 text-slate-200">
                           {pacientes.find((item) => item.id === guia.paciente_id)?.nome ??
                             guia.paciente_id}
@@ -544,28 +520,7 @@ export function GuiasPage() {
                         <td className="px-4 py-4 text-slate-200">{guia.validade_senha ?? '-'}</td>
                         <td className="px-4 py-4">
                           <div className="flex flex-wrap gap-2">
-                            <button
-                              type="button"
-                              className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1.5 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-400/20 disabled:opacity-50"
-                              onClick={() => {
-                                setActiveFinalizeId(guia.id)
-                                setFinalizeDraft({ senha: '', validade_senha: '' })
-                                setFinalizeError(null)
-                              }}
-                              disabled={guia.status !== 'under_review' || finalizarGuia.isPending}
-                              data-testid={`guia-finalizar-${guia.id}`}
-                            >
-                              Finalizar
-                            </button>
-                            <button
-                              type="button"
-                              className="rounded-full border border-rose-400/30 bg-rose-400/10 px-3 py-1.5 text-xs font-semibold text-rose-100 transition hover:bg-rose-400/20 disabled:opacity-50"
-                              onClick={() => negarGuia.mutate(guia.id)}
-                              disabled={negarGuia.isPending || guia.status !== 'under_review'}
-                              data-testid={`guia-negar-${guia.id}`}
-                            >
-                              Negar
-                            </button>
+                            <GuiaStatusActions guia={guia} />
                             <button
                               type="button"
                               className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1.5 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-400/20 disabled:opacity-50"
@@ -577,72 +532,7 @@ export function GuiasPage() {
                             </button>
                           </div>
                         </td>
-                      </tr>
-                      {activeFinalizeId === guia.id ? (
-                        <tr>
-                          <td colSpan={6} className="bg-slate-950/50 px-4 py-4">
-                            <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto] md:items-end">
-                              <label className="space-y-2">
-                                <span className="text-xs uppercase tracking-[0.25em] text-slate-400">
-                                  Senha
-                                </span>
-                                <input
-                                  value={finalizeDraft.senha}
-                                  onChange={(event) =>
-                                    setFinalizeDraft((current) => ({
-                                      ...current,
-                                      senha: event.target.value,
-                                    }))
-                                  }
-                                  className={selectClasses()}
-                                  placeholder="ABC123"
-                                  data-testid={`guia-senha-${guia.id}`}
-                                />
-                              </label>
-                              <label className="space-y-2">
-                                <span className="text-xs uppercase tracking-[0.25em] text-slate-400">
-                                  Validade senha
-                                </span>
-                                <input
-                                  type="date"
-                                  value={finalizeDraft.validade_senha ?? ''}
-                                  onChange={(event) =>
-                                    setFinalizeDraft((current) => ({
-                                      ...current,
-                                      validade_senha: event.target.value,
-                                    }))
-                                  }
-                                  className={selectClasses()}
-                                  data-testid={`guia-validade-${guia.id}`}
-                                />
-                              </label>
-                              <div className="flex gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => handleFinalizeSubmit(guia.id)}
-                                  className="rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
-                                  data-testid={`guia-finalizar-confirmar-${guia.id}`}
-                                >
-                                  Confirmar
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setActiveFinalizeId(null)}
-                                  className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
-                                >
-                                  Cancelar
-                                </button>
-                              </div>
-                            </div>
-                            {finalizeError ? (
-                              <p className="mt-3 rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
-                                {finalizeError}
-                              </p>
-                            ) : null}
-                          </td>
-                        </tr>
-                      ) : null}
-                    </Fragment>
+                    </tr>
                   ))}
                   {guias.length === 0 ? (
                     <tr>

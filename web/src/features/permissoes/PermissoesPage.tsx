@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Select } from '../../components/ui/Select'
 import {
   getHttpErrorMessage,
   usePermissions,
@@ -162,7 +163,7 @@ export function PermissoesPage() {
             <div className="min-w-72">
               <label className="block space-y-2">
                 <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Papel</span>
-                <select
+                <Select
                   value={selectedRole}
                   onChange={(event) => setSelectedRole(event.target.value)}
                   className={selectClasses()}
@@ -173,7 +174,7 @@ export function PermissoesPage() {
                       {role.name}
                     </option>
                   ))}
-                </select>
+                </Select>
               </label>
             </div>
           </div>

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { translateStatus } from '../../lib/statusLabels'
+import { Select } from '../../components/ui/Select'
 import { useProfissionais } from '../../lib/queries/useReferenceData'
 import { useAntecipacoes } from '../antecipacoes/useAntecipacoes'
 import { useCriarLancamento, useLancamentos } from './useLancamentos'
@@ -140,7 +141,7 @@ export function LancamentosPage() {
 
             <label className="block space-y-2">
               <span className="text-sm font-medium text-slate-200">Antecipação</span>
-              <select
+              <Select
                 value={form.antecipacao_id}
                 onChange={(event) =>
                   setForm((current) => ({ ...current, antecipacao_id: event.target.value }))
@@ -153,12 +154,12 @@ export function LancamentosPage() {
                     #{antecipacao.id} · Paciente {antecipacao.paciente_id} · {antecipacao.status}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
 
             <label className="block space-y-2">
               <span className="text-sm font-medium text-slate-200">Profissional</span>
-              <select
+              <Select
                 value={form.profissional_id}
                 onChange={(event) =>
                   setForm((current) => ({ ...current, profissional_id: event.target.value }))
@@ -171,7 +172,7 @@ export function LancamentosPage() {
                     {profissional.nome}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
 
             <label className="block space-y-2">
@@ -223,7 +224,7 @@ export function LancamentosPage() {
           <form className="grid gap-3 md:grid-cols-3 xl:grid-cols-3" onSubmit={handleFilterSubmit}>
             <label className="space-y-2">
               <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Profissional</span>
-              <select
+              <Select
                 value={draftFilters.profissional_id}
                 onChange={(event) =>
                   setDraftFilters((current) => ({ ...current, profissional_id: event.target.value }))
@@ -237,7 +238,7 @@ export function LancamentosPage() {
                     {profissional.nome}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
 
             <label className="space-y-2">

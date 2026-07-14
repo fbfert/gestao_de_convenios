@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { translateStatus } from '../../lib/statusLabels'
+import { Select } from '../../components/ui/Select'
 import {
   getHttpErrorMessage,
   useAprovarSolicitacao,
@@ -297,7 +298,7 @@ export function SolicitacoesPage() {
 
             <label className="block space-y-2">
               <span className="text-sm font-medium text-slate-200">Convênio</span>
-              <select
+              <Select
                 value={form.convenio_id}
                 onChange={(event) =>
                   setForm((current) => ({
@@ -318,12 +319,12 @@ export function SolicitacoesPage() {
                     {item.nome}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
 
             <label className="block space-y-2">
               <span className="text-sm font-medium text-slate-200">Paciente</span>
-              <select
+              <Select
                 value={form.paciente_id}
                 onChange={(event) =>
                   setForm((current) => ({
@@ -344,12 +345,12 @@ export function SolicitacoesPage() {
                     {item.convenio?.nome ? ` · ${item.convenio.nome}` : ''}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
 
             <label className="block space-y-2">
               <span className="text-sm font-medium text-slate-200">Profissional</span>
-              <select
+              <Select
                 value={form.profissional_id}
                 onChange={(event) =>
                   setForm((current) => ({
@@ -370,12 +371,12 @@ export function SolicitacoesPage() {
                     {item.especialidade?.nome ? ` · ${item.especialidade.nome}` : ''}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
 
             <label className="block space-y-2">
               <span className="text-sm font-medium text-slate-200">Especialidade</span>
-              <select
+              <Select
                 value={form.especialidade_id}
                 onChange={(event) =>
                   setForm((current) => ({
@@ -396,12 +397,12 @@ export function SolicitacoesPage() {
                     {item.nome}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
 
             <label className="block space-y-2">
               <span className="text-sm font-medium text-slate-200">Médico solicitante</span>
-              <select
+              <Select
                 value={form.medico_id}
                 onChange={(event) =>
                   setForm((current) => ({
@@ -421,7 +422,7 @@ export function SolicitacoesPage() {
                     {item.nome}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
 
             <label className="block space-y-2">
@@ -484,7 +485,7 @@ export function SolicitacoesPage() {
           <form className="flex flex-wrap gap-3" onSubmit={handleFilterSubmit}>
             <label className="min-w-40 flex-1 space-y-2">
               <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Status</span>
-              <select
+              <Select
                 value={draftFilters.status}
                 onChange={(event) =>
                   setDraftFilters((current) => ({
@@ -499,12 +500,12 @@ export function SolicitacoesPage() {
                 <option value="under_review">Em análise</option>
                 <option value="approved">Aprovada</option>
                 <option value="denied">Negada</option>
-              </select>
+              </Select>
             </label>
 
             <label className="min-w-40 flex-1 space-y-2">
               <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Convênio</span>
-              <select
+              <Select
                 value={draftFilters.convenio_id}
                 onChange={(event) =>
                   setDraftFilters((current) => ({
@@ -521,7 +522,7 @@ export function SolicitacoesPage() {
                     {item.nome}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
 
             <button

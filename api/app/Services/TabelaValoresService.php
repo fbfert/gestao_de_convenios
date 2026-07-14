@@ -5,9 +5,30 @@ namespace App\Services;
 use App\Exceptions\TabelaValorNaoEncontradaException;
 use App\Models\Guia;
 use App\Models\TabelaValor;
+use App\Models\Convenio;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class TabelaValoresService
 {
+    public function criar(Convenio $convenio, array $dados): TabelaValor
+    {
+        return DB::transaction(function () use ($convenio, $dados) {
+            $inicio = Carbon::parse($dados['vigente_desde'])->startOfDay();
+            TabelaValor::query()->where('convenio_id', $convenio->id)
+                ->where('especialidade_id', $dados['especialidade_id'] ?? null)
+                ->where('profissional_id', $dados['profissional_id'] ?? null)
+                ->whereNull('vigente_ate')
+                ->update(['vigente_ate' => $inicio->copy()->subDay()->toDateString()]);
+            return TabelaValor::query()->create([...$dados, 'tenant_id' => $convenio->tenant_id, 'convenio_id' => $convenio->id, 'vigente_desde' => $inicio->toDateString()]);
+        });
+    }
+
+    public function encerrar(TabelaValor $valor, ?string $data): TabelaValor
+    {
+        $valor->update(['vigente_ate' => Carbon::parse($data ?? today())->toDateString()]);
+        return $valor;
+    }
     public function obterValorVigente(Guia $guia, ?int $profissionalId = null): string
     {
         $profissionalId ??= $guia->profissional_id;

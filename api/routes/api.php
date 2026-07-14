@@ -32,6 +32,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/profissionais', [ProfissionalController::class, 'index']);
     Route::get('/especialidades', [EspecialidadeController::class, 'index']);
     Route::get('/convenios', [ConvenioController::class, 'index']);
+    Route::post('/convenios', [ConvenioController::class, 'store'])->middleware('permission:convenios.manage');
+    Route::patch('/convenios/{convenio}', [ConvenioController::class, 'update'])->middleware('permission:convenios.manage');
+    Route::get('/convenios/{convenio}/regras', [ConvenioController::class, 'regras'])->middleware('permission:convenios.manage');
+    Route::post('/convenios/{convenio}/regras', [ConvenioController::class, 'storeRegra'])->middleware('permission:convenios.manage');
+    Route::patch('/convenios/{convenio}/regras/{regra}/encerrar', [ConvenioController::class, 'encerrarRegra'])->middleware('permission:convenios.manage');
+    Route::get('/convenios/{convenio}/valores', [ConvenioController::class, 'valores'])->middleware('permission:convenios.manage');
+    Route::post('/convenios/{convenio}/valores', [ConvenioController::class, 'storeValor'])->middleware('permission:convenios.manage');
+    Route::patch('/convenios/{convenio}/valores/{valor}/encerrar', [ConvenioController::class, 'encerrarValor'])->middleware('permission:convenios.manage');
     Route::get('/medicos', [MedicoController::class, 'index'])->middleware('permission:medicos.manage');
     Route::post('/medicos', [MedicoController::class, 'store'])->middleware('permission:medicos.manage');
     Route::patch('/medicos/{medico}', [MedicoController::class, 'update'])->middleware('permission:medicos.manage');

@@ -44,6 +44,18 @@ function formatCurrency(value: string) {
   }).format(numeric)
 }
 
+function formatPercent(value: string) {
+  const numeric = Number(value)
+  if (Number.isNaN(numeric)) {
+    return value
+  }
+
+  return `${new Intl.NumberFormat('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(numeric)}%`
+}
+
 export function ConciliacaoPage() {
   const [filters, setFilters] = useState(defaultFilters)
   const [draftFilters, setDraftFilters] = useState(defaultFilters)
@@ -243,6 +255,8 @@ export function ConciliacaoPage() {
                   <th className="px-4 py-3">Qtd.</th>
                   <th className="px-4 py-3">Valor unit.</th>
                   <th className="px-4 py-3">Valor total</th>
+                  <th className="px-4 py-3">Repasse %</th>
+                  <th className="px-4 py-3">Repasse total</th>
                   <th className="px-4 py-3">Status</th>
                   <th className="px-4 py-3">Ações</th>
                 </tr>
@@ -270,6 +284,12 @@ export function ConciliacaoPage() {
                     </td>
                     <td className="px-4 py-4 text-slate-200">
                       {formatCurrency(conciliacao.valor_total)}
+                    </td>
+                    <td className="px-4 py-4 text-slate-200">
+                      {formatPercent(conciliacao.percentual_repasse_profissional)}
+                    </td>
+                    <td className="px-4 py-4 text-slate-200">
+                      {formatCurrency(conciliacao.valor_repasse_total)}
                     </td>
                     <td className="px-4 py-4">
                       <span
@@ -312,7 +332,7 @@ export function ConciliacaoPage() {
                 ))}
                 {conciliacoes.length === 0 ? (
                   <tr>
-                    <td colSpan={10} className="px-4 py-8 text-center text-slate-300">
+                    <td colSpan={12} className="px-4 py-8 text-center text-slate-300">
                       Nenhuma conciliação encontrada.
                     </td>
                   </tr>

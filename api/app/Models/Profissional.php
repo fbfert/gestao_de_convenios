@@ -12,10 +12,18 @@ class Profissional extends Model
 
     protected $table = 'profissionais';
 
-    protected $fillable = ['tenant_id', 'especialidade_id', 'nome', 'conselho_registro', 'ativo'];
+    protected $fillable = [
+        'tenant_id',
+        'especialidade_id',
+        'nome',
+        'conselho_registro',
+        'ativo',
+        'percentual_repasse',
+    ];
 
     protected $casts = [
         'ativo' => 'boolean',
+        'percentual_repasse' => 'decimal:2',
     ];
 
     public function especialidade()

@@ -13,6 +13,7 @@ class ProfissionalResource extends JsonResource
             'id' => $this->id,
             'nome' => $this->nome,
             'especialidade_id' => $this->especialidade_id,
+            'percentual_repasse' => $this->percentual_repasse,
             'especialidade' => $this->whenLoaded('especialidade', fn () => [
                 'id' => $this->especialidade->id,
                 'nome' => $this->especialidade->nome,

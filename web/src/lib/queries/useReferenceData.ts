@@ -16,6 +16,7 @@ export type ProfissionalRef = {
   id: number
   nome: string
   especialidade_id: number
+  percentual_repasse?: string | null
   especialidade?: {
     id: number
     nome: string

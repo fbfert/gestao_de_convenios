@@ -91,5 +91,7 @@ class FluxoConvenioCompletoTest extends TestCase
         $this->assertSame(1, $conciliacao->quantidade);
         $this->assertSame('160.00', $conciliacao->valor_unitario);
         $this->assertSame('160.00', $conciliacao->valor_total);
+        $this->assertSame('64.00', $conciliacao->percentual_repasse_profissional);
+        $this->assertSame('102.40', $conciliacao->valor_repasse_total);
     }
 }

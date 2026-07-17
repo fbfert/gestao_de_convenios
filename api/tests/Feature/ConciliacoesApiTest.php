@@ -36,7 +36,9 @@ class ConciliacoesApiTest extends TestCase
 
         $create->assertCreated()
             ->assertJsonPath('data.guia_id', $conciliacaoA->guia_id)
-            ->assertJsonPath('data.status', 'pending');
+            ->assertJsonPath('data.status', 'pending')
+            ->assertJsonPath('data.percentual_repasse_profissional', '64.00')
+            ->assertJsonPath('data.valor_repasse_total', '102.40');
 
         $novaConciliacaoId = $create->json('data.id');
 

@@ -7,6 +7,12 @@ export type Conciliacao = {
   quantidade: number
   valor_unitario: string
   valor_total: string
+  percentual_repasse_profissional: string
+  percentual_retencao_clinica: string
+  valor_repasse_unitario: string
+  valor_repasse_total: string
+  valor_retencao_unitario: string
+  valor_retencao_total: string
   status: string
   conferido_em: string | null
 }
@@ -26,4 +32,3 @@ export type ConciliacaoFilters = {
   profissional_id: string
   status: string
 }
-

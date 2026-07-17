@@ -20,7 +20,7 @@
 ## 4. Conciliação e repasse
 
 - [x] 4.1 Transformar as linhas do analítico importado em dados processáveis de conciliação.
-- [ ] 4.2 Calcular o valor pago por sessão e o repasse configurável por profissional.
+- [x] 4.2 Calcular o valor pago por sessão e o repasse configurável por profissional.
 - [ ] 4.3 Registrar entradas, saídas e a distinção entre profissional informado ao plano e profissional executor.
 
 ## 5. Validação

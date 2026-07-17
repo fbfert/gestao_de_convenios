@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Concerns\BelongsToTenant;
+use App\Services\ConciliacaoService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -33,5 +34,47 @@ class ConciliacaoFinanceira extends Model
     public function profissional()
     {
         return $this->belongsTo(Profissional::class);
+    }
+
+    public function getPercentualRepasseProfissionalAttribute(): ?string
+    {
+        return $this->repasseContext()['percentual_repasse_profissional'] ?? null;
+    }
+
+    public function getPercentualRetencaoClinicaAttribute(): ?string
+    {
+        return $this->repasseContext()['percentual_retencao_clinica'] ?? null;
+    }
+
+    public function getValorRepasseUnitarioAttribute(): ?string
+    {
+        return $this->repasseContext()['valor_repasse_unitario'] ?? null;
+    }
+
+    public function getValorRepasseTotalAttribute(): ?string
+    {
+        return $this->repasseContext()['valor_repasse_total'] ?? null;
+    }
+
+    public function getValorRetencaoUnitarioAttribute(): ?string
+    {
+        return $this->repasseContext()['valor_retencao_unitario'] ?? null;
+    }
+
+    public function getValorRetencaoTotalAttribute(): ?string
+    {
+        return $this->repasseContext()['valor_retencao_total'] ?? null;
+    }
+
+    /**
+     * @return array{percentual_repasse_profissional: string, percentual_retencao_clinica: string, valor_repasse_unitario: string, valor_repasse_total: string, valor_retencao_unitario: string, valor_retencao_total: string}
+     */
+    private function repasseContext(): array
+    {
+        return app(ConciliacaoService::class)->calcularRepasse(
+            $this->guia,
+            $this->profissional_id,
+            $this->quantidade
+        );
     }
 }

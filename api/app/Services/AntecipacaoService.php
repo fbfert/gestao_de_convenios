@@ -19,7 +19,7 @@ class AntecipacaoService
     public function listar(array $filtros = [], int $perPage = 15): LengthAwarePaginator
     {
         $query = $this->aplicarEscopoOwn(
-            Antecipacao::query()->with(['guia', 'paciente', 'convenio']),
+            Antecipacao::query()->with(['guia', 'paciente', 'convenio', 'lancamentos']),
             'antecipacoes.view',
             'antecipacoes.viewOwn',
             fn ($query, $user) => $query->whereHas('guia', fn ($guiaQuery) => $guiaQuery->where('profissional_id', $user->profissional_id))
@@ -35,7 +35,7 @@ class AntecipacaoService
 
     public function buscar(int $id): Antecipacao
     {
-        return Antecipacao::query()->with(['guia', 'paciente', 'convenio'])->findOrFail($id);
+        return Antecipacao::query()->with(['guia', 'paciente', 'convenio', 'lancamentos'])->findOrFail($id);
     }
 
     public function abrirCiclo(Guia $guia): Antecipacao

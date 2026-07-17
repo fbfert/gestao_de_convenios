@@ -11,6 +11,8 @@ import { ConciliacaoPage } from '../features/conciliacao'
 import { MedicosPage } from '../features/medicos'
 import { PermissoesPage } from '../features/permissoes'
 import { UsuariosPage } from '../features/usuarios'
+import { DashboardPage } from '../features/dashboard'
+import { AuditoriaPage } from '../features/auditoria'
 import { ConveniosPage, ConvenioDetalhePage } from '../features/convenios/ConveniosPage'
 import { ConvenioAjudaPage } from '../features/convenios/ConvenioAjudaPage'
 
@@ -20,7 +22,9 @@ export function AppRoutes() {
       <Route path="/login" element={<LoginPage />} />
       <Route element={<ProtectedRoute />}>
         <Route element={<ShellLayout />}>
-          <Route path="/" element={<Navigate to="/solicitacoes" replace />} />
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/auditoria" element={<AuditoriaPage />} />
           <Route path="/solicitacoes" element={<SolicitacoesPage />} />
           <Route path="/pacientes" element={<PacientesPage />} />
           <Route path="/guias" element={<GuiasPage />} />

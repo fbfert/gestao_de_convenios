@@ -22,6 +22,20 @@ function statusTone(status: string) {
     : 'bg-cyan-400/15 text-cyan-100 border-cyan-400/20'
 }
 
+function temSessaoFutura(antecipacao: {
+  lancamentos?: Array<{ data_sessao: string | null }>
+}) {
+  const hoje = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Sao_Paulo',
+  }).format(new Date())
+
+  return (
+    antecipacao.lancamentos?.some((lancamento) => {
+      return Boolean(lancamento.data_sessao && lancamento.data_sessao > hoje)
+    }) ?? false
+  )
+}
+
 export function AntecipacoesPage() {
   const [filters, setFilters] = useState(defaultFilters)
   const [draftFilters, setDraftFilters] = useState(defaultFilters)
@@ -35,6 +49,9 @@ export function AntecipacoesPage() {
   const pacientes = useMemo(() => pacientesQuery.data ?? [], [pacientesQuery.data])
   const antecipacoes = antecipacoesQuery.data?.data ?? []
   const totalPages = antecipacoesQuery.data?.meta?.last_page ?? 1
+  const alertasContinuidade = antecipacoes.filter((antecipacao) => {
+    return antecipacao.status === 'open' && !temSessaoFutura(antecipacao)
+  })
 
   const handleFilterSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -53,6 +70,23 @@ export function AntecipacoesPage() {
       </section>
 
       <section className="space-y-4 rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
+        {alertasContinuidade.length > 0 ? (
+          <div
+            className="rounded-3xl border border-amber-400/20 bg-amber-500/10 px-4 py-4 text-sm text-amber-50"
+            data-testid="antecipacao-alerta-continuidade"
+          >
+            <p className="font-semibold">
+              {alertasContinuidade.length === 1
+                ? '1 antecipação ativa sem próximos agendamentos.'
+                : `${alertasContinuidade.length} antecipações ativas sem próximos agendamentos.`}
+            </p>
+            <p className="mt-1 text-amber-50/80">
+              Use este alerta para revisar a agenda e criar antecipações antes que o fluxo fique
+              sem continuidade.
+            </p>
+          </div>
+        ) : null}
+
         <form className="grid gap-3 md:grid-cols-3 xl:grid-cols-4" onSubmit={handleFilterSubmit}>
           <label className="space-y-2">
             <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Status</span>
@@ -182,8 +216,16 @@ export function AntecipacoesPage() {
                         )}`}
                         data-testid={`antecipacao-status-${antecipacao.id}`}
                       >
-                          {translateStatus('antecipacoes', antecipacao.status)}
+                        {translateStatus('antecipacoes', antecipacao.status)}
                       </span>
+                      {antecipacao.status === 'open' && !temSessaoFutura(antecipacao) ? (
+                        <p
+                          className="mt-2 text-xs font-medium text-amber-100"
+                          data-testid={`antecipacao-alerta-row-${antecipacao.id}`}
+                        >
+                          Sem próximos agendamentos
+                        </p>
+                      ) : null}
                     </td>
                     <td className="px-4 py-4">
                       <Link

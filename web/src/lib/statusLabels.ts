@@ -7,14 +7,21 @@ export type StatusEntidade =
 
 const statusLabels: Record<StatusEntidade, Record<string, string>> = {
   solicitacoes: {
+    registered: 'Cadastrado',
     under_review: 'Em análise',
-    approved: 'Aprovada',
-    denied: 'Negada',
+    approved: 'Aprovado',
+    canceled: 'Cancelado',
+    denied: 'Negado',
+    expired: 'Vencido',
   },
   guias: {
+    registered: 'Cadastrado',
     under_review: 'Em análise',
-    finalized: 'Finalizada',
-    denied: 'Negada',
+    approved: 'Aprovado',
+    finalized: 'Aprovado',
+    canceled: 'Cancelado',
+    denied: 'Negado',
+    expired: 'Vencido',
   },
   antecipacoes: {
     open: 'Aberta',

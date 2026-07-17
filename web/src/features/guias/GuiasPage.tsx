@@ -37,10 +37,16 @@ function selectClasses() {
 
 function statusTone(status: string) {
   switch (status) {
+    case 'registered':
+      return 'bg-cyan-400/15 text-cyan-100 border-cyan-400/20'
+    case 'approved':
     case 'finalized':
       return 'bg-emerald-400/15 text-emerald-100 border-emerald-400/20'
+    case 'canceled':
     case 'denied':
       return 'bg-rose-400/15 text-rose-100 border-rose-400/20'
+    case 'expired':
+      return 'bg-amber-400/15 text-amber-100 border-amber-400/20'
     default:
       return 'bg-cyan-400/15 text-cyan-100 border-cyan-400/20'
   }
@@ -408,9 +414,13 @@ export function GuiasPage() {
                 data-testid="guia-filtro-status"
               >
                 <option value="">Todos</option>
+                <option value="registered">Cadastrado</option>
                 <option value="under_review">Em análise</option>
-                <option value="finalized">Finalizada</option>
-                <option value="denied">Negada</option>
+                <option value="approved">Aprovado</option>
+                <option value="finalized">Aprovado</option>
+                <option value="canceled">Cancelado</option>
+                <option value="denied">Negado</option>
+                <option value="expired">Vencido</option>
               </Select>
             </label>
 
@@ -521,15 +531,15 @@ export function GuiasPage() {
                         <td className="px-4 py-4">
                           <div className="flex flex-wrap gap-2">
                             <GuiaStatusActions guia={guia} />
-                            <button
-                              type="button"
-                              className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1.5 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-400/20 disabled:opacity-50"
-                              onClick={() => handleGerarConciliacao(guia.id)}
-                              disabled={gerarConciliacao.isPending || guia.status !== 'finalized'}
-                              data-testid={`guia-gerar-conciliacao-${guia.id}`}
-                            >
-                              Gerar conciliação
-                            </button>
+                          <button
+                            type="button"
+                            className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1.5 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-400/20 disabled:opacity-50"
+                            onClick={() => handleGerarConciliacao(guia.id)}
+                            disabled={gerarConciliacao.isPending || (guia.status !== 'finalized' && guia.status !== 'approved')}
+                            data-testid={`guia-gerar-conciliacao-${guia.id}`}
+                          >
+                            Gerar conciliação
+                          </button>
                           </div>
                         </td>
                     </tr>

@@ -3,12 +3,13 @@ import { useLogout } from '../features/auth'
 import { useAuthStore } from '../stores/authStore'
 
 const navItems = [
+  { to: '/dashboard', label: 'Dashboard' },
   { to: '/solicitacoes', label: 'Solicitações' },
   { to: '/pacientes', label: 'Pacientes' },
   { to: '/guias', label: 'Guias' },
   { to: '/convenios', label: 'Convênios' },
   { to: '/antecipacoes', label: 'Antecipações' },
-  { to: '/lancamentos', label: 'Lançamentos' },
+  { to: '/lancamentos', label: 'Sessões' },
   { to: '/conciliacao', label: 'Conciliação' },
   { to: '/medicos', label: 'Médicos' },
   { to: '/usuarios', label: 'Usuários' },

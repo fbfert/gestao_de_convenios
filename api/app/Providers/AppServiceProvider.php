@@ -9,6 +9,7 @@ use App\Models\Convenio;
 use App\Models\ConvenioRegra;
 use App\Models\TabelaValor;
 use App\Models\Medico;
+use App\Models\Lancamento;
 use App\Models\Paciente;
 use App\Models\Solicitacao;
 use App\Models\User;
@@ -67,6 +68,15 @@ class AppServiceProvider extends ServiceProvider
             $tenantId = request()->user()?->tenant_id;
 
             return Antecipacao::query()
+                ->where('tenant_id', $tenantId)
+                ->whereKey($value)
+                ->firstOrFail();
+        });
+
+        Route::bind('lancamento', function ($value) {
+            $tenantId = request()->user()?->tenant_id;
+
+            return Lancamento::query()
                 ->where('tenant_id', $tenantId)
                 ->whereKey($value)
                 ->firstOrFail();

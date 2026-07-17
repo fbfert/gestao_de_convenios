@@ -12,7 +12,8 @@ class Lancamento extends Model
 
     protected $fillable = [
         'tenant_id', 'antecipacao_id', 'profissional_id',
-        'data_sessao', 'status', 'observacoes',
+        'data_sessao', 'hora_inicio', 'hora_fim', 'acompanhante',
+        'resumo_atividades', 'transcricao_bruta', 'status', 'observacoes',
     ];
 
     protected $casts = [

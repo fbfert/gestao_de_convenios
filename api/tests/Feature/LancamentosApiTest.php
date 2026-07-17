@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Services\GuiaService;
 use App\Services\LancamentoService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -93,6 +94,142 @@ class LancamentosApiTest extends TestCase
             'profissional_id' => 1,
             'data_sessao' => today()->toDateString(),
         ])->assertNotFound();
+    }
+
+    public function test_importa_transcricao_e_cria_multiplas_sessoes(): void
+    {
+        $this->autenticar();
+
+        $antecipacao = $this->criarAntecipacaoAberta('Unimed', 'Fisioterapia', 'especializada');
+        $antecipacao->forceFill([
+            'qtd_autorizada' => 8,
+            'qtd_utilizada' => 0,
+            'status' => 'open',
+        ])->save();
+
+        $transcricao = <<<'TXT'
+GUIA Nº: 521381566206
+Clínica: Centro Neuro Kids Ltda
+Paciente: E...
+Número Cartão: 0220 090000 551.330-8
+Profissional Executante: Mariana
+Terapia aplicada: ABA - AV. Neuropsicológica
+
+Sessões
+1 08/04/26 14:50 15:40 Bruno Marinho Aplicação testes Neuropsicológicos
+2 09/04/26 14:50 15:40 Bruno Marinho Denver (Desenvolvimento)
+3 28/04/26 14:50 15:40 Bruno Marinho Denver
+4 05/05/2026 14:50 15:40 Bruno Marinho Columbia (maturidade mental)
+5 12/05/26 14:50 15:40 Bruno Marinho Trilhas pré-escolar (atenção)
+6 02/06/2026 14:50 15:40 Bruno Marinho Intervenções com recurso livre
+7 09/06/2026 14:30 15:00 Bruno Marinho Intervenções com desenhos livres
+8 22/06/2026 15:30 16:20 Bruno Marinho Devolutiva e entrega do laudo
+TXT;
+
+        $preview = $this->postJson("/api/antecipacoes/{$antecipacao->id}/lancamentos/importar-transcricao", [
+            'profissional_id' => $antecipacao->guia->profissional_id,
+            'transcricao' => $transcricao,
+        ]);
+
+        $preview->assertOk()
+            ->assertJsonPath('data.confirmacao_pendente', true)
+            ->assertJsonPath('data.cabecalho.clinica', 'Centro Neuro Kids Ltda')
+            ->assertJsonPath('data.cabecalho.profissional_executante', 'Mariana')
+            ->assertJsonPath('data.sessoes.0.data_sessao', '2026-04-08')
+            ->assertJsonPath('data.sessoes.7.data_sessao', '2026-06-22');
+
+        $this->assertDatabaseCount('lancamentos', 0);
+
+        $this->postJson("/api/antecipacoes/{$antecipacao->id}/lancamentos/importar-transcricao", [
+            'profissional_id' => $antecipacao->guia->profissional_id,
+            'transcricao' => $transcricao,
+            'confirmar_envio' => true,
+            'sessoes' => [
+                [
+                    'data_sessao' => '2026-04-09',
+                    'hora_inicio' => '14:50',
+                    'hora_fim' => '15:40',
+                    'acompanhante' => 'Bruno Marinho',
+                    'resumo_atividades' => 'Aplicação testes Neuropsicológicos',
+                ],
+            ],
+        ])->assertStatus(422)
+            ->assertJsonValidationErrors(['pdf_registro_sessoes']);
+
+        $confirmacao = $this->post("/api/antecipacoes/{$antecipacao->id}/lancamentos/importar-transcricao", [
+            'profissional_id' => $antecipacao->guia->profissional_id,
+            'transcricao' => $transcricao,
+            'confirmar_envio' => true,
+            'sessoes' => [
+                [
+                    'data_sessao' => '2026-04-09',
+                    'hora_inicio' => '14:50',
+                    'hora_fim' => '15:40',
+                    'acompanhante' => 'Bruno Marinho',
+                    'resumo_atividades' => 'Aplicação testes Neuropsicológicos',
+                ],
+                [
+                    'data_sessao' => '2026-04-09',
+                    'hora_inicio' => '14:50',
+                    'hora_fim' => '15:40',
+                    'acompanhante' => 'Bruno Marinho',
+                    'resumo_atividades' => 'Denver (Desenvolvimento)',
+                ],
+                [
+                    'data_sessao' => '2026-04-28',
+                    'hora_inicio' => '14:50',
+                    'hora_fim' => '15:40',
+                    'acompanhante' => 'Bruno Marinho',
+                    'resumo_atividades' => 'Denver',
+                ],
+                [
+                    'data_sessao' => '2026-05-05',
+                    'hora_inicio' => '14:50',
+                    'hora_fim' => '15:40',
+                    'acompanhante' => 'Bruno Marinho',
+                    'resumo_atividades' => 'Columbia (maturidade mental)',
+                ],
+                [
+                    'data_sessao' => '2026-05-12',
+                    'hora_inicio' => '14:50',
+                    'hora_fim' => '15:40',
+                    'acompanhante' => 'Bruno Marinho',
+                    'resumo_atividades' => 'Trilhas pré-escolar (atenção)',
+                ],
+                [
+                    'data_sessao' => '2026-06-02',
+                    'hora_inicio' => '14:50',
+                    'hora_fim' => '15:40',
+                    'acompanhante' => 'Bruno Marinho',
+                    'resumo_atividades' => 'Intervenções com recurso livre',
+                ],
+                [
+                    'data_sessao' => '2026-06-09',
+                    'hora_inicio' => '14:30',
+                    'hora_fim' => '15:00',
+                    'acompanhante' => 'Bruno Marinho',
+                    'resumo_atividades' => 'Intervenções com desenhos livres',
+                ],
+                [
+                    'data_sessao' => '2026-06-22',
+                    'hora_inicio' => '15:30',
+                    'hora_fim' => '16:20',
+                    'acompanhante' => 'Bruno Marinho',
+                    'resumo_atividades' => 'Devolutiva e entrega do laudo',
+                ],
+            ],
+            'pdf_registro_sessoes' => UploadedFile::fake()->create('registro.pdf', 128, 'application/pdf'),
+        ]);
+
+        $confirmacao->assertCreated()
+            ->assertJsonPath('data.confirmacao_pendente', false)
+            ->assertJsonPath('data.cabecalho.clinica', 'Centro Neuro Kids Ltda')
+            ->assertJsonPath('data.sessoes.0.data_sessao', '2026-04-09')
+            ->assertJsonPath('data.registros.0.hora_inicio', '14:50')
+            ->assertJsonPath('data.registros.7.hora_fim', '16:20');
+
+        $this->assertDatabaseCount('lancamentos', 8);
+        $this->assertSame(8, Lancamento::query()->where('antecipacao_id', $antecipacao->id)->count());
     }
 
     public function test_profissional_so_enxerga_seus_lancamentos_na_listagem(): void

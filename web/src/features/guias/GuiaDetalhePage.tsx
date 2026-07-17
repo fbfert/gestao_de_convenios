@@ -50,7 +50,7 @@ export function GuiaDetalhePage() {
 
       <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
         <h3 className="text-lg font-semibold text-white">Ações da guia</h3>
-        <p className="mt-1 text-sm text-slate-300">Finalize com senha e validade ou negue enquanto estiver em análise.</p>
+        <p className="mt-1 text-sm text-slate-300">Aprove com senha e validade ou negue enquanto estiver em análise.</p>
         <div className="mt-4"><GuiaStatusActions guia={guia} /></div>
       </section>
     </div>

@@ -19,6 +19,13 @@ class AntecipacaoResource extends JsonResource
             'qtd_autorizada' => $this->qtd_autorizada,
             'qtd_utilizada' => $this->qtd_utilizada,
             'status' => $this->status,
+            'lancamentos' => $this->whenLoaded('lancamentos', fn () => $this->lancamentos->map(fn ($lancamento) => [
+                'id' => $lancamento->id,
+                'data_sessao' => $lancamento->data_sessao?->toDateString(),
+                'hora_inicio' => $lancamento->hora_inicio,
+                'hora_fim' => $lancamento->hora_fim,
+                'status' => $lancamento->status,
+            ])->values()),
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];

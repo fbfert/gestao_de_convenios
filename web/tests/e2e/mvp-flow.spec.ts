@@ -1,3 +1,4 @@
+import { writeFileSync } from 'node:fs'
 import { expect, test, type Page, type TestInfo } from '@playwright/test'
 
 async function login(page: Page) {
@@ -73,7 +74,7 @@ test('fluxo completo de negocio', async ({ page }, testInfo: TestInfo) => {
     aprovarResponse.status(),
     `PATCH /solicitacoes/${solicitacaoId}/aprovar retornou ${aprovarResponse.status()} com corpo: ${aprovarResponseText}`,
   ).toBe(200)
-  await expect(page.getByTestId(`solicitacao-status-${solicitacaoId}`)).toContainText('Aprovada')
+  await expect(page.getByTestId(`solicitacao-status-${solicitacaoId}`)).toContainText('Aprovado')
 
   await page.reload({ waitUntil: 'domcontentloaded' })
   await expect(page.getByTestId('solicitacoes-page')).toBeVisible()
@@ -115,11 +116,16 @@ test('fluxo completo de negocio', async ({ page }, testInfo: TestInfo) => {
   await selectOption(page, 'guia-profissional', 'Dra. Marina Tavares')
   await page.getByTestId('guia-numero').fill(`GUIA-E2E-${Date.now()}`)
   await selectOption(page, 'guia-tipo-terapia', 'Especializada')
+  const createGuideResponsePromise = page.waitForResponse((response) => {
+    return response.request().method() === 'POST' && response.url().includes('/guias')
+  })
   await page.getByTestId('guia-submit').click()
+  const createGuideResponse = await createGuideResponsePromise
+  expect(createGuideResponse.status()).toBe(201)
+  const guideId = (await createGuideResponse.json()).data.id as number
 
-  const guideRow = page.locator('[data-testid^="guia-row-"]').first()
+  const guideRow = page.getByTestId(`guia-row-${guideId}`)
   await expect(guideRow).toBeVisible()
-  const guideId = Number((await guideRow.getAttribute('data-testid'))?.replace('guia-row-', ''))
   const guiaDetailResponsePromise = page.waitForResponse((response) => {
     return response.request().method() === 'GET' && response.url().includes(`/guias/${guideId}`)
   })
@@ -152,13 +158,16 @@ test('fluxo completo de negocio', async ({ page }, testInfo: TestInfo) => {
     finalizeResponse.status(),
     `PATCH /guias/${guideId}/finalizar retornou ${finalizeResponse.status()} com corpo: ${finalizeResponseText}`,
   ).toBe(200)
-  await expect(page.getByText('Finalizada', { exact: true })).toBeVisible()
+  await expect(page.getByText('Aprovado', { exact: true })).toBeVisible()
 
   await page.goto('/antecipacoes', { waitUntil: 'domcontentloaded' })
   await expect(page.getByTestId('antecipacoes-page')).toBeVisible()
   await selectOption(page, 'antecipacao-filtro-convenio', 'Unimed')
   await selectOption(page, 'antecipacao-filtro-paciente', 'Ana Paula Ribeiro')
   await page.getByRole('button', { name: 'Aplicar' }).click()
+  await expect(page.getByTestId('antecipacao-alerta-continuidade')).toContainText(
+    'sem próximos agendamentos',
+  )
   const antecipacaoRow = page.locator('[data-testid^="antecipacao-row-"]').first()
   await expect(antecipacaoRow).toBeVisible()
   const antecipacaoId = Number(
@@ -172,6 +181,12 @@ test('fluxo completo de negocio', async ({ page }, testInfo: TestInfo) => {
     waitUntil: 'domcontentloaded',
   })
   await expect(page.getByTestId('lancamentos-page')).toBeVisible()
+  const pdfPath = testInfo.outputPath('registro-sessao.pdf')
+  writeFileSync(
+    pdfPath,
+    '%PDF-1.4\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] >>\nendobj\ntrailer\n<< /Root 1 0 R /Size 4 >>\nstartxref\n0\n%%EOF\n',
+    'utf8',
+  )
   await page.getByTestId('lancamento-novo').click()
   await selectOption(page, 'lancamento-profissional', 'Dra. Marina Tavares')
   await expect(page.getByTestId('lancamento-antecipacao')).toContainText(String(antecipacaoId))
@@ -197,6 +212,28 @@ test('fluxo completo de negocio', async ({ page }, testInfo: TestInfo) => {
     `POST /antecipacoes/${antecipacaoId}/lancamentos retornou ${lancamentoResponse.status()} com corpo: ${lancamentoResponseText}`,
   ).toBe(201)
 
+  await page.getByTestId('lancamento-import-transcricao').fill(`GUIA Nº: 521381566206
+Clínica: Centro Neuro Kids Ltda
+Paciente: Ana Paula Ribeiro
+Número Cartão: 0220 090000 551.330-8
+Profissional Executante: Mariana
+Terapia aplicada: ABA - AV. Neuropsicológica
+
+Sessões
+1 08/04/26 14:50 15:40 Bruno Marinho Aplicação testes Neuropsicológicos`)
+  await page.getByTestId('lancamento-importar').click()
+  await expect(page.getByTestId('lancamento-import-pdf')).toBeVisible()
+  await page.getByTestId('lancamento-import-pdf').setInputFiles(pdfPath)
+  await expect(page.getByTestId('lancamento-confirmar-envio')).toBeEnabled()
+  const confirmImportResponsePromise = page.waitForResponse((response) => {
+    return (
+      response.request().method() === 'POST' &&
+      response.url().includes(`/antecipacoes/${antecipacaoId}/lancamentos/importar-transcricao`)
+    )
+  })
+  await page.getByTestId('lancamento-confirmar-envio').click()
+  expect((await confirmImportResponsePromise).status()).toBe(201)
+
   await page.goto('/antecipacoes', { waitUntil: 'domcontentloaded' })
   await selectOption(page, 'antecipacao-filtro-convenio', 'Unimed')
   await selectOption(page, 'antecipacao-filtro-paciente', 'Ana Paula Ribeiro')
@@ -218,7 +255,7 @@ test('fluxo completo de negocio', async ({ page }, testInfo: TestInfo) => {
     guiasListResponse.status(),
     `GET /guias retornou ${guiasListResponse.status()} com corpo: ${guiasListResponseText}`,
   ).toBe(200)
-  await expect(page.getByTestId(`guia-status-${guideId}`)).toHaveText('Finalizada')
+  await expect(page.getByTestId(`guia-status-${guideId}`)).toHaveText('Aprovado')
   await expect(page.getByTestId(`guia-gerar-conciliacao-${guideId}`)).toBeEnabled()
   const conciliacaoResponsePromise = page.waitForResponse((response) => {
     return (
@@ -278,6 +315,7 @@ test('fluxo completo de negocio', async ({ page }, testInfo: TestInfo) => {
   await expect(page).toHaveURL(/\/login$/)
   console.log('[E2E] logout done')
   await page.goto('/', { waitUntil: 'domcontentloaded' })
+  await page.waitForURL(/\/login$/)
   await expect(page).toHaveURL(/\/login$/)
   console.log('[E2E] redirect after logout done')
 })
@@ -316,7 +354,7 @@ test('detalhe de guia abre pela lista e atualiza após finalizar', async ({ page
   })
   await page.getByTestId(`guia-finalizar-confirmar-${guideId}`).click()
   expect((await finalizeResponsePromise).status()).toBe(200)
-  await expect(page.getByText('Finalizada', { exact: true })).toBeVisible()
+  await expect(page.getByText('Aprovado', { exact: true })).toBeVisible()
 })
 
 test('detalhe de guia inexistente exibe erro tratado', async ({ page }) => {

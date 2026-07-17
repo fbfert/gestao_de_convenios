@@ -37,10 +37,15 @@ const emptyForm: SolicitacaoForm = {
 
 function statusTone(status: string) {
   switch (status) {
+    case 'registered':
+      return 'bg-cyan-400/15 text-cyan-100 border-cyan-400/20'
     case 'approved':
       return 'bg-emerald-400/15 text-emerald-100 border-emerald-400/20'
+    case 'canceled':
     case 'denied':
       return 'bg-rose-400/15 text-rose-100 border-rose-400/20'
+    case 'expired':
+      return 'bg-amber-400/15 text-amber-100 border-amber-400/20'
     default:
       return 'bg-cyan-400/15 text-cyan-100 border-cyan-400/20'
   }
@@ -499,9 +504,12 @@ export function SolicitacoesPage() {
                 data-testid="solicitacao-filtro-status"
               >
                 <option value="">Todos</option>
+                <option value="registered">Cadastrado</option>
                 <option value="under_review">Em análise</option>
-                <option value="approved">Aprovada</option>
-                <option value="denied">Negada</option>
+                <option value="approved">Aprovado</option>
+                <option value="canceled">Cancelado</option>
+                <option value="denied">Negado</option>
+                <option value="expired">Vencido</option>
               </Select>
             </label>
 

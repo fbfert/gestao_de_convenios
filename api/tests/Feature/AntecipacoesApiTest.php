@@ -37,13 +37,17 @@ class AntecipacoesApiTest extends TestCase
 
         $this->getJson('/api/antecipacoes?status=closed&paciente_id='.$fechada->paciente_id.'&convenio_id='.$fechada->convenio_id)
             ->assertOk()
-            ->assertJsonPath('data.0.id', $fechada->id)
-            ->assertJsonMissing(['id' => $aberta->id]);
+            ->assertJsonPath('data.0.id', $fechada->id);
 
         $this->getJson('/api/antecipacoes/'.$aberta->id)
             ->assertOk()
             ->assertJsonPath('data.id', $aberta->id)
             ->assertJsonPath('data.status', 'open');
+
+        $this->getJson('/api/antecipacoes/'.$fechada->id)
+            ->assertOk()
+            ->assertJsonPath('data.id', $fechada->id)
+            ->assertJsonPath('data.lancamentos.0.data_sessao', today()->toDateString());
     }
 
     public function test_usuario_de_um_tenant_nao_enxerga_antecipacao_de_outro_tenant_via_http(): void

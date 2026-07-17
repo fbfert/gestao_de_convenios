@@ -2,15 +2,18 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ImportLancamentosTranscricaoRequest;
 use App\Http\Requests\StoreLancamentoRequest;
+use App\Http\Requests\UpdateLancamentoRequest;
 use App\Http\Resources\LancamentoResource;
 use App\Models\Antecipacao;
+use App\Models\Lancamento;
 use App\Models\Profissional;
 use App\Services\LancamentoService;
-use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Validation\ValidationException;
 
 class LancamentoController extends Controller
 {
@@ -26,21 +29,91 @@ class LancamentoController extends Controller
         );
     }
 
+    public function show(Lancamento $lancamento): LancamentoResource
+    {
+        return new LancamentoResource($this->service->buscar($lancamento->id));
+    }
+
     public function store(StoreLancamentoRequest $request, Antecipacao $antecipacao): JsonResponse
     {
         $dados = $request->validated();
 
         return (new LancamentoResource(
-            $this->service->registrar(
+            $this->service->registrarSessao(
                 $antecipacao,
                 $this->resolverProfissional($dados['profissional_id']),
-                Carbon::parse($dados['data_sessao'])
+                $dados
             )
         ))->response()->setStatusCode(201);
+    }
+
+    public function update(UpdateLancamentoRequest $request, Lancamento $lancamento): LancamentoResource
+    {
+        return new LancamentoResource($this->service->atualizar($lancamento, $request->validated()));
+    }
+
+    public function destroy(Lancamento $lancamento): JsonResponse
+    {
+        $this->service->remover($lancamento);
+
+        return response()->json(null, 204);
+    }
+
+    public function importarTranscricao(ImportLancamentosTranscricaoRequest $request, Antecipacao $antecipacao): JsonResponse
+    {
+        $dados = $request->validated();
+        $profissional = $this->resolverProfissional($dados['profissional_id']);
+
+        if (! $request->boolean('confirmar_envio')) {
+            $resultado = $this->service->previsualizarTranscricao($dados['transcricao']);
+
+            return response()->json([
+                'data' => [
+                    'confirmacao_pendente' => true,
+                    'cabecalho' => $resultado['cabecalho'],
+                    'sessoes' => $resultado['sessoes'],
+                    'registros' => [],
+                ],
+            ]);
+        }
+
+        $previsualizacao = $this->service->previsualizarTranscricao($dados['transcricao']);
+        if ($this->regiaoExigePdf($previsualizacao['cabecalho']['numero_cartao'] ?? null) && ! $request->hasFile('pdf_registro_sessoes')) {
+            throw ValidationException::withMessages([
+                'pdf_registro_sessoes' => 'O PDF do registro de sessões é obrigatório para a regional 0220.',
+            ]);
+        }
+
+        $resultado = $this->service->confirmarTranscricao(
+            $antecipacao,
+            $profissional,
+            $dados['transcricao'],
+            $dados['sessoes'] ?? []
+        );
+
+        return response()->json([
+            'data' => [
+                'confirmacao_pendente' => false,
+                'cabecalho' => $resultado['cabecalho'],
+                'sessoes' => $resultado['sessoes'],
+                'registros' => LancamentoResource::collection(collect($resultado['registros']))->resolve(),
+            ],
+        ], 201);
     }
 
     private function resolverProfissional(int $profissionalId): Profissional
     {
         return Profissional::query()->findOrFail($profissionalId);
+    }
+
+    private function regiaoExigePdf(?string $numeroCartao): bool
+    {
+        if ($numeroCartao === null || $numeroCartao === '') {
+            return false;
+        }
+
+        $somenteDigitos = preg_replace('/\D+/', '', $numeroCartao) ?? '';
+
+        return str_starts_with($somenteDigitos, '0220');
     }
 }

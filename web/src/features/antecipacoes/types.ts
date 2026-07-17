@@ -8,6 +8,13 @@ export type Antecipacao = {
   qtd_autorizada: number
   qtd_utilizada: number
   status: string
+  lancamentos?: Array<{
+    id: number
+    data_sessao: string | null
+    hora_inicio: string | null
+    hora_fim: string | null
+    status: string
+  }>
 }
 
 export type PaginatedResponse<T> = {

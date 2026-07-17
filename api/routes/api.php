@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AntecipacaoController;
+use App\Http\Controllers\AuditController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ConvenioController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\RoleController;
@@ -24,6 +26,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
+
+    Route::get('/dashboard', [DashboardController::class, 'index']);
+    Route::get('/auditoria', [AuditController::class, 'index'])->middleware('permission:dashboard.auditoria');
 
     Route::get('/pacientes', [PacienteController::class, 'index']);
     Route::get('/pacientes/{paciente}', [PacienteController::class, 'show']);
@@ -68,8 +73,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/antecipacoes', [AntecipacaoController::class, 'index']);
     Route::get('/antecipacoes/{antecipacao}', [AntecipacaoController::class, 'show']);
     Route::post('/antecipacoes/{antecipacao}/lancamentos', [LancamentoController::class, 'store']);
+    Route::post('/antecipacoes/{antecipacao}/lancamentos/importar-transcricao', [LancamentoController::class, 'importarTranscricao']);
 
     Route::get('/lancamentos', [LancamentoController::class, 'index']);
+    Route::get('/lancamentos/{lancamento}', [LancamentoController::class, 'show']);
+    Route::patch('/lancamentos/{lancamento}', [LancamentoController::class, 'update']);
+    Route::delete('/lancamentos/{lancamento}', [LancamentoController::class, 'destroy']);
 
     Route::post('/guias/{guia}/conciliacao', [ConciliacaoController::class, 'store']);
     Route::get('/conciliacoes', [ConciliacaoController::class, 'index']);

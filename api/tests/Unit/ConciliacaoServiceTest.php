@@ -6,6 +6,7 @@ use App\Models\Convenio;
 use App\Models\Especialidade;
 use App\Models\Guia;
 use App\Models\Paciente;
+use App\Models\MovimentoFinanceiro;
 use App\Models\Profissional;
 use App\Models\Tenant;
 use App\Services\AntecipacaoService;
@@ -59,6 +60,38 @@ class ConciliacaoServiceTest extends TestCase
         $this->assertSame('348.00', $repasse['valor_repasse_total']);
         $this->assertSame('44.00', $repasse['valor_retencao_unitario']);
         $this->assertSame('132.00', $repasse['valor_retencao_total']);
+    }
+
+    public function test_registra_movimentos_com_distincao_entre_profissional_informado_e_executor(): void
+    {
+        $antecipacaoService = app(AntecipacaoService::class);
+        $lancamentoService = app(LancamentoService::class);
+        $service = app(ConciliacaoService::class);
+
+        $guia = $this->novaGuia('Unimed', 'Fisioterapia', 'especializada');
+        $antecipacao = $antecipacaoService->abrirCiclo($guia);
+
+        $profissionalInformado = Profissional::query()->where('nome', 'Dra. Marina Tavares')->firstOrFail();
+        $profissionalExecutor = Profissional::query()->create([
+            'tenant_id' => $profissionalInformado->tenant_id,
+            'especialidade_id' => $profissionalInformado->especialidade_id,
+            'nome' => 'Dra. Execucao Temporaria',
+            'conselho_registro' => 'CREFITO 999999-F',
+            'ativo' => true,
+            'percentual_repasse' => '70.00',
+        ]);
+
+        $lancamentoService->registrar($antecipacao, $profissionalExecutor, today());
+
+        $conciliacao = $service->gerarParaGuia($guia);
+
+        $this->assertSame(2, MovimentoFinanceiro::query()->where('conciliacao_financeira_id', $conciliacao->id)->count());
+        $this->assertSame(1, $conciliacao->movimentosFinanceiros->where('tipo', 'entrada')->count());
+        $saida = $conciliacao->movimentosFinanceiros->firstWhere('tipo', 'saida');
+        $this->assertNotNull($saida);
+        $this->assertSame($profissionalInformado->id, $saida->profissional_informado_id);
+        $this->assertSame($profissionalExecutor->id, $saida->profissional_executor_id);
+        $this->assertSame('98.00', $saida->valor_unitario);
     }
 
     private function novaGuia(string $convenioNome, string $especialidadeNome, string $tipoTerapia): Guia

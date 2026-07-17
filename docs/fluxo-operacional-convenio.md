@@ -19,6 +19,7 @@ Documento-resumo da implementação da primeira fatia do fluxo operacional unifi
 - O analítico da Unimed em Excel já pode ser importado e pré-visualizado para leitura de guias, glosas e totais.
 - As linhas importadas já saem normalizadas para conciliação por guia, com totais de pago, glosado e saldo.
 - O repasse financeiro já é calculado por sessão com percentual configurável por profissional, com retenção da clínica derivada desse percentual.
+- A conciliação já registra o movimento de entrada da Unimed e o movimento de saída do repasse, distinguindo profissional informado ao plano e profissional executor.
 
 ## Regras aplicadas
 
@@ -33,7 +34,7 @@ Documento-resumo da implementação da primeira fatia do fluxo operacional unifi
 - O sistema ainda não possui um módulo separado de agendamento.
 - O alerta de continuidade é derivado das sessões registradas na antecipação.
 - A conciliação financeira completa e o repasse por profissional ainda estão pendentes.
-- A estrutura de conciliação financeira ainda não transforma o analítico importado em lançamentos automáticos de pagamento ou registros contábeis de saída.
+- A estrutura de conciliação financeira ainda não fecha o ciclo contábil com baixa bancária ou integração externa de pagamento.
 
 ## Validações recentes
 

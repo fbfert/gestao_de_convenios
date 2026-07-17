@@ -6,6 +6,7 @@ use App\Exceptions\ConciliacaoStatusInvalidoException;
 use App\Models\ConciliacaoFinanceira;
 use App\Models\Guia;
 use App\Models\Lancamento;
+use App\Models\MovimentoFinanceiro;
 use App\Models\Profissional;
 use App\Services\Concerns\AppliesOwnScope;
 use Carbon\Carbon;
@@ -26,7 +27,12 @@ class ConciliacaoService
     public function listar(array $filtros = [], int $perPage = 15): LengthAwarePaginator
     {
         $query = $this->aplicarEscopoOwn(
-            ConciliacaoFinanceira::query()->with(['guia', 'profissional']),
+            ConciliacaoFinanceira::query()->with([
+                'guia.profissional',
+                'profissional',
+                'movimentosFinanceiros.profissionalInformado',
+                'movimentosFinanceiros.profissionalExecutor',
+            ]),
             'conciliacoes.view',
             'conciliacoes.viewOwn',
             fn ($query, $user) => $query->where('profissional_id', $user->profissional_id)
@@ -54,7 +60,7 @@ class ConciliacaoService
 
         $valorUnitario = $this->tabelaValoresService->obterValorVigente($guia, $guia->profissional_id);
         $valorTotal = number_format($quantidade * (float) $valorUnitario, 2, '.', '');
-        return ConciliacaoFinanceira::query()->create([
+        $conciliacao = ConciliacaoFinanceira::query()->create([
             'tenant_id' => $guia->tenant_id,
             'guia_id' => $guia->id,
             'profissional_id' => $guia->profissional_id,
@@ -64,6 +70,15 @@ class ConciliacaoService
             'referencia_analitico_convenio' => null,
             'status' => 'pending',
             'conferido_em' => null,
+        ]);
+
+        $this->sincronizarMovimentosFinanceiros($conciliacao);
+
+        return $conciliacao->fresh([
+            'guia.profissional',
+            'profissional',
+            'movimentosFinanceiros.profissionalInformado',
+            'movimentosFinanceiros.profissionalExecutor',
         ]);
     }
 
@@ -116,6 +131,67 @@ class ConciliacaoService
         $conciliacao->save();
 
         return $conciliacao->refresh();
+    }
+
+    private function sincronizarMovimentosFinanceiros(ConciliacaoFinanceira $conciliacao): void
+    {
+        $conciliacao->loadMissing(['guia.profissional', 'profissional', 'guia.antecipacoes.lancamentos.profissional']);
+
+        MovimentoFinanceiro::query()
+            ->where('conciliacao_financeira_id', $conciliacao->id)
+            ->delete();
+
+        $movimentos = [];
+        $agora = now();
+
+        $movimentos[] = [
+            'tenant_id' => $conciliacao->tenant_id,
+            'conciliacao_financeira_id' => $conciliacao->id,
+            'guia_id' => $conciliacao->guia_id,
+            'profissional_informado_id' => $conciliacao->guia?->profissional_id,
+            'profissional_executor_id' => null,
+            'tipo' => 'entrada',
+            'origem' => 'analitico',
+            'quantidade' => $conciliacao->quantidade,
+            'valor_unitario' => $conciliacao->valor_unitario,
+            'valor_total' => $conciliacao->valor_total,
+            'referencia_analitico_convenio' => $conciliacao->guia?->numero_guia,
+            'descricao' => 'Valor recebido da Unimed',
+            'created_at' => $agora,
+            'updated_at' => $agora,
+        ];
+
+        $lancamentos = Lancamento::query()
+            ->with('profissional')
+            ->where('status', 'completed')
+            ->whereHas('antecipacao', function ($query) use ($conciliacao) {
+                $query->where('guia_id', $conciliacao->guia_id);
+            })
+            ->get()
+            ->groupBy('profissional_id');
+
+        foreach ($lancamentos as $profissionalId => $grupo) {
+            $repasse = $this->calcularRepasse($conciliacao->guia, (int) $profissionalId, $grupo->count());
+
+            $movimentos[] = [
+                'tenant_id' => $conciliacao->tenant_id,
+                'conciliacao_financeira_id' => $conciliacao->id,
+                'guia_id' => $conciliacao->guia_id,
+                'profissional_informado_id' => $conciliacao->guia?->profissional_id,
+                'profissional_executor_id' => (int) $profissionalId,
+                'tipo' => 'saida',
+                'origem' => 'repasse',
+                'quantidade' => $grupo->count(),
+                'valor_unitario' => $repasse['valor_repasse_unitario'],
+                'valor_total' => $repasse['valor_repasse_total'],
+                'referencia_analitico_convenio' => $conciliacao->guia?->numero_guia,
+                'descricao' => 'Repasse ao profissional executor',
+                'created_at' => $agora,
+                'updated_at' => $agora,
+            ];
+        }
+
+        MovimentoFinanceiro::query()->insert($movimentos);
     }
 
     private function percentualRepasseProfissional(?Profissional $profissional): string

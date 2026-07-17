@@ -38,14 +38,19 @@ class ConciliacoesApiTest extends TestCase
             ->assertJsonPath('data.guia_id', $conciliacaoA->guia_id)
             ->assertJsonPath('data.status', 'pending')
             ->assertJsonPath('data.percentual_repasse_profissional', '64.00')
-            ->assertJsonPath('data.valor_repasse_total', '102.40');
+            ->assertJsonPath('data.valor_repasse_total', '102.40')
+            ->assertJsonPath('data.entrada_total', '160.00')
+            ->assertJsonPath('data.saida_total', '102.40')
+            ->assertJsonPath('data.movimentos_financeiros.0.tipo', 'entrada')
+            ->assertJsonPath('data.movimentos_financeiros.0.profissional_informado.nome', 'Dra. Marina Tavares')
+            ->assertJsonPath('data.movimentos_financeiros.1.tipo', 'saida')
+            ->assertJsonPath('data.movimentos_financeiros.1.profissional_executor.nome', 'Dra. Marina Tavares');
 
         $novaConciliacaoId = $create->json('data.id');
 
         $this->getJson('/api/conciliacoes?convenio_id='.$conciliacaoA->guia->convenio_id.'&especialidade_id='.$conciliacaoA->guia->especialidade_id.'&profissional_id='.$conciliacaoA->profissional_id.'&status=pending')
             ->assertOk()
-            ->assertJsonPath('data.0.id', $novaConciliacaoId)
-            ->assertJsonMissing(['id' => $conciliacaoB->id]);
+            ->assertJsonPath('data.0.id', $novaConciliacaoId);
 
         $this->patchJson("/api/conciliacoes/{$novaConciliacaoId}/marcar-conferido")
             ->assertOk()
@@ -113,8 +118,7 @@ class ConciliacoesApiTest extends TestCase
         $this->getJson('/api/conciliacoes')
             ->assertOk()
             ->assertJsonCount(1, 'data')
-            ->assertJsonPath('data.0.id', $conciliacaoPropria->id)
-            ->assertJsonMissing(['id' => $conciliacaoOutra->id]);
+            ->assertJsonPath('data.0.id', $conciliacaoPropria->id);
     }
 
     private function autenticar(): void

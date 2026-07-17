@@ -36,6 +36,35 @@ class ConciliacaoFinanceira extends Model
         return $this->belongsTo(Profissional::class);
     }
 
+    public function movimentosFinanceiros()
+    {
+        return $this->hasMany(MovimentoFinanceiro::class);
+    }
+
+    public function getEntradaTotalAttribute(): string
+    {
+        return number_format((float) $this->valor_total, 2, '.', '');
+    }
+
+    public function getSaidaTotalAttribute(): string
+    {
+        $movimentos = $this->relationLoaded('movimentosFinanceiros')
+            ? $this->movimentosFinanceiros
+            : $this->movimentosFinanceiros()->get();
+
+        return number_format(
+            (float) $movimentos->where('tipo', 'saida')->sum(fn (MovimentoFinanceiro $movimento) => (float) $movimento->valor_total),
+            2,
+            '.',
+            ''
+        );
+    }
+
+    public function getSaldoTotalAttribute(): string
+    {
+        return number_format((float) $this->entrada_total - (float) $this->saida_total, 2, '.', '');
+    }
+
     public function getPercentualRepasseProfissionalAttribute(): ?string
     {
         return $this->repasseContext()['percentual_repasse_profissional'] ?? null;

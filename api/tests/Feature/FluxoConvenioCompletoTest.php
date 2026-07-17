@@ -93,5 +93,10 @@ class FluxoConvenioCompletoTest extends TestCase
         $this->assertSame('160.00', $conciliacao->valor_total);
         $this->assertSame('64.00', $conciliacao->percentual_repasse_profissional);
         $this->assertSame('102.40', $conciliacao->valor_repasse_total);
+        $this->assertSame('160.00', $conciliacao->entrada_total);
+        $this->assertSame('102.40', $conciliacao->saida_total);
+        $this->assertSame(2, $conciliacao->movimentosFinanceiros->count());
+        $this->assertSame($profissional->id, $conciliacao->movimentosFinanceiros->firstWhere('tipo', 'entrada')->profissional_informado_id);
+        $this->assertSame($profissional->id, $conciliacao->movimentosFinanceiros->firstWhere('tipo', 'saida')->profissional_executor_id);
     }
 }

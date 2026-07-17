@@ -56,6 +56,12 @@ function formatPercent(value: string) {
   }).format(numeric)}%`
 }
 
+function joinUnique(values: Array<string | null | undefined>) {
+  return Array.from(new Set(values.filter((value): value is string => Boolean(value?.trim())))).join(
+    ', ',
+  )
+}
+
 export function ConciliacaoPage() {
   const [filters, setFilters] = useState(defaultFilters)
   const [draftFilters, setDraftFilters] = useState(defaultFilters)
@@ -257,6 +263,8 @@ export function ConciliacaoPage() {
                   <th className="px-4 py-3">Valor total</th>
                   <th className="px-4 py-3">Repasse %</th>
                   <th className="px-4 py-3">Repasse total</th>
+                  <th className="px-4 py-3">Entrada</th>
+                  <th className="px-4 py-3">Saída</th>
                   <th className="px-4 py-3">Status</th>
                   <th className="px-4 py-3">Ações</th>
                 </tr>
@@ -275,8 +283,23 @@ export function ConciliacaoPage() {
                         conciliacao.especialidade_id}
                     </td>
                     <td className="px-4 py-4 text-slate-200">
-                      {profissionais.find((item) => item.id === conciliacao.profissional_id)?.nome ??
-                        conciliacao.profissional_id}
+                      <div className="space-y-1">
+                        <p>
+                          Plano:{' '}
+                          {conciliacao.profissional_informado?.nome ??
+                            profissionais.find((item) => item.id === conciliacao.profissional_id)
+                              ?.nome ??
+                            conciliacao.profissional_id}
+                        </p>
+                        <p className="text-xs text-slate-400">
+                          Execução:{' '}
+                          {joinUnique(
+                            conciliacao.movimentos_financeiros
+                              ?.filter((movimento) => movimento.tipo === 'saida')
+                              .map((movimento) => movimento.profissional_executor?.nome ?? null) ?? [],
+                          ) || 'Pendente'}
+                        </p>
+                      </div>
                     </td>
                     <td className="px-4 py-4 text-slate-200">{conciliacao.quantidade}</td>
                     <td className="px-4 py-4 text-slate-200">
@@ -290,6 +313,12 @@ export function ConciliacaoPage() {
                     </td>
                     <td className="px-4 py-4 text-slate-200">
                       {formatCurrency(conciliacao.valor_repasse_total)}
+                    </td>
+                    <td className="px-4 py-4 text-slate-200">
+                      {formatCurrency(conciliacao.entrada_total)}
+                    </td>
+                    <td className="px-4 py-4 text-slate-200">
+                      {formatCurrency(conciliacao.saida_total)}
                     </td>
                     <td className="px-4 py-4">
                       <span
@@ -332,7 +361,7 @@ export function ConciliacaoPage() {
                 ))}
                 {conciliacoes.length === 0 ? (
                   <tr>
-                    <td colSpan={12} className="px-4 py-8 text-center text-slate-300">
+                    <td colSpan={14} className="px-4 py-8 text-center text-slate-300">
                       Nenhuma conciliação encontrada.
                     </td>
                   </tr>

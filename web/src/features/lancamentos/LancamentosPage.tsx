@@ -5,12 +5,14 @@ import { Select } from '../../components/ui/Select'
 import { useProfissionais } from '../../lib/queries/useReferenceData'
 import { useAntecipacoes } from '../antecipacoes/useAntecipacoes'
 import {
+  useImportarAnaliticoUnimed,
   useConfirmarLancamentosTranscritos,
   useCriarLancamento,
   useImportarLancamentosTranscritos,
   useLancamentos,
 } from './useLancamentos'
 import type {
+  AnaliticoUnimedPreview,
   LancamentoConfirmImportForm,
   LancamentoFilters,
   LancamentoForm,
@@ -71,6 +73,9 @@ export function LancamentosPage() {
   const [importPreview, setImportPreview] = useState<LancamentoTranscricaoPreview | null>(null)
   const [importDraftSessoes, setImportDraftSessoes] = useState<LancamentoTranscricaoSessao[]>([])
   const [importPdfFile, setImportPdfFile] = useState<File | null>(null)
+  const [analiticoFile, setAnaliticoFile] = useState<File | null>(null)
+  const [analiticoPreview, setAnaliticoPreview] = useState<AnaliticoUnimedPreview | null>(null)
+  const [analiticoError, setAnaliticoError] = useState<string | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
   const [importError, setImportError] = useState<string | null>(null)
 
@@ -80,6 +85,7 @@ export function LancamentosPage() {
   const criarLancamento = useCriarLancamento()
   const importarLancamentos = useImportarLancamentosTranscritos()
   const confirmarLancamentos = useConfirmarLancamentosTranscritos()
+  const importarAnalitico = useImportarAnaliticoUnimed()
 
   const profissionais = useMemo(() => profissionaisQuery.data ?? [], [profissionaisQuery.data])
   const antecipacoes = useMemo(() => antecipacoesQuery.data?.data ?? [], [antecipacoesQuery.data])
@@ -193,6 +199,23 @@ export function LancamentosPage() {
     }
   }
 
+  const handleAnaliticoSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setAnaliticoError(null)
+
+    if (!analiticoFile) {
+      setAnaliticoError('Selecione um arquivo Excel para importar o analítico.')
+      return
+    }
+
+    try {
+      const result = await importarAnalitico.mutateAsync(analiticoFile)
+      setAnaliticoPreview(result)
+    } catch (error) {
+      setAnaliticoError(getHttpErrorMessage(error, 'Não foi possível ler o analítico da Unimed.'))
+    }
+  }
+
   const atualizarSessaoImportada = (
     index: number,
     campo: keyof LancamentoTranscricaoSessao,
@@ -216,6 +239,8 @@ export function LancamentosPage() {
   )
   const exigePdf =
     importPreview?.cabecalho.numero_cartao?.replace(/\D+/g, '').startsWith('0220') ?? false
+  const analiticoPreviewRows = analiticoPreview?.analitico.linhas.slice(0, 8) ?? []
+  const glosaPreviewRows = analiticoPreview?.glosas.linhas.slice(0, 8) ?? []
 
   return (
     <>
@@ -497,6 +522,174 @@ Terapia aplicada: ABA - AV. Neuropsicológica
               </div>
             )}
           </article>
+        </section>
+
+        <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h3 className="text-lg font-semibold text-white">Importar analítico da Unimed</h3>
+              <p className="text-sm text-slate-300">
+                Carregue o Excel devolvido pela Unimed para ler as linhas de atendimento e as
+                glosas antes da conciliação.
+              </p>
+            </div>
+          </div>
+
+          <form onSubmit={handleAnaliticoSubmit} className="mt-4 space-y-4">
+            <label className="block space-y-2">
+              <span className="text-sm font-medium text-slate-200">Arquivo Excel</span>
+              <input
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={(event) => setAnaliticoFile(event.target.files?.[0] ?? null)}
+                className="block w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200 file:mr-4 file:rounded-full file:border-0 file:bg-cyan-400 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-slate-950"
+                data-testid="analitico-import-arquivo"
+              />
+            </label>
+
+            {analiticoError ? (
+              <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+                {analiticoError}
+              </p>
+            ) : null}
+
+            <button
+              type="submit"
+              disabled={importarAnalitico.isPending}
+              className="inline-flex items-center justify-center rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:opacity-60"
+              data-testid="analitico-importar"
+            >
+              {importarAnalitico.isPending ? 'Lendo planilha...' : 'Importar analítico'}
+            </button>
+          </form>
+
+          {analiticoPreview ? (
+            <div className="mt-6 space-y-6">
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                <article className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Arquivo</p>
+                  <p className="mt-2 text-sm font-medium text-white">
+                    {analiticoPreview.arquivo}
+                  </p>
+                </article>
+                {analiticoPreview.planilhas.map((planilha) => (
+                  <article key={planilha.nome} className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                    <p className="text-xs uppercase tracking-[0.25em] text-slate-400">{planilha.nome}</p>
+                    <p className="mt-2 text-2xl font-semibold text-white">{planilha.linhas}</p>
+                  </article>
+                ))}
+              </div>
+
+              <div className="grid gap-4 xl:grid-cols-2">
+                <article className="rounded-3xl border border-white/10 bg-white/5 p-4">
+                  <h4 className="text-base font-semibold text-white">Cabeçalho do analítico</h4>
+                  <div className="mt-4 grid gap-3 md:grid-cols-2">
+                    {Object.entries(analiticoPreview.analitico.cabecalho).map(([key, value]) => (
+                      <div key={key} className="rounded-2xl border border-white/10 bg-slate-950/40 p-3">
+                        <p className="text-[11px] uppercase tracking-[0.25em] text-slate-400">{key}</p>
+                        <p className="mt-2 text-sm text-white">
+                          {formatEmpty(value.raw)}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-4 grid gap-3 md:grid-cols-2">
+                    <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-3">
+                      <p className="text-[11px] uppercase tracking-[0.25em] text-slate-400">
+                        Total prestador
+                      </p>
+                      <p className="mt-2 text-sm text-white">
+                        {formatEmpty(analiticoPreview.analitico.totais.prestador)}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-3">
+                      <p className="text-[11px] uppercase tracking-[0.25em] text-slate-400">
+                        Total lote
+                      </p>
+                      <p className="mt-2 text-sm text-white">
+                        {formatEmpty(analiticoPreview.analitico.totais.lote)}
+                      </p>
+                    </div>
+                  </div>
+                </article>
+
+                <article className="rounded-3xl border border-white/10 bg-white/5 p-4">
+                  <h4 className="text-base font-semibold text-white">Resumo de glosas</h4>
+                  <p className="mt-2 text-sm text-slate-300">
+                    {analiticoPreview.glosas.linhas.length} linha(s) de glosa encontradas.
+                  </p>
+                  <div className="mt-4 rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+                    <p className="text-[11px] uppercase tracking-[0.25em] text-slate-400">Total</p>
+                    <p className="mt-2 text-sm text-white">
+                      {formatEmpty(analiticoPreview.glosas.total.valor)}
+                    </p>
+                  </div>
+                </article>
+              </div>
+
+              <div className="grid gap-6 xl:grid-cols-2">
+                <div className="overflow-hidden rounded-3xl border border-white/10">
+                  <table className="w-full border-collapse text-left text-sm">
+                    <thead className="bg-white/5 text-xs uppercase tracking-[0.25em] text-slate-400">
+                      <tr>
+                        <th className="px-4 py-3">Guia</th>
+                        <th className="px-4 py-3">Realização</th>
+                        <th className="px-4 py-3">Descrição</th>
+                        <th className="px-4 py-3">Valor</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/10 bg-slate-950/30">
+                      {analiticoPreviewRows.map((linha) => (
+                        <tr key={linha.linha}>
+                          <td className="px-4 py-4 text-slate-200">
+                            {formatEmpty(linha.numero_guia_operadora)}
+                          </td>
+                          <td className="px-4 py-4 text-slate-200">
+                            {formatEmpty(linha.data_realizacao)}
+                          </td>
+                          <td className="px-4 py-4 text-slate-200">
+                            {formatEmpty(linha.descricao_procedimento)}
+                          </td>
+                          <td className="px-4 py-4 text-slate-200">{formatEmpty(linha.valor)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="overflow-hidden rounded-3xl border border-white/10">
+                  <table className="w-full border-collapse text-left text-sm">
+                    <thead className="bg-white/5 text-xs uppercase tracking-[0.25em] text-slate-400">
+                      <tr>
+                        <th className="px-4 py-3">Guia</th>
+                        <th className="px-4 py-3">Data</th>
+                        <th className="px-4 py-3">Tipo</th>
+                        <th className="px-4 py-3">Motivo</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/10 bg-slate-950/30">
+                      {glosaPreviewRows.map((linha) => (
+                        <tr key={linha.linha}>
+                          <td className="px-4 py-4 text-slate-200">
+                            {formatEmpty(linha.numero_guia_operadora)}
+                          </td>
+                          <td className="px-4 py-4 text-slate-200">
+                            {formatEmpty(linha.data_realizacao)}
+                          </td>
+                          <td className="px-4 py-4 text-slate-200">{formatEmpty(linha.tipo)}</td>
+                          <td className="px-4 py-4 text-slate-200">{formatEmpty(linha.motivo)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
+              O analítico aparece aqui depois da primeira importação do Excel.
+            </div>
+          )}
         </section>
 
         {isFormOpen ? (

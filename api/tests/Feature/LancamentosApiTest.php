@@ -232,6 +232,27 @@ TXT;
         $this->assertSame(8, Lancamento::query()->where('antecipacao_id', $antecipacao->id)->count());
     }
 
+    public function test_importa_analitico_unimed_e_normaliza_linhas(): void
+    {
+        $this->autenticar();
+
+        $arquivo = $this->criarArquivoAnaliticoUnimed();
+
+        $response = $this->post('/api/lancamentos/importar-analitico', [
+            'arquivo' => $arquivo,
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.arquivo', 'analitico-unimed.xlsx')
+            ->assertJsonPath('data.planilhas.0.nome', 'Analítico')
+            ->assertJsonPath('data.planilhas.0.linhas', 1)
+            ->assertJsonPath('data.planilhas.1.nome', 'Glosa')
+            ->assertJsonPath('data.analitico.cabecalho.unimed_executante.codigo', '220')
+            ->assertJsonPath('data.analitico.linhas.0.numero_guia_operadora', '50137394772')
+            ->assertJsonPath('data.analitico.linhas.0.valor', '45,00')
+            ->assertJsonPath('data.glosas.linhas.0.motivo', 'Cobranca de procedimento em duplicidade');
+    }
+
     public function test_profissional_so_enxerga_seus_lancamentos_na_listagem(): void
     {
         $user = $this->autenticarProfissional();
@@ -335,6 +356,162 @@ TXT;
         ])->antecipacoes()->firstOrFail();
 
         return app(LancamentoService::class)->registrar($antecipacao, $profissional, today());
+    }
+
+    private function criarArquivoAnaliticoUnimed(): UploadedFile
+    {
+        $path = tempnam(sys_get_temp_dir(), 'analitico_unimed_');
+
+        if ($path === false) {
+            throw new \RuntimeException('Não foi possível criar arquivo temporário para o analítico.');
+        }
+
+        $arquivo = $path.'.xlsx';
+        @unlink($path);
+
+        $zip = new \ZipArchive();
+        if ($zip->open($arquivo, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
+            throw new \RuntimeException('Não foi possível montar o xlsx de teste.');
+        }
+
+        $zip->addFromString('[Content_Types].xml', <<<XML
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+  <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+  <Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+</Types>
+XML);
+        $zip->addFromString('_rels/.rels', <<<XML
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>
+XML);
+        $zip->addFromString('xl/workbook.xml', <<<XML
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <sheets>
+    <sheet name="Analítico" sheetId="1" r:id="rId1"/>
+    <sheet name="Glosa" sheetId="2" r:id="rId2"/>
+  </sheets>
+</workbook>
+XML);
+        $zip->addFromString('xl/_rels/workbook.xml.rels', <<<XML
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/>
+</Relationships>
+XML);
+        $zip->addFromString('xl/worksheets/sheet1.xml', $this->montarWorksheetXml([
+            [1, ['A' => 'Unimed Executante: 220 - COOPERATIVA DE TRABALHO MEDICO DO PLANALTO SERRANO / CNPJ: 85246916000189']],
+            [2, ['A' => 'Prestador Executante: 22099808 - CENTRO NEUROKIDS LTDA']],
+            [3, [
+                'A' => 'Número Guia da Operadora',
+                'B' => 'Número Guia do Prestador',
+                'C' => 'Código',
+                'D' => 'Usuário',
+                'E' => 'Data Autorização',
+                'F' => 'Data Realização',
+                'G' => 'Proced.',
+                'H' => 'Tabela',
+                'I' => 'Descrição do Proced.',
+                'J' => 'Qtd.',
+                'K' => 'Filme',
+                'L' => 'Custo',
+                'M' => 'Hono',
+                'N' => 'Valor',
+                'O' => 'Local Realização',
+            ]],
+            [4, [
+                'A' => '50137394772',
+                'B' => '50137394772',
+                'E' => '20/03/2026',
+                'F' => '06/04/2026',
+                'G' => '50000470',
+                'H' => 'Procedimentos e eventos em saúde',
+                'I' => 'SESSÃO DE PSICOTERAPIA INDIVIDUAL POR PSICÓLOGO',
+                'J' => '1',
+                'K' => '0,00',
+                'L' => '0,00',
+                'M' => '45,00',
+                'N' => '45,00',
+                'O' => '',
+            ]],
+            [5, ['A' => 'TOTAL DO PRESTADOR', 'N' => '45,00']],
+            [6, ['A' => 'TOTAL DO LOTE', 'N' => '45,00']],
+        ]));
+        $zip->addFromString('xl/worksheets/sheet2.xml', $this->montarWorksheetXml([
+            [1, [
+                'A' => 'Número Guia da Operadora',
+                'B' => 'Número Guia do Prestador',
+                'C' => 'Código',
+                'D' => 'Usuário',
+                'E' => 'Data Autorização',
+                'F' => 'Data Realização',
+                'G' => 'Proced.',
+                'H' => 'Tabela',
+                'I' => 'Descrição do Proced.',
+                'J' => 'Qtd.',
+                'K' => 'Tipo',
+                'L' => 'Motivo',
+                'M' => 'Valor',
+                'N' => 'Local Realização',
+            ]],
+            [2, [
+                'A' => '50137394772',
+                'E' => '20/03/2026',
+                'F' => '06/04/2026',
+                'G' => '50000470',
+                'H' => 'Procedimentos e eventos em saúde',
+                'I' => 'SESSÃO DE PSICOTERAPIA INDIVIDUAL POR PSICÓLOGO',
+                'J' => '1',
+                'K' => '1.0',
+                'L' => 'Cobranca de procedimento em duplicidade',
+                'M' => '45,00',
+                'N' => '',
+            ]],
+            [3, ['A' => 'TOTAL:', 'M' => '45,00']],
+        ]));
+
+        $zip->close();
+
+        return UploadedFile::fake()->createWithContent('analitico-unimed.xlsx', file_get_contents($arquivo));
+    }
+
+    /**
+     * @param array<int, array{0: int, 1: array<string, string>}> $rows
+     */
+    private function montarWorksheetXml(array $rows): string
+    {
+        $rowsXml = '';
+
+        foreach ($rows as [$rowNumber, $cells]) {
+            $cellsXml = '';
+            foreach ($cells as $column => $value) {
+                $escaped = e($value);
+                $cellsXml .= sprintf(
+                    '<c r="%s%d" t="inlineStr"><is><t>%s</t></is></c>',
+                    $column,
+                    $rowNumber,
+                    $escaped
+                );
+            }
+
+            $rowsXml .= sprintf('<row r="%d">%s</row>', $rowNumber, $cellsXml);
+        }
+
+        return <<<XML
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <sheetData>
+    {$rowsXml}
+  </sheetData>
+</worksheet>
+XML;
     }
 
     private function criarAntecipacaoDeOutroTenant(): Antecipacao

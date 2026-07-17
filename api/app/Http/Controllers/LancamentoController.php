@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ImportAnaliticoUnimedRequest;
 use App\Http\Requests\ImportLancamentosTranscricaoRequest;
 use App\Http\Requests\StoreLancamentoRequest;
 use App\Http\Requests\UpdateLancamentoRequest;
@@ -9,6 +10,7 @@ use App\Http\Resources\LancamentoResource;
 use App\Models\Antecipacao;
 use App\Models\Lancamento;
 use App\Models\Profissional;
+use App\Services\AnaliticoUnimedImportService;
 use App\Services\LancamentoService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -18,7 +20,8 @@ use Illuminate\Validation\ValidationException;
 class LancamentoController extends Controller
 {
     public function __construct(
-        private readonly LancamentoService $service
+        private readonly LancamentoService $service,
+        private readonly AnaliticoUnimedImportService $analiticoImportService
     ) {
     }
 
@@ -99,6 +102,13 @@ class LancamentoController extends Controller
                 'registros' => LancamentoResource::collection(collect($resultado['registros']))->resolve(),
             ],
         ], 201);
+    }
+
+    public function importarAnalitico(ImportAnaliticoUnimedRequest $request): JsonResponse
+    {
+        return response()->json([
+            'data' => $this->analiticoImportService->previsualizar($request->file('arquivo')),
+        ]);
     }
 
     private function resolverProfissional(int $profissionalId): Profissional

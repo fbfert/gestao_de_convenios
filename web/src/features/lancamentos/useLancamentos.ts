@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '../../api/client'
 import { getHttpErrorMessage } from '../../lib/httpError'
 import type {
+  AnaliticoUnimedPreview,
   LancamentoConfirmImportForm,
   Lancamento,
   LancamentoFilters,
@@ -108,6 +109,21 @@ export function useConfirmarLancamentosTranscritos() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['lancamentos'] })
       await queryClient.invalidateQueries({ queryKey: ['antecipacoes'] })
+    },
+  })
+}
+
+export function useImportarAnaliticoUnimed() {
+  return useMutation({
+    mutationFn: async (arquivo: File) => {
+      const formData = new FormData()
+      formData.append('arquivo', arquivo)
+
+      const { data } = await apiClient.post<{
+        data: AnaliticoUnimedPreview
+      }>('/lancamentos/importar-analitico', formData)
+
+      return data.data
     },
   })
 }

@@ -15,7 +15,7 @@
 
 - [x] 3.1 Implementar a confirmação manual antes do envio do registro de sessões.
 - [x] 3.2 Exigir o PDF do registro de sessões para a regional 0220 e manter opcional para as demais.
-- [ ] 3.3 Estruturar o importador do analítico da Unimed em Excel.
+- [x] 3.3 Estruturar o importador do analítico da Unimed em Excel.
 
 ## 4. Conciliação e repasse
 

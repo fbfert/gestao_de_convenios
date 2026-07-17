@@ -74,6 +74,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/antecipacoes/{antecipacao}', [AntecipacaoController::class, 'show']);
     Route::post('/antecipacoes/{antecipacao}/lancamentos', [LancamentoController::class, 'store']);
     Route::post('/antecipacoes/{antecipacao}/lancamentos/importar-transcricao', [LancamentoController::class, 'importarTranscricao']);
+    Route::post('/lancamentos/importar-analitico', [LancamentoController::class, 'importarAnalitico']);
 
     Route::get('/lancamentos', [LancamentoController::class, 'index']);
     Route::get('/lancamentos/{lancamento}', [LancamentoController::class, 'show']);

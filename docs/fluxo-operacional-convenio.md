@@ -16,6 +16,7 @@ Documento-resumo da implementação da primeira fatia do fluxo operacional unifi
   - confirmação manual antes do envio
 - Para carteirinhas/regiões com prefixo `0220`, a confirmação exige o PDF do registro de sessões.
 - O painel de antecipações exibe alerta quando uma antecipação ativa não possui próximos agendamentos/sessões futuras.
+- O analítico da Unimed em Excel já pode ser importado e pré-visualizado para leitura de guias, glosas e totais.
 
 ## Regras aplicadas
 
@@ -29,8 +30,8 @@ Documento-resumo da implementação da primeira fatia do fluxo operacional unifi
 
 - O sistema ainda não possui um módulo separado de agendamento.
 - O alerta de continuidade é derivado das sessões registradas na antecipação.
-- A importação do analítico da Unimed em Excel ainda não foi implementada.
 - A conciliação financeira e o repasse por profissional ainda estão pendentes.
+- A estrutura de conciliação financeira ainda não transforma o analítico importado em lançamentos automáticos de pagamento.
 
 ## Validações recentes
 
@@ -39,3 +40,5 @@ Documento-resumo da implementação da primeira fatia do fluxo operacional unifi
 - `npm run lint`
 - `npm run build`
 - `openspec validate "fluxo-operacional-convenio" --type change --no-interactive`
+- `php artisan test --filter=LancamentosApiTest --stop-on-failure`
+- `openspec validate fluxo-operacional-convenio --type change --no-interactive`

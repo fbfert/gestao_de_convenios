@@ -78,3 +78,72 @@ export type LancamentoTranscricaoPreview = {
 export type LancamentoTranscricaoImportResult = LancamentoTranscricaoPreview & {
   registros: Lancamento[]
 }
+
+export type AnaliticoUnimedLinha = {
+  linha: string
+  numero_guia_operadora: string | null
+  numero_guia_prestador: string | null
+  codigo: string | null
+  usuario: string | null
+  data_autorizacao: string | null
+  data_realizacao: string | null
+  procedimento: string | null
+  tabela: string | null
+  descricao_procedimento: string | null
+  qtd: string | null
+  filme: string | null
+  custo: string | null
+  hono: string | null
+  valor: string | null
+  local_realizacao: string | null
+}
+
+export type AnaliticoUnimedGlosaLinha = {
+  linha: string
+  numero_guia_operadora: string | null
+  numero_guia_prestador: string | null
+  codigo: string | null
+  usuario: string | null
+  data_autorizacao: string | null
+  data_realizacao: string | null
+  procedimento: string | null
+  tabela: string | null
+  descricao_procedimento: string | null
+  qtd: string | null
+  tipo: string | null
+  motivo: string | null
+  valor: string | null
+  local_realizacao: string | null
+}
+
+export type AnaliticoUnimedPreview = {
+  arquivo: string
+  planilhas: Array<{ nome: string; linhas: number }>
+  analitico: {
+    cabecalho: {
+      unimed_executante: {
+        raw: string | null
+        codigo: string | null
+        nome: string | null
+        cnpj: string | null
+      }
+      prestador_executante: {
+        raw: string | null
+        codigo: string | null
+        nome: string | null
+        cnpj: string | null
+      }
+    }
+    linhas: AnaliticoUnimedLinha[]
+    totais: {
+      prestador: string | null
+      lote: string | null
+    }
+  }
+  glosas: {
+    linhas: AnaliticoUnimedGlosaLinha[]
+    total: {
+      valor: string | null
+    }
+  }
+}

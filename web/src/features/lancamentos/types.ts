@@ -116,6 +116,49 @@ export type AnaliticoUnimedGlosaLinha = {
   local_realizacao: string | null
 }
 
+export type AnaliticoUnimedConciliacaoLinha = {
+  linha: string | null
+  origem: 'analitico' | 'glosa'
+  natureza: 'pago' | 'glosado'
+  processavel: boolean
+  numero_guia_operadora: string | null
+  numero_guia_prestador: string | null
+  codigo: string | null
+  usuario: string | null
+  data_autorizacao: string | null
+  data_realizacao: string | null
+  procedimento: string | null
+  descricao_procedimento: string | null
+  qtd: string | null
+  qtd_normalizada: number
+  tipo: string | null
+  motivo: string | null
+  valor: string | null
+  valor_normalizado: string | null
+  local_realizacao: string | null
+  chave_conciliacao: string
+}
+
+export type AnaliticoUnimedConciliacaoResumoPorGuia = {
+  numero_guia_operadora: string
+  linhas_analitico: number
+  linhas_glosa: number
+  qtd_paga: number
+  qtd_glosada: number
+  valor_pago: string
+  valor_glosado: string
+}
+
+export type AnaliticoUnimedConciliacaoPreview = {
+  linhas: AnaliticoUnimedConciliacaoLinha[]
+  resumo_por_guia: AnaliticoUnimedConciliacaoResumoPorGuia[]
+  totais: {
+    pago: string
+    glosado: string
+    saldo: string
+  }
+}
+
 export type AnaliticoUnimedPreview = {
   arquivo: string
   planilhas: Array<{ nome: string; linhas: number }>
@@ -146,4 +189,5 @@ export type AnaliticoUnimedPreview = {
       valor: string | null
     }
   }
+  conciliacao: AnaliticoUnimedConciliacaoPreview
 }

@@ -241,6 +241,7 @@ export function LancamentosPage() {
     importPreview?.cabecalho.numero_cartao?.replace(/\D+/g, '').startsWith('0220') ?? false
   const analiticoPreviewRows = analiticoPreview?.analitico.linhas.slice(0, 8) ?? []
   const glosaPreviewRows = analiticoPreview?.glosas.linhas.slice(0, 8) ?? []
+  const conciliacaoPreviewRows = analiticoPreview?.conciliacao.linhas.slice(0, 8) ?? []
 
   return (
     <>
@@ -627,6 +628,78 @@ Terapia aplicada: ABA - AV. Neuropsicológica
                 </article>
               </div>
 
+              <div className="grid gap-4 xl:grid-cols-3">
+                <article className="rounded-3xl border border-white/10 bg-white/5 p-4">
+                  <h4 className="text-base font-semibold text-white">Conciliação processável</h4>
+                  <p className="mt-2 text-sm text-slate-300">
+                    {analiticoPreview.conciliacao.linhas.length} linha(s) normalizada(s) para
+                    conciliação.
+                  </p>
+                  <div className="mt-4 grid gap-3 md:grid-cols-3">
+                    <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-3">
+                      <p className="text-[11px] uppercase tracking-[0.25em] text-slate-400">Pago</p>
+                      <p className="mt-2 text-sm text-white">
+                        {formatEmpty(analiticoPreview.conciliacao.totais.pago)}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-3">
+                      <p className="text-[11px] uppercase tracking-[0.25em] text-slate-400">
+                        Glosado
+                      </p>
+                      <p className="mt-2 text-sm text-white">
+                        {formatEmpty(analiticoPreview.conciliacao.totais.glosado)}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-3">
+                      <p className="text-[11px] uppercase tracking-[0.25em] text-slate-400">Saldo</p>
+                      <p className="mt-2 text-sm text-white">
+                        {formatEmpty(analiticoPreview.conciliacao.totais.saldo)}
+                      </p>
+                    </div>
+                  </div>
+                </article>
+
+                <article className="rounded-3xl border border-white/10 bg-white/5 p-4">
+                  <h4 className="text-base font-semibold text-white">Resumo por guia</h4>
+                  <p className="mt-2 text-sm text-slate-300">
+                    {analiticoPreview.conciliacao.resumo_por_guia.length} guia(s) agrupada(s).
+                  </p>
+                  <div className="mt-4 overflow-hidden rounded-2xl border border-white/10">
+                    <table className="w-full border-collapse text-left text-sm">
+                      <thead className="bg-white/5 text-[11px] uppercase tracking-[0.25em] text-slate-400">
+                        <tr>
+                          <th className="px-3 py-2">Guia</th>
+                          <th className="px-3 py-2">Pago</th>
+                          <th className="px-3 py-2">Glosado</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-white/10 bg-slate-950/30">
+                        {analiticoPreview.conciliacao.resumo_por_guia.slice(0, 5).map((item) => (
+                          <tr key={item.numero_guia_operadora}>
+                            <td className="px-3 py-3 text-slate-200">{item.numero_guia_operadora}</td>
+                            <td className="px-3 py-3 text-slate-200">{item.valor_pago}</td>
+                            <td className="px-3 py-3 text-slate-200">{item.valor_glosado}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </article>
+
+                <article className="rounded-3xl border border-white/10 bg-white/5 p-4">
+                  <h4 className="text-base font-semibold text-white">Linhas normalizadas</h4>
+                  <p className="mt-2 text-sm text-slate-300">
+                    As linhas já estão prontas para virar lançamento de conciliação.
+                  </p>
+                  <div className="mt-4 rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+                    <p className="text-[11px] uppercase tracking-[0.25em] text-slate-400">Guia</p>
+                    <p className="mt-2 text-sm text-white">
+                      {formatEmpty(analiticoPreview.conciliacao.linhas[0]?.numero_guia_operadora)}
+                    </p>
+                  </div>
+                </article>
+              </div>
+
               <div className="grid gap-6 xl:grid-cols-2">
                 <div className="overflow-hidden rounded-3xl border border-white/10">
                   <table className="w-full border-collapse text-left text-sm">
@@ -683,6 +756,35 @@ Terapia aplicada: ABA - AV. Neuropsicológica
                     </tbody>
                   </table>
                 </div>
+              </div>
+
+              <div className="overflow-hidden rounded-3xl border border-white/10">
+                <table className="w-full border-collapse text-left text-sm">
+                  <thead className="bg-white/5 text-xs uppercase tracking-[0.25em] text-slate-400">
+                    <tr>
+                      <th className="px-4 py-3">Origem</th>
+                      <th className="px-4 py-3">Guia</th>
+                      <th className="px-4 py-3">Natureza</th>
+                      <th className="px-4 py-3">Valor</th>
+                      <th className="px-4 py-3">Motivo</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/10 bg-slate-950/30">
+                    {conciliacaoPreviewRows.map((linha) => (
+                      <tr key={`${linha.origem}-${linha.linha ?? linha.chave_conciliacao}`}>
+                        <td className="px-4 py-4 text-slate-200">{linha.origem}</td>
+                        <td className="px-4 py-4 text-slate-200">
+                          {formatEmpty(linha.numero_guia_operadora)}
+                        </td>
+                        <td className="px-4 py-4 text-slate-200">{linha.natureza}</td>
+                        <td className="px-4 py-4 text-slate-200">
+                          {formatEmpty(linha.valor_normalizado)}
+                        </td>
+                        <td className="px-4 py-4 text-slate-200">{formatEmpty(linha.motivo)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           ) : (

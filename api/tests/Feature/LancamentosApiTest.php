@@ -250,7 +250,11 @@ TXT;
             ->assertJsonPath('data.analitico.cabecalho.unimed_executante.codigo', '220')
             ->assertJsonPath('data.analitico.linhas.0.numero_guia_operadora', '50137394772')
             ->assertJsonPath('data.analitico.linhas.0.valor', '45,00')
-            ->assertJsonPath('data.glosas.linhas.0.motivo', 'Cobranca de procedimento em duplicidade');
+            ->assertJsonPath('data.glosas.linhas.0.motivo', 'Cobranca de procedimento em duplicidade')
+            ->assertJsonPath('data.conciliacao.totais.pago', '45,00')
+            ->assertJsonPath('data.conciliacao.totais.glosado', '45,00')
+            ->assertJsonPath('data.conciliacao.resumo_por_guia.0.numero_guia_operadora', '50137394772')
+            ->assertJsonPath('data.conciliacao.resumo_por_guia.0.valor_pago', '45,00');
     }
 
     public function test_profissional_so_enxerga_seus_lancamentos_na_listagem(): void

@@ -21,6 +21,11 @@ class AnaliticoUnimedImportService
      *   glosas: array{
      *     linhas: array<int, array<string, string|null>>,
      *     total: array<string, string|null>
+     *   },
+     *   conciliacao: array{
+     *     linhas: array<int, array<string, string|null|bool|int>>,
+     *     resumo_por_guia: array<int, array<string, string|null|int>>,
+     *     totais: array{pago: string, glosado: string, saldo: string}
      *   }
      * }
      */
@@ -48,6 +53,7 @@ class AnaliticoUnimedImportService
 
             $analitico = $this->normalizarAnalitico($analiticoRows);
             $glosas = $this->normalizarGlosas($glosaRows);
+            $conciliacao = $this->normalizarConciliacao($analitico['linhas'], $glosas['linhas']);
 
             return [
                 'arquivo' => $arquivo->getClientOriginalName(),
@@ -57,6 +63,7 @@ class AnaliticoUnimedImportService
                 ],
                 'analitico' => $analitico,
                 'glosas' => $glosas,
+                'conciliacao' => $conciliacao,
             ];
         } finally {
             $zip->close();
@@ -278,6 +285,141 @@ class AnaliticoUnimedImportService
         ];
     }
 
+    /**
+     * @param array<int, array<string, string|null>> $analiticoRows
+     * @param array<int, array<string, string|null>> $glosaRows
+     * @return array{
+     *   linhas: array<int, array<string, string|null|bool|int>>,
+     *   resumo_por_guia: array<int, array<string, string|null|int>>,
+     *   totais: array{pago: string, glosado: string, saldo: string}
+     * }
+     */
+    private function normalizarConciliacao(array $analiticoRows, array $glosaRows): array
+    {
+        $linhas = [];
+        $resumoPorGuia = [];
+        $totalPago = 0.0;
+        $totalGlosado = 0.0;
+
+        foreach ($analiticoRows as $row) {
+            $linha = $this->mapearLinhaConciliacao($row, 'analitico', 'pago');
+            if (! $linha) {
+                continue;
+            }
+
+            $totalPago += $this->moedaParaFloat($linha['valor']);
+            $this->acumularResumoPorGuia($resumoPorGuia, $linha, 'analitico');
+            $linhas[] = $linha;
+        }
+
+        foreach ($glosaRows as $row) {
+            $linha = $this->mapearLinhaConciliacao($row, 'glosa', 'glosado');
+            if (! $linha) {
+                continue;
+            }
+
+            $totalGlosado += $this->moedaParaFloat($linha['valor']);
+            $this->acumularResumoPorGuia($resumoPorGuia, $linha, 'glosa');
+            $linhas[] = $linha;
+        }
+
+        return [
+            'linhas' => $linhas,
+            'resumo_por_guia' => array_values($resumoPorGuia),
+            'totais' => [
+                'pago' => $this->floatParaMoeda($totalPago),
+                'glosado' => $this->floatParaMoeda($totalGlosado),
+                'saldo' => $this->floatParaMoeda($totalPago - $totalGlosado),
+            ],
+        ];
+    }
+
+    /**
+     * @param array<string, string|null> $row
+     * @return array<string, string|null|bool|int>|null
+     */
+    private function mapearLinhaConciliacao(array $row, string $origem, string $natureza): ?array
+    {
+        $numeroGuia = $row['numero_guia_operadora'] ?? null;
+        $valor = $row['valor'] ?? null;
+
+        if (! $numeroGuia || ! $valor) {
+            return null;
+        }
+
+        $qtd = $this->converteInteiro($row['qtd'] ?? null);
+
+        return [
+            'linha' => $row['linha'] ?? null,
+            'origem' => $origem,
+            'natureza' => $natureza,
+            'processavel' => true,
+            'numero_guia_operadora' => $numeroGuia,
+            'numero_guia_prestador' => $row['numero_guia_prestador'] ?? null,
+            'codigo' => $row['codigo'] ?? null,
+            'usuario' => $row['usuario'] ?? null,
+            'data_autorizacao' => $row['data_autorizacao'] ?? null,
+            'data_realizacao' => $row['data_realizacao'] ?? null,
+            'procedimento' => $row['procedimento'] ?? null,
+            'descricao_procedimento' => $row['descricao_procedimento'] ?? null,
+            'qtd' => $row['qtd'] ?? null,
+            'qtd_normalizada' => $qtd,
+            'tipo' => $row['tipo'] ?? null,
+            'motivo' => $row['motivo'] ?? null,
+            'valor' => $valor,
+            'valor_normalizado' => $this->floatParaMoeda($this->moedaParaFloat($valor)),
+            'local_realizacao' => $row['local_realizacao'] ?? null,
+            'chave_conciliacao' => implode('|', array_filter([
+                $numeroGuia,
+                $row['codigo'] ?? null,
+                $row['data_realizacao'] ?? null,
+                $origem,
+            ], static fn ($value) => $value !== null && $value !== '')),
+        ];
+    }
+
+    /**
+     * @param array<string, array<string, string|null|int>> $resumoPorGuia
+     * @param array<string, string|null|bool|int> $linha
+     */
+    private function acumularResumoPorGuia(array &$resumoPorGuia, array $linha, string $origem): void
+    {
+        $numeroGuia = (string) ($linha['numero_guia_operadora'] ?? '');
+
+        if ($numeroGuia === '') {
+            return;
+        }
+
+        if (! isset($resumoPorGuia[$numeroGuia])) {
+            $resumoPorGuia[$numeroGuia] = [
+                'numero_guia_operadora' => $numeroGuia,
+                'linhas_analitico' => 0,
+                'linhas_glosa' => 0,
+                'qtd_paga' => 0,
+                'qtd_glosada' => 0,
+                'valor_pago' => '0,00',
+                'valor_glosado' => '0,00',
+            ];
+        }
+
+        $qtd = $this->converteInteiro($linha['qtd'] ?? null);
+        $campoValor = $origem === 'glosa' ? 'valor_glosado' : 'valor_pago';
+        $valorAtual = $this->moedaParaFloat($resumoPorGuia[$numeroGuia][$campoValor]);
+        $valorLinha = $this->moedaParaFloat($linha['valor'] ?? null);
+
+        if ($origem === 'analitico') {
+            $resumoPorGuia[$numeroGuia]['linhas_analitico']++;
+            $resumoPorGuia[$numeroGuia]['qtd_paga'] += $qtd;
+            $resumoPorGuia[$numeroGuia]['valor_pago'] = $this->floatParaMoeda($valorAtual + $valorLinha);
+
+            return;
+        }
+
+        $resumoPorGuia[$numeroGuia]['linhas_glosa']++;
+        $resumoPorGuia[$numeroGuia]['qtd_glosada'] += $qtd;
+        $resumoPorGuia[$numeroGuia]['valor_glosado'] = $this->floatParaMoeda($valorAtual + $valorLinha);
+    }
+
     private function linhaEmBranco(array $dados): bool
     {
         foreach ($dados as $valor) {
@@ -420,5 +562,45 @@ class AnaliticoUnimedImportService
         }
 
         return $texto;
+    }
+
+    private function moedaParaFloat(?string $valor): float
+    {
+        if ($valor === null) {
+            return 0.0;
+        }
+
+        $normalizado = trim($valor);
+
+        if ($normalizado === '') {
+            return 0.0;
+        }
+
+        $normalizado = str_replace(['.', ' '], ['', ''], $normalizado);
+        $normalizado = str_replace(',', '.', $normalizado);
+
+        return is_numeric($normalizado) ? (float) $normalizado : 0.0;
+    }
+
+    private function floatParaMoeda(float $valor): string
+    {
+        return number_format($valor, 2, ',', '.');
+    }
+
+    private function converteInteiro(?string $valor): int
+    {
+        if ($valor === null) {
+            return 0;
+        }
+
+        $normalizado = trim($valor);
+
+        if ($normalizado === '') {
+            return 0;
+        }
+
+        $normalizado = preg_replace('/[^0-9-]/', '', $normalizado) ?? '';
+
+        return $normalizado === '' ? 0 : (int) $normalizado;
     }
 }

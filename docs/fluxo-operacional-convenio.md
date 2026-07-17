@@ -17,6 +17,7 @@ Documento-resumo da implementação da primeira fatia do fluxo operacional unifi
 - Para carteirinhas/regiões com prefixo `0220`, a confirmação exige o PDF do registro de sessões.
 - O painel de antecipações exibe alerta quando uma antecipação ativa não possui próximos agendamentos/sessões futuras.
 - O analítico da Unimed em Excel já pode ser importado e pré-visualizado para leitura de guias, glosas e totais.
+- As linhas importadas já saem normalizadas para conciliação por guia, com totais de pago, glosado e saldo.
 
 ## Regras aplicadas
 
@@ -30,7 +31,7 @@ Documento-resumo da implementação da primeira fatia do fluxo operacional unifi
 
 - O sistema ainda não possui um módulo separado de agendamento.
 - O alerta de continuidade é derivado das sessões registradas na antecipação.
-- A conciliação financeira e o repasse por profissional ainda estão pendentes.
+- A conciliação financeira completa e o repasse por profissional ainda estão pendentes.
 - A estrutura de conciliação financeira ainda não transforma o analítico importado em lançamentos automáticos de pagamento.
 
 ## Validações recentes

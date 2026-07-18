@@ -35,6 +35,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/pacientes', [PacienteController::class, 'store']);
     Route::patch('/pacientes/{paciente}', [PacienteController::class, 'update']);
     Route::get('/profissionais', [ProfissionalController::class, 'index']);
+    Route::post('/profissionais', [ProfissionalController::class, 'store'])->middleware('permission:profissionais.manage');
+    Route::patch('/profissionais/{profissional}', [ProfissionalController::class, 'update'])->middleware('permission:profissionais.manage');
     Route::get('/especialidades', [EspecialidadeController::class, 'index']);
     Route::get('/convenios', [ConvenioController::class, 'index']);
     Route::post('/convenios', [ConvenioController::class, 'store'])->middleware('permission:convenios.manage');

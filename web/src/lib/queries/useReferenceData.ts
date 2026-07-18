@@ -16,7 +16,9 @@ export type ProfissionalRef = {
   id: number
   nome: string
   especialidade_id: number
+  conselho_registro: string | null
   percentual_repasse?: string | null
+  ativo: boolean
   especialidade?: {
     id: number
     nome: string
@@ -68,14 +70,24 @@ export function useEspecialidades() {
   })
 }
 
-export function useProfissionais(filtros?: { busca?: string; especialidade_id?: string | number }) {
+export function useProfissionais(filtros?: {
+  busca?: string
+  especialidade_id?: string | number
+  incluir_inativos?: boolean
+}) {
   return useQuery({
-    queryKey: ['profissionais', filtros?.busca ?? '', filtros?.especialidade_id ?? ''],
+    queryKey: [
+      'profissionais',
+      filtros?.busca ?? '',
+      filtros?.especialidade_id ?? '',
+      filtros?.incluir_inativos ? '1' : '0',
+    ],
     queryFn: async () => {
       const { data } = await apiClient.get<ListResponse<ProfissionalRef>>('/profissionais', {
         params: {
           busca: filtros?.busca || undefined,
           especialidade_id: filtros?.especialidade_id || undefined,
+          incluir_inativos: filtros?.incluir_inativos || undefined,
         },
       })
 

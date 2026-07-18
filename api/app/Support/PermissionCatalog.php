@@ -5,6 +5,17 @@ namespace App\Support;
 class PermissionCatalog
 {
     public const ALL = [
+        'dashboard.convenios',
+        'dashboard.solicitacoes',
+        'dashboard.guias',
+        'dashboard.antecipacoes',
+        'dashboard.lancamentos',
+        'dashboard.conciliacoes',
+        'dashboard.pacientes',
+        'dashboard.profissionais',
+        'dashboard.medicos',
+        'dashboard.usuarios',
+        'dashboard.auditoria',
         'solicitacoes.view',
         'solicitacoes.manage',
         'guias.view',
@@ -18,6 +29,7 @@ class PermissionCatalog
         'conciliacoes.view',
         'conciliacoes.viewOwn',
         'conciliacoes.manage',
+        'profissionais.manage',
         'medicos.manage',
         'usuarios.manage',
         'convenios.manage',

@@ -11,6 +11,7 @@ import { ConciliacaoPage } from '../features/conciliacao'
 import { MedicosPage } from '../features/medicos'
 import { PermissoesPage } from '../features/permissoes'
 import { UsuariosPage } from '../features/usuarios'
+import { ProfissionaisPage } from '../features/profissionais'
 import { DashboardPage } from '../features/dashboard'
 import { AuditoriaPage } from '../features/auditoria'
 import { ConveniosPage, ConvenioDetalhePage } from '../features/convenios/ConveniosPage'
@@ -35,6 +36,7 @@ export function AppRoutes() {
           <Route path="/antecipacoes" element={<AntecipacoesPage />} />
           <Route path="/lancamentos" element={<LancamentosPage />} />
           <Route path="/conciliacao" element={<ConciliacaoPage />} />
+          <Route path="/profissionais" element={<ProfissionaisPage />} />
           <Route path="/medicos" element={<MedicosPage />} />
           <Route path="/permissoes" element={<PermissoesPage />} />
           <Route path="/usuarios" element={<UsuariosPage />} />

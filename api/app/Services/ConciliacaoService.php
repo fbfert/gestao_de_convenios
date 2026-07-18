@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Exceptions\ConciliacaoStatusInvalidoException;
+use App\Models\AnaliticoUnimedLote;
 use App\Models\ConciliacaoFinanceira;
 use App\Models\Guia;
 use App\Models\Lancamento;
@@ -51,15 +52,12 @@ class ConciliacaoService
     {
         $guia->loadMissing('profissional');
 
-        $quantidade = Lancamento::query()
-            ->where('status', 'completed')
-            ->whereHas('antecipacao', function ($query) use ($guia) {
-                $query->where('guia_id', $guia->id);
-            })
-            ->count();
+        $loteImportado = $this->buscarLoteImportadoParaGuia($guia);
+        $quantidade = $this->quantidadeConsolidada($guia, $loteImportado);
+        $valorTotalRecebido = $this->valorTotalRecebido($guia, $loteImportado, $quantidade);
 
         $valorUnitario = $this->tabelaValoresService->obterValorVigente($guia, $guia->profissional_id);
-        $valorTotal = number_format($quantidade * (float) $valorUnitario, 2, '.', '');
+        $valorTotal = number_format($valorTotalRecebido, 2, '.', '');
         $conciliacao = ConciliacaoFinanceira::query()->create([
             'tenant_id' => $guia->tenant_id,
             'guia_id' => $guia->id,
@@ -67,7 +65,7 @@ class ConciliacaoService
             'quantidade' => $quantidade,
             'valor_unitario' => $valorUnitario,
             'valor_total' => $valorTotal,
-            'referencia_analitico_convenio' => null,
+            'referencia_analitico_convenio' => $loteImportado ? 'LOTE-'.$loteImportado->id : null,
             'status' => 'pending',
             'conferido_em' => null,
         ]);
@@ -202,5 +200,56 @@ class ConciliacaoService
     private function calcularPercentual(string $valor, string $percentual): string
     {
         return number_format(((float) $valor * (float) $percentual) / 100, 2, '.', '');
+    }
+
+    private function buscarLoteImportadoParaGuia(Guia $guia): ?AnaliticoUnimedLote
+    {
+        return AnaliticoUnimedLote::query()
+            ->where('tenant_id', $guia->tenant_id)
+            ->whereHas('linhas', function ($query) use ($guia) {
+                $query->where('numero_guia_operadora', $guia->numero_guia)
+                    ->where('origem', 'analitico');
+            })
+            ->with(['linhas' => function ($query) use ($guia) {
+                $query->where('numero_guia_operadora', $guia->numero_guia)
+                    ->where('origem', 'analitico');
+            }])
+            ->latest('importado_em')
+            ->first();
+    }
+
+    private function quantidadeConsolidada(Guia $guia, ?AnaliticoUnimedLote $loteImportado): int
+    {
+        if (! $loteImportado) {
+            return Lancamento::query()
+                ->where('status', 'completed')
+                ->whereHas('antecipacao', function ($query) use ($guia) {
+                    $query->where('guia_id', $guia->id);
+                })
+                ->count();
+        }
+
+        $quantidade = (int) $loteImportado->linhas->sum('qtd_normalizada');
+
+        return $quantidade > 0 ? $quantidade : $loteImportado->linhas->count();
+    }
+
+    private function valorTotalRecebido(Guia $guia, ?AnaliticoUnimedLote $loteImportado, int $quantidade): float
+    {
+        if (! $loteImportado) {
+            $valorUnitario = (float) $this->tabelaValoresService->obterValorVigente($guia, $guia->profissional_id);
+
+            return $quantidade * $valorUnitario;
+        }
+
+        $valorTotal = (float) $loteImportado->linhas->sum('valor_normalizado');
+
+        if ($valorTotal > 0) {
+            return $valorTotal;
+        }
+
+        $valorUnitario = (float) $this->tabelaValoresService->obterValorVigente($guia, $guia->profissional_id);
+
+        return $quantidade * $valorUnitario;
     }
 }

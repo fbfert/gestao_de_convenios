@@ -3,6 +3,8 @@
 namespace Tests\Unit;
 
 use App\Models\Convenio;
+use App\Models\AnaliticoUnimedLinha;
+use App\Models\AnaliticoUnimedLote;
 use App\Models\Especialidade;
 use App\Models\Guia;
 use App\Models\Paciente;
@@ -92,6 +94,61 @@ class ConciliacaoServiceTest extends TestCase
         $this->assertSame($profissionalInformado->id, $saida->profissional_informado_id);
         $this->assertSame($profissionalExecutor->id, $saida->profissional_executor_id);
         $this->assertSame('98.00', $saida->valor_unitario);
+    }
+
+    public function test_gerar_para_guia_prioriza_lote_importado_da_unimed_quando_existir(): void
+    {
+        $service = app(ConciliacaoService::class);
+
+        $guia = $this->novaGuia('Unimed', 'Fisioterapia', 'especializada');
+        $lote = AnaliticoUnimedLote::query()->create([
+            'tenant_id' => $guia->tenant_id,
+            'arquivo_nome_original' => 'analitico-unimed.xlsx',
+            'arquivo_path' => 'analitico-unimed/arquivo.xlsx',
+            'status' => 'importado',
+            'importado_em' => now(),
+            'total_linhas_analitico' => 1,
+            'total_linhas_glosa' => 0,
+            'total_linhas_conciliacao' => 1,
+            'total_pago' => '123.45',
+            'total_glosado' => '0.00',
+            'saldo_total' => '123.45',
+            'cabecalho_json' => null,
+            'planilhas_json' => null,
+            'totais_json' => null,
+        ]);
+
+        AnaliticoUnimedLinha::query()->create([
+            'tenant_id' => $guia->tenant_id,
+            'analitico_unimed_lote_id' => $lote->id,
+            'linha' => 4,
+            'origem' => 'analitico',
+            'natureza' => 'pago',
+            'processavel' => true,
+            'numero_guia_operadora' => $guia->numero_guia,
+            'numero_guia_prestador' => $guia->numero_guia,
+            'codigo' => '50000470',
+            'usuario' => 'Paciente de teste',
+            'data_autorizacao' => '20/03/2026',
+            'data_realizacao' => '06/04/2026',
+            'procedimento' => '50000470',
+            'descricao_procedimento' => 'SESSÃO DE PSICOTERAPIA INDIVIDUAL POR PSICÓLOGO',
+            'qtd' => '1',
+            'qtd_normalizada' => 1,
+            'tipo' => null,
+            'motivo' => null,
+            'valor' => '123,45',
+            'valor_normalizado' => '123.45',
+            'local_realizacao' => null,
+            'chave_conciliacao' => 'dummy',
+            'dados_json' => null,
+        ]);
+
+        $conciliacao = $service->gerarParaGuia($guia);
+
+        $this->assertSame(1, $conciliacao->quantidade);
+        $this->assertSame('123.45', $conciliacao->valor_total);
+        $this->assertSame('LOTE-'.$lote->id, $conciliacao->referencia_analitico_convenio);
     }
 
     private function novaGuia(string $convenioNome, string $especialidadeNome, string $tipoTerapia): Guia

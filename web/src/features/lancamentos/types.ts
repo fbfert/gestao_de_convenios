@@ -159,6 +159,20 @@ export type AnaliticoUnimedConciliacaoPreview = {
   }
 }
 
+export type AnaliticoUnimedLote = {
+  id: number
+  arquivo_nome_original: string
+  arquivo_path: string | null
+  status: string
+  importado_em: string | null
+  total_linhas_analitico: number
+  total_linhas_glosa: number
+  total_linhas_conciliacao: number
+  total_pago: string
+  total_glosado: string
+  saldo_total: string
+}
+
 export type AnaliticoUnimedPreview = {
   arquivo: string
   planilhas: Array<{ nome: string; linhas: number }>
@@ -190,4 +204,5 @@ export type AnaliticoUnimedPreview = {
     }
   }
   conciliacao: AnaliticoUnimedConciliacaoPreview
+  lote: AnaliticoUnimedLote
 }

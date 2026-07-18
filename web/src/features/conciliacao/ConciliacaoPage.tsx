@@ -117,7 +117,8 @@ export function ConciliacaoPage() {
           <h2 className="mt-2 text-3xl font-semibold text-white">Fechamento de guias</h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
             A lista mantém os filtros reais de convênio, especialidade, profissional e status.
-            A trava visual de pagamento impede pular direto de pendente para paga.
+            O fechamento parte do lote analítico já persistido e a trava visual de pagamento
+            impede pular direto de pendente para paga.
           </p>
         </div>
 

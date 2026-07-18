@@ -54,6 +54,20 @@ function formatEmpty(value: string | null | undefined) {
   return value && value.trim() !== '' ? value : '—'
 }
 
+function formatDateTime(value: string | null | undefined) {
+  if (!value) {
+    return '—'
+  }
+
+  const date = new Date(value)
+
+  if (Number.isNaN(date.getTime())) {
+    return value
+  }
+
+  return date.toLocaleString('pt-BR')
+}
+
 export function LancamentosPage() {
   const [searchParams] = useSearchParams()
   const initialAntecipacaoId = searchParams.get('antecipacao_id') ?? ''
@@ -242,6 +256,7 @@ export function LancamentosPage() {
   const analiticoPreviewRows = analiticoPreview?.analitico.linhas.slice(0, 8) ?? []
   const glosaPreviewRows = analiticoPreview?.glosas.linhas.slice(0, 8) ?? []
   const conciliacaoPreviewRows = analiticoPreview?.conciliacao.linhas.slice(0, 8) ?? []
+  const analiticoLote = analiticoPreview?.lote
 
   return (
     <>
@@ -566,7 +581,7 @@ Terapia aplicada: ABA - AV. Neuropsicológica
 
           {analiticoPreview ? (
             <div className="mt-6 space-y-6">
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
                 <article className="rounded-2xl border border-white/10 bg-white/5 p-4">
                   <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Arquivo</p>
                   <p className="mt-2 text-sm font-medium text-white">
@@ -579,6 +594,19 @@ Terapia aplicada: ABA - AV. Neuropsicológica
                     <p className="mt-2 text-2xl font-semibold text-white">{planilha.linhas}</p>
                   </article>
                 ))}
+                <article className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Lote salvo</p>
+                  <p className="mt-2 text-2xl font-semibold text-white">#{analiticoLote?.id ?? '—'}</p>
+                </article>
+                <article className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Status</p>
+                  <p className="mt-2 text-sm font-medium text-white">
+                    {analiticoLote?.status ?? 'importado'}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-400">
+                    {formatDateTime(analiticoLote?.importado_em)}
+                  </p>
+                </article>
               </div>
 
               <div className="grid gap-4 xl:grid-cols-2">
@@ -656,6 +684,16 @@ Terapia aplicada: ABA - AV. Neuropsicológica
                         {formatEmpty(analiticoPreview.conciliacao.totais.saldo)}
                       </p>
                     </div>
+                  </div>
+                  <div className="mt-4 rounded-2xl border border-cyan-400/20 bg-cyan-500/10 p-4 text-sm text-cyan-50">
+                    <p className="text-[11px] uppercase tracking-[0.25em] text-cyan-100/80">
+                      Lote persistido
+                    </p>
+                    <p className="mt-2">
+                      Total pago {formatEmpty(analiticoLote?.total_pago)} · glosado{' '}
+                      {formatEmpty(analiticoLote?.total_glosado)} · saldo{' '}
+                      {formatEmpty(analiticoLote?.saldo_total)}
+                    </p>
                   </div>
                 </article>
 
@@ -789,7 +827,8 @@ Terapia aplicada: ABA - AV. Neuropsicológica
             </div>
           ) : (
             <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
-              O analítico aparece aqui depois da primeira importação do Excel.
+              O analítico aparece aqui depois da primeira importação do Excel e já fica salvo como
+              lote para conferência.
             </div>
           )}
         </section>
@@ -833,7 +872,7 @@ Terapia aplicada: ABA - AV. Neuropsicológica
               </label>
 
               <label className="block space-y-2">
-                <span className="text-sm font-medium text-slate-200">Profissional</span>
+                <span className="text-sm font-medium text-slate-200">Profissional executante</span>
                 <Select
                   value={form.profissional_id}
                   onChange={(event) =>
@@ -964,7 +1003,7 @@ Terapia aplicada: ABA - AV. Neuropsicológica
             <form className="grid gap-3 md:grid-cols-3 xl:grid-cols-3" onSubmit={handleFilterSubmit}>
               <label className="space-y-2">
                 <span className="text-xs uppercase tracking-[0.25em] text-slate-400">
-                  Profissional
+                  Profissional executante
                 </span>
                 <Select
                   value={draftFilters.profissional_id}
@@ -1022,7 +1061,7 @@ Terapia aplicada: ABA - AV. Neuropsicológica
                   <tr>
                     <th className="px-4 py-3">ID</th>
                     <th className="px-4 py-3">Antecipação</th>
-                    <th className="px-4 py-3">Profissional</th>
+                    <th className="px-4 py-3">Profissional executante</th>
                     <th className="px-4 py-3">Data / Hora</th>
                     <th className="px-4 py-3">Acompanhante</th>
                     <th className="px-4 py-3">Resumo</th>

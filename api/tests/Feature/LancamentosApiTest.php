@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\Antecipacao;
+use App\Models\AnaliticoUnimedLinha;
+use App\Models\AnaliticoUnimedLote;
 use App\Models\Convenio;
 use App\Models\Especialidade;
 use App\Models\Guia;
@@ -255,6 +257,28 @@ TXT;
             ->assertJsonPath('data.conciliacao.totais.glosado', '45,00')
             ->assertJsonPath('data.conciliacao.resumo_por_guia.0.numero_guia_operadora', '50137394772')
             ->assertJsonPath('data.conciliacao.resumo_por_guia.0.valor_pago', '45,00');
+
+        $this->assertDatabaseCount('analitico_unimed_lotes', 1);
+        $this->assertDatabaseCount('analitico_unimed_linhas', 2);
+
+        $lote = AnaliticoUnimedLote::query()->firstOrFail();
+        $response->assertJsonPath('data.lote.id', $lote->id)
+            ->assertJsonPath('data.lote.status', 'importado')
+            ->assertJsonPath('data.lote.total_linhas_analitico', 1)
+            ->assertJsonPath('data.lote.total_linhas_glosa', 1)
+            ->assertJsonPath('data.lote.total_linhas_conciliacao', 2);
+
+        $this->assertSame('analitico-unimed.xlsx', $lote->arquivo_nome_original);
+        $this->assertSame('importado', $lote->status);
+        $this->assertSame('45.00', $lote->total_pago);
+        $this->assertSame('45.00', $lote->total_glosado);
+        $this->assertSame('0.00', $lote->saldo_total);
+
+        $linhaAnalitico = AnaliticoUnimedLinha::query()->where('origem', 'analitico')->firstOrFail();
+        $linhaGlosa = AnaliticoUnimedLinha::query()->where('origem', 'glosa')->firstOrFail();
+
+        $this->assertSame('pago', $linhaAnalitico->natureza);
+        $this->assertSame('glosado', $linhaGlosa->natureza);
     }
 
     public function test_profissional_so_enxerga_seus_lancamentos_na_listagem(): void

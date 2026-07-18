@@ -2,7 +2,11 @@
 
 namespace App\Services;
 
+use App\Models\AnaliticoUnimedLinha;
+use App\Models\AnaliticoUnimedLote;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 use SimpleXMLElement;
 use ZipArchive;
@@ -26,6 +30,19 @@ class AnaliticoUnimedImportService
      *     linhas: array<int, array<string, string|null|bool|int>>,
      *     resumo_por_guia: array<int, array<string, string|null|int>>,
      *     totais: array{pago: string, glosado: string, saldo: string}
+     *   },
+     *   lote: array{
+     *     id: int,
+     *     arquivo_nome_original: string,
+     *     arquivo_path: string|null,
+     *     status: string,
+     *     importado_em: string|null,
+     *     total_linhas_analitico: int,
+     *     total_linhas_glosa: int,
+     *     total_linhas_conciliacao: int,
+     *     total_pago: string,
+     *     total_glosado: string,
+     *     saldo_total: string
      *   }
      * }
      */
@@ -54,6 +71,16 @@ class AnaliticoUnimedImportService
             $analitico = $this->normalizarAnalitico($analiticoRows);
             $glosas = $this->normalizarGlosas($glosaRows);
             $conciliacao = $this->normalizarConciliacao($analitico['linhas'], $glosas['linhas']);
+            $lote = $this->persistirLote(
+                $arquivo,
+                $analitico,
+                $glosas,
+                $conciliacao,
+                [
+                    ['nome' => $analiticoSheet['name'], 'linhas' => count($analitico['linhas'])],
+                    ['nome' => $glosaSheet['name'], 'linhas' => count($glosas['linhas'])],
+                ]
+            );
 
             return [
                 'arquivo' => $arquivo->getClientOriginalName(),
@@ -64,6 +91,7 @@ class AnaliticoUnimedImportService
                 'analitico' => $analitico,
                 'glosas' => $glosas,
                 'conciliacao' => $conciliacao,
+                'lote' => $lote,
             ];
         } finally {
             $zip->close();
@@ -602,5 +630,132 @@ class AnaliticoUnimedImportService
         $normalizado = preg_replace('/[^0-9-]/', '', $normalizado) ?? '';
 
         return $normalizado === '' ? 0 : (int) $normalizado;
+    }
+
+    /**
+     * @param array{cabecalho: array{unimed_executante: array<string, string|null>, prestador_executante: array<string, string|null>}, linhas: array<int, array<string, string|null>>, totais: array<string, string|null>} $analitico
+     * @param array{linhas: array<int, array<string, string|null>>, total: array<string, string|null>} $glosas
+     * @param array{linhas: array<int, array<string, string|null|bool|int>>, resumo_por_guia: array<int, array<string, string|null|int>>, totais: array{pago: string, glosado: string, saldo: string}} $conciliacao
+     * @param array<int, array{nome: string, linhas: int}> $planilhas
+     * @return array{id: int, arquivo_nome_original: string, arquivo_path: string|null, status: string, importado_em: string|null, total_linhas_analitico: int, total_linhas_glosa: int, total_linhas_conciliacao: int, total_pago: string, total_glosado: string, saldo_total: string}
+     */
+    private function persistirLote(
+        UploadedFile $arquivo,
+        array $analitico,
+        array $glosas,
+        array $conciliacao,
+        array $planilhas
+    ): array {
+        return DB::transaction(function () use ($arquivo, $analitico, $glosas, $conciliacao, $planilhas) {
+            $arquivoPath = Storage::disk('local')->putFileAs(
+                'analitico-unimed',
+                $arquivo,
+                $arquivo->hashName()
+            );
+
+            $lote = AnaliticoUnimedLote::query()->create([
+                'tenant_id' => request()->user()?->tenant_id,
+                'arquivo_nome_original' => $arquivo->getClientOriginalName(),
+                'arquivo_path' => $arquivoPath,
+                'status' => 'importado',
+                'importado_em' => now(),
+                'total_linhas_analitico' => count($analitico['linhas']),
+                'total_linhas_glosa' => count($glosas['linhas']),
+                'total_linhas_conciliacao' => count($conciliacao['linhas']),
+                'total_pago' => number_format($this->moedaParaFloat($conciliacao['totais']['pago']), 2, '.', ''),
+                'total_glosado' => number_format($this->moedaParaFloat($conciliacao['totais']['glosado']), 2, '.', ''),
+                'saldo_total' => number_format($this->moedaParaFloat($conciliacao['totais']['saldo']), 2, '.', ''),
+                'cabecalho_json' => $analitico['cabecalho'],
+                'planilhas_json' => $planilhas,
+                'totais_json' => [
+                    'analitico' => $analitico['totais'],
+                    'glosas' => $glosas['total'],
+                    'conciliacao' => $conciliacao['totais'],
+                ],
+            ]);
+
+            foreach ($analitico['linhas'] as $linha) {
+                AnaliticoUnimedLinha::query()->create([
+                    'tenant_id' => request()->user()?->tenant_id,
+                    'analitico_unimed_lote_id' => $lote->id,
+                    'linha' => isset($linha['linha']) ? (int) $linha['linha'] : null,
+                    'origem' => 'analitico',
+                    'natureza' => 'pago',
+                    'processavel' => true,
+                    'numero_guia_operadora' => $linha['numero_guia_operadora'] ?? null,
+                    'numero_guia_prestador' => $linha['numero_guia_prestador'] ?? null,
+                    'codigo' => $linha['codigo'] ?? null,
+                    'usuario' => $linha['usuario'] ?? null,
+                    'data_autorizacao' => $linha['data_autorizacao'] ?? null,
+                    'data_realizacao' => $linha['data_realizacao'] ?? null,
+                    'procedimento' => $linha['procedimento'] ?? null,
+                    'descricao_procedimento' => $linha['descricao_procedimento'] ?? null,
+                    'qtd' => $linha['qtd'] ?? null,
+                    'qtd_normalizada' => $this->converteInteiro($linha['qtd'] ?? null),
+                    'tipo' => null,
+                    'motivo' => null,
+                    'valor' => $linha['valor'] ?? null,
+                    'valor_normalizado' => $this->moedaParaFloat($linha['valor'] ?? null),
+                    'local_realizacao' => $linha['local_realizacao'] ?? null,
+                    'chave_conciliacao' => $this->montarChaveConciliacao($linha, 'analitico'),
+                    'dados_json' => $linha,
+                ]);
+            }
+
+            foreach ($glosas['linhas'] as $linha) {
+                AnaliticoUnimedLinha::query()->create([
+                    'tenant_id' => request()->user()?->tenant_id,
+                    'analitico_unimed_lote_id' => $lote->id,
+                    'linha' => isset($linha['linha']) ? (int) $linha['linha'] : null,
+                    'origem' => 'glosa',
+                    'natureza' => 'glosado',
+                    'processavel' => true,
+                    'numero_guia_operadora' => $linha['numero_guia_operadora'] ?? null,
+                    'numero_guia_prestador' => $linha['numero_guia_prestador'] ?? null,
+                    'codigo' => $linha['codigo'] ?? null,
+                    'usuario' => $linha['usuario'] ?? null,
+                    'data_autorizacao' => $linha['data_autorizacao'] ?? null,
+                    'data_realizacao' => $linha['data_realizacao'] ?? null,
+                    'procedimento' => $linha['procedimento'] ?? null,
+                    'descricao_procedimento' => $linha['descricao_procedimento'] ?? null,
+                    'qtd' => $linha['qtd'] ?? null,
+                    'qtd_normalizada' => $this->converteInteiro($linha['qtd'] ?? null),
+                    'tipo' => $linha['tipo'] ?? null,
+                    'motivo' => $linha['motivo'] ?? null,
+                    'valor' => $linha['valor'] ?? null,
+                    'valor_normalizado' => $this->moedaParaFloat($linha['valor'] ?? null),
+                    'local_realizacao' => $linha['local_realizacao'] ?? null,
+                    'chave_conciliacao' => $this->montarChaveConciliacao($linha, 'glosa'),
+                    'dados_json' => $linha,
+                ]);
+            }
+
+            return [
+                'id' => $lote->id,
+                'arquivo_nome_original' => $lote->arquivo_nome_original,
+                'arquivo_path' => $lote->arquivo_path,
+                'status' => $lote->status,
+                'importado_em' => $lote->importado_em?->toISOString(),
+                'total_linhas_analitico' => $lote->total_linhas_analitico,
+                'total_linhas_glosa' => $lote->total_linhas_glosa,
+                'total_linhas_conciliacao' => $lote->total_linhas_conciliacao,
+                'total_pago' => $this->floatParaMoeda((float) $lote->total_pago),
+                'total_glosado' => $this->floatParaMoeda((float) $lote->total_glosado),
+                'saldo_total' => $this->floatParaMoeda((float) $lote->saldo_total),
+            ];
+        });
+    }
+
+    /**
+     * @param array<string, string|null> $linha
+     */
+    private function montarChaveConciliacao(array $linha, string $origem): string
+    {
+        return implode('|', array_filter([
+            $linha['numero_guia_operadora'] ?? null,
+            $linha['codigo'] ?? null,
+            $linha['data_realizacao'] ?? null,
+            $origem,
+        ], static fn ($value) => $value !== null && $value !== ''));
     }
 }

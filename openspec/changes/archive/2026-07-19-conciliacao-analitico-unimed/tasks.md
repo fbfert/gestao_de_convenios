@@ -20,4 +20,4 @@
 
 - [x] 4.1 Cobrir o fluxo com testes de API para importação e conciliação.
 - [x] 4.2 Executar build do frontend.
-- [ ] 4.3 Validar o fluxo no navegador local com importação, conferência e lista de conciliações.
+- [x] 4.3 Validar o fluxo no navegador local com importação, conferência e lista de conciliações.

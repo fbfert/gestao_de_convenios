@@ -12,6 +12,7 @@ class EspecialidadeResource extends JsonResource
         return [
             'id' => $this->id,
             'nome' => $this->nome,
+            'ativo' => $this->ativo,
         ];
     }
 }

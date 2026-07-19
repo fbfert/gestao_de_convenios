@@ -7,6 +7,7 @@ use App\Models\Antecipacao;
 use App\Models\ConciliacaoFinanceira;
 use App\Models\Convenio;
 use App\Models\ConvenioRegra;
+use App\Models\Especialidade;
 use App\Models\TabelaValor;
 use App\Models\Medico;
 use App\Models\Lancamento;
@@ -95,6 +96,15 @@ class AppServiceProvider extends ServiceProvider
             $tenantId = request()->user()?->tenant_id;
 
             return Medico::query()
+                ->where('tenant_id', $tenantId)
+                ->whereKey($value)
+                ->firstOrFail();
+        });
+
+        Route::bind('especialidade', function ($value) {
+            $tenantId = request()->user()?->tenant_id;
+
+            return Especialidade::query()
                 ->where('tenant_id', $tenantId)
                 ->whereKey($value)
                 ->firstOrFail();

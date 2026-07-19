@@ -23,11 +23,13 @@ function groupPermissions(permissions: PermissionRef[]) {
 }
 
 const domainLabels: Record<string, string> = {
+  dashboard: 'Dashboard',
   solicitacoes: 'Solicitações',
   guias: 'Guias',
   antecipacoes: 'Antecipações',
   lancamentos: 'Lançamentos',
   conciliacoes: 'Conciliações',
+  especialidades: 'Especialidades',
   medicos: 'Médicos',
   usuarios: 'Usuários',
   convenios: 'Convênios',

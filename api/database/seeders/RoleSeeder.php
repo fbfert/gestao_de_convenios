@@ -43,6 +43,7 @@ class RoleSeeder extends Seeder
                 'conciliacoes.manage',
                 'profissionais.manage',
                 'medicos.manage',
+                'especialidades.manage',
                 'usuarios.manage',
                 'convenios.manage',
                 'permissoes.manage',

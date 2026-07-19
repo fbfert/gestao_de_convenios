@@ -31,6 +31,7 @@ class PermissionCatalog
         'conciliacoes.manage',
         'profissionais.manage',
         'medicos.manage',
+        'especialidades.manage',
         'usuarios.manage',
         'convenios.manage',
         'permissoes.manage',

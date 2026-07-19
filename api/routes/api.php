@@ -38,6 +38,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/profissionais', [ProfissionalController::class, 'store'])->middleware('permission:profissionais.manage');
     Route::patch('/profissionais/{profissional}', [ProfissionalController::class, 'update'])->middleware('permission:profissionais.manage');
     Route::get('/especialidades', [EspecialidadeController::class, 'index']);
+    Route::post('/especialidades', [EspecialidadeController::class, 'store'])->middleware('permission:especialidades.manage');
+    Route::patch('/especialidades/{especialidade}', [EspecialidadeController::class, 'update'])->middleware('permission:especialidades.manage');
     Route::get('/convenios', [ConvenioController::class, 'index']);
     Route::post('/convenios', [ConvenioController::class, 'store'])->middleware('permission:convenios.manage');
     Route::patch('/convenios/{convenio}', [ConvenioController::class, 'update'])->middleware('permission:convenios.manage');

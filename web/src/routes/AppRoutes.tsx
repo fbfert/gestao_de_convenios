@@ -9,6 +9,7 @@ import { AntecipacoesPage } from '../features/antecipacoes/AntecipacoesPage'
 import { LancamentosPage } from '../features/lancamentos'
 import { ConciliacaoPage } from '../features/conciliacao'
 import { MedicosPage } from '../features/medicos'
+import { EspecialidadesPage } from '../features/especialidades'
 import { PermissoesPage } from '../features/permissoes'
 import { UsuariosPage } from '../features/usuarios'
 import { ProfissionaisPage } from '../features/profissionais'
@@ -37,6 +38,7 @@ export function AppRoutes() {
           <Route path="/lancamentos" element={<LancamentosPage />} />
           <Route path="/conciliacao" element={<ConciliacaoPage />} />
           <Route path="/profissionais" element={<ProfissionaisPage />} />
+          <Route path="/especialidades" element={<EspecialidadesPage />} />
           <Route path="/medicos" element={<MedicosPage />} />
           <Route path="/permissoes" element={<PermissoesPage />} />
           <Route path="/usuarios" element={<UsuariosPage />} />

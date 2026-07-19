@@ -12,7 +12,8 @@ const navItems = [
   { to: '/lancamentos', label: 'Sessões' },
   { to: '/conciliacao', label: 'Conciliação' },
   { to: '/profissionais', label: 'Profissionais' },
-  { to: '/medicos', label: 'Médicos' },
+  { to: '/especialidades', label: 'Especialidades' },
+  { to: '/medicos', label: 'Médicos solicitantes' },
   { to: '/usuarios', label: 'Usuários' },
   { to: '/permissoes', label: 'Permissões' },
 ]

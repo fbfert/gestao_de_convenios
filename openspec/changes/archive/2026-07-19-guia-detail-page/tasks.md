@@ -13,4 +13,4 @@
 ## 3. Validação
 
 - [x] 3.1 Executar testes da API afetada, build, lint e `openspec validate`.
-- [ ] 3.2 Verificar os fluxos solicitados no navegador local.
+- [x] 3.2 Verificar os fluxos solicitados no navegador local.

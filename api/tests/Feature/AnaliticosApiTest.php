@@ -40,6 +40,26 @@ class AnaliticosApiTest extends TestCase
         $this->assertSame('item3.3.xlsx', $lote->arquivo_nome_original);
     }
 
+    public function test_exibe_detalhe_do_lote_importado(): void
+    {
+        $this->autenticar();
+
+        $arquivo = $this->arquivoModeloAnalitico();
+
+        $this->post('/api/lancamentos/importar-analitico', [
+            'arquivo' => $arquivo,
+        ])->assertOk();
+
+        $lote = AnaliticoUnimedLote::query()->firstOrFail();
+
+        $this->getJson("/api/analiticos/{$lote->id}")
+            ->assertOk()
+            ->assertJsonPath('data.lote.id', $lote->id)
+            ->assertJsonPath('data.analitico.linhas.0.origem', 'analitico')
+            ->assertJsonPath('data.glosas.linhas.0.origem', 'glosa')
+            ->assertJsonPath('data.conciliacao.totais.pago', $lote->total_pago);
+    }
+
     private function autenticar(): void
     {
         $user = User::query()->where('email', 'admin@clinica-exemplo.test')->firstOrFail();

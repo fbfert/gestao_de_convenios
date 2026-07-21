@@ -42,3 +42,14 @@ O sistema SHALL exibir a lista dos lotes de analíticos já importados, permitin
 #### Scenario: Refletir novo lote na lista
 - **WHEN** um novo analítico for importado com sucesso
 - **THEN** o sistema SHALL atualizar a listagem para exibir o novo lote salvo
+
+### Requirement: Abrir lote em detalhe
+O sistema SHALL permitir abrir um lote importado para visualizar seus dados, totais e linhas normalizadas.
+
+#### Scenario: Abrir lote salvo
+- **WHEN** o operador clicar para abrir um lote da lista
+- **THEN** o sistema SHALL mostrar os detalhes daquele lote em uma tela própria
+
+#### Scenario: Exibir linhas do lote
+- **WHEN** o lote em detalhe for carregado
+- **THEN** o sistema SHALL exibir as linhas do analítico, das glosas e da conciliação vinculadas ao lote

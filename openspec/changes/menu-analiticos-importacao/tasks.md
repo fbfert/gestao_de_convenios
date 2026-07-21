@@ -10,6 +10,7 @@
 - [x] 2.2 Exibir a estrutura do CRUD alinhada ao modelo `item3.3.xlsx`.
 - [x] 2.3 Reaproveitar a importação de Excel com pré-visualização, salvar e recusar.
 - [x] 2.4 Exibir a listagem dos lotes importados e atualizar após nova importação.
+- [ ] 2.5 Abrir um lote salvo em uma tela de detalhe com linhas e totais.
 
 ## 3. Usuários e permissões
 

@@ -194,6 +194,7 @@ function LotesTable({
                 <th className="px-4 py-3">Importado em</th>
                 <th className="px-4 py-3">Linhas</th>
                 <th className="px-4 py-3">Totais</th>
+                <th className="px-4 py-3">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/10 bg-slate-950/30">
@@ -217,11 +218,19 @@ function LotesTable({
                     <div>Glosado: {lote.total_glosado}</div>
                     <div>Saldo: {lote.saldo_total}</div>
                   </td>
+                  <td className="px-4 py-4">
+                    <Link
+                      to={`/analiticos/${lote.id}`}
+                      className="inline-flex rounded-2xl border border-cyan-300/30 bg-cyan-400/10 px-4 py-2 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-400/20"
+                    >
+                      Abrir
+                    </Link>
+                  </td>
                 </tr>
               ))}
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-4 py-8 text-center text-slate-300">
+                  <td colSpan={5} className="px-4 py-8 text-center text-slate-300">
                     Nenhum lote importado encontrado.
                   </td>
                 </tr>

@@ -6,7 +6,7 @@ import { SolicitacoesPage } from '../features/solicitacoes/SolicitacoesPage'
 import { PacientesPage } from '../features/pacientes'
 import { GuiaDetalhePage, GuiasPage } from '../features/guias'
 import { AntecipacoesPage } from '../features/antecipacoes/AntecipacoesPage'
-import { AnaliticosPage } from '../features/analiticos'
+import { AnaliticosPage, AnaliticoDetalhePage } from '../features/analiticos'
 import { LancamentosPage } from '../features/lancamentos'
 import { ConciliacaoPage } from '../features/conciliacao'
 import { MedicosPage } from '../features/medicos'
@@ -39,6 +39,7 @@ export function AppRoutes() {
           <Route path="/antecipacoes" element={<AntecipacoesPage />} />
           <Route path="/lancamentos" element={<LancamentosPage />} />
           <Route path="/analiticos" element={<AnaliticosPage />} />
+          <Route path="/analiticos/:id" element={<AnaliticoDetalhePage />} />
           <Route path="/conciliacao" element={<ConciliacaoPage />} />
           <Route path="/profissionais" element={<ProfissionaisPage />} />
           <Route path="/especialidades" element={<EspecialidadesPage />} />

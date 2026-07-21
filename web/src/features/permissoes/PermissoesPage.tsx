@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Select } from '../../components/ui/Select'
 import {
   getHttpErrorMessage,
@@ -27,7 +28,7 @@ const domainLabels: Record<string, string> = {
   solicitacoes: 'Solicitações',
   guias: 'Guias',
   antecipacoes: 'Antecipações',
-  lancamentos: 'Lançamentos',
+  lancamentos: 'Sessões',
   conciliacoes: 'Conciliações',
   especialidades: 'Especialidades',
   medicos: 'Médicos',
@@ -37,6 +38,7 @@ const domainLabels: Record<string, string> = {
 }
 
 export function PermissoesPage() {
+  const [searchParams] = useSearchParams()
   const [selectedRole, setSelectedRole] = useState('')
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([])
   const [formError, setFormError] = useState<string | null>(null)
@@ -55,8 +57,11 @@ export function PermissoesPage() {
       return
     }
 
-    setSelectedRole((current) => current || roles[0].name)
-  }, [roles])
+    const roleFromQuery = searchParams.get('role')
+    const hasRoleFromQuery = roleFromQuery ? roles.some((role) => role.name === roleFromQuery) : false
+
+    setSelectedRole((current) => current || (hasRoleFromQuery ? roleFromQuery ?? '' : roles[0].name))
+  }, [roles, searchParams])
 
   useEffect(() => {
     if (!rolePermissionsQuery.data) {

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Select } from '../../components/ui/Select'
 import {
   getHttpErrorMessage,
@@ -41,6 +42,7 @@ function toForm(usuario: Usuario): UsuarioForm {
 }
 
 export function UsuariosPage() {
+  const navigate = useNavigate()
   const [filters, setFilters] = useState({ busca: '' })
   const [draftFilters, setDraftFilters] = useState({ busca: '' })
   const [page, setPage] = useState(1)
@@ -487,6 +489,16 @@ export function UsuariosPage() {
                           data-testid={`usuario-editar-${usuario.id}`}
                         >
                           Editar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            navigate(`/permissoes?role=${encodeURIComponent(usuario.role)}`)
+                          }
+                          className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/10"
+                          data-testid={`usuario-permissoes-${usuario.id}`}
+                        >
+                          Permissões
                         </button>
                         <button
                           type="button"

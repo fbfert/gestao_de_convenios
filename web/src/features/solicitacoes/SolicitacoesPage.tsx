@@ -356,7 +356,7 @@ export function SolicitacoesPage() {
             </label>
 
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Profissional</span>
+              <span className="text-sm font-medium text-slate-200">Profissional executante</span>
               <Select
                 value={form.profissional_id}
                 onChange={(event) =>
@@ -561,7 +561,7 @@ export function SolicitacoesPage() {
                   <th className="px-4 py-3">Paciente</th>
                   <th className="px-4 py-3">Convênio</th>
                   <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Médico</th>
+                  <th className="px-4 py-3">Médico solicitante</th>
                   <th className="px-4 py-3">Ações</th>
                 </tr>
               </thead>

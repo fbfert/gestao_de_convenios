@@ -4,18 +4,18 @@ import { useAuthStore } from '../stores/authStore'
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard' },
-  { to: '/solicitacoes', label: 'Solicitações' },
   { to: '/pacientes', label: 'Pacientes' },
+  { to: '/solicitacoes', label: 'Solicitações' },
   { to: '/guias', label: 'Guias' },
-  { to: '/convenios', label: 'Convênios' },
-  { to: '/antecipacoes', label: 'Antecipações' },
   { to: '/lancamentos', label: 'Sessões' },
+  { to: '/antecipacoes', label: 'Antecipações' },
+  { to: '/analiticos', label: 'Analíticos' },
   { to: '/conciliacao', label: 'Conciliação' },
+  { to: '/convenios', label: 'Convênios' },
   { to: '/profissionais', label: 'Profissionais' },
-  { to: '/especialidades', label: 'Especialidades' },
-  { to: '/medicos', label: 'Médicos solicitantes' },
+  { to: '/medicos', label: 'Médicos' },
   { to: '/usuarios', label: 'Usuários' },
-  { to: '/permissoes', label: 'Permissões' },
+  { to: '/configuracoes', label: 'Configurações' },
 ]
 
 export function ShellLayout() {
@@ -33,18 +33,8 @@ export function ShellLayout() {
     <div className="min-h-screen text-slate-100" data-testid="shell-layout">
       <header className="border-b border-white/10 bg-slate-950/60 backdrop-blur">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-6 py-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-center gap-4">
-            <div className="grid h-12 w-12 place-items-center rounded-2xl border border-cyan-300/20 bg-cyan-400/10 text-sm font-semibold text-cyan-100">
-              GC
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">
-                Gestão de Convênios
-              </p>
-              <h1 className="text-lg font-semibold text-white">
-                Base autenticada pronta
-              </h1>
-            </div>
+          <div>
+            <h1 className="text-lg font-semibold text-white">Gestão de Convênios</h1>
           </div>
 
           <div className="flex flex-col gap-3 lg:items-end">

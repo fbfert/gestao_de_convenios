@@ -119,7 +119,8 @@ export function MedicosPage() {
               Cadastro e referência de médicos
             </h2>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
-              Use esta tela para manter os médicos do tenant e alimentar o select das solicitações.
+              Use esta tela para manter os médicos que solicitam o atendimento e alimentar o
+              select das solicitações.
             </p>
           </div>
 
@@ -157,7 +158,7 @@ export function MedicosPage() {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h3 className="text-lg font-semibold text-white">
-                  {editingId ? 'Editar médico' : 'Novo médico'}
+                  {editingId ? 'Editar médico solicitante' : 'Novo médico solicitante'}
                 </h3>
                 <p className="text-sm text-slate-300">
                   O CRM é livre por enquanto; o tenant vem do usuário autenticado.
@@ -289,7 +290,8 @@ export function MedicosPage() {
           <div>
             <h3 className="text-lg font-semibold text-white">Lista</h3>
             <p className="text-sm text-slate-300">
-              Mostra todos os médicos do tenant, com pesquisa por nome, CRM e especialidade.
+              Mostra todos os médicos solicitantes do tenant, com pesquisa por nome, CRM e
+              especialidade.
             </p>
           </div>
 

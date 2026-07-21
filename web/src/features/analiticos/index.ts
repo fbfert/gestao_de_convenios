@@ -1,0 +1,1 @@
+export { AnaliticosPage } from './AnaliticosPage'

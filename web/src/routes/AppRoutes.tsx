@@ -6,6 +6,7 @@ import { SolicitacoesPage } from '../features/solicitacoes/SolicitacoesPage'
 import { PacientesPage } from '../features/pacientes'
 import { GuiaDetalhePage, GuiasPage } from '../features/guias'
 import { AntecipacoesPage } from '../features/antecipacoes/AntecipacoesPage'
+import { AnaliticosPage } from '../features/analiticos'
 import { LancamentosPage } from '../features/lancamentos'
 import { ConciliacaoPage } from '../features/conciliacao'
 import { MedicosPage } from '../features/medicos'
@@ -15,6 +16,7 @@ import { UsuariosPage } from '../features/usuarios'
 import { ProfissionaisPage } from '../features/profissionais'
 import { DashboardPage } from '../features/dashboard'
 import { AuditoriaPage } from '../features/auditoria'
+import { ConfiguracoesPage } from '../features/configuracoes'
 import { ConveniosPage, ConvenioDetalhePage } from '../features/convenios/ConveniosPage'
 import { ConvenioAjudaPage } from '../features/convenios/ConvenioAjudaPage'
 
@@ -36,12 +38,14 @@ export function AppRoutes() {
           <Route path="/convenios/:id" element={<ConvenioDetalhePage />} />
           <Route path="/antecipacoes" element={<AntecipacoesPage />} />
           <Route path="/lancamentos" element={<LancamentosPage />} />
+          <Route path="/analiticos" element={<AnaliticosPage />} />
           <Route path="/conciliacao" element={<ConciliacaoPage />} />
           <Route path="/profissionais" element={<ProfissionaisPage />} />
           <Route path="/especialidades" element={<EspecialidadesPage />} />
           <Route path="/medicos" element={<MedicosPage />} />
           <Route path="/permissoes" element={<PermissoesPage />} />
           <Route path="/usuarios" element={<UsuariosPage />} />
+          <Route path="/configuracoes" element={<ConfiguracoesPage />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/solicitacoes" replace />} />

@@ -1,0 +1,147 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Antecipacao;
+use App\Models\AuditLog;
+use App\Models\ConciliacaoFinanceira;
+use App\Models\Convenio;
+use App\Models\Guia;
+use App\Models\Lancamento;
+use App\Models\Medico;
+use App\Models\Paciente;
+use App\Models\Profissional;
+use App\Models\Solicitacao;
+use App\Models\User;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+
+class DashboardController extends Controller
+{
+    public function index(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $blocks = collect([
+            [
+                'key' => 'convenios',
+                'permission' => 'dashboard.convenios',
+                'label' => 'Convênios',
+                'href' => '/convenios',
+                'value' => Convenio::query()->count(),
+                'detail' => Convenio::query()->where('ativo', true)->count().' ativos',
+            ],
+            [
+                'key' => 'solicitacoes',
+                'permission' => 'dashboard.solicitacoes',
+                'label' => 'Solicitações',
+                'href' => '/solicitacoes',
+                'value' => Solicitacao::query()->where('status', 'under_review')->count(),
+                'detail' => Solicitacao::query()->where('status', 'approved')->count().' aprovadas',
+            ],
+            [
+                'key' => 'guias',
+                'permission' => 'dashboard.guias',
+                'label' => 'Guias',
+                'href' => '/guias',
+                'value' => Guia::query()->where('status', 'under_review')->count(),
+                'detail' => Guia::query()->where('status', 'finalized')->count().' finalizadas',
+            ],
+            [
+                'key' => 'antecipacoes',
+                'permission' => 'dashboard.antecipacoes',
+                'label' => 'Antecipações',
+                'href' => '/antecipacoes',
+                'value' => Antecipacao::query()->where('status', 'open')->count(),
+                'detail' => Antecipacao::query()->where('status', 'closed')->count().' fechadas',
+            ],
+            [
+                'key' => 'lancamentos',
+                'permission' => 'dashboard.lancamentos',
+                'label' => 'Sessões',
+                'href' => '/lancamentos',
+                'value' => Lancamento::query()->whereDate('created_at', today())->count(),
+                'detail' => Lancamento::query()->where('status', 'completed')->count().' concluídos',
+            ],
+            [
+                'key' => 'conciliacoes',
+                'permission' => 'dashboard.conciliacoes',
+                'label' => 'Conciliações',
+                'href' => '/conciliacao',
+                'value' => ConciliacaoFinanceira::query()->where('status', 'pending')->count(),
+                'detail' => ConciliacaoFinanceira::query()->where('status', 'reviewed')->count().' conferidas',
+            ],
+            [
+                'key' => 'pacientes',
+                'permission' => 'dashboard.pacientes',
+                'label' => 'Pacientes',
+                'href' => '/pacientes',
+                'value' => Paciente::query()->where('ativo', true)->count(),
+                'detail' => Paciente::query()->count().' cadastrados',
+            ],
+            [
+                'key' => 'profissionais',
+                'permission' => 'dashboard.profissionais',
+                'label' => 'Profissionais',
+                'href' => '/profissionais',
+                'value' => Profissional::query()->where('ativo', true)->count(),
+                'detail' => Profissional::query()->count().' cadastrados',
+            ],
+            [
+                'key' => 'medicos',
+                'permission' => 'dashboard.medicos',
+                'label' => 'Médicos',
+                'href' => '/medicos',
+                'value' => Medico::query()->where('ativo', true)->count(),
+                'detail' => Medico::query()->count().' cadastrados',
+            ],
+            [
+                'key' => 'usuarios',
+                'permission' => 'dashboard.usuarios',
+                'label' => 'Usuários',
+                'href' => '/usuarios',
+                'value' => User::query()->where('tenant_id', $user->tenant_id)->where('ativo', true)->count(),
+                'detail' => User::query()->where('tenant_id', $user->tenant_id)->count().' cadastrados',
+            ],
+            [
+                'key' => 'auditoria',
+                'permission' => 'dashboard.auditoria',
+                'label' => 'Auditoria',
+                'href' => '/auditoria',
+                'value' => AuditLog::query()->where('created_at', '>=', now()->subDay())->count(),
+                'detail' => 'últimas 24 horas',
+            ],
+        ])->filter(function (array $block) use ($user) {
+            return $user?->can($block['permission']) ?? false;
+        })->values();
+
+        return response()->json([
+            'data' => [
+                'blocks' => $blocks,
+                'recent_audits' => $this->recentAudits($user),
+            ],
+        ]);
+    }
+
+    private function recentAudits($user): array
+    {
+        if (! $user?->can('dashboard.auditoria')) {
+            return [];
+        }
+
+        return AuditLog::query()
+            ->with('user')
+            ->latest('created_at')
+            ->limit(12)
+            ->get()
+            ->map(fn (AuditLog $audit) => [
+                'id' => $audit->id,
+                'acao' => $audit->acao,
+                'entidade' => $audit->entidade,
+                'entidade_id' => $audit->entidade_id,
+                'usuario' => $audit->user?->name,
+                'created_at' => $audit->created_at?->toISOString(),
+            ])
+            ->all();
+    }
+}

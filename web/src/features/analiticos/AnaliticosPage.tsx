@@ -7,6 +7,7 @@ import type {
   AnaliticoUnimedLinha,
   AnaliticoUnimedPreview,
 } from '../lancamentos/types'
+import { useAnaliticosLotes } from './useAnaliticos'
 
 function formatEmpty(value: string | null | undefined) {
   return value && value.trim() !== '' ? value : '—'
@@ -145,12 +146,101 @@ function ConciliacaoTable({ rows }: { rows: AnaliticoUnimedConciliacaoLinha[] })
   )
 }
 
+function LotesTable({
+  rows,
+  isLoading,
+  isError,
+}: {
+  rows: Array<{
+    id: number
+    arquivo_nome_original: string
+    status: string
+    importado_em: string | null
+    total_linhas_analitico: number
+    total_linhas_glosa: number
+    total_linhas_conciliacao: number
+    total_pago: string
+    total_glosado: string
+    saldo_total: string
+  }>
+  isLoading: boolean
+  isError: boolean
+}) {
+  return (
+    <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <h3 className="text-lg font-semibold text-white">Lotes importados</h3>
+          <p className="text-sm text-slate-300">
+            Histórico dos analíticos já salvos para conferência e conciliação.
+          </p>
+        </div>
+      </div>
+
+      {isLoading ? (
+        <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
+          Carregando lotes salvos...
+        </div>
+      ) : isError ? (
+        <div className="mt-4 rounded-2xl border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-100">
+          Não foi possível carregar os lotes importados.
+        </div>
+      ) : (
+        <div className="mt-4 overflow-hidden rounded-3xl border border-white/10">
+          <table className="w-full border-collapse text-left text-sm">
+            <thead className="bg-white/5 text-xs uppercase tracking-[0.25em] text-slate-400">
+              <tr>
+                <th className="px-4 py-3">Arquivo</th>
+                <th className="px-4 py-3">Importado em</th>
+                <th className="px-4 py-3">Linhas</th>
+                <th className="px-4 py-3">Totais</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/10 bg-slate-950/30">
+              {rows.map((lote) => (
+                <tr key={lote.id}>
+                  <td className="px-4 py-4">
+                    <div className="font-medium text-white">#{lote.id}</div>
+                    <div className="text-xs text-slate-400">{lote.arquivo_nome_original}</div>
+                    <div className="mt-1 text-xs text-slate-500">{lote.status}</div>
+                  </td>
+                  <td className="px-4 py-4 text-slate-200">
+                    {lote.importado_em ? new Date(lote.importado_em).toLocaleString('pt-BR') : '—'}
+                  </td>
+                  <td className="px-4 py-4 text-slate-200">
+                    <div>Analítico: {lote.total_linhas_analitico}</div>
+                    <div>Glosa: {lote.total_linhas_glosa}</div>
+                    <div>Conciliação: {lote.total_linhas_conciliacao}</div>
+                  </td>
+                  <td className="px-4 py-4 text-slate-200">
+                    <div>Pago: {lote.total_pago}</div>
+                    <div>Glosado: {lote.total_glosado}</div>
+                    <div>Saldo: {lote.saldo_total}</div>
+                  </td>
+                </tr>
+              ))}
+              {rows.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="px-4 py-8 text-center text-slate-300">
+                    Nenhum lote importado encontrado.
+                  </td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  )
+}
+
 export function AnaliticosPage() {
   const [arquivo, setArquivo] = useState<File | null>(null)
   const [preview, setPreview] = useState<AnaliticoUnimedPreview | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [salvo, setSalvo] = useState(false)
   const importarAnalitico = useImportarAnaliticoUnimed()
+  const lotesQuery = useAnaliticosLotes()
 
   const analiticoRows = useMemo(() => preview?.analitico.linhas.slice(0, 8) ?? [], [preview])
   const glosaRows = useMemo(() => preview?.glosas.linhas.slice(0, 8) ?? [], [preview])
@@ -180,6 +270,7 @@ export function AnaliticosPage() {
     }
 
     setSalvo(true)
+    void lotesQuery.refetch()
   }
 
   const handleRecusar = () => {
@@ -228,6 +319,12 @@ export function AnaliticosPage() {
           </article>
         </div>
       </section>
+
+      <LotesTable
+        rows={lotesQuery.data ?? []}
+        isLoading={lotesQuery.isLoading}
+        isError={lotesQuery.isError}
+      />
 
       <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
         <form onSubmit={handleSubmit} className="space-y-4">

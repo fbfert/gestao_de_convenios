@@ -13,6 +13,7 @@ use App\Http\Controllers\ConciliacaoController;
 use App\Http\Controllers\GuiaController;
 use App\Http\Controllers\MedicoController;
 use App\Http\Controllers\LancamentoController;
+use App\Http\Controllers\AnaliticoController;
 use App\Http\Controllers\PacienteController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\SolicitacaoController;
@@ -79,6 +80,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/antecipacoes/{antecipacao}/lancamentos', [LancamentoController::class, 'store']);
     Route::post('/antecipacoes/{antecipacao}/lancamentos/importar-transcricao', [LancamentoController::class, 'importarTranscricao']);
     Route::post('/lancamentos/importar-analitico', [LancamentoController::class, 'importarAnalitico']);
+    Route::get('/analiticos', [AnaliticoController::class, 'index']);
 
     Route::get('/lancamentos', [LancamentoController::class, 'index']);
     Route::get('/lancamentos/{lancamento}', [LancamentoController::class, 'show']);

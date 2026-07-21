@@ -9,6 +9,7 @@
 - [x] 2.1 Criar a rota e a página dedicada de Analíticos.
 - [x] 2.2 Exibir a estrutura do CRUD alinhada ao modelo `item3.3.xlsx`.
 - [x] 2.3 Reaproveitar a importação de Excel com pré-visualização, salvar e recusar.
+- [x] 2.4 Exibir a listagem dos lotes importados e atualizar após nova importação.
 
 ## 3. Usuários e permissões
 

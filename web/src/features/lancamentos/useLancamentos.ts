@@ -86,7 +86,7 @@ export function useConfirmarLancamentosTranscritos() {
       const formData = new FormData()
       formData.append('profissional_id', payload.profissional_id)
       formData.append('transcricao', payload.transcricao)
-      formData.append('confirmar_envio', 'true')
+      formData.append('confirmar_envio', '1')
 
       payload.sessoes.forEach((sessao, index) => {
         formData.append(`sessoes[${index}][data_sessao]`, sessao.data_sessao ?? '')
@@ -114,6 +114,8 @@ export function useConfirmarLancamentosTranscritos() {
 }
 
 export function useImportarAnaliticoUnimed() {
+  const queryClient = useQueryClient()
+
   return useMutation({
     mutationFn: async (arquivo: File) => {
       const formData = new FormData()
@@ -124,6 +126,9 @@ export function useImportarAnaliticoUnimed() {
       }>('/lancamentos/importar-analitico', formData)
 
       return data.data
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['analiticos'] })
     },
   })
 }

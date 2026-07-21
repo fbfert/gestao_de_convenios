@@ -31,3 +31,14 @@ O sistema SHALL oferecer ações finais para salvar ou recusar a importação ap
 #### Scenario: Recusar importação
 - **WHEN** o operador recusar a importação após revisar a pré-visualização
 - **THEN** o sistema SHALL descartar a importação sem persistir o lote
+
+### Requirement: Listagem dos lotes importados
+O sistema SHALL exibir a lista dos lotes de analíticos já importados, permitindo ao operador ver o histórico salvo na página de Analíticos.
+
+#### Scenario: Carregar lotes salvos
+- **WHEN** o usuário abrir a página de Analíticos
+- **THEN** o sistema SHALL mostrar os lotes importados mais recentes
+
+#### Scenario: Refletir novo lote na lista
+- **WHEN** um novo analítico for importado com sucesso
+- **THEN** o sistema SHALL atualizar a listagem para exibir o novo lote salvo

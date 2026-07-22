@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useMatch, useNavigate } from 'react-router-dom'
 import { Select } from '../../components/ui/Select'
 import { translateStatus } from '../../lib/statusLabels'
 import { useConvenios, useEspecialidades, usePacientes, useProfissionais } from '../../lib/queries/useReferenceData'
@@ -53,6 +53,8 @@ function statusTone(status: string) {
 }
 
 export function GuiasPage() {
+  const navigate = useNavigate()
+  const isCreateRoute = useMatch('/guias/nova') !== null
   const [filters, setFilters] = useState(defaultFilters)
   const [draftFilters, setDraftFilters] = useState(defaultFilters)
   const [page, setPage] = useState(1)
@@ -129,9 +131,9 @@ export function GuiasPage() {
   }
 
   const handleNew = () => {
+    navigate('/guias/nova')
     setForm(emptyForm)
     setFormError(null)
-    setIsFormOpen(true)
   }
 
   const handleCreateSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -147,7 +149,11 @@ export function GuiasPage() {
         paciente_id: current.paciente_id,
         profissional_id: current.profissional_id,
       }))
-      setIsFormOpen(false)
+      if (isCreateRoute) {
+        navigate('/guias')
+      } else {
+        setIsFormOpen(false)
+      }
     } catch (error) {
       setFormError(getHttpErrorMessage(error, 'Não foi possível criar a guia.'))
     }
@@ -179,6 +185,7 @@ export function GuiasPage() {
 
   return (
     <div className="space-y-8" data-testid="guias-page">
+      {!isCreateRoute ? (
       <section className="space-y-4">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -236,8 +243,9 @@ export function GuiasPage() {
           </article>
         </div>
       </section>
+      ) : null}
 
-      {isFormOpen ? (
+      {isFormOpen || isCreateRoute ? (
         <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
           <form onSubmit={handleCreateSubmit} className="space-y-4">
             <div className="flex items-start justify-between gap-4">
@@ -247,7 +255,14 @@ export function GuiasPage() {
               </div>
               <button
                 type="button"
-                onClick={() => setIsFormOpen(false)}
+                onClick={() => {
+                  if (isCreateRoute) {
+                    navigate('/guias')
+                    return
+                  }
+
+                  setIsFormOpen(false)
+                }}
                 className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
                 data-testid="guia-fechar"
               >
@@ -299,7 +314,7 @@ export function GuiasPage() {
             </label>
 
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Profissional</span>
+              <span className="text-sm font-medium text-slate-200">Profissional executante</span>
               <Select
                 value={form.profissional_id}
                 onChange={(event) =>
@@ -393,6 +408,7 @@ export function GuiasPage() {
         </section>
       ) : null}
 
+      {!isCreateRoute ? (
       <section className="space-y-4 rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -581,6 +597,7 @@ export function GuiasPage() {
           </button>
         </div>
       </section>
+      ) : null}
     </div>
   )
 }

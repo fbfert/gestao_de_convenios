@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AntecipacaoController;
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\EmailSettingsController;
 use App\Http\Controllers\ConvenioController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\RoleController;
@@ -13,7 +14,10 @@ use App\Http\Controllers\ConciliacaoController;
 use App\Http\Controllers\GuiaController;
 use App\Http\Controllers\MedicoController;
 use App\Http\Controllers\LancamentoController;
+use App\Http\Controllers\LancamentoPrintTemplateController;
 use App\Http\Controllers\AnaliticoController;
+use App\Http\Controllers\AiSettingsController;
+use App\Http\Controllers\ManualController;
 use App\Http\Controllers\PacienteController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\SolicitacaoController;
@@ -30,6 +34,14 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index']);
     Route::get('/auditoria', [AuditController::class, 'index'])->middleware('permission:dashboard.auditoria');
+
+    Route::get('/manual/{tipo?}', [ManualController::class, 'show'])->where('tipo', 'manual|mapa-mental');
+    Route::put('/manual/{tipo?}', [ManualController::class, 'update'])->middleware('permission:manual.manage')->where('tipo', 'manual|mapa-mental');
+    Route::get('/configuracoes/emails', [EmailSettingsController::class, 'show'])->middleware('permission:configuracoes.manage');
+    Route::put('/configuracoes/emails', [EmailSettingsController::class, 'update'])->middleware('permission:configuracoes.manage');
+    Route::get('/configuracoes/ia', [AiSettingsController::class, 'show'])->middleware('permission:configuracoes.manage');
+    Route::put('/configuracoes/ia', [AiSettingsController::class, 'update'])->middleware('permission:configuracoes.manage');
+    Route::get('/configuracoes/ia/modelos', [AiSettingsController::class, 'models'])->middleware('permission:configuracoes.manage');
 
     Route::get('/pacientes', [PacienteController::class, 'index']);
     Route::get('/pacientes/{paciente}', [PacienteController::class, 'show']);
@@ -65,7 +77,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/solicitacoes', [SolicitacaoController::class, 'index']);
     Route::post('/solicitacoes', [SolicitacaoController::class, 'store']);
+    Route::post('/solicitacoes/ler-pedido-medico', [SolicitacaoController::class, 'analisarPedidoMedico']);
+    Route::post('/solicitacoes/pacientes-rapido', [SolicitacaoController::class, 'storePacienteRapido']);
+    Route::post('/solicitacoes/especialidades-rapido', [SolicitacaoController::class, 'storeEspecialidadeRapida']);
+    Route::post('/solicitacoes/medicos-rapido', [SolicitacaoController::class, 'storeMedicoRapido']);
     Route::get('/solicitacoes/{solicitacao}', [SolicitacaoController::class, 'show']);
+    Route::get('/solicitacoes/{solicitacao}/pedido-medico', [SolicitacaoController::class, 'pedidoMedico']);
+    Route::patch('/solicitacoes/{solicitacao}/status', [SolicitacaoController::class, 'updateStatus']);
     Route::patch('/solicitacoes/{solicitacao}/aprovar', [SolicitacaoController::class, 'aprovar']);
     Route::patch('/solicitacoes/{solicitacao}/negar', [SolicitacaoController::class, 'negar']);
 
@@ -80,6 +98,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/antecipacoes/{antecipacao}/lancamentos', [LancamentoController::class, 'store']);
     Route::post('/antecipacoes/{antecipacao}/lancamentos/importar-transcricao', [LancamentoController::class, 'importarTranscricao']);
     Route::post('/lancamentos/importar-analitico', [LancamentoController::class, 'importarAnalitico']);
+    Route::get('/lancamentos/templates/registro-sessoes', [LancamentoPrintTemplateController::class, 'show']);
+    Route::put('/lancamentos/templates/registro-sessoes', [LancamentoPrintTemplateController::class, 'update']);
     Route::get('/analiticos', [AnaliticoController::class, 'index']);
     Route::get('/analiticos/{analiticoLote}', [AnaliticoController::class, 'show']);
 

@@ -7,6 +7,10 @@ O sistema SHALL permitir importar o Excel do analítico da Unimed e SHALL persis
 - **WHEN** o operador enviar o arquivo Excel do analítico da Unimed pela página de Analíticos
 - **THEN** o sistema SHALL ler o arquivo, normalizar o conteúdo e salvar o lote importado
 
+#### Scenario: Importação removida de Sessões
+- **WHEN** o operador abrir a página de Sessões
+- **THEN** o sistema SHALL NOT exibir a interface de importação do analítico da Unimed nessa página
+
 #### Scenario: Reimportação rastreável
 - **WHEN** o operador importar um novo Excel do mesmo período
 - **THEN** o sistema SHALL manter o histórico do lote anterior ou registrar explicitamente a substituição

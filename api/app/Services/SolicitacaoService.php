@@ -3,14 +3,19 @@
 namespace App\Services;
 
 use App\Exceptions\SolicitacaoStatusInvalidoException;
+use App\Models\Guia;
 use App\Models\Solicitacao;
 use App\Support\TenantContext;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 
 class SolicitacaoService
 {
+    private const STATUS_PERMITIDOS = ['under_review', 'approved', 'denied'];
+
     public function listar(array $filtros = [], int $perPage = 15): LengthAwarePaginator
     {
         return Solicitacao::query()
@@ -36,8 +41,11 @@ class SolicitacaoService
 
     public function criar(array $dados): Solicitacao
     {
+        $tenantId = $this->tenantId();
+        $pedidoMedico = $this->resolverPedidoMedico($dados, $tenantId);
+
         return Solicitacao::query()->create([
-            'tenant_id' => $this->tenantId(),
+            'tenant_id' => $tenantId,
             'paciente_id' => $dados['paciente_id'],
             'profissional_id' => $dados['profissional_id'],
             'especialidade_id' => $dados['especialidade_id'],
@@ -46,30 +54,98 @@ class SolicitacaoService
             'status' => 'under_review',
             'solicitado_em' => $dados['solicitado_em'],
             'observacoes' => $dados['observacoes'] ?? null,
-        ]);
+        ] + $pedidoMedico);
+    }
+
+    private function resolverPedidoMedico(array $dados, int $tenantId): array
+    {
+        $uploadId = $dados['pedido_medico_upload_id'] ?? null;
+
+        if (! $uploadId) {
+            return [];
+        }
+
+        $prefix = "pedidos-medicos/pendentes/{$tenantId}/";
+        if (! str_starts_with($uploadId, $prefix) || ! Storage::disk('local')->exists($uploadId)) {
+            return [];
+        }
+
+        $target = str_replace('/pendentes/', '/solicitacoes/', $uploadId);
+        Storage::disk('local')->move($uploadId, $target);
+
+        return [
+            'pedido_medico_path' => $target,
+            'pedido_medico_nome_original' => $dados['pedido_medico_nome_original'] ?? basename($target),
+            'pedido_medico_mime' => $dados['pedido_medico_mime'] ?? Storage::disk('local')->mimeType($target),
+            'pedido_medico_ai_result' => $dados['pedido_medico_ai_result'] ?? null,
+        ];
     }
 
     public function aprovar(Solicitacao $solicitacao): Solicitacao
     {
-        $this->validarTransicao($solicitacao, 'approved');
-        $solicitacao->update(['status' => 'approved']);
-
-        return $solicitacao->refresh();
+        return $this->alterarStatus($solicitacao, 'approved');
     }
 
     public function negar(Solicitacao $solicitacao): Solicitacao
     {
-        $this->validarTransicao($solicitacao, 'denied');
-        $solicitacao->update(['status' => 'denied']);
-
-        return $solicitacao->refresh();
+        return $this->alterarStatus($solicitacao, 'denied');
     }
 
-    private function validarTransicao(Solicitacao $solicitacao, string $destino): void
+    public function alterarStatus(Solicitacao $solicitacao, string $destino): Solicitacao
     {
-        if ($solicitacao->status !== 'under_review') {
+        if (! in_array($destino, self::STATUS_PERMITIDOS, true)) {
             throw SolicitacaoStatusInvalidoException::transicaoInvalida($solicitacao->status, $destino);
         }
+
+        return DB::transaction(function () use ($solicitacao, $destino) {
+            $solicitacao->update(['status' => $destino]);
+
+            if ($destino === 'approved') {
+                $this->sincronizarGuiaDaSolicitacao($solicitacao->refresh());
+            }
+
+            return $solicitacao->refresh();
+        });
+    }
+
+    private function sincronizarGuiaDaSolicitacao(Solicitacao $solicitacao): void
+    {
+        $guia = $solicitacao->guia;
+        $dadosBase = [
+            'tenant_id' => $solicitacao->tenant_id,
+            'solicitacao_id' => $solicitacao->id,
+            'convenio_id' => $solicitacao->convenio_id,
+            'paciente_id' => $solicitacao->paciente_id,
+            'profissional_id' => $solicitacao->profissional_id,
+            'especialidade_id' => $solicitacao->especialidade_id,
+            'status' => 'under_review',
+            'data_solicitacao' => $solicitacao->solicitado_em?->toDateString() ?? today()->toDateString(),
+            'observacoes' => $solicitacao->observacoes,
+        ];
+
+        if ($guia) {
+            $guia->fill($dadosBase);
+            if (! $guia->numero_guia) {
+                $guia->numero_guia = $this->numeroGuiaDaSolicitacao($solicitacao);
+            }
+
+            $guia->save();
+
+            return;
+        }
+
+        Guia::query()->create($dadosBase + [
+            'numero_guia' => $this->numeroGuiaDaSolicitacao($solicitacao),
+            'tipo_terapia' => 'especializada',
+            'data_finalizacao' => null,
+            'senha' => null,
+            'validade_senha' => null,
+        ]);
+    }
+
+    private function numeroGuiaDaSolicitacao(Solicitacao $solicitacao): string
+    {
+        return 'GUIA-SOLICITACAO-'.$solicitacao->id;
     }
 
     private function tenantId(): int

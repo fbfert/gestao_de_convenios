@@ -35,6 +35,7 @@ const domainLabels: Record<string, string> = {
   usuarios: 'Usuários',
   convenios: 'Convênios',
   permissoes: 'Permissões',
+  manual: 'Manual',
 }
 
 export function PermissoesPage() {

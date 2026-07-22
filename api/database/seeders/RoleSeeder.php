@@ -47,6 +47,8 @@ class RoleSeeder extends Seeder
                 'usuarios.manage',
                 'convenios.manage',
                 'permissoes.manage',
+                'manual.manage',
+                'configuracoes.manage',
             ],
             'funcionario' => [
                 'dashboard.convenios',

@@ -206,3 +206,5 @@ export type AnaliticoUnimedPreview = {
   conciliacao: AnaliticoUnimedConciliacaoPreview
   lote: AnaliticoUnimedLote
 }
+
+export type { LancamentoPrintTemplate, LancamentoPrintTemplateForm } from './printTemplate'

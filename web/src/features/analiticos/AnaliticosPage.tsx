@@ -7,7 +7,7 @@ import type {
   AnaliticoUnimedLinha,
   AnaliticoUnimedPreview,
 } from '../lancamentos/types'
-import { useAnaliticosLotes } from './useAnaliticos'
+import { useAnaliticosLotes, type AnaliticoLoteFilters } from './useAnaliticos'
 
 function formatEmpty(value: string | null | undefined) {
   return value && value.trim() !== '' ? value : '—'
@@ -150,6 +150,9 @@ function LotesTable({
   rows,
   isLoading,
   isError,
+  filtros,
+  onFiltroChange,
+  onLimparFiltros,
 }: {
   rows: Array<{
     id: number
@@ -165,6 +168,9 @@ function LotesTable({
   }>
   isLoading: boolean
   isError: boolean
+  filtros: AnaliticoLoteFilters
+  onFiltroChange: (campo: keyof AnaliticoLoteFilters, valor: string) => void
+  onLimparFiltros: () => void
 }) {
   return (
     <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
@@ -172,10 +178,63 @@ function LotesTable({
         <div>
           <h3 className="text-lg font-semibold text-white">Lotes importados</h3>
           <p className="text-sm text-slate-300">
-            Histórico dos analíticos já salvos para conferência e conciliação.
+          Histórico dos analíticos já salvos para conferência e conciliação.
           </p>
         </div>
       </div>
+
+      <form
+        className="mt-4 grid gap-4 rounded-3xl border border-white/10 bg-white/5 p-4 xl:grid-cols-4"
+        onSubmit={(event) => event.preventDefault()}
+      >
+        <label className="space-y-2">
+          <span className="text-xs uppercase tracking-[0.2em] text-slate-400">Texto</span>
+          <input
+            type="text"
+            value={filtros.busca}
+            onChange={(event) => onFiltroChange('busca', event.target.value)}
+            placeholder="Nome do arquivo"
+            className="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-3 text-sm text-slate-100 placeholder:text-slate-500"
+          />
+        </label>
+        <label className="space-y-2">
+          <span className="text-xs uppercase tracking-[0.2em] text-slate-400">Status</span>
+          <input
+            type="text"
+            value={filtros.status}
+            onChange={(event) => onFiltroChange('status', event.target.value)}
+            placeholder="importado"
+            className="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-3 text-sm text-slate-100 placeholder:text-slate-500"
+          />
+        </label>
+        <label className="space-y-2">
+          <span className="text-xs uppercase tracking-[0.2em] text-slate-400">Importado de</span>
+          <input
+            type="date"
+            value={filtros.importado_de}
+            onChange={(event) => onFiltroChange('importado_de', event.target.value)}
+            className="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-3 text-sm text-slate-100"
+          />
+        </label>
+        <label className="space-y-2">
+          <span className="text-xs uppercase tracking-[0.2em] text-slate-400">Importado até</span>
+          <input
+            type="date"
+            value={filtros.importado_ate}
+            onChange={(event) => onFiltroChange('importado_ate', event.target.value)}
+            className="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-3 text-sm text-slate-100"
+          />
+        </label>
+        <div className="xl:col-span-4 flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={onLimparFiltros}
+            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+          >
+            Limpar filtros
+          </button>
+        </div>
+      </form>
 
       {isLoading ? (
         <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
@@ -248,8 +307,14 @@ export function AnaliticosPage() {
   const [preview, setPreview] = useState<AnaliticoUnimedPreview | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [salvo, setSalvo] = useState(false)
+  const [filtros, setFiltros] = useState<AnaliticoLoteFilters>({
+    busca: '',
+    status: '',
+    importado_de: '',
+    importado_ate: '',
+  })
   const importarAnalitico = useImportarAnaliticoUnimed()
-  const lotesQuery = useAnaliticosLotes()
+  const lotesQuery = useAnaliticosLotes(filtros)
 
   const analiticoRows = useMemo(() => preview?.analitico.linhas.slice(0, 8) ?? [], [preview])
   const glosaRows = useMemo(() => preview?.glosas.linhas.slice(0, 8) ?? [], [preview])
@@ -287,6 +352,22 @@ export function AnaliticosPage() {
     setPreview(null)
     setError(null)
     setSalvo(false)
+  }
+
+  const handleFiltroChange = (campo: keyof AnaliticoLoteFilters, valor: string) => {
+    setFiltros((current) => ({
+      ...current,
+      [campo]: valor,
+    }))
+  }
+
+  const limparFiltros = () => {
+    setFiltros({
+      busca: '',
+      status: '',
+      importado_de: '',
+      importado_ate: '',
+    })
   }
 
   return (
@@ -333,6 +414,9 @@ export function AnaliticosPage() {
         rows={lotesQuery.data ?? []}
         isLoading={lotesQuery.isLoading}
         isError={lotesQuery.isError}
+        filtros={filtros}
+        onFiltroChange={handleFiltroChange}
+        onLimparFiltros={limparFiltros}
       />
 
       <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">

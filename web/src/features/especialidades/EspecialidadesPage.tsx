@@ -1,4 +1,5 @@
 import { useMemo, useState, type FormEvent } from 'react'
+import { useMatch, useNavigate } from 'react-router-dom'
 import {
   getHttpErrorMessage,
   useAtualizarEspecialidade,
@@ -39,6 +40,8 @@ function toPayload(form: EspecialidadeForm): EspecialidadePayload {
 }
 
 export function EspecialidadesPage() {
+  const navigate = useNavigate()
+  const isCreateRoute = useMatch('/especialidades/nova') !== null
   const [busca, setBusca] = useState('')
   const [draftBusca, setDraftBusca] = useState('')
   const [statusFiltro, setStatusFiltro] = useState<StatusFiltro>('todas')
@@ -77,10 +80,10 @@ export function EspecialidadesPage() {
   }
 
   const handleNew = () => {
+    navigate('/especialidades/nova')
     setEditingId(null)
     setForm(emptyForm)
     setFormError(null)
-    setIsFormOpen(true)
   }
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -101,7 +104,11 @@ export function EspecialidadesPage() {
 
       setEditingId(null)
       setForm(emptyForm)
-      setIsFormOpen(false)
+      if (isCreateRoute) {
+        navigate('/especialidades')
+      } else {
+        setIsFormOpen(false)
+      }
     } catch (error) {
       setFormError(getHttpErrorMessage(error, 'Não foi possível salvar a especialidade.'))
     }
@@ -131,11 +138,17 @@ export function EspecialidadesPage() {
     setEditingId(null)
     setForm(emptyForm)
     setFormError(null)
+    if (isCreateRoute) {
+      navigate('/especialidades')
+      return
+    }
+
     setIsFormOpen(false)
   }
 
   return (
     <div className="space-y-8" data-testid="especialidades-page">
+      {!isCreateRoute ? (
       <section className="space-y-4">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -176,8 +189,9 @@ export function EspecialidadesPage() {
           </article>
         </div>
       </section>
+      ) : null}
 
-      {isFormOpen ? (
+      {isFormOpen || isCreateRoute ? (
         <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
           <form onSubmit={handleSubmit} className="space-y-4" data-testid="especialidade-form">
             <div className="flex items-start justify-between gap-4">
@@ -263,6 +277,7 @@ export function EspecialidadesPage() {
         </section>
       ) : null}
 
+      {!isCreateRoute ? (
       <section className="space-y-4 rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -376,6 +391,7 @@ export function EspecialidadesPage() {
           </div>
         )}
       </section>
+      ) : null}
     </div>
   )
 }

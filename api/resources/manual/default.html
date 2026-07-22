@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<title>Manual do Sistema — Gestão de Convênios</title>
+<style>
+  :root {
+    --azul: #1d4ed8;
+    --azul-claro: #eff6ff;
+    --cinza-texto: #1f2937;
+    --cinza-borda: #e2e8f0;
+    --cinza-fundo: #f8fafc;
+    --verde: #047857;
+    --verde-fundo: #ecfdf5;
+    --ambar: #b45309;
+    --ambar-fundo: #fffbeb;
+    --vermelho: #b91c1c;
+    --vermelho-fundo: #fef2f2;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--cinza-texto);
+    background: #ffffff;
+    line-height: 1.55;
+  }
+  .capa {
+    background: linear-gradient(135deg, #0f172a, #1d4ed8);
+    color: #fff;
+    padding: 48px 40px;
+  }
+  .capa .kicker {
+    text-transform: uppercase;
+    letter-spacing: .2em;
+    font-size: 12px;
+    color: #bfdbfe;
+    margin: 0 0 8px;
+  }
+  .capa h1 { margin: 0 0 12px; font-size: 32px; }
+  .capa p { margin: 0; max-width: 760px; color: #e0e7ff; font-size: 15px; }
+  .conteudo { max-width: 920px; margin: 0 auto; padding: 32px 40px 80px; }
+  nav.indice {
+    background: var(--cinza-fundo);
+    border: 1px solid var(--cinza-borda);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin: 24px 0 40px;
+  }
+  nav.indice h2 { margin-top: 0; font-size: 16px; text-transform: uppercase; letter-spacing: .08em; color: #475569; }
+  nav.indice ol { columns: 2; column-gap: 32px; padding-left: 20px; margin: 0; }
+  nav.indice li { break-inside: avoid; margin-bottom: 6px; }
+  nav.indice a { color: var(--azul); text-decoration: none; font-size: 14px; }
+  nav.indice a:hover { text-decoration: underline; }
+
+  h2.secao {
+    font-size: 24px;
+    margin: 56px 0 4px;
+    padding-top: 16px;
+    border-top: 3px solid var(--azul);
+  }
+  h2.secao .rota {
+    display: block;
+    font-size: 13px;
+    font-weight: 400;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    color: #64748b;
+    margin-top: 4px;
+  }
+  h3 { font-size: 17px; margin: 28px 0 8px; color: #0f172a; }
+  p { font-size: 15px; }
+  .objetivo {
+    background: var(--azul-claro);
+    border-left: 4px solid var(--azul);
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    font-size: 14.5px;
+    margin: 12px 0 20px;
+  }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0 24px; font-size: 14px; }
+  th, td { border: 1px solid var(--cinza-borda); padding: 8px 10px; text-align: left; vertical-align: top; }
+  th { background: #f1f5f9; font-weight: 600; }
+  td code, p code, li code { background: #f1f5f9; padding: 1px 6px; border-radius: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+  .btn {
+    display: inline-block;
+    background: #e0e7ff;
+    color: #3730a3;
+    border-radius: 999px;
+    padding: 2px 10px;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .badge { display: inline-block; border-radius: 999px; padding: 2px 10px; font-size: 12.5px; font-weight: 600; }
+  .badge.cinza { background: #e2e8f0; color: #334155; }
+  .badge.azul { background: var(--azul-claro); color: var(--azul); }
+  .badge.verde { background: var(--verde-fundo); color: var(--verde); }
+  .badge.ambar { background: var(--ambar-fundo); color: var(--ambar); }
+  .badge.vermelho { background: var(--vermelho-fundo); color: var(--vermelho); }
+  .fluxo {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    background: var(--cinza-fundo);
+    border: 1px solid var(--cinza-borda);
+    border-radius: 12px;
+    padding: 16px;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  .fluxo .passo {
+    background: #fff;
+    border: 1px solid var(--cinza-borda);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-weight: 600;
+  }
+  .fluxo .seta { color: #94a3b8; font-weight: 700; }
+  .dica, .aviso, .nota {
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 14px;
+    margin: 16px 0;
+  }
+  .dica { background: var(--verde-fundo); border-left: 4px solid var(--verde); }
+  .aviso { background: var(--ambar-fundo); border-left: 4px solid var(--ambar); }
+  .nota { background: #f1f5f9; border-left: 4px solid #64748b; }
+  ul, ol { padding-left: 22px; }
+  li { margin-bottom: 4px; font-size: 14.5px; }
+  hr.fim { border: none; border-top: 1px solid var(--cinza-borda); margin: 56px 0 24px; }
+  footer { text-align: center; color: #94a3b8; font-size: 12.5px; padding-bottom: 24px; }
+  a.voltar-topo { font-size: 12.5px; color: #64748b; text-decoration: none; }
+  a.voltar-topo:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<div class="capa">
+  <p class="kicker">Documentação interna</p>
+  <h1>Manual do Sistema — Gestão de Convênios</h1>
+  <p>
+    Guia passo a passo de todas as telas, botões e fluxos do sistema. Este manual foi escrito para quem opera o
+    dia a dia da clínica (recepção, financeiro, administração) e para quem está sendo treinado agora. Use o
+    índice abaixo para pular direto para a tela que você precisa entender.
+  </p>
+</div>
+
+<div class="conteudo">
+
+<nav class="indice" id="indice">
+  <h2>Índice</h2>
+  <ol>
+    <li><a href="#conceitos">1. Conceitos gerais</a></li>
+    <li><a href="#fluxo-geral">2. Fluxo geral do sistema</a></li>
+    <li><a href="#login">3. Login</a></li>
+    <li><a href="#dashboard">4. Dashboard</a></li>
+    <li><a href="#pacientes">5. Pacientes</a></li>
+    <li><a href="#solicitacoes">6. Solicitações</a></li>
+    <li><a href="#guias">7. Guias</a></li>
+    <li><a href="#convenios">8. Convênios</a></li>
+    <li><a href="#antecipacoes">9. Antecipações</a></li>
+    <li><a href="#lancamentos">10. Sessões (Lançamentos)</a></li>
+    <li><a href="#analiticos">11. Analíticos</a></li>
+    <li><a href="#conciliacao">12. Conciliação</a></li>
+    <li><a href="#profissionais">13. Profissionais</a></li>
+    <li><a href="#medicos">14. Médicos</a></li>
+    <li><a href="#especialidades">15. Especialidades</a></li>
+    <li><a href="#usuarios">16. Usuários</a></li>
+    <li><a href="#permissoes">17. Permissões</a></li>
+    <li><a href="#auditoria">18. Auditoria</a></li>
+    <li><a href="#configuracoes">19. Configurações</a></li>
+    <li><a href="#manual">20. Manual (esta tela)</a></li>
+    <li><a href="#glossario">21. Glossário de status</a></li>
+  </ol>
+</nav>
+
+<h2 class="secao" id="conceitos">1. Conceitos gerais</h2>
+<p>
+  O sistema organiza o trabalho de uma clínica que atende pacientes por convênios (planos de saúde). Cada clínica
+  cadastrada é um <strong>tenant</strong> (inquilino) isolado: os dados de uma clínica nunca aparecem para outra.
+  Ao entrar no sistema, você está sempre dentro do tenant da sua clínica.
+</p>
+<h3>Papéis de usuário</h3>
+<p>Todo usuário tem um único <strong>papel</strong> (role), que define o que ele pode fazer. Os papéis existentes hoje são:</p>
+<table>
+  <tr><th>Papel</th><th>Uso típico</th></tr>
+  <tr><td><span class="badge azul">admin</span></td><td>Administração completa: cadastros, usuários, permissões, convênios e edição do Manual.</td></tr>
+  <tr><td><span class="badge cinza">funcionario</span></td><td>Operação do dia a dia: solicitações, guias, sessões, conciliação, pacientes.</td></tr>
+  <tr><td><span class="badge cinza">profissional</span></td><td>Acesso restrito ao que é "próprio" (own): consulta suas guias, antecipações, sessões e conciliações.</td></tr>
+</table>
+<div class="nota">
+  <strong>Importante sobre o menu:</strong> o menu superior mostra os mesmos itens para qualquer usuário logado.
+  Quem realmente controla o que cada um pode ver ou fazer é o servidor: se uma pessoa não tem permissão para uma
+  ação, o sistema recusa a operação (geralmente com uma mensagem de erro). Não estranhe se, em algum cadastro, uma
+  ação aparecer na tela mas devolver erro de permissão — quem decide isso é o administrador, na tela de
+  <a href="#permissoes">Permissões</a>.
+</div>
+<h3>Vigências: por que nada é "excluído"</h3>
+<p>
+  Em <a href="#convenios">Convênios</a> (regras de autorização e valores) o sistema nunca apaga um registro
+  histórico. Em vez disso, ele <strong>encerra a vigência</strong> em uma data e cria uma nova a partir da data
+  seguinte. Isso preserva o histórico para auditoria e garante que cálculos antigos (conciliações já fechadas)
+  continuem corretos mesmo depois de uma mudança de valor ou regra.
+</p>
+
+<h2 class="secao" id="fluxo-geral">2. Fluxo geral do sistema</h2>
+<p>Esta é a "espinha dorsal" do sistema — o caminho que um atendimento percorre do início ao fim:</p>
+<div class="fluxo">
+  <span class="passo">Solicitação</span><span class="seta">→</span>
+  <span class="passo">Guia</span><span class="seta">→</span>
+  <span class="passo">Antecipação</span><span class="seta">→</span>
+  <span class="passo">Sessões (Lançamentos)</span><span class="seta">→</span>
+  <span class="passo">Analítico do convênio</span><span class="seta">→</span>
+  <span class="passo">Conciliação</span>
+</div>
+<ol>
+  <li><strong>Solicitação:</strong> pedido de autorização enviado ao convênio para um paciente fazer terapia com um profissional. Começa como <span class="badge cinza">Cadastrado</span>, evolui manualmente para <span class="badge azul">Em análise</span>, e termina em <span class="badge verde">Aprovado</span> ou <span class="badge vermelho">Negado</span>.</li>
+  <li><strong>Guia:</strong> o documento oficial de autorização, com senha e prazo de validade. Nasce em <span class="badge azul">Em análise</span>; ao ser <strong>finalizada</strong> (senha + validade preenchidas) fica <span class="badge verde">Aprovada</span>; ao ser <strong>negada</strong>, fica <span class="badge vermelho">Negada</span>.</li>
+  <li><strong>Antecipação:</strong> a "cota" de sessões autorizadas por ciclo (ex.: 12 sessões/mês). Mostra quanto já foi utilizado da cota e alerta quando não há próximas sessões agendadas.</li>
+  <li><strong>Sessões (Lançamentos):</strong> o registro de cada atendimento realizado, digitado manualmente ou importado da transcrição de um formulário em papel. Cada sessão lançada consome uma unidade da cota da antecipação.</li>
+  <li><strong>Analítico:</strong> a planilha que o convênio (hoje, Unimed) envia com o que efetivamente pagou e glosou (recusou) por guia. É importada em <a href="#analiticos">Analíticos</a>.</li>
+  <li><strong>Conciliação:</strong> o fechamento financeiro por guia, cruzando o valor esperado com o analítico. Segue um ciclo fixo: <span class="badge cinza">Pendente</span> → <span class="badge azul">Conferida</span> → <span class="badge verde">Paga</span>.</li>
+</ol>
+<p>Por trás de tudo isso, o cadastro de <a href="#convenios">Convênios</a> define as regras (quantas sessões por ciclo, validade da senha) e os valores pagos por especialidade/profissional, usados nos cálculos da conciliação.</p>
+
+<h2 class="secao" id="login">3. Login <span class="rota">/login</span></h2>
+<div class="objetivo">Objetivo: entrar no sistema com seu e-mail e senha cadastrados.</div>
+<table>
+  <tr><th>Campo/Botão</th><th>O que faz</th></tr>
+  <tr><td>E-mail / Senha</td><td>Credenciais cadastradas por um administrador (tela <a href="#usuarios">Usuários</a>). Não há cadastro público — quem cria seu acesso é o administrador da clínica.</td></tr>
+  <tr><td><span class="btn">Entrar</span></td><td>Autentica e leva ao Dashboard. Enquanto processa, mostra "Entrando...". Se e-mail/senha estiverem errados, mostra "E-mail ou senha inválidos."</td></tr>
+  <tr><td><span class="btn">Sair</span> (no menu superior, em qualquer tela)</td><td>Encerra a sessão e volta para a tela de login.</td></tr>
+</table>
+<div class="dica">Se você errar a senha várias vezes seguidas em pouco tempo, o sistema bloqueia novas tentativas por alguns instantes (proteção contra ataques). Basta aguardar e tentar de novo.</div>
+
+<h2 class="secao" id="dashboard">4. Dashboard <span class="rota">/dashboard</span></h2>
+<div class="objetivo">Objetivo: visão geral do dia a dia da clínica, com números resumidos e atalhos para as demais telas. É a primeira tela que você vê ao entrar.</div>
+<p>Os cartões de número que aparecem <strong>dependem das suas permissões</strong> — cada cartão só é exibido para quem tem acesso àquela área:</p>
+<table>
+  <tr><th>Cartão</th><th>O que mostra</th></tr>
+  <tr><td>Convênios</td><td>Total de convênios cadastrados / quantos estão ativos.</td></tr>
+  <tr><td>Solicitações</td><td>Quantas estão em análise / quantas foram aprovadas.</td></tr>
+  <tr><td>Guias</td><td>Quantas estão em análise / quantas finalizadas.</td></tr>
+  <tr><td>Antecipações</td><td>Quantas estão abertas / quantas fechadas.</td></tr>
+  <tr><td>Sessões</td><td>Quantas foram lançadas hoje / quantas concluídas.</td></tr>
+  <tr><td>Conciliações</td><td>Quantas estão pendentes / quantas conferidas.</td></tr>
+  <tr><td>Pacientes, Profissionais, Médicos, Usuários</td><td>Totais ativos / total cadastrado.</td></tr>
+  <tr><td>Auditoria</td><td>Eventos registrados nas últimas 24 horas.</td></tr>
+</table>
+<p>Clicar em qualquer cartão leva direto para a tela correspondente. Abaixo dos cartões há uma lista fixa "Acesso rápido" com links para todas as telas operacionais, e um bloco <strong>"Últimas alterações"</strong> com as ações mais recentes registradas na auditoria (visível só para quem tem permissão de auditoria).</p>
+<table>
+  <tr><th>Botão</th><th>O que faz</th></tr>
+  <tr><td><span class="btn">Ver auditoria</span></td><td>Único link do sistema que leva à tela de <a href="#auditoria">Auditoria</a>.</td></tr>
+</table>
+
+<h2 class="secao" id="pacientes">5. Pacientes <span class="rota">/pacientes</span></h2>
+<div class="objetivo">Objetivo: cadastro central dos pacientes atendidos. É a referência usada por Solicitações, Guias e Antecipações — cadastre o paciente aqui antes de abrir uma solicitação para ele.</div>
+<table>
+  <tr><th>Botão</th><th>O que faz</th></tr>
+  <tr><td><span class="btn">Novo</span></td><td>Abre o formulário de cadastro em branco.</td></tr>
+  <tr><td><span class="btn">Editar</span> (por linha)</td><td>Abre o formulário preenchido com os dados daquele paciente para alteração.</td></tr>
+  <tr><td><span class="btn">Ativar</span> / <span class="btn">Desativar</span></td><td>Alterna o status do paciente imediatamente, sem pedir confirmação.</td></tr>
+  <tr><td><span class="btn">Criar paciente</span> / <span class="btn">Salvar alterações</span></td><td>Grava o cadastro. Só habilita quando Nome, Carteirinha e Convênio estão preenchidos.</td></tr>
+  <tr><td><span class="btn">Cancelar</span></td><td>Fecha o formulário sem salvar.</td></tr>
+  <tr><td><span class="btn">Filtrar</span></td><td>Busca por nome ou número da carteirinha.</td></tr>
+</table>
+<h3>Campos do cadastro</h3>
+<ul>
+  <li><strong>Nome</strong>, <strong>CPF</strong>, <strong>Carteirinha</strong> (obrigatória), <strong>Convênio</strong> (obrigatório), <strong>Telefone</strong>, <strong>ID Clínica Ágil</strong> (integração externa, opcional), <strong>Ativo</strong> (caixa de seleção).</li>
+</ul>
+<p>Os cartões no topo mostram Total, Ativos e Inativos calculados na hora a partir da lista carregada.</p>
+
+<h2 class="secao" id="solicitacoes">6. Solicitações <span class="rota">/solicitacoes</span></h2>
+<div class="objetivo">Objetivo: registrar o pedido de autorização de terapia enviado ao convênio — o primeiro passo do atendimento, antes de existir uma guia.</div>
+<h3>Como criar</h3>
+<table>
+  <tr><th>Botão</th><th>O que faz</th></tr>
+  <tr><td><span class="btn">Novo</span></td><td>Abre o formulário de criação.</td></tr>
+  <tr><td><span class="btn">Criar solicitação</span></td><td>Grava a solicitação. Exige Convênio, Paciente (filtrado pelo convênio escolhido), Profissional executante, Especialidade, Médico solicitante e Data. Observações é opcional.</td></tr>
+  <tr><td><span class="btn">Fechar</span></td><td>Fecha o formulário sem salvar.</td></tr>
+</table>
+<h3>Mudança de status</h3>
+<p>Cada linha da tabela tem botões de status (<span class="badge azul">Em análise</span>, <span class="badge verde">Aprovado</span>, <span class="badge vermelho">Negado</span>). Clicar em um deles pede confirmação ("Confirmar alteração da solicitação #X para..."). O botão do status atual fica desabilitado.</p>
+<table>
+  <tr><th>Botão</th><th>O que faz</th></tr>
+  <tr><td>Nome do paciente (sublinhado, na tabela)</td><td>Abre uma janela com os detalhes da Guia vinculada a essa solicitação (se já existir uma).</td></tr>
+  <tr><td><span class="btn">Aplicar</span> (filtros)</td><td>Filtra por Status e Convênio.</td></tr>
+  <tr><td><span class="btn">Anterior</span> / <span class="btn">Próxima</span></td><td>Navega entre páginas (10 solicitações por página).</td></tr>
+</table>
+
+<h2 class="secao" id="guias">7. Guias <span class="rota">/guias</span></h2>
+<div class="objetivo">Objetivo: controlar o documento de autorização do convênio — número da guia, senha e prazo de validade da senha.</div>
+<table>
+  <tr><th>Botão</th><th>O que faz</th></tr>
+  <tr><td><span class="btn">Novo</span></td><td>Abre o formulário de criação (Convênio, Paciente, Profissional executante, Especialidade, Número da guia — sugerido automaticamente mas editável —, Tipo de terapia, Data da solicitação).</td></tr>
+  <tr><td><span class="btn">Criar guia</span></td><td>Grava a guia. Uma guia nova pode gerar automaticamente uma Antecipação vinculada.</td></tr>
+  <tr><td>Número da guia (link)</td><td>Abre a tela de detalhe da guia (<code>/guias/:id</code>).</td></tr>
+  <tr><td>"Vencendo em 7 dias"</td><td>Filtro rápido para mostrar apenas guias cuja senha vence em até 7 dias — use para não perder o prazo de renovação.</td></tr>
+  <tr><td><span class="btn">Gerar conciliação</span> (por linha)</td><td>Cria a linha de conciliação financeira para essa guia. Só fica disponível quando a guia está <span class="badge verde">Aprovada/Finalizada</span>.</td></tr>
+</table>
+<h3>Ações de status (só aparecem enquanto a guia está "Em análise")</h3>
+<table>
+  <tr><th>Botão</th><th>O que faz</th></tr>
+  <tr><td><span class="btn">Finalizar</span></td><td>Abre um mini-formulário para informar a <strong>Senha</strong> (obrigatória) e a <strong>Validade da senha</strong> (opcional). Ao confirmar, a guia passa para <span class="badge verde">Aprovada</span>.</td></tr>
+  <tr><td><span class="btn">Negar</span></td><td>Marca a guia como <span class="badge vermelho">Negada</span>, sem campos extra.</td></tr>
+</table>
+<div class="nota">Uma vez finalizada, negada ou vencida, a guia não tem mais botões de mudança de status — o fluxo é de mão única pela tela.</div>
+<h3>Tela de detalhe da guia</h3>
+<p>Mostra todos os dados (paciente, carteirinha, convênio, profissional, especialidade, datas, senha e validade — destacada em âmbar quando está a vencer) e dois atalhos:</p>
+<table>
+  <tr><th>Botão</th><th>O que faz</th></tr>
+  <tr><td><span class="btn">Ver antecipações</span></td><td>Leva para <a href="#antecipacoes">Antecipações</a>, já filtrando pela guia.</td></tr>
+  <tr><td><span class="btn">Ver conciliação</span></td><td>Leva para <a href="#conciliacao">Conciliação</a>, já filtrando pela guia.</td></tr>
+</table>
+
+<h2 class="secao" id="convenios">8. Convênios <span class="rota">/convenios</span></h2>
+<div class="objetivo">Objetivo: cadastrar os planos de saúde parceiros e configurar as regras de autorização e a tabela de valores usados nos cálculos financeiros.</div>
+<table>
+  <tr><th>Botão</th><th>O que faz</th></tr>
+  <tr><td><span class="btn">Novo convênio</span></td><td>Abre o formulário (Nome — obrigatório —, Descrição, Tipo de conexão, Ativo).</td></tr>
+  <tr><td><span class="btn">Salvar</span></td><td>Cria ou atualiza o convênio.</td></tr>
+  <tr><td><span class="btn">Editar</span></td><td>Preenche o formulário com os dados do convênio clicado.</td></tr>
+  <tr><td>Nome do convênio (link)</td><td>Abre a tela de detalhe, onde ficam as regras e valores.</td></tr>
+</table>
+<p><strong>Tipo de conexão:</strong> <code>Manual</code> (conferência feita pela equipe — use este na dúvida), <code>API</code> e <code>Scraping</code> (reservados a integrações já configuradas).</p>
+
+<h3>Tela de detalhe do convênio</h3>
+<h4 style="margin:16px 0 4px;font-size:15px;">Regras de autorização</h4>
+<p>Uma regra define, para um tipo de terapia: a frequência de lançamento, a quantidade autorizada por ciclo e (se aplicável) a validade da senha.</p>
+<table>
+  <tr><th>Campo</th><th>Detalhe</th></tr>
+  <tr><td>Tipo de terapia</td><td>Especializada / Convencional / Outro</td></tr>
+  <tr><td>Frequência de lançamento</td><td>Diária / Semanal / Mensal</td></tr>
+  <tr><td>Quantidade autorizada por ciclo</td><td>Obrigatório, número inteiro ≥ 1</td></tr>
+  <tr><td>Validade da senha (dias)</td><td>Opcional, número ≥ 1</td></tr>
+  <tr><td>Vigente desde</td><td>Data obrigatória de início</td></tr>
+</table>
+<h4 style="margin:16px 0 4px;font-size:15px;">Valores de pagamento</h4>
+<p>Cadastre primeiro o valor geral do convênio; depois, se necessário, crie exceções por especialidade e por profissional. A prioridade de aplicação é: <strong>profissional + especialidade</strong> vence sobre <strong>especialidade</strong>, que vence sobre o <strong>valor geral</strong> — o mais específico sempre é usado no cálculo.</p>
+<table>
+  <tr><th>Botão</th><th>O que faz</th></tr>
+  <tr><td><span class="btn">Encerrar</span> (em uma regra ou valor)</td><td>Pede confirmação ("Encerrar esta vigência? Isso afeta cálculos futuros."). Não apaga nada — apenas marca o fim da vigência; o item continua no histórico, riscado/acinzentado.</td></tr>
+  <tr><td><span class="btn">Ajuda</span></td><td>Abre uma página explicativa dedicada, com um exemplo prático de mudança de valor.</td></tr>
+</table>
+<div class="dica">
+  <strong>Exemplo prático:</strong> se um convênio passa a pagar R$ 150 a partir de 1º de agosto, crie um <em>novo</em>
+  valor geral com essa data de início. O sistema encerra automaticamente o valor anterior em 31 de julho — as
+  conciliações antigas continuam usando a vigência correta, e as novas já usam o valor atualizado.
+</div>
+
+<h2 class="secao" id="antecipacoes">9. Antecipações <span class="rota">/antecipacoes</span></h2>
+<div class="objetivo">Objetivo: acompanhar a cota de sessões autorizadas por ciclo (ex.: quantas sessões do mês já foram usadas) e identificar pacientes sem próximos agendamentos.</div>
+<p>Tela somente de consulta e navegação — status possíveis: <span class="badge azul">Aberta</span> e <span class="badge cinza">Fechada</span>.</p>
+<table>
+  <tr><th>Botão</th><th>O que faz</th></tr>
+  <tr><td><span class="btn">Registrar</span> (por linha)</td><td>Leva para <a href="#lancamentos">Sessões</a> já com essa antecipação pré-selecionada, para lançar um novo atendimento.</td></tr>
+  <tr><td><span class="btn">Aplicar</span> (filtros)</td><td>Filtra por Status, Paciente e Convênio.</td></tr>
+</table>
+<div class="aviso">
+  Um aviso em destaque aparece quando existem antecipações abertas <strong>sem nenhuma sessão futura agendada</strong> —
+  fique atento a esse alerta para não deixar o paciente sem continuidade do tratamento.
+</div>
+<p>Cada linha mostra uma barra de progresso da cota (sessões utilizadas / sessões autorizadas no ciclo).</p>
+
+<h2 class="secao" id="lancamentos">10. Sessões / Lançamentos <span class="rota">/lancamentos</span></h2>
+<div class="objetivo">Objetivo: registrar cada sessão de terapia realizada, seja digitando manualmente, seja importando a transcrição de um formulário em papel preenchido durante o atendimento.</div>
+<table>
+  <tr><th>Botão</th><th>O que faz</th></tr>
+  <tr><td><span class="btn">Imprimir modelo em branco</span></td><td>Imprime uma tabela em branco (8 linhas) para o profissional preencher à mão durante o atendimento, antes de ser digitada ou transcrita no sistema.</td></tr>
+  <tr><td><span class="btn">Novo</span></td><td>Abre o formulário manual de lançamento (Antecipação e Profissional executante são obrigatórios; data/hora, acompanhante, resumo e observações completam o registro).</td></tr>
+  <tr><td><span class="btn">Registrar sessão</span></td><td>Grava a sessão manualmente digitada.</td></tr>
+</table>
+<h3>Importação por transcrição (fluxo em 2 passos)</h3>
+<ol>
+  <li><strong>Analisar transcrição:</strong> cole o texto do formulário preenchido; o sistema identifica o cabeçalho (guia, clínica, paciente, cartão, profissional, terapia) e extrai as sessões em uma tabela de pré-visualização, editável antes de confirmar.</li>
+  <li><strong>Confirmar envio:</strong> depois de revisar/corrigir datas, horários, acompanhante e resumo na pré-visualização, confirma o envio definitivo.</li>
+</ol>
+<div class="aviso">
+  Se o número do cartão do convênio começar com <code>0220</code>, o sistema <strong>exige o anexo do PDF</strong> do
+  registro de sessões antes de liberar a confirmação — o botão fica bloqueado até o arquivo ser anexado.
+</div>
+<table>
+  <tr><th>Botão</th><th>O que faz</th></tr>
+  <tr><td><span class="btn">Aplicar</span> (filtros)</td><td>Filtra por Profissional executante e Data da sessão.</td></tr>
+</table>
+
+<h2 class="secao" id="analiticos">11. Analíticos <span class="rota">/analiticos</span></h2>
+<div class="objetivo">Objetivo: importar o relatório (Excel) que o convênio envia com o que foi pago e o que foi glosado (recusado) por guia, antes de gerar a conciliação financeira.</div>
+<table>
+  <tr><th>Botão</th><th>O que faz</th></tr>
+  <tr><td><span class="btn">Importar analítico</span></td><td>Envia o arquivo <code>.xlsx</code>/<code>.xls</code> selecionado e mostra uma pré-visualização completa: cabeçalho identificado, linhas do analítico, linhas de glosa e a conciliação já calculada (pago/glosado/saldo por guia).</td></tr>
+  <tr><td><span class="btn">Salvar lote</span></td><td>Confirma visualmente que o lote (já gravado durante a importação) foi conferido e atualiza a lista.</td></tr>
+  <tr><td><span class="btn">Recusar</span></td><td>Limpa a pré-visualização da tela (não desfaz nada no servidor).</td></tr>
+  <tr><td><span class="btn">Abrir</span> (por linha da lista de lotes)</td><td>Abre o detalhe completo daquele lote importado.</td></tr>
+  <tr><td><span class="btn">Abrir conciliação</span></td><td>Atalho direto para a tela de <a href="#conciliacao">Conciliação</a>.</td></tr>
+  <tr><td><span class="btn">Limpar filtros</span></td><td>Reseta busca por arquivo, status e datas de importação.</td></tr>
+</table>
+<p>A tela de detalhe do lote (<code>/analiticos/:id</code>) é só de consulta: mostra os totais e as três tabelas completas (analítico, glosas, conciliação).</p>
+
+<h2 class="secao" id="conciliacao">12. Conciliação <span class="rota">/conciliacao</span></h2>
+<div class="objetivo">Objetivo: fechar financeiramente cada guia — calcular valor total, percentual e valor de repasse ao profissional, e controlar o pagamento.</div>
+<p>Uma conciliação não é criada nesta tela — ela nasce do botão <span class="btn">Gerar conciliação</span> na tela de <a href="#guias">Guias</a>. A partir daí, segue um ciclo fixo, sempre na mesma ordem:</p>
+<div class="fluxo">
+  <span class="passo">Pendente</span><span class="seta">→</span>
+  <span class="passo">Conferida</span><span class="seta">→</span>
+  <span class="passo">Paga</span>
+</div>
+<table>
+  <tr><th>Botão</th><th>O que faz</th></tr>
+  <tr><td><span class="btn">Marcar conferido</span></td><td>Disponível só quando o status é <span class="badge cinza">Pendente</span>. Move para <span class="badge azul">Conferida</span>.</td></tr>
+  <tr><td><span class="btn">Marcar pago</span></td><td>Disponível só quando o status é <span class="badge azul">Conferida</span>. Move para <span class="badge verde">Paga</span>.</td></tr>
+  <tr><td><span class="btn">Aplicar filtros</span></td><td>Filtra por Convênio, Especialidade, Profissional e Status.</td></tr>
+</table>
+<div class="nota">Não existe botão para pular etapas (ex.: ir direto de Pendente para Paga) nem para voltar um status já avançado.</div>
+<p>A tabela mostra, por guia: quantidade, valor unitário, valor total, percentual de repasse, valor de repasse, entrada/saída financeira e o profissional "planejado" vs. os profissionais que de fato executaram as sessões.</p>
+
+<h2 class="secao" id="profissionais">13. Profissionais <span class="rota">/profissionais</span></h2>
+<div class="objetivo">Objetivo: cadastro dos profissionais que atendem na clínica (fisioterapeutas, terapeutas etc.) — usados em Guias, Sessões e Conciliação. Não confundir com "Médicos" (que apenas solicitam terapias).</div>
+<table>
+  <tr><th>Botão</th><th>O que faz</th></tr>
+  <tr><td><span class="btn">Novo</span></td><td>Abre o formulário (Nome e Especialidade são obrigatórios; Conselho/registro e Percentual de repasse são opcionais).</td></tr>
+  <tr><td><span class="btn">Editar</span></td><td>Preenche o formulário com os dados do profissional clicado.</td></tr>
+  <tr><td><span class="btn">Desativar</span> / <span class="btn">Ativar</span></td><td>Alterna o status imediatamente, sem confirmação.</td></tr>
+  <tr><td><span class="btn">Filtrar</span></td><td>Busca por nome/conselho/especialidade e permite filtrar por uma Especialidade específica. A lista sempre mostra ativos e inativos juntos.</td></tr>
+</table>
+
+<h2 class="secao" id="medicos">14. Médicos <span class="rota">/medicos</span></h2>
+<div class="objetivo">Objetivo: cadastro dos médicos solicitantes (quem assina/solicita a terapia), usado no formulário de Solicitações.</div>
+<table>
+  <tr><th>Botão</th><th>O que faz</th></tr>
+  <tr><td><span class="btn">Novo</span></td><td>Abre o formulário (Nome, CRM, Especialidade médica em texto livre, Telefone, E-mail, Ativo).</td></tr>
+  <tr><td><span class="btn">Editar</span></td><td>Preenche o formulário com os dados do médico clicado.</td></tr>
+  <tr><td><span class="btn">Desativar</span> / <span class="btn">Ativar</span></td><td>Alterna o status imediatamente.</td></tr>
+  <tr><td><span class="btn">Filtrar</span></td><td>Busca por nome, CRM ou especialidade.</td></tr>
+</table>
+
+<h2 class="secao" id="especialidades">15. Especialidades <span class="rota">/especialidades</span></h2>
+<div class="objetivo">Objetivo: cadastro das especialidades (ex.: Fisioterapia, Fonoaudiologia) usadas pelos cadastros de Profissionais e pelas regras/valores de Convênios.</div>
+<div class="nota">Esta tela não tem link no menu nem em nenhuma outra página — acesse digitando <code>/especialidades</code> diretamente na barra de endereço do navegador.</div>
+<table>
+  <tr><th>Botão</th><th>O que faz</th></tr>
+  <tr><td><span class="btn">Nova especialidade</span></td><td>Abre o formulário (Nome obrigatório e único por clínica, Ativa).</td></tr>
+  <tr><td><span class="btn">Editar</span></td><td>Preenche o formulário com os dados da especialidade clicada.</td></tr>
+  <tr><td><span class="btn">Inativar</span> / <span class="btn">Reativar</span></td><td>Alterna o status. Inativar preserva os vínculos já existentes (profissionais, regras) — não apaga nada.</td></tr>
+</table>
+
+<h2 class="secao" id="usuarios">16. Usuários <span class="rota">/usuarios</span></h2>
+<div class="objetivo">Objetivo: cadastrar quem pode logar no sistema, definir o papel (role) de cada pessoa e, quando o papel for "profissional", vincular ao cadastro correspondente em Profissionais.</div>
+<table>
+  <tr><th>Botão</th><th>O que faz</th></tr>
+  <tr><td><span class="btn">Novo</span></td><td>Abre o formulário (Nome, E-mail, Senha — obrigatória na criação, mínimo 8 caracteres —, Papel, Ativo). Se o Papel escolhido for "profissional", um campo extra obrigatório aparece para vincular o Profissional correspondente.</td></tr>
+  <tr><td><span class="btn">Editar</span></td><td>Preenche o formulário; a senha fica em branco e é opcional (deixe em branco para manter a senha atual).</td></tr>
+  <tr><td><span class="btn">Permissões</span></td><td>Leva à tela de <a href="#permissoes">Permissões</a> já com o papel deste usuário pré-selecionado — é a forma normal de chegar lá.</td></tr>
+  <tr><td><span class="btn">Desativar</span> / <span class="btn">Ativar</span></td><td>Alterna o status imediatamente. Usuário inativo não consegue mais logar.</td></tr>
+  <tr><td><span class="btn">Filtrar</span></td><td>Busca por nome ou e-mail.</td></tr>
+  <tr><td><span class="btn">Anterior</span> / <span class="btn">Próxima</span></td><td>Paginação (10 por página).</td></tr>
+</table>
+
+<h2 class="secao" id="permissoes">17. Permissões <span class="rota">/permissoes</span></h2>
+<div class="objetivo">Objetivo: definir exatamente o que cada papel (admin, funcionario, profissional) pode ver e fazer no sistema — é a matriz que liga papel a permissão.</div>
+<div class="nota">Acesse pelo botão <span class="btn">Permissões</span> na tela de Usuários, ou digitando <code>/permissoes</code> diretamente.</div>
+<ol>
+  <li>Escolha um <strong>Papel</strong> na lista lateral (ou no seletor).</li>
+  <li>O sistema carrega as permissões já concedidas àquele papel, marcadas como checkbox, agrupadas por área (Dashboard, Solicitações, Guias, Antecipações, Sessões, Conciliações, Especialidades, Médicos, Usuários, Convênios, Permissões, Manual).</li>
+  <li>Marque ou desmarque as permissões desejadas.</li>
+  <li>Clique em <span class="btn">Salvar permissões</span> para gravar — nada é salvo antes disso.</li>
+</ol>
+<div class="aviso">Não há confirmação antes de salvar: revise a seleção com atenção, principalmente ao remover permissões do papel <code>admin</code>.</div>
+<div class="nota">
+  A permissão <code>manual.manage</code> (adicionada junto com esta tela de <a href="#manual">Manual</a>) controla quem pode
+  clicar em "Editar manual". Por padrão, só o papel <strong>admin</strong> recebe essa permissão.
+</div>
+
+<h2 class="secao" id="auditoria">18. Auditoria <span class="rota">/auditoria</span></h2>
+<div class="objetivo">Objetivo: linha do tempo com as ações administrativas realizadas no sistema (quem fez o quê e quando) — útil para investigar uma mudança inesperada.</div>
+<div class="nota">Acesse pelo botão <span class="btn">Ver auditoria</span> no Dashboard, ou digitando <code>/auditoria</code> diretamente. Só é visível para quem tem a permissão correspondente.</div>
+<p>Cada item mostra o usuário responsável (ou "Sistema", quando a ação não teve um usuário associado), a ação realizada, a entidade afetada e a data/hora. Não há filtros nem paginação — a tela mostra os eventos mais recentes.</p>
+
+<h2 class="secao" id="configuracoes">19. Configurações <span class="rota">/configuracoes</span></h2>
+<div class="objetivo">Objetivo: área reservada para parâmetros futuros da clínica.</div>
+<p>No momento esta tela é apenas um espaço reservado ("Em construção") — não há nenhum parâmetro configurável nem ação disponível ainda.</p>
+
+<h2 class="secao" id="manual">20. Manual <span class="rota">/manual</span></h2>
+<div class="objetivo">Objetivo: esta própria tela — o manual de uso do sistema, disponível a qualquer usuário logado a partir do menu superior.</div>
+<table>
+  <tr><th>Botão</th><th>O que faz</th></tr>
+  <tr><td><span class="btn">Editar manual</span></td><td>Visível apenas para quem tem a permissão <code>manual.manage</code> (por padrão, papel <strong>admin</strong>). Abre um editor de texto com o HTML completo desta página.</td></tr>
+  <tr><td><span class="btn">Salvar alterações</span></td><td>Grava o HTML editado — a partir daí, todos os usuários da clínica passam a ver a versão nova.</td></tr>
+  <tr><td><span class="btn">Cancelar</span></td><td>Descarta as alterações feitas no editor e volta para a visualização normal, sem salvar nada.</td></tr>
+</table>
+<div class="aviso">
+  A edição é em HTML puro — quem editar precisa manter as tags bem formadas (abrir e fechar corretamente) para o
+  manual continuar legível para todo mundo. Se não tiver familiaridade com HTML, peça apoio de alguém da equipe
+  técnica antes de salvar mudanças grandes.
+</div>
+
+<h2 class="secao" id="glossario">21. Glossário de status</h2>
+<table>
+  <tr><th>Tela</th><th>Status possíveis</th></tr>
+  <tr><td>Solicitações</td><td><span class="badge cinza">Cadastrado</span> · <span class="badge azul">Em análise</span> · <span class="badge verde">Aprovado</span> · <span class="badge vermelho">Negado</span> · <span class="badge cinza">Cancelado</span> · <span class="badge ambar">Vencido</span></td></tr>
+  <tr><td>Guias</td><td><span class="badge cinza">Cadastrado</span> · <span class="badge azul">Em análise</span> · <span class="badge verde">Aprovado</span> (inclui "finalizada") · <span class="badge vermelho">Negado</span> · <span class="badge cinza">Cancelado</span> · <span class="badge ambar">Vencido</span></td></tr>
+  <tr><td>Antecipações</td><td><span class="badge azul">Aberta</span> · <span class="badge cinza">Fechada</span></td></tr>
+  <tr><td>Sessões (Lançamentos)</td><td><span class="badge verde">Concluído</span> · <span class="badge ambar">Perdido</span> · <span class="badge cinza">Cancelado</span></td></tr>
+  <tr><td>Conciliação</td><td><span class="badge cinza">Pendente</span> · <span class="badge azul">Conferida</span> · <span class="badge verde">Paga</span></td></tr>
+</table>
+
+<hr class="fim" />
+<footer>
+  Manual interno — Gestão de Convênios. Edite esta página pelo botão "Editar manual" para manter o conteúdo atualizado.
+  <br /><a class="voltar-topo" href="#indice">↑ Voltar ao índice</a>
+</footer>
+
+</div>
+</body>
+</html>

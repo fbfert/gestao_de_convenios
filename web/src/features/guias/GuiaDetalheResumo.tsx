@@ -35,7 +35,9 @@ export function GuiaDetalheResumo({ guia }: { guia: Guia }) {
           <p className="mt-1 text-xs font-normal text-slate-300">Carteirinha: {guia.paciente?.carteirinha ?? '-'}</p>
         </DetailItem>
         <DetailItem label="Convênio">{guia.convenio?.nome ?? guia.convenio_id}</DetailItem>
-        <DetailItem label="Profissional">{guia.profissional?.nome ?? guia.profissional_id}</DetailItem>
+        <DetailItem label="Profissional executante">
+          {guia.profissional?.nome ?? guia.profissional_id}
+        </DetailItem>
         <DetailItem label="Especialidade">{guia.especialidade?.nome ?? guia.especialidade_id}</DetailItem>
         <DetailItem label="Solicitação">{guia.data_solicitacao}</DetailItem>
         <DetailItem label="Finalização">{guia.data_finalizacao ?? '-'}</DetailItem>

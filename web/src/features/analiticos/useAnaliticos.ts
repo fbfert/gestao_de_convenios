@@ -56,11 +56,20 @@ export type AnaliticoUnimedLoteDetalhe = {
   }
 }
 
-export function useAnaliticosLotes() {
+export type AnaliticoLoteFilters = {
+  busca: string
+  status: string
+  importado_de: string
+  importado_ate: string
+}
+
+export function useAnaliticosLotes(filters: AnaliticoLoteFilters) {
   return useQuery({
-    queryKey: ['analiticos'],
+    queryKey: ['analiticos', filters],
     queryFn: async () => {
-      const { data } = await apiClient.get<ListResponse<AnaliticoUnimedLote>>('/analiticos')
+      const { data } = await apiClient.get<ListResponse<AnaliticoUnimedLote>>('/analiticos', {
+        params: filters,
+      })
       return data.data
     },
   })

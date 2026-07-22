@@ -13,10 +13,30 @@ type SelectProps = {
   'data-testid'?: string
 }
 
+function textFromNode(node: ReactNode): string {
+  if (node === null || node === undefined || typeof node === 'boolean') {
+    return ''
+  }
+
+  if (typeof node === 'string' || typeof node === 'number') {
+    return String(node)
+  }
+
+  if (Array.isArray(node)) {
+    return node.map(textFromNode).join('')
+  }
+
+  if (isValidElement(node)) {
+    return textFromNode((node as React.ReactElement<{ children?: ReactNode }>).props.children)
+  }
+
+  return ''
+}
+
 export function Select({ value, onChange, children, className = '', disabled = false, 'data-testid': testId }: SelectProps) {
   const options = Children.toArray(children).flatMap((child) => {
     if (!isValidElement<{ value?: string | number; disabled?: boolean; children?: ReactNode }>(child)) return []
-    return [{ value: String(child.props.value ?? ''), label: String(child.props.children ?? ''), disabled: child.props.disabled }]
+    return [{ value: String(child.props.value ?? ''), label: textFromNode(child.props.children), disabled: child.props.disabled }]
   })
   const selected = options.find((option) => option.value === value)
   return (

@@ -16,6 +16,7 @@ const navItems = [
   { to: '/medicos', label: 'Médicos' },
   { to: '/usuarios', label: 'Usuários' },
   { to: '/configuracoes', label: 'Configurações' },
+  { to: '/manual', label: 'Manual' },
 ]
 
 export function ShellLayout() {

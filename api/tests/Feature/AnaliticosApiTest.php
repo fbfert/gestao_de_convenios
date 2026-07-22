@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Laravel\Sanctum\Sanctum;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 class AnaliticosApiTest extends TestCase
@@ -60,10 +61,44 @@ class AnaliticosApiTest extends TestCase
             ->assertJsonPath('data.conciliacao.totais.pago', $lote->total_pago);
     }
 
-    private function autenticar(): void
+    public function test_filtra_lotes_importados_por_texto_status_e_periodo(): void
+    {
+        $user = $this->autenticar();
+
+        $arquivo = $this->arquivoModeloAnalitico();
+
+        $this->post('/api/lancamentos/importar-analitico', [
+            'arquivo' => $arquivo,
+        ])->assertOk();
+
+        AnaliticoUnimedLote::query()->create([
+            'tenant_id' => $user->tenant_id,
+            'arquivo_nome_original' => 'arquivo-antigo.xlsx',
+            'arquivo_path' => 'analiticos/arquivo-antigo.xlsx',
+            'status' => 'pendente',
+            'importado_em' => Carbon::parse('2026-01-15 10:00:00'),
+            'total_linhas_analitico' => 0,
+            'total_linhas_glosa' => 0,
+            'total_linhas_conciliacao' => 0,
+            'total_pago' => 0,
+            'total_glosado' => 0,
+            'saldo_total' => 0,
+        ]);
+
+        $response = $this->getJson('/api/analiticos?busca=item3.3&status=importado&importado_de=2026-07-01&importado_ate=2026-07-31');
+
+        $response->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.arquivo_nome_original', 'item3.3.xlsx')
+            ->assertJsonPath('data.0.status', 'importado');
+    }
+
+    private function autenticar(): User
     {
         $user = User::query()->where('email', 'admin@clinica-exemplo.test')->firstOrFail();
         Sanctum::actingAs($user);
+
+        return $user;
     }
 
     private function arquivoModeloAnalitico(): UploadedFile

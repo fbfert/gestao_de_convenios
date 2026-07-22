@@ -1,4 +1,5 @@
 import { useMemo, useState, type FormEvent } from 'react'
+import { useMatch, useNavigate } from 'react-router-dom'
 import { useEspecialidades } from '../../lib/queries/useReferenceData'
 import { getHttpErrorMessage, useAtualizarProfissional, useCriarProfissional, useProfissionaisCrud } from './useProfissionais'
 import type { Profissional, ProfissionalForm, ProfissionalPayload } from './types'
@@ -42,6 +43,8 @@ function toPayload(form: ProfissionalForm): ProfissionalPayload {
 }
 
 export function ProfissionaisPage() {
+  const navigate = useNavigate()
+  const isCreateRoute = useMatch('/profissionais/novo') !== null
   const [busca, setBusca] = useState('')
   const [draftBusca, setDraftBusca] = useState('')
   const [especialidadeFiltro, setEspecialidadeFiltro] = useState('')
@@ -72,13 +75,13 @@ export function ProfissionaisPage() {
   }
 
   const handleNew = () => {
+    navigate('/profissionais/novo')
     setEditingId(null)
     setForm({
       ...emptyForm,
       especialidade_id: draftEspecialidadeFiltro,
     })
     setFormError(null)
-    setIsFormOpen(true)
   }
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -99,7 +102,11 @@ export function ProfissionaisPage() {
 
       setEditingId(null)
       setForm(emptyForm)
-      setIsFormOpen(false)
+      if (isCreateRoute) {
+        navigate('/profissionais')
+      } else {
+        setIsFormOpen(false)
+      }
     } catch (error) {
       setFormError(getHttpErrorMessage(error, 'Não foi possível salvar o profissional.'))
     }
@@ -129,11 +136,17 @@ export function ProfissionaisPage() {
     setEditingId(null)
     setForm(emptyForm)
     setFormError(null)
+    if (isCreateRoute) {
+      navigate('/profissionais')
+      return
+    }
+
     setIsFormOpen(false)
   }
 
   return (
     <div className="space-y-8" data-testid="profissionais-page">
+      {!isCreateRoute ? (
       <section className="space-y-4">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -174,8 +187,9 @@ export function ProfissionaisPage() {
           </article>
         </div>
       </section>
+      ) : null}
 
-      {isFormOpen ? (
+      {isFormOpen || isCreateRoute ? (
         <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
           <form onSubmit={handleSubmit} className="space-y-4" data-testid="profissional-form">
             <div className="flex items-start justify-between gap-4">
@@ -310,6 +324,7 @@ export function ProfissionaisPage() {
         </section>
       ) : null}
 
+      {!isCreateRoute ? (
       <section className="space-y-4 rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -437,6 +452,7 @@ export function ProfissionaisPage() {
           </div>
         )}
       </section>
+      ) : null}
     </div>
   )
 }

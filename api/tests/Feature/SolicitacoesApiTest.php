@@ -85,15 +85,18 @@ class SolicitacoesApiTest extends TestCase
             ]);
     }
 
-    public function test_aprovar_negar_e_bloquear_reaprovacao(): void
+    public function test_altera_status_entre_em_analise_aprovado_e_negado(): void
     {
         $this->autenticar();
 
-        $aprovada = $this->postJson('/api/solicitacoes', $this->payloadSolicitacao('Unimed'))
+        $payloadAprovada = $this->payloadSolicitacao('Unimed');
+        $payloadNegada = $this->payloadSolicitacao('SC Saúde');
+
+        $aprovada = $this->postJson('/api/solicitacoes', $payloadAprovada)
             ->assertCreated()
             ->json('data.id');
 
-        $negada = $this->postJson('/api/solicitacoes', $this->payloadSolicitacao('SC Saúde'))
+        $negada = $this->postJson('/api/solicitacoes', $payloadNegada)
             ->assertCreated()
             ->json('data.id');
 
@@ -101,13 +104,36 @@ class SolicitacoesApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.status', 'approved');
 
+        $guia = Guia::query()->where('solicitacao_id', $aprovada)->firstOrFail();
+        $this->assertSame("GUIA-SOLICITACAO-{$aprovada}", $guia->numero_guia);
+        $this->assertSame('under_review', $guia->status);
+
+        $this->getJson('/api/guias?status=under_review&convenio_id='.$payloadAprovada['convenio_id'])
+            ->assertOk()
+            ->assertJsonPath('data.0.solicitacao_id', $aprovada)
+            ->assertJsonPath('data.0.numero_guia', $guia->numero_guia);
+
         $this->patchJson("/api/solicitacoes/{$negada}/negar")
             ->assertOk()
             ->assertJsonPath('data.status', 'denied');
 
-        $this->patchJson("/api/solicitacoes/{$aprovada}/aprovar")
+        $this->patchJson("/api/solicitacoes/{$negada}/status", ['status' => 'approved'])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'approved');
+
+        $this->assertDatabaseHas('guias', [
+            'solicitacao_id' => $negada,
+            'numero_guia' => "GUIA-SOLICITACAO-{$negada}",
+            'status' => 'under_review',
+        ]);
+
+        $this->patchJson("/api/solicitacoes/{$negada}/status", ['status' => 'under_review'])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'under_review');
+
+        $this->patchJson("/api/solicitacoes/{$negada}/status", ['status' => 'canceled'])
             ->assertStatus(422)
-            ->assertJsonPath('message', 'Transição inválida de solicitação: approved -> approved.');
+            ->assertJsonValidationErrors(['status']);
     }
 
     public function test_usuariode_um_tenant_nao_enxerga_solicitacao_de_outro_tenant_via_http(): void

@@ -1,6 +1,7 @@
 import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/react'
 import { GuiaDetalheResumo } from '../guias/GuiaDetalheResumo'
 import { getHttpErrorMessage, useGuia } from '../guias/useGuias'
+import { abrirPedidoMedico } from './useSolicitacoes'
 import type { Solicitacao } from './types'
 
 type SolicitacaoGuiaModalProps = {
@@ -39,6 +40,31 @@ export function SolicitacaoGuiaModal({ solicitacao, onClose }: SolicitacaoGuiaMo
             </div>
 
             <div className="mt-6">
+              {solicitacao?.pedido_medico ? (
+                <div className="mb-4 rounded-3xl border border-cyan-400/20 bg-cyan-500/10 p-5 text-sm text-cyan-50">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="font-semibold">Pedido médico anexado</p>
+                      <p className="mt-1 text-cyan-50/80">
+                        {solicitacao.pedido_medico.nome_original ?? 'Arquivo do pedido médico'}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        void abrirPedidoMedico(
+                          solicitacao.id,
+                          solicitacao.pedido_medico?.nome_original,
+                        )
+                      }
+                      className="rounded-2xl border border-cyan-300/30 bg-cyan-400/10 px-4 py-2 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-400/20"
+                    >
+                      Abrir pedido
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+
               {!solicitacao?.guia ? (
                 <div
                   className="rounded-3xl border border-amber-400/20 bg-amber-500/10 p-5 text-sm text-amber-50"

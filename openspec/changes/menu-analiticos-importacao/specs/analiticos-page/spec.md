@@ -53,3 +53,18 @@ O sistema SHALL permitir abrir um lote importado para visualizar seus dados, tot
 #### Scenario: Exibir linhas do lote
 - **WHEN** o lote em detalhe for carregado
 - **THEN** o sistema SHALL exibir as linhas do analítico, das glosas e da conciliação vinculadas ao lote
+
+### Requirement: Filtrar lotes importados
+O sistema SHALL permitir filtrar a lista de lotes importados por texto, status e intervalo de importação.
+
+#### Scenario: Filtrar por nome de arquivo
+- **WHEN** o operador informar parte do nome do arquivo
+- **THEN** o sistema SHALL reduzir a lista para os lotes compatíveis com o texto informado
+
+#### Scenario: Filtrar por status
+- **WHEN** o operador selecionar um status de lote
+- **THEN** o sistema SHALL mostrar apenas os lotes daquele status
+
+#### Scenario: Filtrar por período
+- **WHEN** o operador informar uma data inicial ou final
+- **THEN** o sistema SHALL mostrar apenas os lotes importados dentro do período filtrado

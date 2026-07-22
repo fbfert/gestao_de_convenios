@@ -35,6 +35,8 @@ class PermissionCatalog
         'usuarios.manage',
         'convenios.manage',
         'permissoes.manage',
+        'manual.manage',
+        'configuracoes.manage',
     ];
 
     public static function all(): array

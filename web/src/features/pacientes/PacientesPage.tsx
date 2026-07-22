@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useMatch, useNavigate } from 'react-router-dom'
 import { useConvenios } from '../../lib/queries/useReferenceData'
 import { Select } from '../../components/ui/Select'
 import { getHttpErrorMessage, useAtualizarPaciente, useCriarPaciente, usePacientesCrud } from './usePacientes'
@@ -37,6 +38,8 @@ function toForm(paciente: Paciente): PacienteForm {
 }
 
 export function PacientesPage() {
+  const navigate = useNavigate()
+  const isCreateRoute = useMatch('/pacientes/novo') !== null
   const [busca, setBusca] = useState('')
   const [draftBusca, setDraftBusca] = useState('')
   const [editingId, setEditingId] = useState<number | null>(null)
@@ -76,13 +79,13 @@ export function PacientesPage() {
   }
 
   const handleNew = () => {
+    navigate('/pacientes/novo')
     setEditingId(null)
     setForm((current) => ({
       ...emptyForm,
       convenio_id: current.convenio_id,
     }))
     setFormError(null)
-    setIsFormOpen(true)
   }
 
   const handleEdit = (paciente: Paciente) => {
@@ -109,6 +112,11 @@ export function PacientesPage() {
     setEditingId(null)
     setForm(emptyForm)
     setFormError(null)
+    if (isCreateRoute) {
+      navigate('/pacientes')
+      return
+    }
+
     setIsFormOpen(false)
   }
 
@@ -141,7 +149,11 @@ export function PacientesPage() {
         ...emptyForm,
         convenio_id: current.convenio_id,
       }))
-      setIsFormOpen(false)
+      if (isCreateRoute) {
+        navigate('/pacientes')
+      } else {
+        setIsFormOpen(false)
+      }
     } catch (error) {
       setFormError(getHttpErrorMessage(error, 'Não foi possível salvar o paciente.'))
     }
@@ -149,6 +161,7 @@ export function PacientesPage() {
 
   return (
     <div className="space-y-8" data-testid="pacientes-page">
+      {!isCreateRoute ? (
       <section className="space-y-4">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -184,8 +197,9 @@ export function PacientesPage() {
           </article>
         </div>
       </section>
+      ) : null}
 
-      {isFormOpen ? (
+      {isFormOpen || isCreateRoute ? (
         <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
           <form onSubmit={handleSubmit} className="space-y-4" data-testid="paciente-form">
             <div className="flex items-start justify-between gap-4">
@@ -344,6 +358,7 @@ export function PacientesPage() {
         </section>
       ) : null}
 
+      {!isCreateRoute ? (
       <section className="space-y-4 rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -455,6 +470,7 @@ export function PacientesPage() {
           </div>
         )}
       </section>
+      ) : null}
     </div>
   )
 }

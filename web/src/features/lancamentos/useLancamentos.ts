@@ -8,6 +8,8 @@ import type {
   LancamentoFilters,
   LancamentoForm,
   LancamentoImportForm,
+  LancamentoPrintTemplate,
+  LancamentoPrintTemplateForm,
   LancamentoTranscricaoImportResult,
   PaginatedResponse,
 } from './types'
@@ -141,6 +143,37 @@ export function useLancamento(id: number | null) {
       return data.data
     },
     enabled: id !== null,
+  })
+}
+
+export function useLancamentoPrintTemplate() {
+  return useQuery({
+    queryKey: ['lancamentos', 'templates', 'registro-sessoes'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ data: LancamentoPrintTemplate }>(
+        '/lancamentos/templates/registro-sessoes',
+      )
+      return data.data
+    },
+  })
+}
+
+export function useAtualizarLancamentoPrintTemplate() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (payload: LancamentoPrintTemplateForm) => {
+      const { data } = await apiClient.put<{ data: LancamentoPrintTemplate }>(
+        '/lancamentos/templates/registro-sessoes',
+        payload,
+      )
+      return data.data
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ['lancamentos', 'templates', 'registro-sessoes'],
+      })
+    },
   })
 }
 

@@ -1,4 +1,5 @@
 import { useMemo, useState, type FormEvent } from 'react'
+import { useMatch, useNavigate } from 'react-router-dom'
 import { getHttpErrorMessage, useAtualizarMedico, useCriarMedico, useMedicos } from './useMedicos'
 import type { Medico, MedicoForm } from './types'
 
@@ -33,6 +34,8 @@ function toForm(medico: Medico): MedicoForm {
 }
 
 export function MedicosPage() {
+  const navigate = useNavigate()
+  const isCreateRoute = useMatch('/medicos/novo') !== null
   const [busca, setBusca] = useState('')
   const [draftBusca, setDraftBusca] = useState('')
   const [editingId, setEditingId] = useState<number | null>(null)
@@ -54,10 +57,10 @@ export function MedicosPage() {
   }
 
   const handleNew = () => {
+    navigate('/medicos/novo')
     setEditingId(null)
     setForm(emptyForm)
     setFormError(null)
-    setIsFormOpen(true)
   }
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -76,7 +79,11 @@ export function MedicosPage() {
 
       setEditingId(null)
       setForm(emptyForm)
-      setIsFormOpen(false)
+      if (isCreateRoute) {
+        navigate('/medicos')
+      } else {
+        setIsFormOpen(false)
+      }
     } catch (error) {
       setFormError(getHttpErrorMessage(error, 'Não foi possível salvar o médico.'))
     }
@@ -106,11 +113,17 @@ export function MedicosPage() {
     setEditingId(null)
     setForm(emptyForm)
     setFormError(null)
+    if (isCreateRoute) {
+      navigate('/medicos')
+      return
+    }
+
     setIsFormOpen(false)
   }
 
   return (
     <div className="space-y-8" data-testid="medicos-page">
+      {!isCreateRoute ? (
       <section className="space-y-4">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -151,8 +164,9 @@ export function MedicosPage() {
           </article>
         </div>
       </section>
+      ) : null}
 
-      {isFormOpen ? (
+      {isFormOpen || isCreateRoute ? (
         <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
           <form onSubmit={handleSubmit} className="space-y-4" data-testid="medico-form">
             <div className="flex items-start justify-between gap-4">
@@ -285,6 +299,7 @@ export function MedicosPage() {
         </section>
       ) : null}
 
+      {!isCreateRoute ? (
       <section className="space-y-4 rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -395,6 +410,7 @@ export function MedicosPage() {
           </div>
         )}
       </section>
+      ) : null}
     </div>
   )
 }

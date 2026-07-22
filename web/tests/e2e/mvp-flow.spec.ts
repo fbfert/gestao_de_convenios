@@ -61,18 +61,19 @@ test('fluxo completo de negocio', async ({ page }, testInfo: TestInfo) => {
   const aprovarResponsePromise = page.waitForResponse((response) => {
     return (
       response.request().method() === 'PATCH' &&
-      response.url().includes(`/solicitacoes/${solicitacaoId}/aprovar`)
+      response.url().includes(`/solicitacoes/${solicitacaoId}/status`)
     )
   })
-  await page.getByTestId(`solicitacao-aprovar-${solicitacaoId}`).click()
+  page.once('dialog', (dialog) => dialog.accept())
+  await page.getByTestId(`solicitacao-status-action-approved-${solicitacaoId}`).click()
   const aprovarResponse = await aprovarResponsePromise
   const aprovarResponseText = await aprovarResponse.text()
   console.log(
-    `[E2E] PATCH /solicitacoes/${solicitacaoId}/aprovar => ${aprovarResponse.status()} :: ${aprovarResponseText}`,
+    `[E2E] PATCH /solicitacoes/${solicitacaoId}/status => ${aprovarResponse.status()} :: ${aprovarResponseText}`,
   )
   await expect(
     aprovarResponse.status(),
-    `PATCH /solicitacoes/${solicitacaoId}/aprovar retornou ${aprovarResponse.status()} com corpo: ${aprovarResponseText}`,
+    `PATCH /solicitacoes/${solicitacaoId}/status retornou ${aprovarResponse.status()} com corpo: ${aprovarResponseText}`,
   ).toBe(200)
   await expect(page.getByTestId(`solicitacao-status-${solicitacaoId}`)).toContainText('Aprovado')
 
@@ -135,6 +136,7 @@ test('fluxo completo de negocio', async ({ page }, testInfo: TestInfo) => {
   await expect(page).toHaveURL(new RegExp(`/guias/${guideId}$`))
   await expect(page.getByTestId('guia-detalhe-page')).toBeVisible()
   await expect(page.getByText('Carteirinha: UNI-2026-0001')).toBeVisible()
+  await expect(page.getByTestId(`guia-finalizar-${guideId}`)).toHaveText('Finalizar')
   await page.getByTestId(`guia-finalizar-${guideId}`).click()
   await page.getByTestId(`guia-senha-${guideId}`).fill('ABC123')
   await page.screenshot({
@@ -187,31 +189,7 @@ test('fluxo completo de negocio', async ({ page }, testInfo: TestInfo) => {
     '%PDF-1.4\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] >>\nendobj\ntrailer\n<< /Root 1 0 R /Size 4 >>\nstartxref\n0\n%%EOF\n',
     'utf8',
   )
-  await page.getByTestId('lancamento-novo').click()
-  await selectOption(page, 'lancamento-profissional', 'Dra. Marina Tavares')
-  await expect(page.getByTestId('lancamento-antecipacao')).toContainText(String(antecipacaoId))
-  await expect(page.getByTestId('lancamento-profissional')).toContainText('Dra. Marina Tavares')
-  await expect(page.getByTestId('lancamento-submit')).toBeEnabled()
-  const lancamentoResponsePromise = page.waitForResponse((response) => {
-    return (
-      response.request().method() === 'POST' &&
-      response.url().includes(`/antecipacoes/${antecipacaoId}/lancamentos`)
-    )
-  })
-
-  await page.getByTestId('lancamento-submit').click()
-
-  const lancamentoResponse = await lancamentoResponsePromise
-  const lancamentoResponseText = await lancamentoResponse.text()
-  console.log(
-    `[E2E] POST /antecipacoes/${antecipacaoId}/lancamentos => ${lancamentoResponse.status()} :: ${lancamentoResponseText}`,
-  )
-
-  await expect(
-    lancamentoResponse.status(),
-    `POST /antecipacoes/${antecipacaoId}/lancamentos retornou ${lancamentoResponse.status()} com corpo: ${lancamentoResponseText}`,
-  ).toBe(201)
-
+  await selectOption(page, 'lancamento-import-profissional', 'Dra. Marina Tavares')
   await page.getByTestId('lancamento-import-transcricao').fill(`GUIA Nº: 521381566206
 Clínica: Centro Neuro Kids Ltda
 Paciente: Ana Paula Ribeiro
@@ -346,6 +324,7 @@ test('detalhe de guia abre pela lista e atualiza após finalizar', async ({ page
   expect((await detailResponsePromise).status()).toBe(200)
   await expect(page).toHaveURL(new RegExp(`/guias/${guideId}$`))
   await expect(page.getByTestId('guia-detalhe-page')).toBeVisible()
+  await expect(page.getByTestId(`guia-finalizar-${guideId}`)).toHaveText('Finalizar')
   await page.getByTestId(`guia-finalizar-${guideId}`).click()
   await page.getByTestId(`guia-senha-${guideId}`).fill('DETALHE123')
 

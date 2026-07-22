@@ -33,6 +33,11 @@ class SolicitacaoResource extends JsonResource
             'status' => $this->status,
             'solicitado_em' => $this->solicitado_em?->toDateString(),
             'observacoes' => $this->observacoes,
+            'pedido_medico' => $this->pedido_medico_path ? [
+                'nome_original' => $this->pedido_medico_nome_original,
+                'mime' => $this->pedido_medico_mime,
+                'url' => url("/api/solicitacoes/{$this->id}/pedido-medico"),
+            ] : null,
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];

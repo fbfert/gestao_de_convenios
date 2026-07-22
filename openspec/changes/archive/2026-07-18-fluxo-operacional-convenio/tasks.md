@@ -25,5 +25,5 @@
 
 ## 5. Validação
 
-- [ ] 5.1 Executar testes de API, testes e2e do fluxo afetado, build do frontend e `openspec validate`.
-- [ ] 5.2 Validar o fluxo no navegador local após a implementação da primeira fatia.
+- [x] 5.1 Executar testes de API, testes e2e do fluxo afetado, build do frontend e `openspec validate`.
+- [x] 5.2 Validar o fluxo no navegador local após a implementação da primeira fatia.

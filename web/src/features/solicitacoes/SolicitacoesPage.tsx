@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useMatch, useNavigate } from 'react-router-dom'
 import { translateStatus } from '../../lib/statusLabels'
 import { Select } from '../../components/ui/Select'
 import {
   getHttpErrorMessage,
-  useAprovarSolicitacao,
+  useAtualizarStatusSolicitacao,
   useCriarSolicitacao,
-  useNegarSolicitacao,
   useSolicitacoes,
 } from './useSolicitacoes'
-import type { Solicitacao, SolicitacaoFilters, SolicitacaoForm } from './types'
+import type { Solicitacao, SolicitacaoFilters, SolicitacaoForm, SolicitacaoStatus } from './types'
 import {
   useConvenios,
   useEspecialidades,
@@ -35,6 +35,27 @@ const emptyForm: SolicitacaoForm = {
   observacoes: '',
 }
 
+const statusActions: Array<{ status: SolicitacaoStatus; label: string; className: string }> = [
+  {
+    status: 'under_review',
+    label: 'Em análise',
+    className:
+      'border-cyan-400/30 bg-cyan-400/10 text-cyan-100 hover:bg-cyan-400/20 disabled:hover:bg-cyan-400/10',
+  },
+  {
+    status: 'approved',
+    label: 'Aprovado',
+    className:
+      'border-emerald-400/30 bg-emerald-400/10 text-emerald-100 hover:bg-emerald-400/20 disabled:hover:bg-emerald-400/10',
+  },
+  {
+    status: 'denied',
+    label: 'Negado',
+    className:
+      'border-rose-400/30 bg-rose-400/10 text-rose-100 hover:bg-rose-400/20 disabled:hover:bg-rose-400/10',
+  },
+]
+
 function statusTone(status: string) {
   switch (status) {
     case 'registered':
@@ -56,6 +77,8 @@ function selectClasses() {
 }
 
 export function SolicitacoesPage() {
+  const navigate = useNavigate()
+  const isCreateRoute = useMatch('/solicitacoes/nova') !== null
   const [filters, setFilters] = useState(defaultFilters)
   const [draftFilters, setDraftFilters] = useState(defaultFilters)
   const [page, setPage] = useState(1)
@@ -71,8 +94,7 @@ export function SolicitacoesPage() {
   const profissionaisQuery = useProfissionais({ especialidade_id: form.especialidade_id })
   const solicitacoesQuery = useSolicitacoes(filters, page)
   const criarSolicitacao = useCriarSolicitacao()
-  const aprovarSolicitacao = useAprovarSolicitacao()
-  const negarSolicitacao = useNegarSolicitacao()
+  const atualizarStatusSolicitacao = useAtualizarStatusSolicitacao()
 
   const convenios = useMemo(() => conveniosQuery.data ?? emptyArray, [conveniosQuery.data])
   const especialidades = useMemo(
@@ -197,6 +219,7 @@ export function SolicitacoesPage() {
   }
 
   const handleNew = () => {
+    navigate('/solicitacoes/nova')
     setForm((current) => ({
       ...emptyForm,
       convenio_id: current.convenio_id,
@@ -206,12 +229,16 @@ export function SolicitacoesPage() {
       medico_id: current.medico_id,
     }))
     setFormError(null)
-    setIsFormOpen(true)
   }
 
   const handleCancel = () => {
-    setIsFormOpen(false)
     setFormError(null)
+    if (isCreateRoute) {
+      navigate('/solicitacoes')
+      return
+    }
+
+    setIsFormOpen(false)
   }
 
   const handleFormSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -228,14 +255,40 @@ export function SolicitacoesPage() {
         profissional_id: current.profissional_id,
         medico_id: current.medico_id,
       }))
-      setIsFormOpen(false)
+      if (isCreateRoute) {
+        navigate('/solicitacoes')
+      } else {
+        setIsFormOpen(false)
+      }
     } catch (error) {
       setFormError(getHttpErrorMessage(error, 'Não foi possível criar a solicitação.'))
     }
   }
 
+  const handleStatusChange = async (solicitacao: Solicitacao, status: SolicitacaoStatus) => {
+    if (solicitacao.status === status) {
+      return
+    }
+
+    const statusLabel = translateStatus('solicitacoes', status)
+    const confirmed = window.confirm(
+      `Confirmar alteração da solicitação #${solicitacao.id} para ${statusLabel}?`,
+    )
+
+    if (!confirmed) {
+      return
+    }
+
+    try {
+      await atualizarStatusSolicitacao.mutateAsync({ id: solicitacao.id, status })
+    } catch (error) {
+      window.alert(getHttpErrorMessage(error, 'Não foi possível alterar o status da solicitação.'))
+    }
+  }
+
   return (
     <div className="space-y-8" data-testid="solicitacoes-page">
+      {!isCreateRoute ? (
       <section className="space-y-4">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -249,14 +302,24 @@ export function SolicitacoesPage() {
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={handleNew}
-            className="rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
-            data-testid="solicitacao-novo"
-          >
-            Novo
-          </button>
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={() => navigate('/solicitacoes/ler-pedido-medico')}
+              className="rounded-2xl border border-cyan-300/30 bg-cyan-400/10 px-4 py-3 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-400/20"
+              data-testid="solicitacao-ler-pedido-medico"
+            >
+              Ler pedido médico
+            </button>
+            <button
+              type="button"
+              onClick={handleNew}
+              className="rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
+              data-testid="solicitacao-novo"
+            >
+              Novo
+            </button>
+          </div>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -278,8 +341,9 @@ export function SolicitacoesPage() {
           </article>
         </div>
       </section>
+      ) : null}
 
-      {isFormOpen ? (
+      {isFormOpen || isCreateRoute ? (
         <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
           <form onSubmit={handleFormSubmit} className="space-y-4" data-testid="solicitacao-form">
             <div className="flex items-start justify-between gap-4">
@@ -482,6 +546,7 @@ export function SolicitacoesPage() {
         </section>
       ) : null}
 
+      {!isCreateRoute ? (
       <section className="space-y-4 rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -600,24 +665,21 @@ export function SolicitacoesPage() {
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1.5 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-400/20 disabled:opacity-50"
-                          onClick={() => aprovarSolicitacao.mutate(solicitacao.id)}
-                          disabled={aprovarSolicitacao.isPending}
-                          data-testid={`solicitacao-aprovar-${solicitacao.id}`}
-                        >
-                          Aprovar
-                        </button>
-                        <button
-                          type="button"
-                          className="rounded-full border border-rose-400/30 bg-rose-400/10 px-3 py-1.5 text-xs font-semibold text-rose-100 transition hover:bg-rose-400/20 disabled:opacity-50"
-                          onClick={() => negarSolicitacao.mutate(solicitacao.id)}
-                          disabled={negarSolicitacao.isPending}
-                          data-testid={`solicitacao-negar-${solicitacao.id}`}
-                        >
-                          Negar
-                        </button>
+                        {statusActions.map((action) => (
+                          <button
+                            key={action.status}
+                            type="button"
+                            className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${action.className}`}
+                            onClick={() => void handleStatusChange(solicitacao, action.status)}
+                            disabled={
+                              atualizarStatusSolicitacao.isPending ||
+                              solicitacao.status === action.status
+                            }
+                            data-testid={`solicitacao-status-action-${action.status}-${solicitacao.id}`}
+                          >
+                            {action.label}
+                          </button>
+                        ))}
                       </div>
                     </td>
                   </tr>
@@ -658,6 +720,7 @@ export function SolicitacoesPage() {
           </button>
         </div>
       </section>
+      ) : null}
 
       <SolicitacaoGuiaModal
         solicitacao={selectedSolicitacao}

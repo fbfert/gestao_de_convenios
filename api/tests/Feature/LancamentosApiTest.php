@@ -9,6 +9,7 @@ use App\Models\Convenio;
 use App\Models\Especialidade;
 use App\Models\Guia;
 use App\Models\Lancamento;
+use App\Models\LancamentoPrintTemplate;
 use App\Models\Paciente;
 use App\Models\Profissional;
 use App\Models\Tenant;
@@ -296,6 +297,34 @@ TXT;
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.id', $lancamentoProprio->id)
             ->assertJsonMissing(['id' => $lancamentoOutro->id]);
+    }
+
+    public function test_consulta_e_atualiza_template_de_impressao_do_registro_de_sessoes(): void
+    {
+        $this->autenticar();
+
+        $show = $this->getJson('/api/lancamentos/templates/registro-sessoes');
+
+        $show->assertOk()
+            ->assertJsonPath('data.chave', 'registro_sessoes')
+            ->assertJsonPath('data.nome', 'Registro de sessões');
+
+        $this->assertDatabaseCount('lancamento_print_templates', 1);
+
+        $update = $this->putJson('/api/lancamentos/templates/registro-sessoes', [
+            'nome' => 'Registro Unimed',
+            'html' => '<h1>{{paciente}}</h1>{{#sessoes}}<p>{{data_sessao}}</p>{{/sessoes}}',
+            'ativo' => true,
+        ]);
+
+        $update->assertOk()
+            ->assertJsonPath('data.nome', 'Registro Unimed')
+            ->assertJsonPath('data.html', '<h1>{{paciente}}</h1>{{#sessoes}}<p>{{data_sessao}}</p>{{/sessoes}}');
+
+        $this->assertSame(
+            '<h1>{{paciente}}</h1>{{#sessoes}}<p>{{data_sessao}}</p>{{/sessoes}}',
+            LancamentoPrintTemplate::query()->where('chave', 'registro_sessoes')->firstOrFail()->html
+        );
     }
 
     private function autenticar(): void

@@ -63,7 +63,7 @@ export function GuiaStatusActions({ guia }: { guia: Guia }) {
           disabled={finalizarGuia.isPending || negarGuia.isPending}
           data-testid={`guia-finalizar-${guia.id}`}
         >
-          Aprovar
+          Finalizar
         </button>
         <button
           type="button"
@@ -112,7 +112,7 @@ export function GuiaStatusActions({ guia }: { guia: Guia }) {
               className="rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:opacity-60"
               data-testid={`guia-finalizar-confirmar-${guia.id}`}
             >
-              {finalizarGuia.isPending ? 'Aprovando...' : 'Confirmar'}
+              {finalizarGuia.isPending ? 'Finalizando...' : 'Finalizar'}
             </button>
             <button
               type="button"

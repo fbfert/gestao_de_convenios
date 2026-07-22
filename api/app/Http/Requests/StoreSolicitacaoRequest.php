@@ -29,6 +29,10 @@ class StoreSolicitacaoRequest extends FormRequest
             ],
             'solicitado_em' => ['required', 'date'],
             'observacoes' => ['nullable', 'string'],
+            'pedido_medico_upload_id' => ['nullable', 'string', 'max:500'],
+            'pedido_medico_nome_original' => ['nullable', 'string', 'max:255'],
+            'pedido_medico_mime' => ['nullable', 'string', 'max:255'],
+            'pedido_medico_ai_result' => ['nullable', 'array'],
         ];
     }
 }

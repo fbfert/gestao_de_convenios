@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<title>Mapa Mental — Gestão de Convênios</title>
+<style>
+  :root {
+    --azul: #1d4ed8;
+    --azul-claro: #eff6ff;
+    --verde: #047857;
+    --verde-fundo: #ecfdf5;
+    --ambar: #b45309;
+    --ambar-fundo: #fffbeb;
+    --roxo: #6d28d9;
+    --roxo-fundo: #f5f3ff;
+    --cinza-texto: #1f2937;
+    --cinza-borda: #e2e8f0;
+    --cinza-fundo: #f8fafc;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--cinza-texto);
+    background: #ffffff;
+    line-height: 1.5;
+  }
+  .capa {
+    background: linear-gradient(135deg, #0f172a, #1d4ed8);
+    color: #fff;
+    padding: 40px 40px 32px;
+  }
+  .capa .kicker { text-transform: uppercase; letter-spacing: .2em; font-size: 12px; color: #bfdbfe; margin: 0 0 8px; }
+  .capa h1 { margin: 0 0 10px; font-size: 28px; }
+  .capa p { margin: 0; max-width: 760px; color: #e0e7ff; font-size: 14.5px; }
+
+  .legenda {
+    display: flex; flex-wrap: wrap; gap: 16px;
+    max-width: 1080px; margin: 24px auto 0; padding: 0 24px;
+    font-size: 13px; color: #475569;
+  }
+  .legenda span { display: inline-flex; align-items: center; gap: 6px; }
+  .legenda i { width: 12px; height: 12px; border-radius: 4px; display: inline-block; }
+
+  .mapa {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 24px 24px 56px;
+  }
+  .raiz {
+    background: var(--azul); color: #fff; font-weight: 700; font-size: 17px;
+    padding: 14px 30px; border-radius: 999px;
+    box-shadow: 0 10px 28px rgba(29, 78, 216, .28);
+    text-align: center;
+  }
+  .raiz small { display: block; font-weight: 400; font-size: 11.5px; color: #dbeafe; margin-top: 2px; }
+  .tronco { width: 2px; height: 26px; background: var(--cinza-borda); }
+  .barra { width: 100%; max-width: 1080px; height: 2px; background: var(--cinza-borda); }
+
+  .ramos {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;
+    width: 100%; max-width: 1080px;
+  }
+  .ramo { display: flex; flex-direction: column; align-items: stretch; }
+  .stub { width: 2px; height: 18px; background: var(--cinza-borda); margin: 0 auto; }
+  .ramo-titulo {
+    font-weight: 700; font-size: 13.5px; text-align: center;
+    padding: 9px 10px; border-radius: 10px; margin-bottom: 14px;
+  }
+  .ramo-azul .ramo-titulo { background: var(--azul-claro); color: var(--azul); }
+  .ramo-verde .ramo-titulo { background: var(--verde-fundo); color: var(--verde); }
+  .ramo-ambar .ramo-titulo { background: var(--ambar-fundo); color: var(--ambar); }
+  .ramo-roxo .ramo-titulo { background: var(--roxo-fundo); color: var(--roxo); }
+
+  .folhas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .folhas li {
+    position: relative;
+    background: #fff; border: 1.5px solid var(--cinza-borda); border-radius: 10px;
+    padding: 9px 10px; font-size: 12.5px; text-align: center; color: var(--cinza-texto);
+  }
+  .folhas li b { display: block; font-size: 12.5px; }
+  .folhas li small { display: block; color: #64748b; font-size: 11px; margin-top: 2px; }
+  .folhas li:not(:last-child)::after {
+    content: ''; position: absolute; left: 50%; bottom: -9px; width: 2px; height: 8px;
+    background: var(--cinza-borda); transform: translateX(-1px);
+  }
+  .ramo-azul .folhas li { border-color: #bfdbfe; }
+  .ramo-verde .folhas li { border-color: #a7f3d0; }
+  .ramo-ambar .folhas li { border-color: #fde68a; }
+  .ramo-roxo .folhas li { border-color: #ddd6fe; }
+
+  .rodape-nota {
+    max-width: 1080px; margin: 8px auto 0; padding: 14px 20px;
+    background: var(--cinza-fundo); border: 1px solid var(--cinza-borda); border-radius: 12px;
+    font-size: 13px; color: #475569;
+  }
+
+  @media (max-width: 860px) {
+    .ramos { grid-template-columns: repeat(2, 1fr); row-gap: 32px; }
+  }
+  @media (max-width: 480px) {
+    .ramos { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="capa">
+  <p class="kicker">Documentação interna</p>
+  <h1>Mapa Mental — Gestão de Convênios</h1>
+  <p>
+    Visão de topo do sistema: o núcleo (o próprio sistema) e os quatro grandes ramos que organizam o trabalho —
+    o fluxo operacional do atendimento, os cadastros de apoio, a administração/sistema e os papéis de acesso.
+    Use isso para enxergar rapidamente onde cada tela se encaixa antes de ler o manual completo.
+  </p>
+</div>
+
+<div class="legenda">
+  <span><i style="background:var(--azul)"></i> Fluxo operacional (o caminho de um atendimento)</span>
+  <span><i style="background:var(--verde)"></i> Cadastros de apoio (referência)</span>
+  <span><i style="background:var(--ambar)"></i> Administração &amp; sistema</span>
+  <span><i style="background:var(--roxo)"></i> Papéis de acesso</span>
+</div>
+
+<div class="mapa">
+  <div class="raiz">
+    GESTÃO DE CONVÊNIOS
+    <small>sistema · multi-clínica (tenant)</small>
+  </div>
+  <div class="tronco"></div>
+  <div class="barra"></div>
+
+  <div class="ramos">
+    <div class="ramo ramo-azul">
+      <div class="stub"></div>
+      <div class="ramo-titulo">Fluxo Operacional</div>
+      <ul class="folhas">
+        <li><b>Solicitação</b><small>pedido de autorização ao convênio</small></li>
+        <li><b>Guia</b><small>senha + validade</small></li>
+        <li><b>Antecipação</b><small>cota de sessões por ciclo</small></li>
+        <li><b>Sessões (Lançamentos)</b><small>registro do atendimento</small></li>
+        <li><b>Analítico</b><small>importação do extrato do convênio</small></li>
+        <li><b>Conciliação</b><small>pendente → conferida → paga</small></li>
+      </ul>
+    </div>
+
+    <div class="ramo ramo-verde">
+      <div class="stub"></div>
+      <div class="ramo-titulo">Cadastros de Apoio</div>
+      <ul class="folhas">
+        <li><b>Pacientes</b><small>quem é atendido</small></li>
+        <li><b>Profissionais</b><small>quem executa a terapia</small></li>
+        <li><b>Médicos</b><small>quem solicita a terapia</small></li>
+        <li><b>Especialidades</b><small>ex.: fisioterapia, fono</small></li>
+        <li><b>Convênios</b><small>regras + tabela de valores</small></li>
+      </ul>
+    </div>
+
+    <div class="ramo ramo-ambar">
+      <div class="stub"></div>
+      <div class="ramo-titulo">Administração &amp; Sistema</div>
+      <ul class="folhas">
+        <li><b>Usuários</b><small>quem loga no sistema</small></li>
+        <li><b>Permissões</b><small>o que cada papel pode fazer</small></li>
+        <li><b>Auditoria</b><small>histórico de ações</small></li>
+        <li><b>Configurações</b><small>reservado para o futuro</small></li>
+        <li><b>Manual</b><small>esta documentação</small></li>
+      </ul>
+    </div>
+
+    <div class="ramo ramo-roxo">
+      <div class="stub"></div>
+      <div class="ramo-titulo">Papéis de Acesso</div>
+      <ul class="folhas">
+        <li><b>admin</b><small>administração completa</small></li>
+        <li><b>funcionario</b><small>operação do dia a dia</small></li>
+        <li><b>profissional</b><small>só enxerga o que é seu</small></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="rodape-nota">
+    <strong>Como ler:</strong> o atendimento sempre segue a coluna azul de cima para baixo (Solicitação → Guia →
+    Antecipação → Sessões → Analítico → Conciliação). As colunas verde e âmbar são cadastros e telas de suporte
+    que alimentam esse fluxo, mas não têm uma ordem fixa entre si. A coluna roxa mostra quem pode ver/fazer o quê —
+    detalhes de cada permissão estão na tela de <em>Permissões</em>, descrita no manual completo.
+  </div>
+</div>
+
+</body>
+</html>

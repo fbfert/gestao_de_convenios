@@ -27,7 +27,7 @@ class EmailSettingsController extends Controller
     {
         $tenantId = (int) $request->user()->tenant_id;
         $smtpPayload = $request->validated('smtp');
-        $templatesPayload = $request->validated('templates');
+        $templatesPayload = $request->validated('templates', []);
 
         $smtp = EmailSmtpSetting::query()->firstOrNew(['tenant_id' => $tenantId]);
         $password = Arr::pull($smtpPayload, 'password');

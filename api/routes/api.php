@@ -5,6 +5,7 @@ use App\Http\Controllers\AntecipacaoController;
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmailSettingsController;
+use App\Http\Controllers\EmailTemplateController;
 use App\Http\Controllers\ConvenioController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\RoleController;
@@ -39,6 +40,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/manual/{tipo?}', [ManualController::class, 'update'])->middleware('permission:manual.manage')->where('tipo', 'manual|mapa-mental');
     Route::get('/configuracoes/emails', [EmailSettingsController::class, 'show'])->middleware('permission:configuracoes.manage');
     Route::put('/configuracoes/emails', [EmailSettingsController::class, 'update'])->middleware('permission:configuracoes.manage');
+    Route::get('/configuracoes/emails/templates', [EmailTemplateController::class, 'index'])->middleware('permission:configuracoes.manage');
+    Route::post('/configuracoes/emails/templates', [EmailTemplateController::class, 'store'])->middleware('permission:configuracoes.manage');
+    Route::put('/configuracoes/emails/templates/{emailTemplate}', [EmailTemplateController::class, 'update'])->middleware('permission:configuracoes.manage');
+    Route::delete('/configuracoes/emails/templates/{emailTemplate}', [EmailTemplateController::class, 'destroy'])->middleware('permission:configuracoes.manage');
     Route::get('/configuracoes/ia', [AiSettingsController::class, 'show'])->middleware('permission:configuracoes.manage');
     Route::put('/configuracoes/ia', [AiSettingsController::class, 'update'])->middleware('permission:configuracoes.manage');
     Route::get('/configuracoes/ia/modelos', [AiSettingsController::class, 'models'])->middleware('permission:configuracoes.manage');

@@ -94,6 +94,75 @@ class EmailSettingsApiTest extends TestCase
             ->assertJsonCount(0, 'data.templates');
     }
 
+    public function test_crud_de_templates_de_email_por_tenant(): void
+    {
+        $this->autenticar();
+
+        $create = $this->postJson('/api/configuracoes/emails/templates', [
+            'chave' => 'teste.crud',
+            'nome' => 'Template de teste',
+            'assunto' => 'Template de teste',
+            'corpo' => 'Corpo do template de teste.',
+            'ativo' => true,
+        ])
+            ->assertCreated()
+            ->assertJsonPath('data.chave', 'teste.crud');
+
+        $templateId = $create->json('data.id');
+
+        $this->putJson("/api/configuracoes/emails/templates/{$templateId}", [
+            'chave' => 'teste.crud',
+            'nome' => 'Template de teste alterado',
+            'assunto' => 'Template de teste',
+            'corpo' => 'Corpo alterado do template de teste.',
+            'ativo' => false,
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.nome', 'Template de teste alterado')
+            ->assertJsonPath('data.ativo', false);
+
+        $this->getJson('/api/configuracoes/emails/templates')
+            ->assertOk()
+            ->assertJsonFragment([
+                'id' => $templateId,
+                'chave' => 'teste.crud',
+            ]);
+
+        $this->deleteJson("/api/configuracoes/emails/templates/{$templateId}")
+            ->assertNoContent();
+
+        $this->assertDatabaseMissing('email_templates', [
+            'id' => $templateId,
+        ]);
+    }
+
+    public function test_nao_permite_alterar_template_de_outro_tenant(): void
+    {
+        $this->autenticar();
+
+        $template = EmailTemplate::query()->create([
+            'tenant_id' => Tenant::query()->create([
+                'nome' => 'Clínica Template Externa',
+                'slug' => 'clinica-template-externa',
+                'cnpj' => '98.765.432/0001-10',
+                'ativo' => true,
+            ])->id,
+            'chave' => 'externo',
+            'nome' => 'Externo',
+            'assunto' => 'Externo',
+            'corpo' => 'Externo',
+            'ativo' => true,
+        ]);
+
+        $this->putJson("/api/configuracoes/emails/templates/{$template->id}", [
+            'chave' => 'externo',
+            'nome' => 'Alterado',
+            'assunto' => 'Alterado',
+            'corpo' => 'Alterado',
+            'ativo' => true,
+        ])->assertNotFound();
+    }
+
     private function autenticar(): void
     {
         $user = User::query()->where('email', 'admin@clinica-exemplo.test')->firstOrFail();

@@ -31,6 +31,7 @@ class DatabaseSeeder extends Seeder
             ConvenioRegraSeeder::class,
             PacienteSeeder::class,
             TabelaValorSeeder::class,
+            EmailTemplateSeeder::class,
         ]);
 
         if (app()->environment('testing')) {

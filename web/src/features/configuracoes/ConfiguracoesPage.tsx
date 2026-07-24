@@ -1,10 +1,10 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
 import {
   getHttpErrorMessage,
   useEmailSettings,
   useSalvarEmailSettings,
   type EmailSettingsForm,
-  type EmailTemplateSettings,
 } from './useEmailSettings'
 import {
   useAiModels,
@@ -24,25 +24,6 @@ const emptySmtpForm: EmailSettingsForm['smtp'] = {
   from_name: '',
   ativo: true,
 }
-
-const defaultTemplates: EmailTemplateSettings[] = [
-  {
-    id: null,
-    chave: 'guia_aprovada',
-    nome: 'Guia aprovada',
-    assunto: 'Guia aprovada',
-    corpo: 'Olá {{paciente_nome}}, sua guia foi aprovada.',
-    ativo: true,
-  },
-  {
-    id: null,
-    chave: 'solicitacao_negada',
-    nome: 'Solicitação negada',
-    assunto: 'Solicitação negada',
-    corpo: 'Olá {{paciente_nome}}, sua solicitação foi negada.',
-    ativo: true,
-  },
-]
 
 const emptyAiOpenaiForm: AiSettingsForm['openai'] = {
   api_key: '',
@@ -92,7 +73,6 @@ export function ConfiguracoesPage() {
   const [activeTab, setActiveTab] = useState<'geral' | 'emails' | 'ia'>('emails')
   const [form, setForm] = useState<EmailSettingsForm>({
     smtp: emptySmtpForm,
-    templates: defaultTemplates,
   })
   const [aiForm, setAiForm] = useState<AiSettingsForm>({
     openai: emptyAiOpenaiForm,
@@ -121,7 +101,6 @@ export function ConfiguracoesPage() {
             ativo: data.smtp.ativo,
           }
         : emptySmtpForm,
-      templates: data.templates.length > 0 ? data.templates : defaultTemplates,
     })
   }, [emailSettingsQuery.data])
 
@@ -145,36 +124,6 @@ export function ConfiguracoesPage() {
       prompts: data.prompts.length > 0 ? data.prompts : defaultAiPrompts,
     })
   }, [aiSettingsQuery.data])
-
-  const updateTemplate = (
-    index: number,
-    field: keyof EmailTemplateSettings,
-    value: string | boolean,
-  ) => {
-    setForm((current) => ({
-      ...current,
-      templates: current.templates.map((template, templateIndex) =>
-        templateIndex === index ? { ...template, [field]: value } : template,
-      ),
-    }))
-  }
-
-  const addTemplate = () => {
-    setForm((current) => ({
-      ...current,
-      templates: [
-        ...current.templates,
-        {
-          id: null,
-          chave: '',
-          nome: '',
-          assunto: '',
-          corpo: '',
-          ativo: true,
-        },
-      ],
-    }))
-  }
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -277,6 +226,13 @@ export function ConfiguracoesPage() {
           >
             Configurações de IA
           </button>
+          <Link
+            to="/configuracoes/templates-emails"
+            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-white/10"
+            data-testid="configuracoes-email-templates"
+          >
+            Templates de E-mails
+          </Link>
         </div>
       </section>
 
@@ -443,83 +399,6 @@ export function ConfiguracoesPage() {
                   data-testid="email-smtp-from-name"
                 />
               </label>
-            </div>
-          </section>
-
-          <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-white">Templates</h3>
-                <p className="mt-1 text-sm text-slate-300">
-                  Assunto e corpo dos emails operacionais. Use chaves estáveis para integração.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={addTemplate}
-                className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
-                data-testid="email-template-adicionar"
-              >
-                Adicionar template
-              </button>
-            </div>
-
-            <div className="mt-5 space-y-4">
-              {form.templates.map((template, index) => (
-                <article
-                  key={`${template.id ?? 'novo'}-${index}`}
-                  className="rounded-3xl border border-white/10 bg-white/5 p-4"
-                >
-                  <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                    <label className="space-y-2">
-                      <span className="text-sm font-medium text-slate-200">Chave</span>
-                      <input
-                        value={template.chave}
-                        onChange={(event) => updateTemplate(index, 'chave', event.target.value)}
-                        className={inputClasses()}
-                        placeholder="guia_aprovada"
-                        data-testid={`email-template-chave-${index}`}
-                      />
-                    </label>
-                    <label className="space-y-2">
-                      <span className="text-sm font-medium text-slate-200">Nome</span>
-                      <input
-                        value={template.nome}
-                        onChange={(event) => updateTemplate(index, 'nome', event.target.value)}
-                        className={inputClasses()}
-                        data-testid={`email-template-nome-${index}`}
-                      />
-                    </label>
-                    <label className="space-y-2 xl:col-span-2">
-                      <span className="text-sm font-medium text-slate-200">Assunto</span>
-                      <input
-                        value={template.assunto}
-                        onChange={(event) => updateTemplate(index, 'assunto', event.target.value)}
-                        className={inputClasses()}
-                        data-testid={`email-template-assunto-${index}`}
-                      />
-                    </label>
-                  </div>
-                  <label className="mt-4 block space-y-2">
-                    <span className="text-sm font-medium text-slate-200">Corpo</span>
-                    <textarea
-                      value={template.corpo}
-                      onChange={(event) => updateTemplate(index, 'corpo', event.target.value)}
-                      className={`${inputClasses()} min-h-32`}
-                      data-testid={`email-template-corpo-${index}`}
-                    />
-                  </label>
-                  <label className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-slate-200">
-                    <input
-                      type="checkbox"
-                      checked={template.ativo}
-                      onChange={(event) => updateTemplate(index, 'ativo', event.target.checked)}
-                      className="size-4 rounded border-white/20 bg-white/10"
-                    />
-                    Template ativo
-                  </label>
-                </article>
-              ))}
             </div>
           </section>
 

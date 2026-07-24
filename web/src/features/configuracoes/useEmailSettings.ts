@@ -41,7 +41,14 @@ export type EmailSmtpForm = {
 
 export type EmailSettingsForm = {
   smtp: EmailSmtpForm
-  templates: EmailTemplateSettings[]
+}
+
+export type EmailTemplateForm = {
+  chave: string
+  nome: string
+  assunto: string
+  corpo: string
+  ativo: boolean
 }
 
 export function useEmailSettings() {
@@ -70,13 +77,74 @@ export function useSalvarEmailSettings() {
           from_name: payload.smtp.from_name.trim() || null,
           ativo: payload.smtp.ativo,
         },
-        templates: payload.templates,
       })
 
       return data.data
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['configuracoes', 'emails'] })
+    },
+  })
+}
+
+export function useEmailTemplates() {
+  return useQuery({
+    queryKey: ['configuracoes', 'emails', 'templates'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ data: EmailTemplateSettings[] }>(
+        '/configuracoes/emails/templates',
+      )
+      return data.data
+    },
+  })
+}
+
+export function useCriarEmailTemplate() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (payload: EmailTemplateForm) => {
+      const { data } = await apiClient.post<{ data: EmailTemplateSettings }>(
+        '/configuracoes/emails/templates',
+        payload,
+      )
+      return data.data
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['configuracoes', 'emails'] })
+      await queryClient.invalidateQueries({ queryKey: ['configuracoes', 'emails', 'templates'] })
+    },
+  })
+}
+
+export function useAtualizarEmailTemplate() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ id, payload }: { id: number; payload: EmailTemplateForm }) => {
+      const { data } = await apiClient.put<{ data: EmailTemplateSettings }>(
+        `/configuracoes/emails/templates/${id}`,
+        payload,
+      )
+      return data.data
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['configuracoes', 'emails'] })
+      await queryClient.invalidateQueries({ queryKey: ['configuracoes', 'emails', 'templates'] })
+    },
+  })
+}
+
+export function useExcluirEmailTemplate() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (id: number) => {
+      await apiClient.delete(`/configuracoes/emails/templates/${id}`)
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['configuracoes', 'emails'] })
+      await queryClient.invalidateQueries({ queryKey: ['configuracoes', 'emails', 'templates'] })
     },
   })
 }

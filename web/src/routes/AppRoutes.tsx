@@ -18,7 +18,7 @@ import { UsuariosPage } from '../features/usuarios'
 import { ProfissionaisPage } from '../features/profissionais'
 import { DashboardPage } from '../features/dashboard'
 import { AuditoriaPage } from '../features/auditoria'
-import { ConfiguracoesPage } from '../features/configuracoes'
+import { ConfiguracoesPage, EmailTemplatesPage } from '../features/configuracoes'
 import { ConveniosPage, ConvenioDetalhePage } from '../features/convenios/ConveniosPage'
 import { ConvenioAjudaPage } from '../features/convenios/ConvenioAjudaPage'
 import { ManualPage } from '../features/manual'
@@ -62,6 +62,7 @@ export function AppRoutes() {
           <Route path="/usuarios" element={<UsuariosPage />} />
           <Route path="/usuarios/novo" element={<UsuariosPage />} />
           <Route path="/configuracoes" element={<ConfiguracoesPage />} />
+          <Route path="/configuracoes/templates-emails" element={<EmailTemplatesPage />} />
           <Route path="/manual" element={<ManualPage />} />
         </Route>
       </Route>

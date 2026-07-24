@@ -24,7 +24,7 @@ class UpdateEmailSettingsRequest extends FormRequest
             'smtp.from_email' => ['required', 'email', 'max:255'],
             'smtp.from_name' => ['nullable', 'string', 'max:255'],
             'smtp.ativo' => ['required', 'boolean'],
-            'templates' => ['present', 'array'],
+            'templates' => ['sometimes', 'array'],
             'templates.*.chave' => ['required', 'string', 'max:100', 'regex:/^[a-z0-9_.-]+$/'],
             'templates.*.nome' => ['required', 'string', 'max:255'],
             'templates.*.assunto' => ['required', 'string', 'max:255'],

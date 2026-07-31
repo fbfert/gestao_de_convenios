@@ -25,10 +25,18 @@ class SolicitacaoService
                 'especialidade',
                 'convenio',
                 'medico',
+                'itens.especialidade',
+                'itens.profissional',
+                'itens.documentos',
+                'itens.guia',
+                'itens.automacaoExecucoes',
+                'documentos',
                 'guia.paciente',
                 'guia.convenio',
                 'guia.profissional',
                 'guia.especialidade',
+                'guia.solicitacaoItem.especialidade',
+                'guia.solicitacaoItem.profissional',
                 'guia.antecipacoes',
                 'guia.conciliacoes',
             ])
@@ -44,17 +52,41 @@ class SolicitacaoService
         $tenantId = $this->tenantId();
         $pedidoMedico = $this->resolverPedidoMedico($dados, $tenantId);
 
-        return Solicitacao::query()->create([
-            'tenant_id' => $tenantId,
-            'paciente_id' => $dados['paciente_id'],
-            'profissional_id' => $dados['profissional_id'],
-            'especialidade_id' => $dados['especialidade_id'],
-            'convenio_id' => $dados['convenio_id'],
-            'medico_id' => $dados['medico_id'],
-            'status' => 'under_review',
-            'solicitado_em' => $dados['solicitado_em'],
-            'observacoes' => $dados['observacoes'] ?? null,
-        ] + $pedidoMedico);
+        return DB::transaction(function () use ($dados, $pedidoMedico, $tenantId) {
+            $itens = $this->normalizarItens($dados);
+            $primeiroItem = $itens[0];
+
+            $solicitacao = Solicitacao::query()->create([
+                'tenant_id' => $tenantId,
+                'paciente_id' => $dados['paciente_id'],
+                'profissional_id' => $dados['profissional_id'] ?? $primeiroItem['profissional_id'],
+                'especialidade_id' => $dados['especialidade_id'] ?? $primeiroItem['especialidade_id'],
+                'convenio_id' => $dados['convenio_id'],
+                'medico_id' => $dados['medico_id'],
+                'status' => 'under_review',
+                'solicitado_em' => $dados['solicitado_em'],
+                'observacoes' => $dados['observacoes'] ?? null,
+            ] + $pedidoMedico['campos']);
+
+            foreach ($itens as $item) {
+                $solicitacao->itens()->create([
+                    'tenant_id' => $tenantId,
+                    'especialidade_id' => $item['especialidade_id'],
+                    'profissional_id' => $item['profissional_id'],
+                    'quantidade' => $item['quantidade'] ?? 10,
+                    'status_operacional' => 'pending',
+                    'observacoes' => $item['observacoes'] ?? null,
+                ]);
+            }
+
+            if ($pedidoMedico['documento']) {
+                $solicitacao->documentos()->create($pedidoMedico['documento'] + [
+                    'tenant_id' => $tenantId,
+                ]);
+            }
+
+            return $solicitacao->refresh();
+        });
     }
 
     private function resolverPedidoMedico(array $dados, int $tenantId): array
@@ -62,23 +94,56 @@ class SolicitacaoService
         $uploadId = $dados['pedido_medico_upload_id'] ?? null;
 
         if (! $uploadId) {
-            return [];
+            return ['campos' => [], 'documento' => null];
         }
 
         $prefix = "pedidos-medicos/pendentes/{$tenantId}/";
         if (! str_starts_with($uploadId, $prefix) || ! Storage::disk('local')->exists($uploadId)) {
-            return [];
+            return ['campos' => [], 'documento' => null];
         }
 
         $target = str_replace('/pendentes/', '/solicitacoes/', $uploadId);
         Storage::disk('local')->move($uploadId, $target);
+        $nomeOriginal = $dados['pedido_medico_nome_original'] ?? basename($target);
+        $mime = $dados['pedido_medico_mime'] ?? Storage::disk('local')->mimeType($target);
 
         return [
-            'pedido_medico_path' => $target,
-            'pedido_medico_nome_original' => $dados['pedido_medico_nome_original'] ?? basename($target),
-            'pedido_medico_mime' => $dados['pedido_medico_mime'] ?? Storage::disk('local')->mimeType($target),
-            'pedido_medico_ai_result' => $dados['pedido_medico_ai_result'] ?? null,
+            'campos' => [
+                'pedido_medico_path' => $target,
+                'pedido_medico_nome_original' => $nomeOriginal,
+                'pedido_medico_mime' => $mime,
+                'pedido_medico_ai_result' => $dados['pedido_medico_ai_result'] ?? null,
+            ],
+            'documento' => [
+                'solicitacao_item_id' => null,
+                'tipo' => 'pedido_medico',
+                'nome_original' => $nomeOriginal,
+                'mime' => $mime,
+                'path' => $target,
+                'metadata' => $dados['pedido_medico_ai_result'] ?? null,
+            ],
         ];
+    }
+
+    private function normalizarItens(array $dados): array
+    {
+        $itens = $dados['itens'] ?? [];
+
+        if ($itens !== []) {
+            return array_values(array_map(fn (array $item) => [
+                'especialidade_id' => $item['especialidade_id'],
+                'profissional_id' => $item['profissional_id'],
+                'quantidade' => $item['quantidade'] ?? 10,
+                'observacoes' => $item['observacoes'] ?? null,
+            ], $itens));
+        }
+
+        return [[
+            'especialidade_id' => $dados['especialidade_id'],
+            'profissional_id' => $dados['profissional_id'],
+            'quantidade' => 10,
+            'observacoes' => null,
+        ]];
     }
 
     public function aprovar(Solicitacao $solicitacao): Solicitacao
@@ -110,14 +175,20 @@ class SolicitacaoService
 
     private function sincronizarGuiaDaSolicitacao(Solicitacao $solicitacao): void
     {
+        if ($solicitacao->convenio?->connector_driver === 'unimed_rda') {
+            return;
+        }
+
+        $item = $solicitacao->itens()->orderBy('id')->first();
         $guia = $solicitacao->guia;
         $dadosBase = [
             'tenant_id' => $solicitacao->tenant_id,
             'solicitacao_id' => $solicitacao->id,
+            'solicitacao_item_id' => $item?->id,
             'convenio_id' => $solicitacao->convenio_id,
             'paciente_id' => $solicitacao->paciente_id,
-            'profissional_id' => $solicitacao->profissional_id,
-            'especialidade_id' => $solicitacao->especialidade_id,
+            'profissional_id' => $item?->profissional_id ?? $solicitacao->profissional_id,
+            'especialidade_id' => $item?->especialidade_id ?? $solicitacao->especialidade_id,
             'status' => 'under_review',
             'data_solicitacao' => $solicitacao->solicitado_em?->toDateString() ?? today()->toDateString(),
             'observacoes' => $solicitacao->observacoes,

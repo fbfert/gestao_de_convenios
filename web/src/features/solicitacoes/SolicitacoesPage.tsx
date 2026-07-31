@@ -6,6 +6,7 @@ import {
   getHttpErrorMessage,
   useAtualizarStatusSolicitacao,
   useCriarSolicitacao,
+  useEnviarItemUnimed,
   useSolicitacoes,
 } from './useSolicitacoes'
 import type { Solicitacao, SolicitacaoFilters, SolicitacaoForm, SolicitacaoStatus } from './types'
@@ -29,6 +30,7 @@ const emptyForm: SolicitacaoForm = {
   paciente_id: '',
   profissional_id: '',
   especialidade_id: '',
+  quantidade: '10',
   convenio_id: '',
   medico_id: '',
   solicitado_em: new Date().toISOString().slice(0, 10),
@@ -95,6 +97,7 @@ export function SolicitacoesPage() {
   const solicitacoesQuery = useSolicitacoes(filters, page)
   const criarSolicitacao = useCriarSolicitacao()
   const atualizarStatusSolicitacao = useAtualizarStatusSolicitacao()
+  const enviarItemUnimed = useEnviarItemUnimed()
 
   const convenios = useMemo(() => conveniosQuery.data ?? emptyArray, [conveniosQuery.data])
   const especialidades = useMemo(
@@ -117,6 +120,7 @@ export function SolicitacoesPage() {
     form.especialidade_id !== '' &&
     form.paciente_id !== '' &&
     form.profissional_id !== '' &&
+    form.quantidade !== '' &&
     form.medico_id !== ''
 
   useEffect(() => {
@@ -283,6 +287,14 @@ export function SolicitacoesPage() {
       await atualizarStatusSolicitacao.mutateAsync({ id: solicitacao.id, status })
     } catch (error) {
       window.alert(getHttpErrorMessage(error, 'Não foi possível alterar o status da solicitação.'))
+    }
+  }
+
+  const handleEnviarItemUnimed = async (itemId: number) => {
+    try {
+      await enviarItemUnimed.mutateAsync(itemId)
+    } catch (error) {
+      window.alert(getHttpErrorMessage(error, 'Não foi possível enviar o item para a Unimed.'))
     }
   }
 
@@ -472,6 +484,23 @@ export function SolicitacoesPage() {
             </label>
 
             <label className="block space-y-2">
+              <span className="text-sm font-medium text-slate-200">Quantidade do item</span>
+              <input
+                type="number"
+                min="1"
+                value={form.quantidade}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    quantidade: event.target.value,
+                  }))
+                }
+                className={selectClasses()}
+                data-testid="solicitacao-quantidade"
+              />
+            </label>
+
+            <label className="block space-y-2">
               <span className="text-sm font-medium text-slate-200">Médico solicitante</span>
               <Select
                 value={form.medico_id}
@@ -625,6 +654,7 @@ export function SolicitacoesPage() {
                   <th className="px-4 py-3">ID</th>
                   <th className="px-4 py-3">Paciente</th>
                   <th className="px-4 py-3">Convênio</th>
+                  <th className="px-4 py-3">Itens</th>
                   <th className="px-4 py-3">Status</th>
                   <th className="px-4 py-3">Médico solicitante</th>
                   <th className="px-4 py-3">Ações</th>
@@ -649,6 +679,60 @@ export function SolicitacoesPage() {
                     <td className="px-4 py-4 text-slate-200">
                       {convenios.find((item) => item.id === solicitacao.convenio_id)?.nome ??
                         solicitacao.convenio_id}
+                    </td>
+                    <td className="px-4 py-4 text-slate-200">
+                      {solicitacao.itens?.length ? (
+                        <div className="space-y-1">
+                          {solicitacao.itens.map((item) => {
+                            const isUnimedRda =
+                              solicitacao.convenio?.connector_driver === 'unimed_rda'
+                            const hasActiveExecution = item.automacao_execucao_ativa !== null
+                            const canSend =
+                              isUnimedRda &&
+                              solicitacao.status === 'approved' &&
+                              !item.guia_id &&
+                              !hasActiveExecution
+
+                            return (
+                              <div
+                                key={item.id}
+                                className="flex flex-col gap-2 rounded-2xl border border-white/10 bg-white/5 p-3"
+                              >
+                                <p>
+                                  {item.especialidade?.nome ?? item.especialidade_id} ·{' '}
+                                  {item.profissional?.nome ?? item.profissional_id} ·{' '}
+                                  {item.quantidade}
+                                </p>
+                                <div className="flex flex-wrap items-center gap-2">
+                                  {item.guia_id ? (
+                                    <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1 text-xs font-semibold text-emerald-100">
+                                      Guia #{item.guia_id}
+                                    </span>
+                                  ) : null}
+                                  {item.automacao_execucao_ativa ? (
+                                    <span className="rounded-full border border-amber-400/20 bg-amber-400/10 px-2.5 py-1 text-xs font-semibold text-amber-100">
+                                      {item.automacao_execucao_ativa.status}
+                                    </span>
+                                  ) : null}
+                                  {isUnimedRda ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => void handleEnviarItemUnimed(item.id)}
+                                      disabled={!canSend || enviarItemUnimed.isPending}
+                                      className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1.5 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-400/20 disabled:cursor-not-allowed disabled:opacity-50"
+                                      data-testid={`solicitacao-item-enviar-unimed-${item.id}`}
+                                    >
+                                      Enviar para Unimed
+                                    </button>
+                                  ) : null}
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      ) : (
+                        <span className="text-slate-400">Item legado</span>
+                      )}
                     </td>
                     <td className="px-4 py-4">
                       <span
@@ -686,7 +770,7 @@ export function SolicitacoesPage() {
                 ))}
                 {solicitacoesQuery.data?.data?.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-slate-300">
+                    <td colSpan={7} className="px-4 py-8 text-center text-slate-300">
                       Nenhuma solicitação encontrada.
                     </td>
                   </tr>

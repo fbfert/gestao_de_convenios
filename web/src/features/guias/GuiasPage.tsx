@@ -534,14 +534,25 @@ export function GuiasPage() {
                             guia.convenio_id}
                         </td>
                         <td className="px-4 py-4">
-                          <span
-                            className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${statusTone(
-                              guia.status,
-                            )}`}
-                            data-testid={`guia-status-${guia.id}`}
-                          >
-                            {translateStatus('guias', guia.status)}
-                          </span>
+                          <div className="flex flex-col gap-2">
+                            <span
+                              className={`inline-flex w-fit rounded-full border px-3 py-1 text-xs font-semibold ${statusTone(
+                                guia.status,
+                              )}`}
+                              data-testid={`guia-status-${guia.id}`}
+                            >
+                              {translateStatus('guias', guia.status)}
+                            </span>
+                            {guia.automacao_execucao ? (
+                              <span className="inline-flex w-fit rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-100">
+                                Unimed · {guia.automacao_execucao.status}
+                              </span>
+                            ) : guia.solicitacao_item_id ? (
+                              <span className="inline-flex w-fit rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-slate-200">
+                                Item #{guia.solicitacao_item_id}
+                              </span>
+                            ) : null}
+                          </div>
                         </td>
                         <td className="px-4 py-4 text-slate-200">{guia.validade_senha ?? '-'}</td>
                         <td className="px-4 py-4">

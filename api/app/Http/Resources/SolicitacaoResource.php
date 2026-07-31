@@ -27,9 +27,57 @@ class SolicitacaoResource extends JsonResource
                 'nome' => $this->paciente->nome,
                 'carteirinha' => $this->paciente->carteirinha,
             ]),
+            'convenio' => $this->whenLoaded('convenio', fn () => [
+                'id' => $this->convenio->id,
+                'nome' => $this->convenio->nome,
+                'connector_type' => $this->convenio->connector_type,
+                'connector_driver' => $this->convenio->connector_driver,
+            ]),
             'guia' => $this->relationLoaded('guia') && $this->guia
                 ? GuiaResource::make($this->guia)
                 : null,
+            'itens' => $this->whenLoaded('itens', fn () => $this->itens->map(fn ($item) => [
+                'id' => $item->id,
+                'especialidade_id' => $item->especialidade_id,
+                'profissional_id' => $item->profissional_id,
+                'quantidade' => $item->quantidade,
+                'status_operacional' => $item->status_operacional,
+                'observacoes' => $item->observacoes,
+                'guia_id' => $item->relationLoaded('guia') && $item->guia ? $item->guia->id : null,
+                'automacao_execucao_ativa' => $item->relationLoaded('automacaoExecucoes')
+                    ? $item->automacaoExecucoes
+                        ->whereIn('status', ['queued', 'running', 'uncertain'])
+                        ->sortByDesc('id')
+                        ->map(fn ($execucao) => [
+                            'id' => $execucao->id,
+                            'operacao' => $execucao->operacao,
+                            'status' => $execucao->status,
+                            'queued_at' => $execucao->queued_at?->toISOString(),
+                        ])
+                        ->first()
+                    : null,
+                'especialidade' => $item->relationLoaded('especialidade') && $item->especialidade ? [
+                    'id' => $item->especialidade->id,
+                    'nome' => $item->especialidade->nome,
+                ] : null,
+                'profissional' => $item->relationLoaded('profissional') && $item->profissional ? [
+                    'id' => $item->profissional->id,
+                    'nome' => $item->profissional->nome,
+                ] : null,
+                'documentos' => $item->relationLoaded('documentos') ? $item->documentos->map(fn ($documento) => [
+                    'id' => $documento->id,
+                    'tipo' => $documento->tipo,
+                    'nome_original' => $documento->nome_original,
+                    'mime' => $documento->mime,
+                ])->values() : [],
+            ])->values()),
+            'documentos' => $this->whenLoaded('documentos', fn () => $this->documentos->map(fn ($documento) => [
+                'id' => $documento->id,
+                'solicitacao_item_id' => $documento->solicitacao_item_id,
+                'tipo' => $documento->tipo,
+                'nome_original' => $documento->nome_original,
+                'mime' => $documento->mime,
+            ])->values()),
             'status' => $this->status,
             'solicitado_em' => $this->solicitado_em?->toDateString(),
             'observacoes' => $this->observacoes,

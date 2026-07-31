@@ -28,6 +28,7 @@ const emptyForm: SolicitacaoForm = {
   paciente_id: '',
   profissional_id: '',
   especialidade_id: '',
+  quantidade: '10',
   convenio_id: '',
   medico_id: '',
   solicitado_em: new Date().toISOString().slice(0, 10),

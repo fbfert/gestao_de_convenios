@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\AutomacaoController;
 use App\Http\Controllers\AntecipacaoController;
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\DashboardController;
@@ -23,6 +24,7 @@ use App\Http\Controllers\PacienteController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\SolicitacaoController;
 use App\Http\Controllers\ProfissionalController;
+use App\Http\Controllers\UnimedSettingsController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -35,6 +37,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index']);
     Route::get('/auditoria', [AuditController::class, 'index'])->middleware('permission:dashboard.auditoria');
+    Route::get('/automacoes', [AutomacaoController::class, 'index']);
+    Route::get('/automacoes/{automacaoExecucao}', [AutomacaoController::class, 'show']);
+    Route::post('/automacoes/{automacaoExecucao}/reprocessar', [AutomacaoController::class, 'reprocessar']);
 
     Route::get('/manual/{tipo?}', [ManualController::class, 'show'])->where('tipo', 'manual|mapa-mental');
     Route::put('/manual/{tipo?}', [ManualController::class, 'update'])->middleware('permission:manual.manage')->where('tipo', 'manual|mapa-mental');
@@ -47,6 +52,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/configuracoes/ia', [AiSettingsController::class, 'show'])->middleware('permission:configuracoes.manage');
     Route::put('/configuracoes/ia', [AiSettingsController::class, 'update'])->middleware('permission:configuracoes.manage');
     Route::get('/configuracoes/ia/modelos', [AiSettingsController::class, 'models'])->middleware('permission:configuracoes.manage');
+    Route::get('/configuracoes/unimed', [UnimedSettingsController::class, 'show'])->middleware('permission:configuracoes.manage');
+    Route::put('/configuracoes/unimed', [UnimedSettingsController::class, 'update'])->middleware('permission:configuracoes.manage');
+    Route::get('/configuracoes/unimed/worker-health', [UnimedSettingsController::class, 'health'])->middleware('permission:configuracoes.manage');
+    Route::post('/configuracoes/unimed/reativar', [UnimedSettingsController::class, 'reativar'])->middleware('permission:configuracoes.manage');
 
     Route::get('/pacientes', [PacienteController::class, 'index']);
     Route::get('/pacientes/{paciente}', [PacienteController::class, 'show']);
@@ -91,12 +100,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/solicitacoes/{solicitacao}/status', [SolicitacaoController::class, 'updateStatus']);
     Route::patch('/solicitacoes/{solicitacao}/aprovar', [SolicitacaoController::class, 'aprovar']);
     Route::patch('/solicitacoes/{solicitacao}/negar', [SolicitacaoController::class, 'negar']);
+    Route::post('/solicitacao-itens/{solicitacaoItem}/enviar-unimed', [SolicitacaoController::class, 'enviarItemUnimed']);
 
     Route::get('/guias', [GuiaController::class, 'index']);
     Route::post('/guias', [GuiaController::class, 'store']);
     Route::get('/guias/{guia}', [GuiaController::class, 'show']);
     Route::patch('/guias/{guia}/finalizar', [GuiaController::class, 'finalizar']);
     Route::patch('/guias/{guia}/negar', [GuiaController::class, 'negar']);
+    Route::post('/guias/{guia}/consultar-unimed', [GuiaController::class, 'consultarUnimed']);
 
     Route::get('/antecipacoes', [AntecipacaoController::class, 'index']);
     Route::get('/antecipacoes/{antecipacao}', [AntecipacaoController::class, 'show']);

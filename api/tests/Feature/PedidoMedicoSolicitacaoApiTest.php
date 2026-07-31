@@ -72,9 +72,16 @@ class PedidoMedicoSolicitacaoApiTest extends TestCase
 
         $create = $this->postJson('/api/solicitacoes', $payload)
             ->assertCreated()
-            ->assertJsonPath('data.pedido_medico.nome_original', 'pedido-medico.jpg');
+            ->assertJsonPath('data.pedido_medico.nome_original', 'pedido-medico.jpg')
+            ->assertJsonPath('data.documentos.0.tipo', 'pedido_medico');
 
         $id = $create->json('data.id');
+        $this->assertDatabaseHas('solicitacao_documentos', [
+            'solicitacao_id' => $id,
+            'tipo' => 'pedido_medico',
+            'nome_original' => 'pedido-medico.jpg',
+        ]);
+
         $this->getJson("/api/solicitacoes/{$id}")
             ->assertOk()
             ->assertJsonPath('data.pedido_medico.mime', 'image/jpeg');

@@ -20,6 +20,12 @@ export type Solicitacao = {
     nome: string
     carteirinha: string
   }
+  convenio?: {
+    id: number
+    nome: string
+    connector_type: string | null
+    connector_driver: 'unimed_rda' | null
+  }
   status: string
   solicitado_em: string
   observacoes: string | null
@@ -28,7 +34,42 @@ export type Solicitacao = {
     mime: string | null
     url: string
   } | null
+  itens?: SolicitacaoItem[]
+  documentos?: SolicitacaoDocumento[]
   guia?: Guia | null
+}
+
+export type SolicitacaoItem = {
+  id: number
+  especialidade_id: number
+  profissional_id: number
+  quantidade: number
+  status_operacional: string
+  observacoes: string | null
+  guia_id?: number | null
+  automacao_execucao_ativa?: {
+    id: number
+    operacao: string
+    status: string
+    queued_at: string | null
+  } | null
+  especialidade?: {
+    id: number
+    nome: string
+  } | null
+  profissional?: {
+    id: number
+    nome: string
+  } | null
+  documentos?: SolicitacaoDocumento[]
+}
+
+export type SolicitacaoDocumento = {
+  id: number
+  solicitacao_item_id?: number | null
+  tipo: string
+  nome_original: string
+  mime: string | null
 }
 
 export type PaginatedResponse<T> = {
@@ -59,6 +100,7 @@ export type SolicitacaoForm = {
   paciente_id: string
   profissional_id: string
   especialidade_id: string
+  quantidade: string
   convenio_id: string
   medico_id: string
   solicitado_em: string
@@ -67,6 +109,14 @@ export type SolicitacaoForm = {
   pedido_medico_nome_original?: string
   pedido_medico_mime?: string
   pedido_medico_ai_result?: PedidoMedicoAiResult
+  itens?: SolicitacaoFormItem[]
+}
+
+export type SolicitacaoFormItem = {
+  especialidade_id: string
+  profissional_id: string
+  quantidade: string
+  observacoes?: string
 }
 
 export type PedidoMedicoSuggestion = {

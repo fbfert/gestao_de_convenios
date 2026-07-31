@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\Guia;
+use App\Models\AutomacaoExecucao;
 use App\Models\Antecipacao;
 use App\Models\ConciliacaoFinanceira;
 use App\Models\Convenio;
@@ -13,7 +14,10 @@ use App\Models\Medico;
 use App\Models\Lancamento;
 use App\Models\Paciente;
 use App\Models\Solicitacao;
+use App\Models\SolicitacaoItem;
 use App\Models\User;
+use App\Services\Automation\HttpUnimedWorkerClient;
+use App\Services\Automation\UnimedWorkerClient;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Route;
 use Spatie\Permission\Models\Role;
@@ -25,7 +29,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(UnimedWorkerClient::class, HttpUnimedWorkerClient::class);
     }
 
     /**
@@ -56,10 +60,28 @@ class AppServiceProvider extends ServiceProvider
                 ->firstOrFail();
         });
 
+        Route::bind('solicitacaoItem', function ($value) {
+            $tenantId = request()->user()?->tenant_id;
+
+            return SolicitacaoItem::query()
+                ->where('tenant_id', $tenantId)
+                ->whereKey($value)
+                ->firstOrFail();
+        });
+
         Route::bind('guia', function ($value) {
             $tenantId = request()->user()?->tenant_id;
 
             return Guia::query()
+                ->where('tenant_id', $tenantId)
+                ->whereKey($value)
+                ->firstOrFail();
+        });
+
+        Route::bind('automacaoExecucao', function ($value) {
+            $tenantId = request()->user()?->tenant_id;
+
+            return AutomacaoExecucao::query()
                 ->where('tenant_id', $tenantId)
                 ->whereKey($value)
                 ->firstOrFail();

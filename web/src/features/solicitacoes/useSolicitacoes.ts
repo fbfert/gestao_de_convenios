@@ -33,6 +33,17 @@ export function useCriarSolicitacao() {
 
   return useMutation({
     mutationFn: async (payload: SolicitacaoForm) => {
+      const itens = payload.itens?.length
+        ? payload.itens
+        : [
+            {
+              especialidade_id: payload.especialidade_id,
+              profissional_id: payload.profissional_id,
+              quantidade: payload.quantidade || '10',
+              observacoes: undefined,
+            },
+          ]
+
       const { data } = await apiClient.post<{ data: Solicitacao }>('/solicitacoes', {
         ...payload,
         paciente_id: Number(payload.paciente_id),
@@ -40,6 +51,12 @@ export function useCriarSolicitacao() {
         especialidade_id: Number(payload.especialidade_id),
         convenio_id: Number(payload.convenio_id),
         medico_id: Number(payload.medico_id),
+        itens: itens.map((item) => ({
+          especialidade_id: Number(item.especialidade_id),
+          profissional_id: Number(item.profissional_id),
+          quantidade: item.quantidade ? Number(item.quantidade) : undefined,
+          observacoes: item.observacoes || undefined,
+        })),
       })
 
       return data.data
@@ -152,6 +169,29 @@ export function useAtualizarStatusSolicitacao() {
       const { data } = await apiClient.patch<{ data: Solicitacao }>(`/solicitacoes/${id}/status`, {
         status,
       })
+      return data.data
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['solicitacoes'] })
+    },
+  })
+}
+
+export function useEnviarItemUnimed() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (itemId: number) => {
+      const { data } = await apiClient.post<{
+        data: {
+          id: number
+          status: string
+          operacao: string
+          solicitacao_item_id: number
+          queued_at: string | null
+        }
+      }>(`/solicitacao-itens/${itemId}/enviar-unimed`)
+
       return data.data
     },
     onSuccess: async () => {

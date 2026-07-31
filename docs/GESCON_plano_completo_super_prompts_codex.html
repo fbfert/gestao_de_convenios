@@ -1,0 +1,2314 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GESCON — Plano Completo e Super Prompts Codex</title>
+<style>
+:root{--bg:#07111f;--panel:#0d1b2d;--panel2:#10233a;--text:#eaf2fb;--muted:#9db0c7;--line:#24415f;--accent:#36c5d8;--accent2:#7dd3fc;--ok:#62d59b;--warn:#f4c95d;--danger:#fb7185}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:linear-gradient(180deg,#06101c,#0a1727 45%,#08121e);color:var(--text);font:15px/1.58 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.wrap{max-width:1280px;margin:auto;padding:32px 22px 72px}.hero,.card,.stage,.prompt-card{border:1px solid var(--line);background:rgba(13,27,45,.94);border-radius:22px}
+.hero{padding:30px;background:radial-gradient(circle at 90% 0,rgba(54,197,216,.20),transparent 32%),linear-gradient(145deg,rgba(255,255,255,.045),rgba(255,255,255,.012));box-shadow:0 20px 60px rgba(0,0,0,.24)}
+.eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:.24em;color:var(--accent2);font-weight:800}h1{font-size:38px;line-height:1.12;margin:8px 0 12px}h2{font-size:26px;margin:0 0 12px}h3{font-size:19px;margin:0 0 8px}h4{margin:0 0 6px}
+p{margin:8px 0}.muted{color:var(--muted)}section{margin-top:32px}.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.card{padding:18px}
+.toc{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}.toc a{color:var(--text);text-decoration:none;border:1px solid var(--line);background:rgba(255,255,255,.035);padding:8px 12px;border-radius:999px}.toc a:hover{border-color:var(--accent)}
+.callout{border-left:4px solid var(--accent);background:rgba(54,197,216,.08);padding:14px 16px;border-radius:11px;margin:14px 0}.warn{border-left-color:var(--warn);background:rgba(244,201,93,.08)}.ok{border-left-color:var(--ok);background:rgba(98,213,155,.08)}.danger{border-left-color:var(--danger);background:rgba(251,113,133,.08)}
+table{width:100%;border-collapse:collapse;margin-top:14px}th,td{border:1px solid var(--line);padding:11px;vertical-align:top}th{background:#0d2137;color:#d6f6fb;text-align:left}td{background:#0a1828}
+.flow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:16px 0}.node{border:1px solid #2d5573;background:#0a1d31;border-radius:13px;padding:10px 13px;font-weight:700}.arrow{color:var(--accent2);font-size:20px;font-weight:900}
+.stage{display:grid;grid-template-columns:72px 1fr;gap:16px;padding:18px;margin:14px 0}.stage-num{width:58px;height:58px;border-radius:16px;display:flex;align-items:center;justify-content:center;background:rgba(54,197,216,.15);border:1px solid rgba(54,197,216,.42);font-size:22px;font-weight:900}
+ul{margin:8px 0 0 20px;padding:0}li{margin:5px 0}code{background:#071321;border:1px solid #1e3953;border-radius:7px;padding:2px 6px;color:#bfeef5}.badge{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:3px 8px;color:#c9deef;font-size:12px;margin-right:4px}
+.prompt-card{margin:18px 0;overflow:hidden}.prompt-head{padding:18px 20px;border-bottom:1px solid var(--line);display:flex;gap:12px;align-items:center;justify-content:space-between;background:rgba(255,255,255,.025)}.prompt-body{padding:18px}.prompt-text{white-space:pre-wrap;word-break:break-word;background:#050d17;border:1px solid #1c354d;border-radius:16px;padding:18px;color:#dceaf6;font:13px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;max-height:680px;overflow:auto}
+button{border:1px solid #2d5573;background:#0b2034;color:#fff;border-radius:11px;padding:9px 12px;font-weight:800;cursor:pointer}button.primary{background:#23b7c9;color:#041016;border-color:#61d9e6}.small{font-size:12px;padding:7px 10px}.actions{display:flex;gap:9px;flex-wrap:wrap;margin:18px 0}.search{width:100%;padding:12px 14px;border-radius:13px;border:1px solid #2b4c6d;background:#071321;color:#fff;margin-top:12px}
+.footer{margin-top:40px;color:var(--muted);text-align:center;font-size:13px}
+@media(max-width:900px){.grid2,.grid3{grid-template-columns:1fr}.stage{grid-template-columns:1fr}.stage-num{width:48px;height:48px}h1{font-size:31px}}
+@media print{body{background:#fff;color:#111}.wrap{max-width:none;padding:10mm}.hero,.card,.stage,.prompt-card,td,th{background:#fff;color:#111;border-color:#bbb;box-shadow:none}.muted,.footer{color:#555}.actions,.copy-btn,.search,.toc{display:none}.prompt-text{max-height:none;overflow:visible;background:#f8f8f8;color:#111;border-color:#ccc;font-size:10px}.prompt-card{break-before:page}.badge{color:#333;border-color:#aaa}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+  <div class="eyebrow">GESCON · Gestão de Convênios · Automações Unimed</div>
+  <h1>Plano completo de implementação + Super Prompts para Codex</h1>
+  <p class="muted">Documento operacional consolidado após a análise das decisões do projeto. Deve ser executado sequencialmente, uma etapa por vez, sempre com homologação antes de avançar.</p>
+  <div class="grid3" style="margin-top:18px">
+    <div class="card"><h3>Baseline consultado</h3><p><code>6a30f787c6da</code></p><p class="muted">Separar CRUD de templates de email</p></div>
+    <div class="card"><h3>Arquitetura</h3><p>Laravel + Queue Database + serviço Node/Playwright na mesma VPS.</p></div>
+    <div class="card"><h3>Política de execução</h3><p>Codex trabalha uma etapa por vez e não faz commit sem ordem expressa.</p></div>
+  </div>
+  <div class="toc">
+    <a href="#decisoes">Decisões finais</a>
+    <a href="#arquitetura">Arquitetura</a>
+    <a href="#ordem">Ordem de execução</a>
+    <a href="#regras">Regras globais</a>
+    <a href="#prompts">Super Prompts</a>
+  </div>
+</header>
+
+<div class="actions">
+<button class="primary" onclick="window.print()">Imprimir / Salvar PDF</button>
+<button onclick="expandAll()">Expandir prompts</button>
+<button onclick="collapseAll()">Compactar prompts</button>
+</div>
+
+<section id="decisoes">
+<div class="eyebrow">Fonte de verdade</div><h2>Matriz consolidada de decisões</h2>
+<div class="callout ok">A matriz abaixo já incorpora as respostas dadas e a resolução técnica adotada para a questão de falhas: problemas individuais interrompem somente a Guia; problemas estruturais podem interromper o lote e pausar o conector.</div>
+<table>
+<thead><tr><th>#</th><th>Decisão</th><th>Resultado final</th><th>Observação operacional</th></tr></thead>
+<tbody>
+<tr><td>1</td><td><strong>Infraestrutura Playwright</strong></td><td>Mesma VPS do GESCON; serviço Node/Playwright separado.</td><td>Worker apenas local; supervisão por systemd/Supervisor.</td></tr><tr><td>2</td><td><strong>Fila</strong></td><td>Laravel Queue com driver database.</td><td>Jobs persistidos; worker de fila separado.</td></tr><tr><td>3</td><td><strong>Credenciais</strong></td><td>Uma credencial Unimed por tenant; edição somente administrativa.</td><td>Senha criptografada; nunca retornada/logada.</td></tr><tr><td>4</td><td><strong>Modelo</strong></td><td>1 Solicitação → N Itens; cada item = 1 especialidade + 1 profissional → 1 Guia.</td><td>Compatibilidade gradual com dados legados.</td></tr><tr><td>5</td><td><strong>Quantidade</strong></td><td>Campo por item, padrão 10.</td><td>Sem hardcode na automação.</td></tr><tr><td>6</td><td><strong>Automação 1</strong></td><td>Disparo manual inicialmente: “Enviar para Unimed”.</td><td>Pode ser automatizada no futuro após homologação.</td></tr><tr><td>7</td><td><strong>Scripts 2/3</strong></td><td>Ciclo de 24h + ações manuais.</td><td>Implementar por elegibilidade &#x27;due&#x27;, sem inventar horário fixo.</td></tr><tr><td>8</td><td><strong>Falhas</strong></td><td>Erro individual para somente a Guia; erro estrutural pode parar o lote.</td><td>Registrar tudo; avisar operador.</td></tr><tr><td>9</td><td><strong>Codex</strong></td><td>Uma etapa por vez; testes/lint/build; commit somente com comando expresso.</td><td>Os prompts deste documento não fazem commit.</td></tr><tr><td>10</td><td><strong>Guia por item</strong></td><td>Sim, cada item/especialidade gera Guia separada.</td><td>Uma Guia por solicitacao_item.</td></tr><tr><td>11</td><td><strong>Documentos</strong></td><td>Pedido Médico obrigatório; Laudo opcional; Plano/Relatório opcionais por item.</td><td>Nenhum documento adicional obrigatório específico por especialidade.</td></tr><tr><td>12</td><td><strong>Portal alterado</strong></td><td>Interromper, registrar, avisar operador e pausar automações automáticas do conector.</td><td>Reativação administrativa após correção.</td></tr><tr><td>13</td><td><strong>Reprocessamento</strong></td><td>Idempotência; resultado incerto exige consulta antes de reenviar; sempre avisar operador.</td><td>Nunca retry cego após Finalizar/Gerar Guia.</td></tr>
+</tbody>
+</table>
+</section>
+
+<section id="arquitetura">
+<div class="eyebrow">Arquitetura-alvo</div><h2>Separação de responsabilidades</h2>
+<div class="flow">
+  <div class="node">React / Operador</div><div class="arrow">→</div>
+  <div class="node">Laravel API</div><div class="arrow">→</div>
+  <div class="node">Queue Database</div><div class="arrow">→</div>
+  <div class="node">Laravel Job</div><div class="arrow">→</div>
+  <div class="node">Worker Node / Playwright</div><div class="arrow">→</div>
+  <div class="node">Portal Unimed RDA</div>
+</div>
+<div class="grid2">
+<div class="card"><h3>Laravel é a fonte de verdade</h3><ul><li>Banco e domínio.</li><li>Credenciais criptografadas.</li><li>Permissões e tenant.</li><li>Filas e scheduler.</li><li>Criação/atualização de Guia.</li><li>Auditoria e relatórios.</li></ul></div>
+<div class="card"><h3>Worker é executor de navegador</h3><ul><li>Não acessa banco diretamente.</li><li>Não persiste credenciais.</li><li>Recebe operação e dados em memória.</li><li>Devolve resultado estruturado.</li><li>Captura evidências privadas em falha.</li><li>Não usa dynaHash hardcoded.</li></ul></div>
+</div>
+<div class="callout warn"><strong>Regra crítica de idempotência:</strong> depois de “Finalizar e Gerar guia”, timeout ou resposta ambígua nunca autoriza reenvio automático. O sistema deve primeiro verificar se a Guia já foi criada na Unimed.</div>
+</section>
+
+<section id="ordem">
+<div class="eyebrow">Sequência</div><h2>Ordem obrigatória de implementação</h2>
+<p class="muted">Não execute a etapa seguinte até homologar a anterior. O número 0 é preflight e não altera comportamento.</p>
+<div class="stage"><div class="stage-num">0</div><div><h3>Etapa 0 — Preflight e congelamento técnico</h3><p>Confirmar o estado real do repositório, mapear impactos e produzir a especificação técnica final sem alterar comportamento da aplicação.</p><span class="badge">Homologar antes de avançar</span></div></div><div class="stage"><div class="stage-num">1</div><div><h3>Etapa 1 — Fundação do modelo de dados</h3><p>Criar a base relacional para Solicitações com múltiplos itens, documentos, mapeamentos por convênio e novos dados de Guias, sem quebrar o fluxo atual.</p><span class="badge">Homologar antes de avançar</span></div></div><div class="stage"><div class="stage-num">2</div><div><h3>Etapa 2 — Solicitações, itens, documentos e carteirinha</h3><p>Migrar o uso operacional das Solicitações para múltiplos itens e documentos, incluindo o cadastro adequado da carteirinha Unimed.</p><span class="badge">Homologar antes de avançar</span></div></div><div class="stage"><div class="stage-num">3</div><div><h3>Etapa 3 — Configurações e segurança da Unimed</h3><p>Adicionar credenciais Unimed por tenant, vínculo seguro ao convênio e auditoria de alterações.</p><span class="badge">Homologar antes de avançar</span></div></div><div class="stage"><div class="stage-num">4</div><div><h3>Etapa 4 — Motor de automação e worker Playwright</h3><p>Criar a infraestrutura local Laravel ↔ worker Node/Playwright, filas, execuções e eventos, ainda sem implementar todo o fluxo real da Guia.</p><span class="badge">Homologar antes de avançar</span></div></div><div class="stage"><div class="stage-num">5</div><div><h3>Etapa 5 — Automação 1: gerar Guia Unimed</h3><p>Implementar o fluxo real de envio de cada item de Solicitação à Unimed e criar a Guia local somente após a execução correspondente.</p><span class="badge">Homologar antes de avançar</span></div></div><div class="stage"><div class="stage-num">6</div><div><h3>Etapa 6 — Revisão completa do módulo de Guias</h3><p>Adequar listagem, detalhes e ações de Guias ao novo fluxo e corrigir inconsistências de exibição.</p><span class="badge">Homologar antes de avançar</span></div></div><div class="stage"><div class="stage-num">7</div><div><h3>Etapa 7 — Automação 2: consultar status</h3><p>Consultar diariamente e sob demanda o status das Guias na Unimed, atualizando o sistema com rastreabilidade.</p><span class="badge">Homologar antes de avançar</span></div></div><div class="stage"><div class="stage-num">8</div><div><h3>Etapa 8 — Automação 3: capturar senha e validade</h3><p>Buscar senha e validade de Guias aprovadas que ainda estejam incompletas, de modo diário e manual.</p><span class="badge">Homologar antes de avançar</span></div></div><div class="stage"><div class="stage-num">9</div><div><h3>Etapa 9 — Relatórios, auditoria, avisos e reprocessamento</h3><p>Entregar uma área operacional de acompanhamento das automações, com logs imutáveis e reprocessamento seguro.</p><span class="badge">Homologar antes de avançar</span></div></div><div class="stage"><div class="stage-num">10</div><div><h3>Etapa 10 — Robustez, scheduler e observabilidade</h3><p>Endurecer o conector para produção: circuit breaker, classificação de falhas, retenção, saúde do worker e agendamento confiável.</p><span class="badge">Homologar antes de avançar</span></div></div><div class="stage"><div class="stage-num">11</div><div><h3>Etapa 11 — Homologação, regressão e entrada em produção</h3><p>Validar o conjunto completo, corrigir somente defeitos do escopo, documentar rollback e preparar a liberação.</p><span class="badge">Homologar antes de avançar</span></div></div>
+</section>
+
+<section id="regras">
+<div class="eyebrow">Governança Codex</div><h2>Regras globais incorporadas em todos os prompts</h2>
+<div class="card"><pre class="prompt-text" style="max-height:none">REGRAS GERAIS OBRIGATÓRIAS PARA TODAS AS ETAPAS
+
+1. Repositório: https://github.com/fbfert/gestao_de_convenios
+2. Antes de modificar qualquer arquivo:
+   - leia a estrutura atual do repositório;
+   - leia os arquivos diretamente envolvidos;
+   - leia as decisões/ADRs existentes;
+   - confirme a branch e o HEAD atual;
+   - não faça reset para um commit antigo.
+3. A referência de estado no momento da elaboração deste plano é o commit
+   6a30f787c6da718c4c9675f3b573497fce2d708e (&quot;Separar CRUD de templates de email&quot;).
+   Se o HEAD estiver mais novo, trabalhe sobre o HEAD atual e relate a diferença.
+4. Stack atual a preservar:
+   - Laravel 11 / PHP 8.2;
+   - Laravel Sanctum;
+   - Spatie Laravel Permission com isolamento por tenant;
+   - React 19 + TypeScript + Vite;
+   - TanStack Query, Axios, Zustand e Tailwind;
+   - Playwright já existente para E2E do frontend.
+5. Preserve rigorosamente o multi-tenancy. Todo dado de negócio novo deve ser isolado
+   por tenant e seguir as convenções já existentes (TenantContext, BelongsToTenant,
+   TenantScope, bindings, validações e permissões).
+6. Não confie apenas em route-model-binding implícito para recursos multi-tenant.
+   Use o padrão seguro já adotado no projeto.
+7. Não introduza segredo em logs, responses, screenshots, fixtures ou commits.
+8. Senhas e tokens devem ser criptografados em repouso e nunca retornados ao frontend.
+9. Não hardcode URLs com dynaHash da Unimed. Os dynaHash são temporários e pertencem
+   à sessão corrente. Navegue pelos elementos e hrefs gerados pelo próprio portal.
+10. Não use sleeps fixos como estratégia principal. Espere por estados reais do DOM,
+    navegação, respostas, desaparecimento de &quot;Processando&quot; e presença de elementos-alvo.
+11. A Automação 1 NÃO pode ter retry cego depois de uma ação que possa ter gerado guia.
+    Em timeout ou resposta ambígua, classifique como resultado_incerto e execute primeiro
+    uma verificação idempotente antes de permitir novo envio.
+12. Trabalhe APENAS na etapa solicitada. Não antecipe etapas seguintes.
+13. Preserve funcionalidades existentes que não fazem parte do escopo da etapa.
+14. Faça migrations reversíveis e evite alterações destrutivas sem necessidade.
+15. Antes de terminar:
+    - execute os testes pertinentes;
+    - execute lint/build pertinentes;
+    - corrija falhas causadas pela etapa;
+    - informe testes que não puderam ser executados e o motivo.
+16. Não faça commit, push, merge ou criação de PR. Ao final apenas sugira uma mensagem
+    de commit. Um commit somente poderá ser feito quando houver instrução expressa posterior.
+17. Ao finalizar, responda com:
+    a) resumo do que foi implementado;
+    b) arquivos criados/alterados;
+    c) migrations;
+    d) decisões técnicas tomadas;
+    e) testes executados e resultados;
+    f) riscos/pendências;
+    g) checklist de homologação manual;
+    h) mensagem de commit sugerida.</pre></div>
+</section>
+
+<section id="prompts">
+<div class="eyebrow">Execução por etapas</div><h2>Super Prompts completos</h2>
+<p class="muted">Copie somente o prompt da etapa que será executada. Depois de o Codex terminar, faça a homologação manual indicada antes de seguir.</p>
+<input class="search" id="search" placeholder="Filtrar etapas por palavra-chave..." oninput="filterPrompts()">
+
+    <article class="prompt-card prompt-item" data-search="etapa 0 — preflight e congelamento técnico confirmar o estado real do repositório, mapear impactos e produzir a especificação técnica final sem alterar comportamento da aplicação.">
+      <div class="prompt-head">
+        <div>
+          <div class="eyebrow">Super prompt 0</div>
+          <h3>Etapa 0 — Preflight e congelamento técnico</h3>
+          <p class="muted">Confirmar o estado real do repositório, mapear impactos e produzir a especificação técnica final sem alterar comportamento da aplicação.</p>
+        </div>
+        <button class="copy-btn small" onclick="copyPrompt('prompt-0', this)">Copiar prompt</button>
+      </div>
+      <div class="prompt-body">
+        <h4>Entregáveis esperados</h4>
+        <ul><li>Inventário do estado atual do backend, frontend, banco, permissões, filas e conectores.</li><li>Mapa de impacto dos módulos Solicitações, Guias, Pacientes, Especialidades, Profissionais e Configurações.</li><li>Documento de preflight com riscos, dependências e ordem das migrations.</li><li>Baseline de testes/lint/build antes das alterações.</li></ul>
+        <pre id="prompt-0" class="prompt-text">Você é o Codex atuando como arquiteto de software sênior e engenheiro full-stack responsável pelo preflight do projeto GESCON.
+
+REGRAS GERAIS OBRIGATÓRIAS PARA TODAS AS ETAPAS
+
+1. Repositório: https://github.com/fbfert/gestao_de_convenios
+2. Antes de modificar qualquer arquivo:
+   - leia a estrutura atual do repositório;
+   - leia os arquivos diretamente envolvidos;
+   - leia as decisões/ADRs existentes;
+   - confirme a branch e o HEAD atual;
+   - não faça reset para um commit antigo.
+3. A referência de estado no momento da elaboração deste plano é o commit
+   6a30f787c6da718c4c9675f3b573497fce2d708e (&quot;Separar CRUD de templates de email&quot;).
+   Se o HEAD estiver mais novo, trabalhe sobre o HEAD atual e relate a diferença.
+4. Stack atual a preservar:
+   - Laravel 11 / PHP 8.2;
+   - Laravel Sanctum;
+   - Spatie Laravel Permission com isolamento por tenant;
+   - React 19 + TypeScript + Vite;
+   - TanStack Query, Axios, Zustand e Tailwind;
+   - Playwright já existente para E2E do frontend.
+5. Preserve rigorosamente o multi-tenancy. Todo dado de negócio novo deve ser isolado
+   por tenant e seguir as convenções já existentes (TenantContext, BelongsToTenant,
+   TenantScope, bindings, validações e permissões).
+6. Não confie apenas em route-model-binding implícito para recursos multi-tenant.
+   Use o padrão seguro já adotado no projeto.
+7. Não introduza segredo em logs, responses, screenshots, fixtures ou commits.
+8. Senhas e tokens devem ser criptografados em repouso e nunca retornados ao frontend.
+9. Não hardcode URLs com dynaHash da Unimed. Os dynaHash são temporários e pertencem
+   à sessão corrente. Navegue pelos elementos e hrefs gerados pelo próprio portal.
+10. Não use sleeps fixos como estratégia principal. Espere por estados reais do DOM,
+    navegação, respostas, desaparecimento de &quot;Processando&quot; e presença de elementos-alvo.
+11. A Automação 1 NÃO pode ter retry cego depois de uma ação que possa ter gerado guia.
+    Em timeout ou resposta ambígua, classifique como resultado_incerto e execute primeiro
+    uma verificação idempotente antes de permitir novo envio.
+12. Trabalhe APENAS na etapa solicitada. Não antecipe etapas seguintes.
+13. Preserve funcionalidades existentes que não fazem parte do escopo da etapa.
+14. Faça migrations reversíveis e evite alterações destrutivas sem necessidade.
+15. Antes de terminar:
+    - execute os testes pertinentes;
+    - execute lint/build pertinentes;
+    - corrija falhas causadas pela etapa;
+    - informe testes que não puderam ser executados e o motivo.
+16. Não faça commit, push, merge ou criação de PR. Ao final apenas sugira uma mensagem
+    de commit. Um commit somente poderá ser feito quando houver instrução expressa posterior.
+17. Ao finalizar, responda com:
+    a) resumo do que foi implementado;
+    b) arquivos criados/alterados;
+    c) migrations;
+    d) decisões técnicas tomadas;
+    e) testes executados e resultados;
+    f) riscos/pendências;
+    g) checklist de homologação manual;
+    h) mensagem de commit sugerida.
+
+OBJETIVO DA ETAPA 0
+Não implementar funcionalidades novas. Fazer uma leitura profunda do repositório atual e produzir um plano técnico de execução validado contra o código real.
+
+DECISÕES DE NEGÓCIO JÁ FECHADAS
+- Worker Playwright: mesma VPS, serviço Node separado.
+- Fila: Laravel Queue com driver database.
+- Credenciais Unimed: uma por tenant; edição somente administrativa.
+- Modelo futuro: 1 Solicitação -&gt; N Itens; cada item possui 1 especialidade + 1 profissional; cada item gera sua própria Guia.
+- Quantidade solicitada: campo por item, padrão 10.
+- Automação 1: disparo manual inicialmente por botão &quot;Enviar para Unimed&quot;.
+- Scripts 2 e 3: ciclo de 24 horas e ação manual disponível.
+- Falha de uma Guia: interrompe aquela Guia e continua as demais.
+- Falha estrutural/sistêmica (login inválido, portal indisponível, sessão irrecuperável, mudança estrutural): pode interromper o lote.
+- Pedido Médico: obrigatório em nível da Solicitação.
+- Laudo Médico: opcional.
+- Plano Individualizado e Relatório de Evolução: opcionais e vinculáveis ao item/especialidade.
+- Não existem documentos adicionais obrigatórios específicos por especialidade neste momento.
+- Mudança estrutural no portal: interromper, registrar e informar claramente o operador.
+- Idempotência: obrigatória; em resultado ambíguo não reenviar antes de consultar a Unimed; sempre informar o operador.
+
+TAREFAS
+1. Inspecione:
+   - routes/api.php;
+   - bootstrap/app.php;
+   - AppServiceProvider e bindings;
+   - Models Solicitacao, Guia, Paciente, Especialidade, Profissional, Convenio, Medico;
+   - Services SolicitacaoService, GuiaService, ConnectorResolver, conectores e jobs;
+   - migrations atuais relacionadas;
+   - Resources/Requests correspondentes;
+   - frontend de Solicitações, Guias, Pacientes, Especialidades, Profissionais e Configurações;
+   - permissões/roles/seeders;
+   - scripts de testes do backend e frontend.
+2. Confirme e documente o comportamento atual que cria Guia a partir da aprovação da Solicitação.
+3. Confirme quais colunas atuais são obrigatórias e quais precisarão tornar-se nullable ou ser preservadas temporariamente.
+4. Identifique como migrar dados legados sem perder Solicitações, Guias ou documentos já existentes.
+5. Identifique o melhor local para os novos models, services, requests e resources seguindo as convenções reais do projeto.
+6. Liste riscos de regressão e dependências entre as etapas 1 a 11.
+7. Rode a suíte de testes existente, lint e build disponíveis, sem corrigir problemas preexistentes fora do escopo. Apenas registre o baseline.
+8. Crie ou atualize SOMENTE um documento técnico em:
+   docs/automacao-unimed/00-preflight.md
+   Se a pasta não existir, crie-a.
+9. Não altere migrations, models, controllers, frontend ou comportamento nesta etapa.
+
+CRITÉRIOS DE ACEITE
+- Nenhuma mudança funcional.
+- Documento de preflight fundamentado no código atual.
+- Baseline de testes registrado.
+- Lista explícita de arquivos que provavelmente serão tocados nas próximas etapas.
+- Identificação de incompatibilidades entre o plano e o código atual.
+
+NÃO FAÇA COMMIT.</pre>
+      </div>
+    </article>
+    
+    <article class="prompt-card prompt-item" data-search="etapa 1 — fundação do modelo de dados criar a base relacional para solicitações com múltiplos itens, documentos, mapeamentos por convênio e novos dados de guias, sem quebrar o fluxo atual.">
+      <div class="prompt-head">
+        <div>
+          <div class="eyebrow">Super prompt 1</div>
+          <h3>Etapa 1 — Fundação do modelo de dados</h3>
+          <p class="muted">Criar a base relacional para Solicitações com múltiplos itens, documentos, mapeamentos por convênio e novos dados de Guias, sem quebrar o fluxo atual.</p>
+        </div>
+        <button class="copy-btn small" onclick="copyPrompt('prompt-1', this)">Copiar prompt</button>
+      </div>
+      <div class="prompt-body">
+        <h4>Entregáveis esperados</h4>
+        <ul><li>solicitacao_itens e solicitacao_documentos.</li><li>Mapeamentos convênio-especialidade e convênio-profissional.</li><li>CID na Solicitação e novos campos operacionais em Guias.</li><li>Backfill seguro dos dados legados.</li><li>Models, relações, resources e testes de tenant.</li></ul>
+        <pre id="prompt-1" class="prompt-text">Você é o Codex implementando a ETAPA 1 do plano de Automações Unimed no GESCON.
+
+REGRAS GERAIS OBRIGATÓRIAS PARA TODAS AS ETAPAS
+
+1. Repositório: https://github.com/fbfert/gestao_de_convenios
+2. Antes de modificar qualquer arquivo:
+   - leia a estrutura atual do repositório;
+   - leia os arquivos diretamente envolvidos;
+   - leia as decisões/ADRs existentes;
+   - confirme a branch e o HEAD atual;
+   - não faça reset para um commit antigo.
+3. A referência de estado no momento da elaboração deste plano é o commit
+   6a30f787c6da718c4c9675f3b573497fce2d708e (&quot;Separar CRUD de templates de email&quot;).
+   Se o HEAD estiver mais novo, trabalhe sobre o HEAD atual e relate a diferença.
+4. Stack atual a preservar:
+   - Laravel 11 / PHP 8.2;
+   - Laravel Sanctum;
+   - Spatie Laravel Permission com isolamento por tenant;
+   - React 19 + TypeScript + Vite;
+   - TanStack Query, Axios, Zustand e Tailwind;
+   - Playwright já existente para E2E do frontend.
+5. Preserve rigorosamente o multi-tenancy. Todo dado de negócio novo deve ser isolado
+   por tenant e seguir as convenções já existentes (TenantContext, BelongsToTenant,
+   TenantScope, bindings, validações e permissões).
+6. Não confie apenas em route-model-binding implícito para recursos multi-tenant.
+   Use o padrão seguro já adotado no projeto.
+7. Não introduza segredo em logs, responses, screenshots, fixtures ou commits.
+8. Senhas e tokens devem ser criptografados em repouso e nunca retornados ao frontend.
+9. Não hardcode URLs com dynaHash da Unimed. Os dynaHash são temporários e pertencem
+   à sessão corrente. Navegue pelos elementos e hrefs gerados pelo próprio portal.
+10. Não use sleeps fixos como estratégia principal. Espere por estados reais do DOM,
+    navegação, respostas, desaparecimento de &quot;Processando&quot; e presença de elementos-alvo.
+11. A Automação 1 NÃO pode ter retry cego depois de uma ação que possa ter gerado guia.
+    Em timeout ou resposta ambígua, classifique como resultado_incerto e execute primeiro
+    uma verificação idempotente antes de permitir novo envio.
+12. Trabalhe APENAS na etapa solicitada. Não antecipe etapas seguintes.
+13. Preserve funcionalidades existentes que não fazem parte do escopo da etapa.
+14. Faça migrations reversíveis e evite alterações destrutivas sem necessidade.
+15. Antes de terminar:
+    - execute os testes pertinentes;
+    - execute lint/build pertinentes;
+    - corrija falhas causadas pela etapa;
+    - informe testes que não puderam ser executados e o motivo.
+16. Não faça commit, push, merge ou criação de PR. Ao final apenas sugira uma mensagem
+    de commit. Um commit somente poderá ser feito quando houver instrução expressa posterior.
+17. Ao finalizar, responda com:
+    a) resumo do que foi implementado;
+    b) arquivos criados/alterados;
+    c) migrations;
+    d) decisões técnicas tomadas;
+    e) testes executados e resultados;
+    f) riscos/pendências;
+    g) checklist de homologação manual;
+    h) mensagem de commit sugerida.
+
+OBJETIVO
+Criar a fundação de banco e domínio necessária para o novo fluxo, de forma ADITIVA e compatível com os dados existentes. Nesta etapa não implemente Playwright, não implemente chamadas à Unimed e não refaça ainda toda a UI.
+
+DECISÕES DE MODELO
+- 1 Solicitação possui N itens.
+- Cada item possui exatamente 1 especialidade, 1 profissional executante e uma quantidade solicitada.
+- Cada item poderá gerar exatamente 1 Guia.
+- Quantidade solicitada padrão: 10.
+- Pedido Médico é documento geral obrigatório da Solicitação no novo fluxo.
+- Laudo Médico é documento geral opcional.
+- Plano Individualizado e Relatório de Evolução são documentos opcionais vinculáveis a um item.
+- Não criar obrigatoriedades adicionais por especialidade.
+- Uma Guia pode existir localmente sem número da operadora em situações como &quot;Verificar Restrição&quot;.
+- Não apagar colunas legadas nesta etapa.
+
+IMPLEMENTAÇÃO ESPERADA
+
+A. SOLICITACAO_ITENS
+Crie uma tabela/model compatível com as convenções reais do projeto contendo, no mínimo:
+- id
+- tenant_id
+- solicitacao_id
+- especialidade_id
+- profissional_id
+- quantidade_solicitada, integer, default 10
+- status operacional do item, se necessário para suportar fila/processamento, usando valores documentados e sem duplicar desnecessariamente o status da execução
+- timestamps
+Defina relações e índices adequados.
+Não imponha uma unicidade que impeça, sem necessidade, cenários futuros; porém garanta no domínio que um item tenha no máximo uma Guia.
+
+B. SOLICITACAO_DOCUMENTOS
+Crie estrutura genérica contendo, no mínimo:
+- id
+- tenant_id
+- solicitacao_id
+- solicitacao_item_id nullable
+- tipo: pedido_medico | laudo_medico | plano_individualizado | relatorio_evolucao
+- arquivo_path
+- nome_original
+- mime
+- tamanho, quando disponível
+- hash do arquivo, se for útil e simples
+- uploaded_by nullable
+- timestamps
+Valide tenant em todos os relacionamentos.
+Não armazene binário no banco.
+
+C. SOLICITACOES
+- Adicione campo cid, inicialmente compatível com registros legados.
+- Preserve profissional_id e especialidade_id legados por enquanto.
+- Não remova pedido_medico_path e campos legados por enquanto.
+- Documente-os como legados/depreciação progressiva.
+
+D. GUIAS
+Acrescente, conforme necessário:
+- solicitacao_item_id nullable para compatibilidade histórica;
+- numero_guia nullable se atualmente não for;
+- protocolo_operadora nullable;
+- sessoes_solicitadas nullable/integer;
+- sessoes_autorizadas nullable/integer;
+- status_operadora nullable;
+- ultima_consulta_operadora_em nullable/datetime;
+- outros campos estritamente necessários identificados no preflight.
+Garanta que uma solicitacao_item tenha no máximo uma Guia sem quebrar Guias antigas que não possuam item.
+
+E. MAPEAMENTO ESPECIALIDADE x CONVÊNIO
+Crie uma estrutura de mapeamento por tenant e convênio, sem colocar &quot;codigo_unimed&quot; diretamente na especialidade.
+Ela deve suportar:
+- convenio_id
+- especialidade_id
+- codigo_procedimento
+- descricao_operadora nullable
+- quantidade_padrao, default 10
+- usa_descricao_generica boolean, se aplicável
+- valor_generico padrão/configurável, se aplicável
+- ativo
+- timestamps
+
+F. MAPEAMENTO PROFISSIONAL x CONVÊNIO
+Crie estrutura para:
+- convenio_id
+- profissional_id
+- codigo_operadora
+- nome_operadora nullable
+- ativo
+- timestamps
+Isso evitará acoplamento de Profissional diretamente à Unimed.
+
+G. BACKFILL
+Crie backfill idempotente para dados existentes:
+- cada Solicitação legada com especialidade_id/profissional_id deve receber exatamente um item correspondente;
+- quantidade inicial do item legado deve ser 10, salvo se existir fonte confiável melhor;
+- documentos médicos legados devem ser representados na nova estrutura sem apagar os campos antigos;
+- Guias existentes devem ser vinculadas ao item correspondente quando isso puder ser determinado de forma inequívoca;
+- o backfill deve poder rodar uma vez sem duplicar itens/documentos.
+
+H. MODELS / RELAÇÕES / RESOURCES
+- Solicitacao: hasMany itens, hasMany documentos, relação com Guias adequada.
+- SolicitacaoItem: belongsTo solicitacao/especialidade/profissional e hasOne guia.
+- Guia: belongsTo solicitacao_item quando existir.
+- Atualize resources necessários sem quebrar payloads atuais.
+- Preserve compatibilidade durante a transição.
+
+I. MULTI-TENANCY E SEGURANÇA
+- Todos os models de negócio novos devem usar o padrão de tenant do projeto.
+- Valide FKs dentro do mesmo tenant também nas requests/services, não apenas por id global.
+- Adicione route bindings explícitos quando novos recursos forem expostos por rota posteriormente; não crie rotas desnecessárias nesta etapa.
+
+TESTES
+Crie testes para:
+1. backfill de uma Solicitação legada;
+2. não duplicação do backfill;
+3. isolamento de tenant;
+4. relações Solicitação -&gt; Itens -&gt; Guia;
+5. documentos gerais e por item;
+6. mapeamentos por convênio;
+7. Guia com numero_guia nulo;
+8. rollback das migrations quando tecnicamente viável no ambiente de teste.
+
+DOCUMENTAÇÃO
+Atualize docs/automacao-unimed/01-modelo-dados.md com:
+- diagrama textual das relações;
+- campos;
+- estratégia de compatibilidade;
+- campos legados mantidos;
+- plano de remoção futura, sem removê-los agora.
+
+FORA DO ESCOPO
+- Não criar worker Node.
+- Não acessar Unimed.
+- Não implementar automações.
+- Não redesenhar integralmente as telas.
+- Não remover CRUD manual de Guia ainda.
+- Não alterar scheduler.
+
+NÃO FAÇA COMMIT.</pre>
+      </div>
+    </article>
+    
+    <article class="prompt-card prompt-item" data-search="etapa 2 — solicitações, itens, documentos e carteirinha migrar o uso operacional das solicitações para múltiplos itens e documentos, incluindo o cadastro adequado da carteirinha unimed.">
+      <div class="prompt-head">
+        <div>
+          <div class="eyebrow">Super prompt 2</div>
+          <h3>Etapa 2 — Solicitações, itens, documentos e carteirinha</h3>
+          <p class="muted">Migrar o uso operacional das Solicitações para múltiplos itens e documentos, incluindo o cadastro adequado da carteirinha Unimed.</p>
+        </div>
+        <button class="copy-btn small" onclick="copyPrompt('prompt-2', this)">Copiar prompt</button>
+      </div>
+      <div class="prompt-body">
+        <h4>Entregáveis esperados</h4>
+        <ul><li>API e UI de Solicitação com múltiplos itens.</li><li>CID e quantidade por item.</li><li>Uploads gerais e por item.</li><li>Máscara 4+4+6+2+1 para carteirinha Unimed.</li><li>Exibição do código de procedimento associado à especialidade.</li></ul>
+        <pre id="prompt-2" class="prompt-text">Você é o Codex implementando a ETAPA 2 do plano de Automações Unimed no GESCON.
+
+REGRAS GERAIS OBRIGATÓRIAS PARA TODAS AS ETAPAS
+
+1. Repositório: https://github.com/fbfert/gestao_de_convenios
+2. Antes de modificar qualquer arquivo:
+   - leia a estrutura atual do repositório;
+   - leia os arquivos diretamente envolvidos;
+   - leia as decisões/ADRs existentes;
+   - confirme a branch e o HEAD atual;
+   - não faça reset para um commit antigo.
+3. A referência de estado no momento da elaboração deste plano é o commit
+   6a30f787c6da718c4c9675f3b573497fce2d708e (&quot;Separar CRUD de templates de email&quot;).
+   Se o HEAD estiver mais novo, trabalhe sobre o HEAD atual e relate a diferença.
+4. Stack atual a preservar:
+   - Laravel 11 / PHP 8.2;
+   - Laravel Sanctum;
+   - Spatie Laravel Permission com isolamento por tenant;
+   - React 19 + TypeScript + Vite;
+   - TanStack Query, Axios, Zustand e Tailwind;
+   - Playwright já existente para E2E do frontend.
+5. Preserve rigorosamente o multi-tenancy. Todo dado de negócio novo deve ser isolado
+   por tenant e seguir as convenções já existentes (TenantContext, BelongsToTenant,
+   TenantScope, bindings, validações e permissões).
+6. Não confie apenas em route-model-binding implícito para recursos multi-tenant.
+   Use o padrão seguro já adotado no projeto.
+7. Não introduza segredo em logs, responses, screenshots, fixtures ou commits.
+8. Senhas e tokens devem ser criptografados em repouso e nunca retornados ao frontend.
+9. Não hardcode URLs com dynaHash da Unimed. Os dynaHash são temporários e pertencem
+   à sessão corrente. Navegue pelos elementos e hrefs gerados pelo próprio portal.
+10. Não use sleeps fixos como estratégia principal. Espere por estados reais do DOM,
+    navegação, respostas, desaparecimento de &quot;Processando&quot; e presença de elementos-alvo.
+11. A Automação 1 NÃO pode ter retry cego depois de uma ação que possa ter gerado guia.
+    Em timeout ou resposta ambígua, classifique como resultado_incerto e execute primeiro
+    uma verificação idempotente antes de permitir novo envio.
+12. Trabalhe APENAS na etapa solicitada. Não antecipe etapas seguintes.
+13. Preserve funcionalidades existentes que não fazem parte do escopo da etapa.
+14. Faça migrations reversíveis e evite alterações destrutivas sem necessidade.
+15. Antes de terminar:
+    - execute os testes pertinentes;
+    - execute lint/build pertinentes;
+    - corrija falhas causadas pela etapa;
+    - informe testes que não puderam ser executados e o motivo.
+16. Não faça commit, push, merge ou criação de PR. Ao final apenas sugira uma mensagem
+    de commit. Um commit somente poderá ser feito quando houver instrução expressa posterior.
+17. Ao finalizar, responda com:
+    a) resumo do que foi implementado;
+    b) arquivos criados/alterados;
+    c) migrations;
+    d) decisões técnicas tomadas;
+    e) testes executados e resultados;
+    f) riscos/pendências;
+    g) checklist de homologação manual;
+    h) mensagem de commit sugerida.
+
+PRÉ-CONDIÇÃO
+A Etapa 1 deve estar implementada e homologada. Leia o código resultante; não suponha nomes de arquivos ou schema se o código final tiver diferenças justificadas.
+
+OBJETIVO
+Fazer o fluxo operacional de Solicitações passar a usar solicitacao_itens e solicitacao_documentos, preservando compatibilidade com registros legados.
+
+REGRAS DE NEGÓCIO
+- Uma Solicitação pode ter vários itens.
+- Cada item contém: especialidade, profissional executante e quantidade solicitada.
+- Quantidade padrão 10, editável pelo usuário.
+- Cada item futuramente gerará uma Guia separada.
+- CID deve existir na Solicitação e será usado futuramente como indicação clínica na Unimed.
+- Pedido Médico: obrigatório para NOVAS Solicitações no fluxo normal.
+- Laudo Médico: opcional e geral.
+- Plano Individualizado: opcional por item.
+- Relatório de Evolução: opcional por item.
+- Não existem documentos adicionais obrigatórios por especialidade.
+- Para o convênio configurado como Unimed/RDA, a carteirinha deve ser apresentada em 5 blocos: 4 + 4 + 6 + 2 + 1 dígitos.
+- No banco, mantenha um valor normalizado consistente para carteirinha.
+- Não identifique Unimed por comparação frágil de nome. Use metadado/configuração do conector disponível no domínio.
+
+BACKEND
+1. Atualize StoreSolicitacaoRequest e fluxo de criação para aceitar:
+   - paciente_id
+   - convenio_id
+   - medico_id
+   - cid
+   - solicitado_em
+   - observacoes
+   - itens[]
+     * especialidade_id
+     * profissional_id
+     * quantidade_solicitada
+   - referências de uploads/documentos
+2. Valide que especialidade, profissional, paciente, médico e convênio pertencem ao tenant.
+3. Valide que o profissional selecionado é compatível com a especialidade conforme o domínio atual.
+4. Grave Solicitação + itens + documentos em transação.
+5. A criação de uma Solicitação não deve gerar múltiplas Guias antecipadamente nesta etapa.
+6. Atualize endpoints de leitura para retornar itens/documentos de forma organizada.
+7. Preserve leitura dos registros legados e use os itens backfilled como fonte principal.
+8. Se o endpoint de leitura por IA do pedido médico alimentar o formulário, adapte o resultado para o novo formato sem quebrar a funcionalidade já existente.
+9. Crie endpoints seguros para upload/download dos novos documentos, reutilizando a estratégia de storage local já existente.
+10. Nunca exponha path físico do servidor como URL direta insegura.
+
+FRONTEND — SOLICITAÇÕES
+1. Reformule o formulário:
+   - Convênio
+   - Paciente
+   - Médico solicitante
+   - CID
+   - Data
+   - Observações
+   - seção &quot;Especialidades solicitadas&quot;
+2. Permita &quot;Adicionar especialidade&quot;.
+3. Cada linha/cartão de item deve possuir:
+   - Especialidade
+   - Código no convênio, quando mapeado
+   - Profissional executante filtrado
+   - Quantidade solicitada, default 10
+   - Remover item
+4. Impedir submit sem pelo menos um item válido.
+5. Documentos:
+   - Pedido Médico: obrigatório
+   - Laudo Médico: opcional
+   - Plano Individualizado: por item e opcional
+   - Relatório de Evolução: por item e opcional
+6. Mostrar nome do arquivo, tipo, estado de upload e opção de remover antes de salvar.
+7. Não duplicar arquivo por re-render/retry do frontend.
+8. Atualize modal/detalhe da Solicitação para mostrar todos os itens e documentos.
+
+PACIENTES — CARTEIRINHA
+1. Quando o convênio do paciente estiver configurado para o driver Unimed RDA:
+   mostrar 5 inputs visuais correspondentes a 4, 4, 6, 2, 1 dígitos.
+2. Normalizar no payload/banco.
+3. Ao editar registro existente, decompor corretamente.
+4. Validar somente números e comprimento exato quando for Unimed.
+5. Para outros convênios, preservar comportamento existente.
+
+ESPECIALIDADES
+Na listagem/seletores ligados a uma Solicitação, quando houver mapeamento para o convênio selecionado, mostrar:
+&quot;Nome da especialidade · código_procedimento&quot;.
+Não acoplar a UI a um campo chamado codigo_unimed.
+
+TESTES
+- Request/API com 1 e vários itens.
+- Tenant mismatch deve falhar.
+- Pedido Médico obrigatório em nova Solicitação.
+- Documentos opcionais por item.
+- Quantidade default 10 e quantidade customizada.
+- Carteirinha 4+4+6+2+1: criar, editar, serializar.
+- Frontend: adicionar/remover itens, trocar especialidade e filtrar profissional.
+- Build/lint.
+- E2E focado no formulário sem acessar portal externo.
+
+DOCUMENTAÇÃO
+Atualize docs/automacao-unimed/02-solicitacoes-documentos.md.
+
+FORA DO ESCOPO
+- Não criar credenciais Unimed ainda.
+- Não criar worker Playwright.
+- Não automatizar criação de Guia.
+- Não criar scheduler.
+
+NÃO FAÇA COMMIT.</pre>
+      </div>
+    </article>
+    
+    <article class="prompt-card prompt-item" data-search="etapa 3 — configurações e segurança da unimed adicionar credenciais unimed por tenant, vínculo seguro ao convênio e auditoria de alterações.">
+      <div class="prompt-head">
+        <div>
+          <div class="eyebrow">Super prompt 3</div>
+          <h3>Etapa 3 — Configurações e segurança da Unimed</h3>
+          <p class="muted">Adicionar credenciais Unimed por tenant, vínculo seguro ao convênio e auditoria de alterações.</p>
+        </div>
+        <button class="copy-btn small" onclick="copyPrompt('prompt-3', this)">Copiar prompt</button>
+      </div>
+      <div class="prompt-body">
+        <h4>Entregáveis esperados</h4>
+        <ul><li>Aba Unimed em Configurações.</li><li>Senha criptografada e nunca devolvida.</li><li>Permissão administrativa exclusiva.</li><li>Audit log de alteração sem segredos.</li><li>Metadado de driver Unimed no convênio.</li></ul>
+        <pre id="prompt-3" class="prompt-text">Você é o Codex implementando a ETAPA 3 do plano de Automações Unimed no GESCON.
+
+REGRAS GERAIS OBRIGATÓRIAS PARA TODAS AS ETAPAS
+
+1. Repositório: https://github.com/fbfert/gestao_de_convenios
+2. Antes de modificar qualquer arquivo:
+   - leia a estrutura atual do repositório;
+   - leia os arquivos diretamente envolvidos;
+   - leia as decisões/ADRs existentes;
+   - confirme a branch e o HEAD atual;
+   - não faça reset para um commit antigo.
+3. A referência de estado no momento da elaboração deste plano é o commit
+   6a30f787c6da718c4c9675f3b573497fce2d708e (&quot;Separar CRUD de templates de email&quot;).
+   Se o HEAD estiver mais novo, trabalhe sobre o HEAD atual e relate a diferença.
+4. Stack atual a preservar:
+   - Laravel 11 / PHP 8.2;
+   - Laravel Sanctum;
+   - Spatie Laravel Permission com isolamento por tenant;
+   - React 19 + TypeScript + Vite;
+   - TanStack Query, Axios, Zustand e Tailwind;
+   - Playwright já existente para E2E do frontend.
+5. Preserve rigorosamente o multi-tenancy. Todo dado de negócio novo deve ser isolado
+   por tenant e seguir as convenções já existentes (TenantContext, BelongsToTenant,
+   TenantScope, bindings, validações e permissões).
+6. Não confie apenas em route-model-binding implícito para recursos multi-tenant.
+   Use o padrão seguro já adotado no projeto.
+7. Não introduza segredo em logs, responses, screenshots, fixtures ou commits.
+8. Senhas e tokens devem ser criptografados em repouso e nunca retornados ao frontend.
+9. Não hardcode URLs com dynaHash da Unimed. Os dynaHash são temporários e pertencem
+   à sessão corrente. Navegue pelos elementos e hrefs gerados pelo próprio portal.
+10. Não use sleeps fixos como estratégia principal. Espere por estados reais do DOM,
+    navegação, respostas, desaparecimento de &quot;Processando&quot; e presença de elementos-alvo.
+11. A Automação 1 NÃO pode ter retry cego depois de uma ação que possa ter gerado guia.
+    Em timeout ou resposta ambígua, classifique como resultado_incerto e execute primeiro
+    uma verificação idempotente antes de permitir novo envio.
+12. Trabalhe APENAS na etapa solicitada. Não antecipe etapas seguintes.
+13. Preserve funcionalidades existentes que não fazem parte do escopo da etapa.
+14. Faça migrations reversíveis e evite alterações destrutivas sem necessidade.
+15. Antes de terminar:
+    - execute os testes pertinentes;
+    - execute lint/build pertinentes;
+    - corrija falhas causadas pela etapa;
+    - informe testes que não puderam ser executados e o motivo.
+16. Não faça commit, push, merge ou criação de PR. Ao final apenas sugira uma mensagem
+    de commit. Um commit somente poderá ser feito quando houver instrução expressa posterior.
+17. Ao finalizar, responda com:
+    a) resumo do que foi implementado;
+    b) arquivos criados/alterados;
+    c) migrations;
+    d) decisões técnicas tomadas;
+    e) testes executados e resultados;
+    f) riscos/pendências;
+    g) checklist de homologação manual;
+    h) mensagem de commit sugerida.
+
+OBJETIVO
+Criar a configuração segura do conector Unimed RDA por tenant, sem ainda efetuar login real no portal.
+
+REGRAS
+- Uma credencial Unimed por tenant.
+- Somente usuário administrativo autorizado pode editar.
+- Senha criptografada em repouso usando o mesmo padrão seguro já utilizado para SMTP/OpenAI.
+- A API nunca retorna a senha descriptografada.
+- Audit log obrigatório em toda alteração, sem valor antigo/novo da senha.
+- Deve existir uma forma canônica de identificar qual Convênio usa o driver Unimed RDA, sem comparar nome textual.
+
+BACKEND
+1. Crie tabela/model de configuração (nome coerente com o projeto), com:
+   - tenant_id único
+   - convenio_id
+   - login
+   - password criptografado
+   - ativo
+   - campos de controle necessários
+2. Retorno da API:
+   - login pode ser retornado conforme decisão de segurança do projeto;
+   - password nunca;
+   - retornar apenas password_configured=true/false;
+   - convenio_id e ativo.
+3. Ao salvar senha vazia na edição, preservar a senha existente em vez de apagá-la.
+4. Crie GET/PUT em /configuracoes/unimed ou convenção equivalente.
+5. Proteja com permissão específica, por exemplo configuracoes.unimed.manage, seguindo o padrão real de permissões.
+6. Atribua essa permissão somente ao papel administrativo do tenant. Não assuma nome fixo de role sem inspecionar seeders atuais.
+7. Ao configurar o convênio, marque-o de forma canônica com:
+   connector_type = scraping
+   e metadado de driver &quot;unimed_sc_rda&quot; em connector_config ou solução equivalente compatível com o modelo atual.
+8. Não guarde credenciais dentro de connector_config.
+9. Auditoria:
+   - ação clara, ex. unimed.credentials.updated
+   - tenant e user
+   - payload apenas com campos não sensíveis, ex. convenio_id, login_alterado, senha_alterada, ativo
+   - nunca senha, hash da senha ou trecho da senha.
+
+FRONTEND
+1. Adicione aba &quot;Unimed&quot; em Configurações.
+2. Campos:
+   - Convênio vinculado
+   - Login
+   - Nova senha
+   - Ativo
+3. Mostrar &quot;Senha configurada&quot; sem revelar conteúdo.
+4. Se usuário não possuir permissão, não apresentar edição; respeite também bloqueio backend.
+5. Mensagens claras de sucesso/erro.
+6. Não faça teste de login externo nesta etapa.
+
+TESTES
+- Criptografia em repouso.
+- GET não retorna password.
+- Senha vazia preserva senha existente.
+- Admin consegue editar.
+- Usuário não autorizado recebe 403.
+- Tenant A não lê/edita tenant B.
+- Audit log criado e sem segredo.
+- Convênio recebe driver correto.
+- Frontend build/lint.
+
+DOCUMENTAÇÃO
+Atualize docs/automacao-unimed/03-configuracoes-seguranca.md.
+
+FORA DO ESCOPO
+- Não acessar rda.unimedsc.com.br.
+- Não criar Playwright.
+- Não implementar &quot;testar credencial&quot;.
+- Não automatizar Guia.
+
+NÃO FAÇA COMMIT.</pre>
+      </div>
+    </article>
+    
+    <article class="prompt-card prompt-item" data-search="etapa 4 — motor de automação e worker playwright criar a infraestrutura local laravel ↔ worker node/playwright, filas, execuções e eventos, ainda sem implementar todo o fluxo real da guia.">
+      <div class="prompt-head">
+        <div>
+          <div class="eyebrow">Super prompt 4</div>
+          <h3>Etapa 4 — Motor de automação e worker Playwright</h3>
+          <p class="muted">Criar a infraestrutura local Laravel ↔ worker Node/Playwright, filas, execuções e eventos, ainda sem implementar todo o fluxo real da Guia.</p>
+        </div>
+        <button class="copy-btn small" onclick="copyPrompt('prompt-4', this)">Copiar prompt</button>
+      </div>
+      <div class="prompt-body">
+        <h4>Entregáveis esperados</h4>
+        <ul><li>Worker Node/Playwright separado.</li><li>Interface local autenticada com Laravel.</li><li>automacao_execucoes e eventos.</li><li>Jobs database queue e lock por tenant.</li><li>Healthcheck e mock para testes.</li></ul>
+        <pre id="prompt-4" class="prompt-text">Você é o Codex implementando a ETAPA 4 do plano de Automações Unimed no GESCON.
+
+REGRAS GERAIS OBRIGATÓRIAS PARA TODAS AS ETAPAS
+
+1. Repositório: https://github.com/fbfert/gestao_de_convenios
+2. Antes de modificar qualquer arquivo:
+   - leia a estrutura atual do repositório;
+   - leia os arquivos diretamente envolvidos;
+   - leia as decisões/ADRs existentes;
+   - confirme a branch e o HEAD atual;
+   - não faça reset para um commit antigo.
+3. A referência de estado no momento da elaboração deste plano é o commit
+   6a30f787c6da718c4c9675f3b573497fce2d708e (&quot;Separar CRUD de templates de email&quot;).
+   Se o HEAD estiver mais novo, trabalhe sobre o HEAD atual e relate a diferença.
+4. Stack atual a preservar:
+   - Laravel 11 / PHP 8.2;
+   - Laravel Sanctum;
+   - Spatie Laravel Permission com isolamento por tenant;
+   - React 19 + TypeScript + Vite;
+   - TanStack Query, Axios, Zustand e Tailwind;
+   - Playwright já existente para E2E do frontend.
+5. Preserve rigorosamente o multi-tenancy. Todo dado de negócio novo deve ser isolado
+   por tenant e seguir as convenções já existentes (TenantContext, BelongsToTenant,
+   TenantScope, bindings, validações e permissões).
+6. Não confie apenas em route-model-binding implícito para recursos multi-tenant.
+   Use o padrão seguro já adotado no projeto.
+7. Não introduza segredo em logs, responses, screenshots, fixtures ou commits.
+8. Senhas e tokens devem ser criptografados em repouso e nunca retornados ao frontend.
+9. Não hardcode URLs com dynaHash da Unimed. Os dynaHash são temporários e pertencem
+   à sessão corrente. Navegue pelos elementos e hrefs gerados pelo próprio portal.
+10. Não use sleeps fixos como estratégia principal. Espere por estados reais do DOM,
+    navegação, respostas, desaparecimento de &quot;Processando&quot; e presença de elementos-alvo.
+11. A Automação 1 NÃO pode ter retry cego depois de uma ação que possa ter gerado guia.
+    Em timeout ou resposta ambígua, classifique como resultado_incerto e execute primeiro
+    uma verificação idempotente antes de permitir novo envio.
+12. Trabalhe APENAS na etapa solicitada. Não antecipe etapas seguintes.
+13. Preserve funcionalidades existentes que não fazem parte do escopo da etapa.
+14. Faça migrations reversíveis e evite alterações destrutivas sem necessidade.
+15. Antes de terminar:
+    - execute os testes pertinentes;
+    - execute lint/build pertinentes;
+    - corrija falhas causadas pela etapa;
+    - informe testes que não puderam ser executados e o motivo.
+16. Não faça commit, push, merge ou criação de PR. Ao final apenas sugira uma mensagem
+    de commit. Um commit somente poderá ser feito quando houver instrução expressa posterior.
+17. Ao finalizar, responda com:
+    a) resumo do que foi implementado;
+    b) arquivos criados/alterados;
+    c) migrations;
+    d) decisões técnicas tomadas;
+    e) testes executados e resultados;
+    f) riscos/pendências;
+    g) checklist de homologação manual;
+    h) mensagem de commit sugerida.
+
+ARQUITETURA FECHADA
+- Laravel continua sendo a fonte de verdade de banco, usuários, permissões e regras.
+- Laravel Queue usa driver database.
+- Playwright roda em serviço Node separado na MESMA VPS.
+- O worker Node NÃO deve acessar o banco diretamente.
+- Comunicação deve ser somente local, preferencialmente em 127.0.0.1, com autenticação por segredo de ambiente.
+- Credenciais Unimed são lidas/descriptografadas no Laravel somente quando necessárias e transmitidas ao worker apenas em memória para a execução.
+- O worker nunca persiste credenciais e nunca as escreve em logs.
+- Uma credencial/tenant não pode ter duas automações concorrentes.
+
+OBJETIVO
+Criar o motor técnico e um contrato estável para operações futuras, com uma operação de diagnóstico/mock; não implementar ainda o fluxo completo de geração de Guia.
+
+BACKEND LARAVEL
+1. Crie automacao_execucoes:
+   - id
+   - tenant_id
+   - convenio_id nullable
+   - solicitacao_id nullable
+   - solicitacao_item_id nullable
+   - guia_id nullable
+   - tipo
+   - status
+   - iniciado_em
+   - finalizado_em
+   - resultado_json sanitizado nullable
+   - erro_codigo nullable
+   - erro_mensagem sanitizada nullable
+   - idempotency_key nullable/indexada
+   - created_by nullable
+   - timestamps conforme padrão
+2. Crie automacao_execucao_eventos:
+   - execução
+   - etapa/chave
+   - status
+   - mensagem sanitizada
+   - metadata_json sanitizada
+   - ocorrido_em
+3. Defina estados documentados, por exemplo:
+   queued, running, success, failed, needs_attention, uncertain, canceled.
+4. Defina códigos de erro estruturais e de negócio sem depender apenas de texto livre.
+5. Crie service UnimedAutomationClient (ou nome coerente) para chamar o worker local.
+6. Configurações via env/config:
+   - worker URL local
+   - token/secret
+   - connect timeout
+   - request timeout
+7. Crie Job base/abstração para execução, usando queue database.
+8. Use lock/WithoutOverlapping ou mecanismo equivalente por tenant.
+9. Não serializar senha em payload persistido do Job se isso puder fazê-la parar na tabela jobs. Resolva credencial durante handle e envie ao worker apenas no request em memória.
+10. Crie endpoint interno de status/health somente se realmente necessário; não exponha ao público.
+
+WORKER NODE + PLAYWRIGHT
+1. Crie um projeto separado no repositório, por exemplo automation-worker/, seguindo convenção documentada.
+2. Preferir TypeScript se compatível com toolchain; configurar scripts:
+   - dev
+   - build
+   - start
+   - test
+   - lint se aplicável
+3. Serviço deve ouvir APENAS localhost por padrão.
+4. Exigir token interno em todas as rotas exceto, se justificável, health local.
+5. Endpoints mínimos:
+   - GET /health
+   - POST /execute
+6. Contrato /execute:
+   recebe execution_id, operation e payload;
+   responde objeto normalizado com status, result, events e error.
+7. Implemente nesta etapa apenas:
+   - operation=diagnostic/mock
+   - estrutura/plumbing para operações futuras
+8. Crie browser/session abstraction reutilizável dentro de uma execução em lote.
+9. Nunca persistir storageState contendo autenticação Unimed em diretório público.
+10. Logs estruturados, sem login/senha, carteirinha completa ou dados desnecessários.
+
+TESTABILIDADE
+1. Laravel deve poder usar um fake/mock do UnimedAutomationClient.
+2. Worker deve ter testes do contrato sem portal real.
+3. Crie fixture de HTML local simples para testar mecanismo Playwright básico, sem reproduzir dados reais.
+4. CI/testes não podem acessar a Unimed real.
+
+DEPLOYMENT
+Crie documentação e exemplos:
+- serviço systemd ou Supervisor para o Node worker;
+- serviço do Laravel queue worker;
+- envs necessários;
+- usuário Linux sem privilégios desnecessários;
+- diretórios de logs/artefatos privados.
+
+SEGURANÇA
+- worker bound a 127.0.0.1;
+- token interno;
+- redaction de segredo;
+- validar tamanho de payload;
+- sem endpoints arbitrários de navegação para evitar transformar worker em proxy/SSRF.
+
+CRITÉRIOS DE ACEITE
+- Laravel enfileira execução mock.
+- Queue processa.
+- Laravel chama worker local.
+- Worker responde.
+- Execução/eventos persistem.
+- Falha do worker gera execução failed sanitizada.
+- Lock impede concorrência do mesmo tenant.
+- Nenhum segredo aparece em jobs/logs/JSON persistido.
+
+DOCUMENTAÇÃO
+docs/automacao-unimed/04-motor-worker.md
+
+FORA DO ESCOPO
+- Não implementar fluxo real de login/Guia.
+- Não consultar status real.
+- Não capturar senha real.
+
+NÃO FAÇA COMMIT.</pre>
+      </div>
+    </article>
+    
+    <article class="prompt-card prompt-item" data-search="etapa 5 — automação 1: gerar guia unimed implementar o fluxo real de envio de cada item de solicitação à unimed e criar a guia local somente após a execução correspondente.">
+      <div class="prompt-head">
+        <div>
+          <div class="eyebrow">Super prompt 5</div>
+          <h3>Etapa 5 — Automação 1: gerar Guia Unimed</h3>
+          <p class="muted">Implementar o fluxo real de envio de cada item de Solicitação à Unimed e criar a Guia local somente após a execução correspondente.</p>
+        </div>
+        <button class="copy-btn small" onclick="copyPrompt('prompt-5', this)">Copiar prompt</button>
+      </div>
+      <div class="prompt-body">
+        <h4>Entregáveis esperados</h4>
+        <ul><li>Botão Enviar para Unimed por item elegível.</li><li>Playwright do login à finalização da SP/SADT.</li><li>Fallback CRM → nome → médico não cooperado.</li><li>Uploads e mapeamento de procedimentos/profissional.</li><li>Criação idempotente da Guia e relatório da execução.</li></ul>
+        <pre id="prompt-5" class="prompt-text">Você é o Codex implementando a ETAPA 5 — AUTOMAÇÃO 1: GERAR GUIA UNIMED.
+
+REGRAS GERAIS OBRIGATÓRIAS PARA TODAS AS ETAPAS
+
+1. Repositório: https://github.com/fbfert/gestao_de_convenios
+2. Antes de modificar qualquer arquivo:
+   - leia a estrutura atual do repositório;
+   - leia os arquivos diretamente envolvidos;
+   - leia as decisões/ADRs existentes;
+   - confirme a branch e o HEAD atual;
+   - não faça reset para um commit antigo.
+3. A referência de estado no momento da elaboração deste plano é o commit
+   6a30f787c6da718c4c9675f3b573497fce2d708e (&quot;Separar CRUD de templates de email&quot;).
+   Se o HEAD estiver mais novo, trabalhe sobre o HEAD atual e relate a diferença.
+4. Stack atual a preservar:
+   - Laravel 11 / PHP 8.2;
+   - Laravel Sanctum;
+   - Spatie Laravel Permission com isolamento por tenant;
+   - React 19 + TypeScript + Vite;
+   - TanStack Query, Axios, Zustand e Tailwind;
+   - Playwright já existente para E2E do frontend.
+5. Preserve rigorosamente o multi-tenancy. Todo dado de negócio novo deve ser isolado
+   por tenant e seguir as convenções já existentes (TenantContext, BelongsToTenant,
+   TenantScope, bindings, validações e permissões).
+6. Não confie apenas em route-model-binding implícito para recursos multi-tenant.
+   Use o padrão seguro já adotado no projeto.
+7. Não introduza segredo em logs, responses, screenshots, fixtures ou commits.
+8. Senhas e tokens devem ser criptografados em repouso e nunca retornados ao frontend.
+9. Não hardcode URLs com dynaHash da Unimed. Os dynaHash são temporários e pertencem
+   à sessão corrente. Navegue pelos elementos e hrefs gerados pelo próprio portal.
+10. Não use sleeps fixos como estratégia principal. Espere por estados reais do DOM,
+    navegação, respostas, desaparecimento de &quot;Processando&quot; e presença de elementos-alvo.
+11. A Automação 1 NÃO pode ter retry cego depois de uma ação que possa ter gerado guia.
+    Em timeout ou resposta ambígua, classifique como resultado_incerto e execute primeiro
+    uma verificação idempotente antes de permitir novo envio.
+12. Trabalhe APENAS na etapa solicitada. Não antecipe etapas seguintes.
+13. Preserve funcionalidades existentes que não fazem parte do escopo da etapa.
+14. Faça migrations reversíveis e evite alterações destrutivas sem necessidade.
+15. Antes de terminar:
+    - execute os testes pertinentes;
+    - execute lint/build pertinentes;
+    - corrija falhas causadas pela etapa;
+    - informe testes que não puderam ser executados e o motivo.
+16. Não faça commit, push, merge ou criação de PR. Ao final apenas sugira uma mensagem
+    de commit. Um commit somente poderá ser feito quando houver instrução expressa posterior.
+17. Ao finalizar, responda com:
+    a) resumo do que foi implementado;
+    b) arquivos criados/alterados;
+    c) migrations;
+    d) decisões técnicas tomadas;
+    e) testes executados e resultados;
+    f) riscos/pendências;
+    g) checklist de homologação manual;
+    h) mensagem de commit sugerida.
+
+PRÉ-CONDIÇÕES
+Etapas 1 a 4 homologadas.
+O worker e a fila já funcionam em modo mock.
+As credenciais estão configuradas por tenant.
+
+REGRA CENTRAL
+Uma Solicitação não deve mais gerar automaticamente a Guia Unimed apenas porque mudou para approved.
+Para itens do convênio configurado com driver unimed_sc_rda:
+- a Guia nasce a partir do resultado da automação deste item;
+- cada item gera sua própria Guia;
+- o disparo é MANUAL inicialmente;
+- não permitir dois envios concorrentes do mesmo item;
+- não usar retry cego.
+
+ANTES DE AUTOMATIZAR
+Crie uma validação de elegibilidade do item:
+- credencial Unimed configurada e ativa;
+- carteirinha válida 4+4+6+2+1;
+- médico solicitante definido;
+- CID preenchido;
+- especialidade com codigo_procedimento mapeado para o convênio;
+- profissional com codigo_operadora mapeado para o convênio;
+- quantidade solicitada &gt; 0;
+- Pedido Médico presente;
+- arquivos aceitos pelo portal e &lt;= 5 MB;
+- nenhuma Guia já vinculada ao item, salvo fluxo de resultado incerto devidamente verificado.
+Se faltar algo, NÃO chamar o worker; retornar lista clara de pendências ao operador.
+
+BACKEND / FLUXO
+1. Adicione ação &quot;Enviar para Unimed&quot; por item elegível.
+2. Ao clicar:
+   - validar permissão;
+   - validar elegibilidade;
+   - criar automacao_execucao queued;
+   - gerar idempotency_key baseada em tenant + item + operação;
+   - enfileirar job;
+   - responder imediatamente com execution_id.
+3. UI acompanha status sem bloquear request HTTP longo.
+4. Ao resultado do worker:
+   - persistir eventos;
+   - criar ou atualizar a Guia vinculada ao solicitacao_item de modo idempotente;
+   - nunca criar duas Guias para o mesmo item.
+
+PLAYWRIGHT — FLUXO REAL
+Implemente operation=create_guide.
+
+A. LOGIN
+URL inicial:
+https://rda.unimedsc.com.br/cmagnet/Login.do
+Seletores conhecidos:
+- input#login / name=login
+- input#passwordTemp / name=passwordTemp
+- botão name=Button_DoLogin
+Não logue credenciais.
+Detecte erro de autenticação como LOGIN_ERROR estrutural.
+
+B. NOVO EXAME
+Após login, navegue pela interface corrente até &quot;Novo Exame&quot;.
+Não hardcode dynaHash.
+
+C. IGNORAR CARTÃO / BENEFICIÁRIO
+No popup:
+- clicar link #ignora-cartao quando presente;
+- selecionar &quot;Cadastre o beneficiário e prossiga com o atendimento.&quot;
+Preencher 5 campos:
+- CD_UNIMED: 4
+- CD_CARTAO: 4
+- CD_BENEF: 6
+- CD_DEPEN: 2
+- NR_DV: 1
+Clicar Verificar.
+
+D. ESPERA
+Enquanto existir texto &quot;Processando, por favor aguarde...&quot; ou equivalente de processamento, aguardar.
+Só avançar quando houver um estado terminal reconhecível.
+Evitar sleep fixo.
+
+E. RESTRIÇÃO
+Se retornar &quot;Restrição Administrativa&quot;, &quot;Pendências Administrativas&quot; ou erro equivalente:
+- parar somente este item;
+- criar/atualizar Guia local do item com status needs_verification / label &quot;Verificar Restrição&quot;;
+- numero_guia pode permanecer null;
+- registrar texto sanitizado retornado;
+- informar operador;
+- execução = needs_attention;
+- não continuar preenchimento.
+Isso é erro de negócio, não deve parar outras Guias do lote.
+
+F. ATUALIZAÇÃO CADASTRAL
+Se abrir formulário de atualização do beneficiário:
+- não alterar valores;
+- clicar &quot;Atualizar&quot;;
+- aguardar retorno ao fluxo.
+
+G. SP/SADT
+Escolher &quot;Digitação de guia SP/SADT&quot;.
+Escolher &quot;Digitar solicitação manualmente e realizar validação para autorizar&quot;.
+
+H. FORMULÁRIO
+Preencher:
+- DT_EMISSAO_GUIA = data atual no formato esperado pelo portal.
+- FG_ATENDIMENTO_RN = N.
+- Caráter DM_CARATER_SOLIC = 1 (Eletivo).
+- Tipo DM_TP_ATEND_SADT = 03 (Outras Terapias).
+- DM_TP_ACIDENTE = 9 (Não acidente).
+- DS_INDIC_CLINICA = CID da Solicitação.
+
+I. PRESTADOR / MÉDICO SOLICITANTE
+Implemente função reutilizável selecionarPrestadorSolicitante(dadosMedico):
+1. abrir busca pela lupa;
+2. pesquisar primeiro por CRM;
+3. se houver resultados, escolher a linha cujo nome corresponde ao médico e cuja situação seja OK/Ativo;
+4. se nenhum registro:
+   - refazer pesquisa;
+   - limpar CRM;
+   - pesquisar pelo nome do médico;
+   - escolher resultado correspondente OK/Ativo;
+5. se CRM e nome falharem:
+   - pesquisar &quot;nao cooperado&quot;;
+   - selecionar MEDICO NAO COOPERADO cuja situação seja OK/Ativo;
+6. registrar no resultado qual estratégia foi usada.
+Não escolher resultado excluído/inativo.
+Reutilize a mesma regra no campo &quot;Nome do profissional solicitante&quot; quando o portal exigir nova seleção.
+
+J. PROCEDIMENTO
+Para o item atual:
+- preencher CD_ITEM_1 com codigo_procedimento do mapeamento;
+- aguardar autocomplete/descrição do portal;
+- quantidade NR_QTD_1 = solicitacao_item.quantidade_solicitada.
+Se surgirem DS_ITEM_GENERICO_1 e VL_ITEM_GENERICO_1:
+- DS_ITEM_GENERICO_1 recebe a descrição auto-preenchida do procedimento;
+- VL_ITEM_GENERICO_1 deve resultar em 0,01 conforme comportamento do portal;
+- valide o valor final antes de continuar.
+Não assumir que campos genéricos sempre existirão.
+
+K. ANEXOS
+Abrir anexos do item e enviar:
+- Pedido Médico: sempre;
+- Laudo Médico: se existir;
+- Plano Individualizado: se existir para este item;
+- Relatório de Evolução: se existir para este item.
+Respeitar tipos permitidos pelo portal e limite de 5 MB.
+Após cada upload, aguardar evidência de que o arquivo apareceu na listagem.
+Se um upload obrigatório falhar, interromper este item e registrar needs_attention.
+Se um opcional falhar, inicialmente também interromper este item e informar operador para evitar submissão incompleta; registrar para futura flexibilização.
+
+L. PROFISSIONAL EXECUTANTE
+No select CD_PROFISSIONAL, selecionar pelo codigo_operadora do mapeamento convenio_profissional.
+Confirmar também, quando possível, que o texto/nome esperado corresponde.
+Se não existir opção, interromper item e informar operador.
+
+M. FINALIZAÇÃO
+Clique no botão Finalizar e Gerar guia.
+Após o clique:
+- NÃO efetuar retry automático;
+- aguardar fim do processamento;
+- se timeout após o submit ou resposta ambígua, marcar execução UNCERTAIN, avisar operador e NÃO reenviar.
+Depois a idempotência deverá consultar a existência da Guia antes de liberar reprocessamento.
+
+N. LEITURA DO RESULTADO
+Capturar:
+- protocolo de atendimento;
+- número da Guia;
+- situação;
+- senha de autorização se já aparecer;
+- procedimento;
+- Qtd solicitada;
+- Qtd Aut.
+Mapeamento:
+- &quot;Em execução&quot; =&gt; approved
+- &quot;Autorizado&quot; =&gt; approved
+- &quot;Em estudo&quot; =&gt; under_review
+- &quot;Em Análise&quot; =&gt; under_review
+- &quot;Negado&quot; =&gt; denied
+- &quot;Cancelado&quot; =&gt; canceled
+Preservar também texto original em status_operadora.
+Salvar sessoes_solicitadas e sessoes_autorizadas separadamente.
+
+O. GUIA LOCAL
+Criar/atualizar UMA Guia para o item:
+- solicitacao_id
+- solicitacao_item_id
+- convenio/paciente/profissional/especialidade
+- numero_guia real, quando houver
+- protocolo_operadora
+- status
+- status_operadora
+- sessoes_solicitadas
+- sessoes_autorizadas
+- senha se retornada
+- datas pertinentes
+Não criar número fictício GUIA-SOLICITACAO-* para este fluxo.
+
+P. SOLICITACAO SERVICE
+Remova/bloqueie a criação automática de Guia no aprovar() especificamente conforme o novo modelo.
+Preserve comportamento necessário para outros convênios/manual sem introduzir regressão.
+Documente claramente o novo fluxo.
+
+Q. UI
+- Mostrar estado do item: pronto, na fila, processando, enviado, requer atenção, resultado incerto.
+- Botão &quot;Enviar para Unimed&quot; somente elegível.
+- Após enqueue, mostrar execution_id e atualização do estado.
+- Erros devem ser compreensíveis e não expor stacktrace.
+
+TESTES
+- Backend fake worker: sucesso, negado, restrição, timeout incerto.
+- Idempotência: clique duplo não cria duas execuções/Guias.
+- Validações de elegibilidade.
+- Mapeamento de status.
+- Worker com HTML fixtures representando as telas críticas; não chamar portal real em CI.
+- Teste de selectors/fallback médico por fixtures.
+- Build/lint/E2E interno.
+
+EVIDÊNCIAS
+Em falha do worker, screenshot pode ser salvo em storage PRIVADO com retenção posterior, nunca em public/.
+Redigir dados sensíveis quando possível.
+
+DOCUMENTAÇÃO
+docs/automacao-unimed/05-gerar-guia.md com máquina de estados e códigos de erro.
+
+NÃO FAÇA COMMIT.</pre>
+      </div>
+    </article>
+    
+    <article class="prompt-card prompt-item" data-search="etapa 6 — revisão completa do módulo de guias adequar listagem, detalhes e ações de guias ao novo fluxo e corrigir inconsistências de exibição.">
+      <div class="prompt-head">
+        <div>
+          <div class="eyebrow">Super prompt 6</div>
+          <h3>Etapa 6 — Revisão completa do módulo de Guias</h3>
+          <p class="muted">Adequar listagem, detalhes e ações de Guias ao novo fluxo e corrigir inconsistências de exibição.</p>
+        </div>
+        <button class="copy-btn small" onclick="copyPrompt('prompt-6', this)">Copiar prompt</button>
+      </div>
+      <div class="prompt-body">
+        <h4>Entregáveis esperados</h4>
+        <ul><li>Colunas operacionais completas.</li><li>Status Verificar Restrição.</li><li>Senha e validade exibidas corretamente.</li><li>Detalhe ligado ao item e à execução.</li><li>Bloqueio de criação manual para Unimed.</li></ul>
+        <pre id="prompt-6" class="prompt-text">Você é o Codex implementando a ETAPA 6 — REVISÃO DO MÓDULO DE GUIAS.
+
+REGRAS GERAIS OBRIGATÓRIAS PARA TODAS AS ETAPAS
+
+1. Repositório: https://github.com/fbfert/gestao_de_convenios
+2. Antes de modificar qualquer arquivo:
+   - leia a estrutura atual do repositório;
+   - leia os arquivos diretamente envolvidos;
+   - leia as decisões/ADRs existentes;
+   - confirme a branch e o HEAD atual;
+   - não faça reset para um commit antigo.
+3. A referência de estado no momento da elaboração deste plano é o commit
+   6a30f787c6da718c4c9675f3b573497fce2d708e (&quot;Separar CRUD de templates de email&quot;).
+   Se o HEAD estiver mais novo, trabalhe sobre o HEAD atual e relate a diferença.
+4. Stack atual a preservar:
+   - Laravel 11 / PHP 8.2;
+   - Laravel Sanctum;
+   - Spatie Laravel Permission com isolamento por tenant;
+   - React 19 + TypeScript + Vite;
+   - TanStack Query, Axios, Zustand e Tailwind;
+   - Playwright já existente para E2E do frontend.
+5. Preserve rigorosamente o multi-tenancy. Todo dado de negócio novo deve ser isolado
+   por tenant e seguir as convenções já existentes (TenantContext, BelongsToTenant,
+   TenantScope, bindings, validações e permissões).
+6. Não confie apenas em route-model-binding implícito para recursos multi-tenant.
+   Use o padrão seguro já adotado no projeto.
+7. Não introduza segredo em logs, responses, screenshots, fixtures ou commits.
+8. Senhas e tokens devem ser criptografados em repouso e nunca retornados ao frontend.
+9. Não hardcode URLs com dynaHash da Unimed. Os dynaHash são temporários e pertencem
+   à sessão corrente. Navegue pelos elementos e hrefs gerados pelo próprio portal.
+10. Não use sleeps fixos como estratégia principal. Espere por estados reais do DOM,
+    navegação, respostas, desaparecimento de &quot;Processando&quot; e presença de elementos-alvo.
+11. A Automação 1 NÃO pode ter retry cego depois de uma ação que possa ter gerado guia.
+    Em timeout ou resposta ambígua, classifique como resultado_incerto e execute primeiro
+    uma verificação idempotente antes de permitir novo envio.
+12. Trabalhe APENAS na etapa solicitada. Não antecipe etapas seguintes.
+13. Preserve funcionalidades existentes que não fazem parte do escopo da etapa.
+14. Faça migrations reversíveis e evite alterações destrutivas sem necessidade.
+15. Antes de terminar:
+    - execute os testes pertinentes;
+    - execute lint/build pertinentes;
+    - corrija falhas causadas pela etapa;
+    - informe testes que não puderam ser executados e o motivo.
+16. Não faça commit, push, merge ou criação de PR. Ao final apenas sugira uma mensagem
+    de commit. Um commit somente poderá ser feito quando houver instrução expressa posterior.
+17. Ao finalizar, responda com:
+    a) resumo do que foi implementado;
+    b) arquivos criados/alterados;
+    c) migrations;
+    d) decisões técnicas tomadas;
+    e) testes executados e resultados;
+    f) riscos/pendências;
+    g) checklist de homologação manual;
+    h) mensagem de commit sugerida.
+
+OBJETIVO
+Adequar frontend/API de Guias ao novo modelo e aos dados produzidos pela Automação 1.
+
+REGRAS
+- Para convênio Unimed automatizado, Guia deve nascer do item/automação; não permitir cadastro manual paralelo que gere inconsistência.
+- Para outros convênios, preservar o cadastro manual se ele ainda fizer parte do produto.
+- Sempre mostrar nome do paciente, não id, quando o relacionamento estiver disponível.
+- Mostrar carteirinha porque será necessária aos scripts de conferência.
+- Mostrar sessoes_solicitadas e sessoes_autorizadas separadamente.
+- Mostrar senha e validade em colunas distintas.
+- Corrigir a inconsistência existente em que a coluna rotulada &quot;Senha&quot; pode estar usando validade_senha.
+- Exibir status interno traduzido e, no detalhe, status original da operadora.
+- needs_verification deve aparecer como &quot;Verificar Restrição&quot;.
+- ultima_consulta_operadora_em deve estar disponível.
+
+LISTAGEM
+Colunas mínimas:
+1. Nº Guia
+2. Paciente
+3. Carteirinha
+4. Especialidade
+5. Profissional
+6. Status
+7. Sessões solicitadas
+8. Sessões autorizadas
+9. Senha
+10. Validade da senha
+11. Última consulta
+12. Ações
+
+Se o número ainda não existir, mostrar marcador claro, ex. &quot;Aguardando número&quot;, e nunca inventar número.
+
+DETALHE
+Mostrar:
+- origem Solicitação e item;
+- paciente/carteirinha;
+- médico solicitante;
+- CID;
+- especialidade/profissional;
+- código de procedimento;
+- quantidade solicitada/autorizada;
+- protocolo;
+- número;
+- status interno/original;
+- senha/validade;
+- última consulta;
+- execução mais recente da automação com link para relatório quando essa tela existir.
+
+FILTROS
+Preserve filtros existentes e acrescente somente os úteis:
+- status
+- convênio
+- paciente
+- profissional
+- especialidade
+- validade vencendo
+Evite sobrecarregar a tela.
+
+AÇÕES
+Nesta etapa não implemente ainda a lógica real dos Scripts 2 e 3, mas prepare a área de ações sem criar botão falso funcional.
+Mantenha apenas ações já existentes e a visualização da execução da Automação 1.
+Os botões &quot;Consultar agora&quot; serão adicionados nas etapas 7/8.
+
+BACKEND
+- Atualize GuiaResource e queries para eager-load necessário.
+- Evite N+1.
+- Garanta tenant scope.
+- Atualize filtros e paginação.
+- Ajuste regras de criação manual conforme driver do convênio.
+
+TESTES
+- Guia sem numero.
+- needs_verification.
+- nome/carteirinha.
+- senha versus validade.
+- sessões.
+- restrição de criação manual Unimed.
+- preservação de criação manual em convênio não automatizado.
+- frontend build/lint.
+
+DOCUMENTAÇÃO
+docs/automacao-unimed/06-guias.md
+
+NÃO FAÇA COMMIT.</pre>
+      </div>
+    </article>
+    
+    <article class="prompt-card prompt-item" data-search="etapa 7 — automação 2: consultar status consultar diariamente e sob demanda o status das guias na unimed, atualizando o sistema com rastreabilidade.">
+      <div class="prompt-head">
+        <div>
+          <div class="eyebrow">Super prompt 7</div>
+          <h3>Etapa 7 — Automação 2: consultar status</h3>
+          <p class="muted">Consultar diariamente e sob demanda o status das Guias na Unimed, atualizando o sistema com rastreabilidade.</p>
+        </div>
+        <button class="copy-btn small" onclick="copyPrompt('prompt-7', this)">Copiar prompt</button>
+      </div>
+      <div class="prompt-body">
+        <h4>Entregáveis esperados</h4>
+        <ul><li>Operação consultar_status no worker.</li><li>Batch com uma sessão por tenant.</li><li>Consulta manual na Guia.</li><li>Elegibilidade por 24 horas.</li><li>Mapeamento e histórico de status.</li></ul>
+        <pre id="prompt-7" class="prompt-text">Você é o Codex implementando a ETAPA 7 — AUTOMAÇÃO 2: CONSULTAR STATUS DA GUIA.
+
+REGRAS GERAIS OBRIGATÓRIAS PARA TODAS AS ETAPAS
+
+1. Repositório: https://github.com/fbfert/gestao_de_convenios
+2. Antes de modificar qualquer arquivo:
+   - leia a estrutura atual do repositório;
+   - leia os arquivos diretamente envolvidos;
+   - leia as decisões/ADRs existentes;
+   - confirme a branch e o HEAD atual;
+   - não faça reset para um commit antigo.
+3. A referência de estado no momento da elaboração deste plano é o commit
+   6a30f787c6da718c4c9675f3b573497fce2d708e (&quot;Separar CRUD de templates de email&quot;).
+   Se o HEAD estiver mais novo, trabalhe sobre o HEAD atual e relate a diferença.
+4. Stack atual a preservar:
+   - Laravel 11 / PHP 8.2;
+   - Laravel Sanctum;
+   - Spatie Laravel Permission com isolamento por tenant;
+   - React 19 + TypeScript + Vite;
+   - TanStack Query, Axios, Zustand e Tailwind;
+   - Playwright já existente para E2E do frontend.
+5. Preserve rigorosamente o multi-tenancy. Todo dado de negócio novo deve ser isolado
+   por tenant e seguir as convenções já existentes (TenantContext, BelongsToTenant,
+   TenantScope, bindings, validações e permissões).
+6. Não confie apenas em route-model-binding implícito para recursos multi-tenant.
+   Use o padrão seguro já adotado no projeto.
+7. Não introduza segredo em logs, responses, screenshots, fixtures ou commits.
+8. Senhas e tokens devem ser criptografados em repouso e nunca retornados ao frontend.
+9. Não hardcode URLs com dynaHash da Unimed. Os dynaHash são temporários e pertencem
+   à sessão corrente. Navegue pelos elementos e hrefs gerados pelo próprio portal.
+10. Não use sleeps fixos como estratégia principal. Espere por estados reais do DOM,
+    navegação, respostas, desaparecimento de &quot;Processando&quot; e presença de elementos-alvo.
+11. A Automação 1 NÃO pode ter retry cego depois de uma ação que possa ter gerado guia.
+    Em timeout ou resposta ambígua, classifique como resultado_incerto e execute primeiro
+    uma verificação idempotente antes de permitir novo envio.
+12. Trabalhe APENAS na etapa solicitada. Não antecipe etapas seguintes.
+13. Preserve funcionalidades existentes que não fazem parte do escopo da etapa.
+14. Faça migrations reversíveis e evite alterações destrutivas sem necessidade.
+15. Antes de terminar:
+    - execute os testes pertinentes;
+    - execute lint/build pertinentes;
+    - corrija falhas causadas pela etapa;
+    - informe testes que não puderam ser executados e o motivo.
+16. Não faça commit, push, merge ou criação de PR. Ao final apenas sugira uma mensagem
+    de commit. Um commit somente poderá ser feito quando houver instrução expressa posterior.
+17. Ao finalizar, responda com:
+    a) resumo do que foi implementado;
+    b) arquivos criados/alterados;
+    c) migrations;
+    d) decisões técnicas tomadas;
+    e) testes executados e resultados;
+    f) riscos/pendências;
+    g) checklist de homologação manual;
+    h) mensagem de commit sugerida.
+
+OBJETIVO
+Implementar consulta de situação das Guias Unimed:
+- ciclo automático de aproximadamente 24 horas;
+- ação manual &quot;Consultar agora&quot;;
+- rastreabilidade por automacao_execucao;
+- uma sessão/login por lote do tenant sempre que possível.
+
+ELEGIBILIDADE AUTOMÁTICA
+Considere Guias Unimed com numero_guia preenchido que precisem acompanhamento.
+Priorize status não terminais:
+- under_review
+- approved
+- needs_verification quando houver número e fizer sentido
+Não consulte automaticamente denied/canceled/expired, salvo regra existente documentada.
+Consulta manual pode permitir um conjunto maior, desde que seguro.
+
+FREQUÊNCIA
+Não dependa de um horário de relógio que o usuário não definiu.
+Implemente &quot;devido há 24 horas&quot;:
+- ultima_consulta_operadora_em nula OU &lt;= agora - 24h.
+O Laravel Scheduler pode rodar um despachante em frequência menor (ex. horária) que seleciona apenas Guias vencidas para consulta.
+Documente a estratégia.
+Use lock por tenant e não sobreponha lotes.
+
+WORKER
+Implemente operation=consult_status_batch.
+
+FLUXO
+1. Login na Unimed com credencial do tenant.
+2. Para cada Guia do lote:
+   a. navegar até fluxo de beneficiário conforme o portal atual;
+   b. informar carteirinha em 5 partes;
+   c. aguardar verificação;
+   d. se atualização cadastral for exigida, clicar Atualizar e continuar;
+   e. chegar à área &quot;Localizar Guia&quot;/lista de exames;
+   f. preencher número da Guia;
+   g. clicar Localizar;
+   h. aguardar recarregamento;
+   i. capturar situação da linha correta.
+3. Exemplos reconhecidos:
+   - Autorizado -&gt; approved
+   - Em execução -&gt; approved
+   - Em estudo / Em Análise -&gt; under_review
+   - Negado -&gt; denied
+   - Cancelado -&gt; canceled
+4. Preservar texto em status_operadora.
+5. Atualizar ultima_consulta_operadora_em somente quando houve consulta conclusiva ou registrar separadamente tentativa falha, sem mascarar falha como consulta bem-sucedida.
+
+ERROS
+- Restrição específica do beneficiário/Guia: registrar para aquela Guia e continuar lote.
+- Guia não encontrada: needs_attention daquela Guia, continuar lote.
+- Login inválido: erro estrutural; parar lote.
+- Portal indisponível: erro estrutural; parar lote.
+- Mudança estrutural/seletor essencial inexistente: PORTAL_STRUCTURE_CHANGED; parar lote e informar operador.
+- Nunca marcar Guia como negada apenas porque não foi encontrada.
+
+BACKEND
+- Criar job/orquestrador de lote.
+- Uma automacao_execucao pai por lote e/ou execuções filhas por Guia conforme desenho existente; escolha uma estrutura que mantenha rastreabilidade clara e documente.
+- Persistir eventos.
+- Atualizar Guia em transação curta por item.
+- Auditabilidade.
+
+UI
+Na listagem/detalhe de Guia Unimed:
+- botão &quot;Consultar status agora&quot;;
+- desabilitar quando já houver execução correspondente running/queued;
+- mostrar hora da última consulta;
+- mostrar erro/needs_attention recente.
+A ação manual deve usar a mesma infraestrutura do job, não um código paralelo.
+
+SCHEDULER
+- programar o despachante;
+- queue database;
+- sem chamadas externas dentro do scheduler diretamente;
+- scheduler apenas enfileira.
+
+TESTES
+- seleção de Guias vencidas há 24h.
+- lock do tenant.
+- batch continua após erro de uma Guia.
+- batch para em LOGIN_ERROR/PORTAL_STRUCTURE_CHANGED.
+- mapeamento de status.
+- fixture HTML para resultado autorizado/negado/cancelado.
+- UI manual.
+- sem acesso real à Unimed em CI.
+
+DOCUMENTAÇÃO
+docs/automacao-unimed/07-consultar-status.md
+
+NÃO FAÇA COMMIT.</pre>
+      </div>
+    </article>
+    
+    <article class="prompt-card prompt-item" data-search="etapa 8 — automação 3: capturar senha e validade buscar senha e validade de guias aprovadas que ainda estejam incompletas, de modo diário e manual.">
+      <div class="prompt-head">
+        <div>
+          <div class="eyebrow">Super prompt 8</div>
+          <h3>Etapa 8 — Automação 3: capturar senha e validade</h3>
+          <p class="muted">Buscar senha e validade de Guias aprovadas que ainda estejam incompletas, de modo diário e manual.</p>
+        </div>
+        <button class="copy-btn small" onclick="copyPrompt('prompt-8', this)">Copiar prompt</button>
+      </div>
+      <div class="prompt-body">
+        <h4>Entregáveis esperados</h4>
+        <ul><li>Operação capture_authorization_data.</li><li>Varredura paginada dos exames em aberto.</li><li>Atualização de senha/validade.</li><li>Execução diária e manual.</li><li>Tratamento de não encontrado sem sobrescrever dados.</li></ul>
+        <pre id="prompt-8" class="prompt-text">Você é o Codex implementando a ETAPA 8 — AUTOMAÇÃO 3: CAPTURAR SENHA E VALIDADE.
+
+REGRAS GERAIS OBRIGATÓRIAS PARA TODAS AS ETAPAS
+
+1. Repositório: https://github.com/fbfert/gestao_de_convenios
+2. Antes de modificar qualquer arquivo:
+   - leia a estrutura atual do repositório;
+   - leia os arquivos diretamente envolvidos;
+   - leia as decisões/ADRs existentes;
+   - confirme a branch e o HEAD atual;
+   - não faça reset para um commit antigo.
+3. A referência de estado no momento da elaboração deste plano é o commit
+   6a30f787c6da718c4c9675f3b573497fce2d708e (&quot;Separar CRUD de templates de email&quot;).
+   Se o HEAD estiver mais novo, trabalhe sobre o HEAD atual e relate a diferença.
+4. Stack atual a preservar:
+   - Laravel 11 / PHP 8.2;
+   - Laravel Sanctum;
+   - Spatie Laravel Permission com isolamento por tenant;
+   - React 19 + TypeScript + Vite;
+   - TanStack Query, Axios, Zustand e Tailwind;
+   - Playwright já existente para E2E do frontend.
+5. Preserve rigorosamente o multi-tenancy. Todo dado de negócio novo deve ser isolado
+   por tenant e seguir as convenções já existentes (TenantContext, BelongsToTenant,
+   TenantScope, bindings, validações e permissões).
+6. Não confie apenas em route-model-binding implícito para recursos multi-tenant.
+   Use o padrão seguro já adotado no projeto.
+7. Não introduza segredo em logs, responses, screenshots, fixtures ou commits.
+8. Senhas e tokens devem ser criptografados em repouso e nunca retornados ao frontend.
+9. Não hardcode URLs com dynaHash da Unimed. Os dynaHash são temporários e pertencem
+   à sessão corrente. Navegue pelos elementos e hrefs gerados pelo próprio portal.
+10. Não use sleeps fixos como estratégia principal. Espere por estados reais do DOM,
+    navegação, respostas, desaparecimento de &quot;Processando&quot; e presença de elementos-alvo.
+11. A Automação 1 NÃO pode ter retry cego depois de uma ação que possa ter gerado guia.
+    Em timeout ou resposta ambígua, classifique como resultado_incerto e execute primeiro
+    uma verificação idempotente antes de permitir novo envio.
+12. Trabalhe APENAS na etapa solicitada. Não antecipe etapas seguintes.
+13. Preserve funcionalidades existentes que não fazem parte do escopo da etapa.
+14. Faça migrations reversíveis e evite alterações destrutivas sem necessidade.
+15. Antes de terminar:
+    - execute os testes pertinentes;
+    - execute lint/build pertinentes;
+    - corrija falhas causadas pela etapa;
+    - informe testes que não puderam ser executados e o motivo.
+16. Não faça commit, push, merge ou criação de PR. Ao final apenas sugira uma mensagem
+    de commit. Um commit somente poderá ser feito quando houver instrução expressa posterior.
+17. Ao finalizar, responda com:
+    a) resumo do que foi implementado;
+    b) arquivos criados/alterados;
+    c) migrations;
+    d) decisões técnicas tomadas;
+    e) testes executados e resultados;
+    f) riscos/pendências;
+    g) checklist de homologação manual;
+    h) mensagem de commit sugerida.
+
+OBJETIVO
+Para Guias Unimed APROVADAS, capturar senha de autorização e validade quando esses campos ainda estiverem ausentes.
+
+ELEGIBILIDADE
+Somente:
+- driver Unimed ativo;
+- guia.status = approved;
+- numero_guia preenchido;
+- senha IS NULL OU validade_senha IS NULL.
+Não executar automaticamente para Guia negada/cancelada/em análise.
+
+FREQUÊNCIA
+Mesmo princípio da Etapa 7:
+- ciclo alvo 24h;
+- botão manual disponível;
+- scheduler apenas enfileira itens devidos;
+- evitar horário fixo não decidido.
+Quando o Script 2 e o Script 3 forem devidos no mesmo ciclo, preferir orquestração que primeiro atualize status e depois processe apenas as Guias que permanecerem/aparecerem approved.
+Não faça duas sessões simultâneas do mesmo tenant.
+
+WORKER
+Implemente operation=capture_authorization_data_batch.
+
+FLUXO
+1. Login uma vez por lote.
+2. Acessar &quot;Exames em aberto&quot;.
+3. Localizar as Guias elegíveis na listagem.
+4. A listagem pode ter múltiplas páginas. Não assumir número fixo de páginas.
+5. Percorrer paginação usando links reais da sessão (Próxima ou páginas), nunca dynaHash hardcoded.
+6. Para cada guia encontrada, abrir o link do número da Guia.
+7. Capturar:
+   - input name=NR_SENHA
+   - input name=DT_VALIDADE_SENHA
+8. Normalizar data para o formato de banco.
+9. Atualizar somente os campos capturados com segurança.
+10. Não apagar senha/validade já existentes com valor vazio retornado por erro.
+
+BUSCA
+- Compare numero_guia exatamente.
+- Use carteirinha/nome como validação auxiliar quando disponível, não como única chave.
+- Evite clicar em Guia de outro beneficiário.
+
+NÃO ENCONTRADA
+Se após percorrer todas as páginas a Guia não for encontrada:
+- não alterar status da Guia;
+- registrar outcome NOT_FOUND_IN_OPEN_EXAMS;
+- informar operador na execução;
+- permitir nova tentativa futura conforme política.
+Se repetidamente não encontrada, isso deverá aparecer em relatórios/observabilidade, mas não invente status.
+
+ERROS
+Mesma política:
+- erro individual continua lote;
+- login/portal/mudança estrutural param lote.
+
+UI
+- botão &quot;Buscar senha/validade agora&quot; apenas em Guia elegível;
+- se senha e validade já estiverem completas, esconder/desabilitar;
+- mostrar execução recente;
+- atualizar tela após sucesso.
+
+BACKEND
+- job de lote;
+- idempotente;
+- não duplicar execução simultânea;
+- registrar eventos;
+- atualizar Guia com timestamp de consulta pertinente sem confundir com Script 2 se houver timestamps separados necessários.
+
+TESTES
+- elegibilidade approved.
+- não rodar denied/under_review.
+- paginação 1, várias páginas e not found.
+- captura de senha/data.
+- não sobrescrever dado por vazio.
+- batch errors.
+- UI.
+- fixtures apenas, sem Unimed real.
+
+DOCUMENTAÇÃO
+docs/automacao-unimed/08-senha-validade.md
+
+NÃO FAÇA COMMIT.</pre>
+      </div>
+    </article>
+    
+    <article class="prompt-card prompt-item" data-search="etapa 9 — relatórios, auditoria, avisos e reprocessamento entregar uma área operacional de acompanhamento das automações, com logs imutáveis e reprocessamento seguro.">
+      <div class="prompt-head">
+        <div>
+          <div class="eyebrow">Super prompt 9</div>
+          <h3>Etapa 9 — Relatórios, auditoria, avisos e reprocessamento</h3>
+          <p class="muted">Entregar uma área operacional de acompanhamento das automações, com logs imutáveis e reprocessamento seguro.</p>
+        </div>
+        <button class="copy-btn small" onclick="copyPrompt('prompt-9', this)">Copiar prompt</button>
+      </div>
+      <div class="prompt-body">
+        <h4>Entregáveis esperados</h4>
+        <ul><li>Tela de execuções e eventos.</li><li>Filtros e detalhamento.</li><li>Avisos ao operador.</li><li>Reprocessamento com verificação idempotente.</li><li>Evidências privadas e sanitizadas.</li></ul>
+        <pre id="prompt-9" class="prompt-text">Você é o Codex implementando a ETAPA 9 — RELATÓRIOS, AUDITORIA E REPROCESSAMENTO.
+
+REGRAS GERAIS OBRIGATÓRIAS PARA TODAS AS ETAPAS
+
+1. Repositório: https://github.com/fbfert/gestao_de_convenios
+2. Antes de modificar qualquer arquivo:
+   - leia a estrutura atual do repositório;
+   - leia os arquivos diretamente envolvidos;
+   - leia as decisões/ADRs existentes;
+   - confirme a branch e o HEAD atual;
+   - não faça reset para um commit antigo.
+3. A referência de estado no momento da elaboração deste plano é o commit
+   6a30f787c6da718c4c9675f3b573497fce2d708e (&quot;Separar CRUD de templates de email&quot;).
+   Se o HEAD estiver mais novo, trabalhe sobre o HEAD atual e relate a diferença.
+4. Stack atual a preservar:
+   - Laravel 11 / PHP 8.2;
+   - Laravel Sanctum;
+   - Spatie Laravel Permission com isolamento por tenant;
+   - React 19 + TypeScript + Vite;
+   - TanStack Query, Axios, Zustand e Tailwind;
+   - Playwright já existente para E2E do frontend.
+5. Preserve rigorosamente o multi-tenancy. Todo dado de negócio novo deve ser isolado
+   por tenant e seguir as convenções já existentes (TenantContext, BelongsToTenant,
+   TenantScope, bindings, validações e permissões).
+6. Não confie apenas em route-model-binding implícito para recursos multi-tenant.
+   Use o padrão seguro já adotado no projeto.
+7. Não introduza segredo em logs, responses, screenshots, fixtures ou commits.
+8. Senhas e tokens devem ser criptografados em repouso e nunca retornados ao frontend.
+9. Não hardcode URLs com dynaHash da Unimed. Os dynaHash são temporários e pertencem
+   à sessão corrente. Navegue pelos elementos e hrefs gerados pelo próprio portal.
+10. Não use sleeps fixos como estratégia principal. Espere por estados reais do DOM,
+    navegação, respostas, desaparecimento de &quot;Processando&quot; e presença de elementos-alvo.
+11. A Automação 1 NÃO pode ter retry cego depois de uma ação que possa ter gerado guia.
+    Em timeout ou resposta ambígua, classifique como resultado_incerto e execute primeiro
+    uma verificação idempotente antes de permitir novo envio.
+12. Trabalhe APENAS na etapa solicitada. Não antecipe etapas seguintes.
+13. Preserve funcionalidades existentes que não fazem parte do escopo da etapa.
+14. Faça migrations reversíveis e evite alterações destrutivas sem necessidade.
+15. Antes de terminar:
+    - execute os testes pertinentes;
+    - execute lint/build pertinentes;
+    - corrija falhas causadas pela etapa;
+    - informe testes que não puderam ser executados e o motivo.
+16. Não faça commit, push, merge ou criação de PR. Ao final apenas sugira uma mensagem
+    de commit. Um commit somente poderá ser feito quando houver instrução expressa posterior.
+17. Ao finalizar, responda com:
+    a) resumo do que foi implementado;
+    b) arquivos criados/alterados;
+    c) migrations;
+    d) decisões técnicas tomadas;
+    e) testes executados e resultados;
+    f) riscos/pendências;
+    g) checklist de homologação manual;
+    h) mensagem de commit sugerida.
+
+OBJETIVO
+Criar a experiência operacional para entender o que cada automação fez, por que parou e quando pode ser reprocessada.
+
+REGRAS
+- Cada execução gera relatório persistido.
+- Logs/eventos são imutáveis pelo usuário.
+- Operador deve ser informado sempre que houver needs_attention, uncertain, mudança de portal ou falha.
+- Não há &quot;editar relatório&quot;.
+- Reprocessamento deve obedecer idempotência.
+- Resultado incerto da Automação 1 jamais pode ser reenviado diretamente.
+
+BACKEND
+1. Criar endpoints read-only para:
+   - listar execuções paginadas;
+   - filtros: tipo, status, período, paciente, solicitação, item, Guia;
+   - detalhe;
+   - eventos cronológicos;
+   - evidências autorizadas.
+2. Respeitar permissões:
+   - usuário comum vê o que sua role permitir;
+   - profissional com viewOwn não pode ganhar acesso global por esta tela;
+   - admin pode auditar conforme permissões.
+3. Evidências:
+   - screenshots/html técnico somente em storage privado;
+   - acesso autenticado/autorizado;
+   - não retornar path físico;
+   - aplicar redaction quando possível.
+4. Criar ação de reprocessamento apenas onde permitido.
+
+POLÍTICA DE REPROCESSAMENTO
+A. Operação create_guide:
+- success + Guia existente =&gt; nunca reprocessar.
+- queued/running =&gt; bloquear.
+- uncertain =&gt; NÃO reenviar.
+  Primeiro executar uma rotina de confirmação na Unimed para verificar se a Guia já foi criada.
+  Se encontrada:
+    vincular/capturar Guia e finalizar a execução sem novo envio.
+  Se comprovadamente não encontrada:
+    liberar reprocessamento manual.
+- failed antes de qualquer submit gerador de Guia:
+  pode permitir reprocessamento manual após resolver a causa.
+- needs_verification:
+  não reprocessar automaticamente; operador decide após correção da restrição.
+B. consultar_status / senha_validade:
+- reprocessamento manual permitido se não houver outra execução em andamento.
+C. Toda tentativa gera nova execução ligada à anterior (parent/retry_of), sem apagar histórico.
+
+AVISOS NA TELA
+1. Criar mecanismo simples de aviso operacional:
+   - banner/contador no Dashboard e/ou área de automações;
+   - &quot;X automações precisam de atenção&quot;.
+2. Mostrar:
+   - paciente/Guia quando autorizado;
+   - tipo da automação;
+   - mensagem clara;
+   - data/hora;
+   - link ao relatório.
+3. Não enviar email nesta etapa, salvo se já houver requisito explícito no código/produto; a decisão é informar na tela.
+
+FRONTEND
+Nova rota/menu, exemplo &quot;Automações&quot; ou &quot;Relatórios de Automação&quot;.
+Tela:
+- cards de resumo;
+- filtros;
+- tabela;
+- detalhe em página/modal;
+- timeline de eventos;
+- botão de reprocessar somente quando permitido;
+- ação de confirmação para uncertain em vez de &quot;reenviar&quot;.
+
+AUDITORIA
+Além do relatório técnico, registrar ações humanas críticas:
+- reprocessamento solicitado;
+- liberação após confirmação;
+- alteração de estado manual se houver alguma.
+Usar AuditLog atual e nunca duplicar segredos.
+
+TESTES
+- permissões e tenant.
+- read-only.
+- uncertain bloqueia envio.
+- confirmação de existência evita duplicidade.
+- reprocessamento cria nova execução ligada à anterior.
+- screenshots privados.
+- aviso ao operador.
+- frontend build/lint/E2E interno.
+
+DOCUMENTAÇÃO
+docs/automacao-unimed/09-relatorios-reprocessamento.md
+
+NÃO FAÇA COMMIT.</pre>
+      </div>
+    </article>
+    
+    <article class="prompt-card prompt-item" data-search="etapa 10 — robustez, scheduler e observabilidade endurecer o conector para produção: circuit breaker, classificação de falhas, retenção, saúde do worker e agendamento confiável.">
+      <div class="prompt-head">
+        <div>
+          <div class="eyebrow">Super prompt 10</div>
+          <h3>Etapa 10 — Robustez, scheduler e observabilidade</h3>
+          <p class="muted">Endurecer o conector para produção: circuit breaker, classificação de falhas, retenção, saúde do worker e agendamento confiável.</p>
+        </div>
+        <button class="copy-btn small" onclick="copyPrompt('prompt-10', this)">Copiar prompt</button>
+      </div>
+      <div class="prompt-body">
+        <h4>Entregáveis esperados</h4>
+        <ul><li>Circuit breaker para mudança/indisponibilidade.</li><li>Scheduler 24h confiável.</li><li>Retenção de evidências.</li><li>Health/status do worker.</li><li>Runbook operacional e configuração systemd/Supervisor.</li></ul>
+        <pre id="prompt-10" class="prompt-text">Você é o Codex implementando a ETAPA 10 — ROBUSTEZ, SCHEDULER E OBSERVABILIDADE.
+
+REGRAS GERAIS OBRIGATÓRIAS PARA TODAS AS ETAPAS
+
+1. Repositório: https://github.com/fbfert/gestao_de_convenios
+2. Antes de modificar qualquer arquivo:
+   - leia a estrutura atual do repositório;
+   - leia os arquivos diretamente envolvidos;
+   - leia as decisões/ADRs existentes;
+   - confirme a branch e o HEAD atual;
+   - não faça reset para um commit antigo.
+3. A referência de estado no momento da elaboração deste plano é o commit
+   6a30f787c6da718c4c9675f3b573497fce2d708e (&quot;Separar CRUD de templates de email&quot;).
+   Se o HEAD estiver mais novo, trabalhe sobre o HEAD atual e relate a diferença.
+4. Stack atual a preservar:
+   - Laravel 11 / PHP 8.2;
+   - Laravel Sanctum;
+   - Spatie Laravel Permission com isolamento por tenant;
+   - React 19 + TypeScript + Vite;
+   - TanStack Query, Axios, Zustand e Tailwind;
+   - Playwright já existente para E2E do frontend.
+5. Preserve rigorosamente o multi-tenancy. Todo dado de negócio novo deve ser isolado
+   por tenant e seguir as convenções já existentes (TenantContext, BelongsToTenant,
+   TenantScope, bindings, validações e permissões).
+6. Não confie apenas em route-model-binding implícito para recursos multi-tenant.
+   Use o padrão seguro já adotado no projeto.
+7. Não introduza segredo em logs, responses, screenshots, fixtures ou commits.
+8. Senhas e tokens devem ser criptografados em repouso e nunca retornados ao frontend.
+9. Não hardcode URLs com dynaHash da Unimed. Os dynaHash são temporários e pertencem
+   à sessão corrente. Navegue pelos elementos e hrefs gerados pelo próprio portal.
+10. Não use sleeps fixos como estratégia principal. Espere por estados reais do DOM,
+    navegação, respostas, desaparecimento de &quot;Processando&quot; e presença de elementos-alvo.
+11. A Automação 1 NÃO pode ter retry cego depois de uma ação que possa ter gerado guia.
+    Em timeout ou resposta ambígua, classifique como resultado_incerto e execute primeiro
+    uma verificação idempotente antes de permitir novo envio.
+12. Trabalhe APENAS na etapa solicitada. Não antecipe etapas seguintes.
+13. Preserve funcionalidades existentes que não fazem parte do escopo da etapa.
+14. Faça migrations reversíveis e evite alterações destrutivas sem necessidade.
+15. Antes de terminar:
+    - execute os testes pertinentes;
+    - execute lint/build pertinentes;
+    - corrija falhas causadas pela etapa;
+    - informe testes que não puderam ser executados e o motivo.
+16. Não faça commit, push, merge ou criação de PR. Ao final apenas sugira uma mensagem
+    de commit. Um commit somente poderá ser feito quando houver instrução expressa posterior.
+17. Ao finalizar, responda com:
+    a) resumo do que foi implementado;
+    b) arquivos criados/alterados;
+    c) migrations;
+    d) decisões técnicas tomadas;
+    e) testes executados e resultados;
+    f) riscos/pendências;
+    g) checklist de homologação manual;
+    h) mensagem de commit sugerida.
+
+OBJETIVO
+Transformar o conjunto já funcional em um serviço operacional robusto e previsível.
+
+1. CLASSIFICAÇÃO DE ERROS
+Consolide catálogo:
+Erros individuais/de negócio, continuam lote:
+- ADMINISTRATIVE_RESTRICTION
+- BENEFICIARY_NOT_FOUND
+- GUIDE_NOT_FOUND
+- DOCTOR_NOT_FOUND
+- EXECUTOR_NOT_AVAILABLE
+- REQUIRED_UPLOAD_FAILED
+- VALIDATION_ERROR
+Erros estruturais, param lote:
+- LOGIN_ERROR
+- PORTAL_UNAVAILABLE
+- SESSION_LOST_UNRECOVERABLE
+- PORTAL_STRUCTURE_CHANGED
+- WORKER_INTERNAL_FATAL
+- CONFIGURATION_INVALID_GLOBAL
+Ajuste nomes à implementação real, mantendo semântica.
+
+2. CIRCUIT BREAKER / PAUSA DO CONECTOR
+Quando ocorrer PORTAL_STRUCTURE_CHANGED:
+- parar execução/lote;
+- marcar configuração/conector como temporariamente pausado para automações automáticas;
+- registrar motivo e horário;
+- informar operador/admin em tela;
+- impedir scheduler de continuar disparando falhas repetidas.
+Não apagar a configuração.
+Crie ação administrativa &quot;Reativar automações&quot; após correção técnica, com AuditLog.
+Para portal temporariamente indisponível, use política de retry limitada antes de pausar, sem confundir com alteração estrutural.
+
+3. RETRIES
+- GET/navegação anterior a ações mutáveis pode ter retry limitado e consciente.
+- Automação 1 após submit &quot;Finalizar e Gerar guia&quot;: nunca retry cego.
+- Resultados uncertain seguem confirmação idempotente.
+- Use backoff configurável onde apropriado.
+- Não criar loops infinitos.
+
+4. SCHEDULER 24H
+- Laravel Scheduler roda despachantes leves.
+- Selecionar itens &quot;due&quot; por timestamps, não por horário absoluto não definido.
+- Script 2 e 3: intervalo configurável default 24h.
+- lock por tenant.
+- scheduler não abre browser diretamente.
+- queue database.
+
+5. SAÚDE DO WORKER
+- healthcheck Laravel -&gt; worker local.
+- mostrar status no painel administrativo/configurações:
+  Disponível / Indisponível / Pausado.
+- não expor internamente versão/segredos em endpoint público.
+
+6. RETENÇÃO
+Crie política configurável para:
+- screenshots de erro;
+- HTML dumps técnicos, se existirem;
+- logs do worker;
+- execuções/eventos no banco (preferir retenção longa para auditoria; não apagar sem política explícita).
+Implemente comando seguro de limpeza apenas de artefatos técnicos, com dry-run se viável.
+Nunca remover arquivos vinculados a documentos médicos.
+
+7. OBSERVABILIDADE
+- logs estruturados com correlation/execution_id;
+- métricas simples derivadas do banco:
+  execuções por status/tipo
+  tempo médio
+  falhas últimas 24h/7d
+  needs_attention
+- não introduzir stack externa de métricas se não necessária.
+
+8. DEPLOYMENT
+Entregar exemplos prontos e documentados de:
+- systemd/Supervisor para Laravel queue worker;
+- systemd para Node worker;
+- reinício automático;
+- diretório de trabalho;
+- env;
+- usuário Linux;
+- logs;
+- comando de deploy do worker (npm ci/build e instalação Playwright necessária).
+Não alterar o servidor real automaticamente.
+
+9. SEGURANÇA
+- worker localhost.
+- token forte via env.
+- rotação de token documentada.
+- sem portas públicas.
+- sem screenshot público.
+- permissões de filesystem mínimas.
+
+TESTES
+- circuit breaker.
+- scheduler não dispara pausado.
+- due 24h.
+- retry limitado.
+- pós-submit uncertain nunca reenviado.
+- reativação auditada.
+- limpeza não remove documentos médicos.
+- healthcheck fake.
+
+DOCUMENTAÇÃO
+docs/automacao-unimed/10-operacao-producao.md
+Inclua runbook:
+- worker offline
+- login inválido
+- portal alterado
+- Guia uncertain
+- restrição administrativa
+- como reativar após correção.
+
+NÃO FAÇA COMMIT.</pre>
+      </div>
+    </article>
+    
+    <article class="prompt-card prompt-item" data-search="etapa 11 — homologação, regressão e entrada em produção validar o conjunto completo, corrigir somente defeitos do escopo, documentar rollback e preparar a liberação.">
+      <div class="prompt-head">
+        <div>
+          <div class="eyebrow">Super prompt 11</div>
+          <h3>Etapa 11 — Homologação, regressão e entrada em produção</h3>
+          <p class="muted">Validar o conjunto completo, corrigir somente defeitos do escopo, documentar rollback e preparar a liberação.</p>
+        </div>
+        <button class="copy-btn small" onclick="copyPrompt('prompt-11', this)">Copiar prompt</button>
+      </div>
+      <div class="prompt-body">
+        <h4>Entregáveis esperados</h4>
+        <ul><li>Suíte completa verde ou relatório de exceções.</li><li>Checklist assistido com portal real autorizado.</li><li>Plano de deploy e rollback.</li><li>Documentação consolidada.</li><li>Relatório final de homologação.</li></ul>
+        <pre id="prompt-11" class="prompt-text">Você é o Codex executando a ETAPA 11 — HOMOLOGAÇÃO E PREPARAÇÃO PARA PRODUÇÃO do projeto GESCON / Automações Unimed.
+
+REGRAS GERAIS OBRIGATÓRIAS PARA TODAS AS ETAPAS
+
+1. Repositório: https://github.com/fbfert/gestao_de_convenios
+2. Antes de modificar qualquer arquivo:
+   - leia a estrutura atual do repositório;
+   - leia os arquivos diretamente envolvidos;
+   - leia as decisões/ADRs existentes;
+   - confirme a branch e o HEAD atual;
+   - não faça reset para um commit antigo.
+3. A referência de estado no momento da elaboração deste plano é o commit
+   6a30f787c6da718c4c9675f3b573497fce2d708e (&quot;Separar CRUD de templates de email&quot;).
+   Se o HEAD estiver mais novo, trabalhe sobre o HEAD atual e relate a diferença.
+4. Stack atual a preservar:
+   - Laravel 11 / PHP 8.2;
+   - Laravel Sanctum;
+   - Spatie Laravel Permission com isolamento por tenant;
+   - React 19 + TypeScript + Vite;
+   - TanStack Query, Axios, Zustand e Tailwind;
+   - Playwright já existente para E2E do frontend.
+5. Preserve rigorosamente o multi-tenancy. Todo dado de negócio novo deve ser isolado
+   por tenant e seguir as convenções já existentes (TenantContext, BelongsToTenant,
+   TenantScope, bindings, validações e permissões).
+6. Não confie apenas em route-model-binding implícito para recursos multi-tenant.
+   Use o padrão seguro já adotado no projeto.
+7. Não introduza segredo em logs, responses, screenshots, fixtures ou commits.
+8. Senhas e tokens devem ser criptografados em repouso e nunca retornados ao frontend.
+9. Não hardcode URLs com dynaHash da Unimed. Os dynaHash são temporários e pertencem
+   à sessão corrente. Navegue pelos elementos e hrefs gerados pelo próprio portal.
+10. Não use sleeps fixos como estratégia principal. Espere por estados reais do DOM,
+    navegação, respostas, desaparecimento de &quot;Processando&quot; e presença de elementos-alvo.
+11. A Automação 1 NÃO pode ter retry cego depois de uma ação que possa ter gerado guia.
+    Em timeout ou resposta ambígua, classifique como resultado_incerto e execute primeiro
+    uma verificação idempotente antes de permitir novo envio.
+12. Trabalhe APENAS na etapa solicitada. Não antecipe etapas seguintes.
+13. Preserve funcionalidades existentes que não fazem parte do escopo da etapa.
+14. Faça migrations reversíveis e evite alterações destrutivas sem necessidade.
+15. Antes de terminar:
+    - execute os testes pertinentes;
+    - execute lint/build pertinentes;
+    - corrija falhas causadas pela etapa;
+    - informe testes que não puderam ser executados e o motivo.
+16. Não faça commit, push, merge ou criação de PR. Ao final apenas sugira uma mensagem
+    de commit. Um commit somente poderá ser feito quando houver instrução expressa posterior.
+17. Ao finalizar, responda com:
+    a) resumo do que foi implementado;
+    b) arquivos criados/alterados;
+    c) migrations;
+    d) decisões técnicas tomadas;
+    e) testes executados e resultados;
+    f) riscos/pendências;
+    g) checklist de homologação manual;
+    h) mensagem de commit sugerida.
+
+OBJETIVO
+Não criar novos módulos. Validar o que foi construído nas etapas 1 a 10, corrigir defeitos diretamente relacionados e preparar documentação/rollback.
+
+A. AUDITORIA DE ESCOPO
+1. Revise todas as mudanças das etapas.
+2. Confirme:
+   - multi-tenancy;
+   - permissões;
+   - criptografia;
+   - não exposição de segredos;
+   - route bindings;
+   - migrations reversíveis;
+   - compatibilidade com dados legados;
+   - ausência de dynaHash hardcoded;
+   - ausência de retry cego pós-geração;
+   - uma Guia por item;
+   - alertas ao operador;
+   - scheduler/locks.
+
+B. TESTES BACKEND
+Execute toda a suíte.
+Inclua cobertura de integração para:
+- criação Solicitação multi-item;
+- documentos;
+- configurações Unimed;
+- fila/worker fake;
+- gerar Guia fake;
+- status fake;
+- senha/validade fake;
+- relatórios;
+- idempotência;
+- permissões;
+- tenants.
+Não chamar Unimed real nos testes automatizados.
+
+C. FRONTEND
+- lint;
+- build;
+- testes existentes;
+- Playwright E2E com worker/portal mock;
+- fluxos principais em resolução desktop e pelo menos uma resolução responsiva coerente com o produto.
+
+D. MIGRATIONS / DADOS
+1. Testar migrate em banco de teste com cenário de dados legados.
+2. Confirmar backfill.
+3. Confirmar que não duplica itens/documentos.
+4. Testar rollback em ambiente descartável.
+5. Não remover colunas legadas nesta etapa sem uma decisão explícita posterior.
+6. Produzir checklist de backup pré-deploy.
+
+E. TESTE ASSISTIDO COM PORTAL REAL
+Não automatize CI contra produção.
+Crie roteiro manual para ambiente autorizado contendo casos:
+1. Guia aprovada diretamente.
+2. Guia em análise.
+3. Guia negada.
+4. Restrição administrativa.
+5. Beneficiário exigindo atualização cadastral.
+6. Médico encontrado por CRM.
+7. Médico encontrado apenas por nome.
+8. fallback MEDICO NAO COOPERADO.
+9. procedimento com campos genéricos.
+10. uploads geral e por item.
+11. Script 2 atualização de status.
+12. Script 3 captura de senha/validade.
+13. timeout simulado antes de submit.
+14. resultado incerto após submit e confirmação idempotente.
+15. mudança de seletor simulada -&gt; portal paused.
+Para cada caso, defina resultado esperado e evidência a conferir.
+
+F. REGRESSÃO
+Verifique funcionalidades existentes não relacionadas:
+- login/logout;
+- dashboard;
+- pacientes;
+- solicitações legadas;
+- guias não Unimed;
+- sessões/lancamentos;
+- antecipações;
+- analíticos;
+- conciliação;
+- convênios;
+- profissionais;
+- médicos;
+- usuários/permissões;
+- configurações email/IA/templates;
+- auditoria/manual.
+Corrija apenas regressões causadas pelo projeto.
+
+G. DEPLOY
+Crie docs/automacao-unimed/11-deploy-homologacao.md:
+- pré-requisitos Node/Playwright;
+- backup;
+- migrate;
+- backend;
+- frontend build;
+- worker build;
+- systemd/Supervisor;
+- queue restart;
+- scheduler;
+- healthcheck;
+- smoke tests;
+- como habilitar a configuração Unimed por tenant.
+
+H. ROLLBACK
+Documente:
+- pausar automações;
+- parar worker Node;
+- parar queue específica se necessário;
+- rollback de aplicação;
+- cuidados com migrations que já receberam dados;
+- estratégia preferencial de roll-forward para schema com dados.
+Não proponha rollback destrutivo de dados sem backup.
+
+I. RELATÓRIO FINAL
+Crie:
+docs/automacao-unimed/RELATORIO-HOMOLOGACAO.md
+com:
+- versão/commit testado;
+- testes executados;
+- resultados;
+- pendências;
+- riscos residuais;
+- checklist &quot;GO / NO-GO&quot;;
+- campos para responsável/data de homologação.
+
+CRITÉRIO DE CONCLUSÃO
+Só declare a etapa concluída se:
+- testes aplicáveis estiverem verdes OU exceções estiverem explicitamente documentadas;
+- build funcionar;
+- não houver vulnerabilidade óbvia de tenant/segredo;
+- manual de deploy/rollback estiver completo;
+- roteiro de teste real estiver pronto.
+
+NÃO faça acesso real à Unimed sem credenciais/ambiente explicitamente fornecidos e autorização durante a execução da homologação.
+NÃO FAÇA COMMIT.</pre>
+      </div>
+    </article>
+    
+</section>
+
+<section>
+<div class="eyebrow">Checklist final</div><h2>Antes de iniciar cada etapa</h2>
+<div class="grid2">
+<div class="card"><h3>Antes do Codex</h3><ul><li>Confirmar que a etapa anterior está homologada.</li><li>Confirmar branch/HEAD correto.</li><li>Ter backup quando houver migration relevante.</li><li>Não fornecer segredo real em prompt.</li></ul></div>
+<div class="card"><h3>Depois do Codex</h3><ul><li>Ler resumo e arquivos alterados.</li><li>Conferir migrations e tenant.</li><li>Executar checklist manual.</li><li>Só então decidir commit e avanço.</li></ul></div>
+</div>
+</section>
+
+<div class="footer">GESCON — Plano completo de Automações Unimed · Gerado a partir das decisões consolidadas do projeto.</div>
+</div>
+
+<script>
+function copyPrompt(id,btn){
+  const text=document.getElementById(id).innerText;
+  navigator.clipboard.writeText(text).then(()=>{
+    const old=btn.innerText;btn.innerText='Copiado ✓';setTimeout(()=>btn.innerText=old,1400);
+  });
+}
+function filterPrompts(){
+  const q=document.getElementById('search').value.toLowerCase().trim();
+  document.querySelectorAll('.prompt-item').forEach(el=>{
+    const text=(el.dataset.search+' '+el.innerText.toLowerCase());
+    el.style.display=!q||text.includes(q)?'block':'none';
+  });
+}
+function collapseAll(){document.querySelectorAll('.prompt-text').forEach(el=>{if(el.closest('.prompt-item')) el.style.maxHeight='180px';})}
+function expandAll(){document.querySelectorAll('.prompt-text').forEach(el=>{if(el.closest('.prompt-item')) el.style.maxHeight='none';})}
+</script>
+</body>
+</html>

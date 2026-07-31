@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Exceptions\GuiaStatusInvalidoException;
+use Illuminate\Validation\ValidationException;
 use App\Models\Guia;
 use App\Support\TenantContext;
 use App\Models\ConvenioRegra;
@@ -24,7 +25,16 @@ class GuiaService
     public function listar(array $filtros = [], int $perPage = 15): LengthAwarePaginator
     {
         $query = $this->aplicarEscopoOwn(
-            Guia::query()->with(['solicitacao', 'convenio', 'paciente', 'profissional', 'especialidade']),
+            Guia::query()->with([
+                'solicitacao',
+                'convenio',
+                'paciente',
+                'profissional',
+                'especialidade',
+                'solicitacaoItem.especialidade',
+                'solicitacaoItem.profissional',
+                'automacaoExecucao',
+            ]),
             'guias.view',
             'guias.viewOwn',
             fn ($query, $user) => $query->where('profissional_id', $user->profissional_id)
@@ -47,9 +57,21 @@ class GuiaService
 
     public function criar(array $dados): Guia
     {
+        $convenio = \App\Models\Convenio::query()
+            ->where('tenant_id', $this->tenantId())
+            ->whereKey($dados['convenio_id'])
+            ->firstOrFail();
+
+        if ($convenio->connector_driver === 'unimed_rda') {
+            throw ValidationException::withMessages([
+                'convenio_id' => ['Guias de Convênio Unimed RDA devem ser criadas pela automação do item.'],
+            ]);
+        }
+
         return Guia::query()->create([
             'tenant_id' => $this->tenantId(),
             'solicitacao_id' => $dados['solicitacao_id'] ?? null,
+            'solicitacao_item_id' => $dados['solicitacao_item_id'] ?? null,
             'convenio_id' => $dados['convenio_id'],
             'paciente_id' => $dados['paciente_id'],
             'profissional_id' => $dados['profissional_id'],
@@ -73,6 +95,9 @@ class GuiaService
             'paciente',
             'profissional',
             'especialidade',
+            'solicitacaoItem.especialidade',
+            'solicitacaoItem.profissional',
+            'automacaoExecucao.eventos',
             'antecipacoes',
             'conciliacoes',
         ])->findOrFail($id);

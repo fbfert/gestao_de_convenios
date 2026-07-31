@@ -48,6 +48,60 @@ export function GuiaDetalheResumo({ guia }: { guia: Guia }) {
         </DetailItem>
       </section>
 
+      {guia.solicitacao_item || guia.automacao_execucao ? (
+        <section className="rounded-[1.75rem] border border-cyan-300/20 bg-cyan-400/10 p-6">
+          <h3 className="text-lg font-semibold text-white">Operação Unimed</h3>
+          <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <DetailItem label="Item da solicitação">
+              {guia.solicitacao_item ? `#${guia.solicitacao_item.id}` : '-'}
+            </DetailItem>
+            <DetailItem label="Quantidade">
+              {guia.solicitacao_item?.quantidade ?? '-'}
+            </DetailItem>
+            <DetailItem label="Status do item">
+              {guia.solicitacao_item?.status_operacional ?? '-'}
+            </DetailItem>
+            <DetailItem label="Execução">
+              {guia.automacao_execucao ? `#${guia.automacao_execucao.id}` : '-'}
+            </DetailItem>
+            <DetailItem label="Operação">
+              {guia.automacao_execucao?.operacao ?? '-'}
+            </DetailItem>
+            <DetailItem label="Status da execução">
+              {guia.automacao_execucao?.status ?? '-'}
+            </DetailItem>
+            <DetailItem label="Status Unimed">
+              {guia.unimed_status ?? '-'}
+            </DetailItem>
+            <DetailItem label="Última consulta">
+              {guia.unimed_last_checked_at ?? '-'}
+            </DetailItem>
+            <DetailItem label="Próxima consulta">
+              {guia.unimed_next_check_at ?? '-'}
+            </DetailItem>
+            <DetailItem label="Início">
+              {guia.automacao_execucao?.started_at ?? '-'}
+            </DetailItem>
+            <DetailItem label="Conclusão">
+              {guia.automacao_execucao?.finished_at ?? '-'}
+            </DetailItem>
+          </div>
+
+          {guia.automacao_execucao?.eventos.length ? (
+            <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+              <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Eventos</p>
+              <div className="mt-3 space-y-2 text-sm text-slate-200">
+                {guia.automacao_execucao.eventos.map((evento) => (
+                  <p key={evento.id}>
+                    {evento.registrado_em ?? '-'} · {evento.tipo} · {evento.status ?? '-'}
+                  </p>
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </section>
+      ) : null}
+
       <section className="grid gap-4 xl:grid-cols-2">
         <article className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
           <div className="flex items-center justify-between gap-4">

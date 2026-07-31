@@ -90,6 +90,30 @@ export function useNegarGuia() {
   })
 }
 
+export function useConsultarGuiaUnimed() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const { data } = await apiClient.post<{
+        data: {
+          id: number
+          status: string
+          operacao: string
+          guia_id: number
+          queued_at: string | null
+        }
+      }>(`/guias/${id}/consultar-unimed`)
+
+      return data.data
+    },
+    onSuccess: async (_data, id) => {
+      await queryClient.invalidateQueries({ queryKey: ['guias'] })
+      await queryClient.invalidateQueries({ queryKey: ['guias', id] })
+    },
+  })
+}
+
 export function useGerarConciliacao() {
   return useGerarConciliacaoMutation()
 }

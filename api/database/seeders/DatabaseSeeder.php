@@ -65,9 +65,19 @@ class DatabaseSeeder extends Seeder
                     'observacoes' => 'Seed de popup de guia.',
                 ]);
 
+                $item = $solicitacao->itens()->create([
+                    'tenant_id' => $tenant->id,
+                    'especialidade_id' => $especialidade->id,
+                    'profissional_id' => $profissional->id,
+                    'quantidade' => 10,
+                    'status_operacional' => 'pending',
+                    'observacoes' => null,
+                ]);
+
                 Guia::query()->create([
                     'tenant_id' => $tenant->id,
                     'solicitacao_id' => $solicitacao->id,
+                    'solicitacao_item_id' => $item->id,
                     'convenio_id' => $convenio->id,
                     'paciente_id' => $paciente->id,
                     'profissional_id' => $profissional->id,

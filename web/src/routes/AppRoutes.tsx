@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { LoginPage } from './LoginPage'
+import { AutomacoesPage } from '../features/automacoes/AutomacoesPage'
 import { ProtectedRoute } from './ProtectedRoute'
 import { ShellLayout } from './ShellLayout'
 import { SolicitacoesPage } from '../features/solicitacoes/SolicitacoesPage'
@@ -32,6 +33,8 @@ export function AppRoutes() {
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/auditoria" element={<AuditoriaPage />} />
+          <Route path="/automacoes" element={<AutomacoesPage />} />
+          <Route path="/automacoes/:id" element={<AutomacoesPage />} />
           <Route path="/solicitacoes" element={<SolicitacoesPage />} />
           <Route path="/solicitacoes/ler-pedido-medico" element={<LerPedidoMedicoPage />} />
           <Route path="/solicitacoes/nova" element={<SolicitacoesPage />} />

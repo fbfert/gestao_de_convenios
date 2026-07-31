@@ -30,7 +30,8 @@ class SolicitacoesApiTest extends TestCase
 
         $create->assertCreated()
             ->assertJsonPath('data.status', 'under_review')
-            ->assertJsonPath('data.convenio_id', $payload['convenio_id']);
+            ->assertJsonPath('data.convenio_id', $payload['convenio_id'])
+            ->assertJsonPath('data.itens.0.quantidade', 10);
         $this->assertSame($payload['medico_id'], $create->json('data.medico_id'));
         $this->assertSame('Dr. Carlos Almeida', $create->json('data.medico.nome'));
 
@@ -58,6 +59,7 @@ class SolicitacoesApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.0.id', $id)
             ->assertJsonPath('data.0.status', 'under_review')
+            ->assertJsonPath('data.0.itens.0.profissional_id', $payload['profissional_id'])
             ->assertJsonPath('data.0.guia.id', $guia->id)
             ->assertJsonPath('data.0.guia.numero_guia', $guia->numero_guia);
 
@@ -66,7 +68,86 @@ class SolicitacoesApiTest extends TestCase
             ->assertJsonPath('data.id', $id)
             ->assertJsonPath('data.status', 'under_review')
             ->assertJsonPath('data.medico.nome', 'Dr. Carlos Almeida')
+            ->assertJsonPath('data.itens.0.especialidade_id', $payload['especialidade_id'])
             ->assertJsonPath('data.guia.id', $guia->id);
+    }
+
+    public function test_cria_solicitacao_com_multiplos_itens(): void
+    {
+        $this->autenticar();
+        $payload = $this->payloadSolicitacao('Unimed');
+        $outraEspecialidade = Especialidade::query()
+            ->where('nome', '!=', 'Fisioterapia')
+            ->firstOrFail();
+        $outroProfissional = Profissional::query()
+            ->where('especialidade_id', $outraEspecialidade->id)
+            ->firstOrFail();
+
+        unset($payload['especialidade_id'], $payload['profissional_id']);
+        $fisioterapia = Especialidade::query()->where('nome', 'Fisioterapia')->firstOrFail();
+        $profissionalFisioterapia = Profissional::query()
+            ->where('especialidade_id', $fisioterapia->id)
+            ->firstOrFail();
+        $payload['itens'] = [
+            [
+                'especialidade_id' => $fisioterapia->id,
+                'profissional_id' => $profissionalFisioterapia->id,
+                'quantidade' => 8,
+            ],
+            [
+                'especialidade_id' => $outraEspecialidade->id,
+                'profissional_id' => $outroProfissional->id,
+            ],
+        ];
+
+        $response = $this->postJson('/api/solicitacoes', $payload);
+
+        $response->assertCreated()
+            ->assertJsonCount(2, 'data.itens')
+            ->assertJsonPath('data.itens.0.quantidade', 8)
+            ->assertJsonPath('data.itens.1.quantidade', 10);
+
+        $this->assertDatabaseHas('solicitacao_itens', [
+            'solicitacao_id' => $response->json('data.id'),
+            'profissional_id' => $payload['itens'][1]['profissional_id'],
+            'quantidade' => 10,
+        ]);
+    }
+
+    public function test_nao_permite_item_de_outro_tenant_na_criacao(): void
+    {
+        $this->autenticar();
+        $payload = $this->payloadSolicitacao('Unimed');
+        $tenant = Tenant::query()->create([
+            'nome' => 'Tenant Item Externo',
+            'slug' => 'tenant-item-externo',
+            'cnpj' => '66.666.666/0001-66',
+            'ativo' => true,
+        ]);
+        $especialidadeExterna = Especialidade::query()->create([
+            'tenant_id' => $tenant->id,
+            'nome' => 'Especialidade Externa Item',
+            'ativo' => true,
+        ]);
+        $profissionalExterno = Profissional::query()->create([
+            'tenant_id' => $tenant->id,
+            'especialidade_id' => $especialidadeExterna->id,
+            'nome' => 'Profissional Externo Item',
+            'conselho_registro' => 'EXT 123',
+            'ativo' => true,
+        ]);
+        unset($payload['especialidade_id'], $payload['profissional_id']);
+        $payload['itens'] = [[
+            'especialidade_id' => $especialidadeExterna->id,
+            'profissional_id' => $profissionalExterno->id,
+        ]];
+
+        $this->postJson('/api/solicitacoes', $payload)
+            ->assertStatus(422)
+            ->assertJsonValidationErrors([
+                'itens.0.especialidade_id',
+                'itens.0.profissional_id',
+            ]);
     }
 
     public function test_criacao_valida_campos_obrigatorios(): void
@@ -107,6 +188,7 @@ class SolicitacoesApiTest extends TestCase
         $guia = Guia::query()->where('solicitacao_id', $aprovada)->firstOrFail();
         $this->assertSame("GUIA-SOLICITACAO-{$aprovada}", $guia->numero_guia);
         $this->assertSame('under_review', $guia->status);
+        $this->assertNotNull($guia->solicitacao_item_id);
 
         $this->getJson('/api/guias?status=under_review&convenio_id='.$payloadAprovada['convenio_id'])
             ->assertOk()

@@ -1,6 +1,8 @@
 export type Guia = {
   id: number
   solicitacao_id: number | null
+  solicitacao_item_id: number | null
+  automacao_execucao_id: number | null
   convenio_id: number
   paciente_id: number
   profissional_id: number
@@ -8,6 +10,9 @@ export type Guia = {
   numero_guia: string
   tipo_terapia: string
   status: string
+  unimed_status: string | null
+  unimed_last_checked_at: string | null
+  unimed_next_check_at: string | null
   data_solicitacao: string
   data_finalizacao: string | null
   senha: string | null
@@ -17,6 +22,8 @@ export type Guia = {
   convenio?: GuiaReferencia
   profissional?: GuiaReferencia
   especialidade?: GuiaReferencia
+  solicitacao_item?: GuiaSolicitacaoItem | null
+  automacao_execucao?: GuiaAutomacaoExecucao | null
   antecipacoes?: GuiaAntecipacao[]
   conciliacoes?: GuiaConciliacao[]
 }
@@ -28,6 +35,33 @@ export type GuiaReferencia = {
 
 export type GuiaPaciente = GuiaReferencia & {
   carteirinha: string
+}
+
+export type GuiaSolicitacaoItem = {
+  id: number
+  especialidade_id: number
+  profissional_id: number
+  quantidade: number
+  status_operacional: string
+  especialidade?: GuiaReferencia | null
+  profissional?: GuiaReferencia | null
+}
+
+export type GuiaAutomacaoExecucao = {
+  id: number
+  operacao: string
+  status: string
+  erro_codigo: string | null
+  erro_mensagem: string | null
+  queued_at: string | null
+  started_at: string | null
+  finished_at: string | null
+  eventos: Array<{
+    id: number
+    tipo: string
+    status: string | null
+    registrado_em: string | null
+  }>
 }
 
 export type GuiaAntecipacao = {

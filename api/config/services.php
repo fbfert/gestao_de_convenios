@@ -31,4 +31,10 @@ return [
         ],
     ],
 
+    'unimed_worker' => [
+        'base_url' => env('UNIMED_WORKER_URL', 'http://127.0.0.1:8787'),
+        'token' => env('UNIMED_WORKER_TOKEN', ''),
+        'timeout' => env('UNIMED_WORKER_TIMEOUT', 20),
+    ],
+
 ];

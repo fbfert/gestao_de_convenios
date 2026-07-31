@@ -13,6 +13,13 @@ import {
   type AiPromptTemplate,
   type AiSettingsForm,
 } from './useAiSettings'
+import {
+  useReativarUnimed,
+  useSalvarUnimedSettings,
+  useUnimedSettings,
+  useUnimedWorkerHealth,
+  type UnimedSettingsForm,
+} from './useUnimedSettings'
 
 const emptySmtpForm: EmailSettingsForm['smtp'] = {
   host: '',
@@ -30,6 +37,13 @@ const emptyAiOpenaiForm: AiSettingsForm['openai'] = {
   base_url: 'https://api.openai.com/v1',
   organization_id: '',
   project_id: '',
+  ativo: true,
+}
+
+const emptyUnimedCredentialForm: UnimedSettingsForm['credential'] = {
+  login: '',
+  password: '',
+  base_url: 'https://portal.unimed.coop.br',
   ativo: true,
 }
 
@@ -70,13 +84,21 @@ export function ConfiguracoesPage() {
   const aiSettingsQuery = useAiSettings()
   const salvarAiSettings = useSalvarAiSettings()
   const aiModelsQuery = useAiModels(false)
-  const [activeTab, setActiveTab] = useState<'geral' | 'emails' | 'ia'>('emails')
+  const unimedSettingsQuery = useUnimedSettings()
+  const salvarUnimedSettings = useSalvarUnimedSettings()
+  const unimedWorkerHealth = useUnimedWorkerHealth()
+  const reativarUnimed = useReativarUnimed()
+  const [activeTab, setActiveTab] = useState<'geral' | 'emails' | 'ia' | 'unimed'>('emails')
   const [form, setForm] = useState<EmailSettingsForm>({
     smtp: emptySmtpForm,
   })
   const [aiForm, setAiForm] = useState<AiSettingsForm>({
     openai: emptyAiOpenaiForm,
     prompts: defaultAiPrompts,
+  })
+  const [unimedForm, setUnimedForm] = useState<UnimedSettingsForm>({
+    convenio_id: '',
+    credential: emptyUnimedCredentialForm,
   })
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -124,6 +146,26 @@ export function ConfiguracoesPage() {
       prompts: data.prompts.length > 0 ? data.prompts : defaultAiPrompts,
     })
   }, [aiSettingsQuery.data])
+
+  useEffect(() => {
+    const data = unimedSettingsQuery.data
+
+    if (!data) {
+      return
+    }
+
+    setUnimedForm({
+      convenio_id: data.convenio_id ? String(data.convenio_id) : '',
+      credential: data.credential
+        ? {
+            login: data.credential.login,
+            password: '',
+            base_url: data.credential.base_url ?? '',
+            ativo: data.credential.ativo,
+          }
+        : emptyUnimedCredentialForm,
+    })
+  }, [unimedSettingsQuery.data])
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -175,6 +217,40 @@ export function ConfiguracoesPage() {
       }))
     } catch (submitError) {
       setError(getHttpErrorMessage(submitError, 'Não foi possível salvar as configurações de IA.'))
+    }
+  }
+
+  const handleUnimedSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setMessage(null)
+    setError(null)
+
+    try {
+      await salvarUnimedSettings.mutateAsync(unimedForm)
+      setMessage('Configurações Unimed salvas.')
+      setUnimedForm((current) => ({
+        ...current,
+        credential: {
+          ...current.credential,
+          password: '',
+        },
+      }))
+    } catch (submitError) {
+      setError(
+        getHttpErrorMessage(submitError, 'Não foi possível salvar as configurações Unimed.'),
+      )
+    }
+  }
+
+  const handleReativarUnimed = async () => {
+    setMessage(null)
+    setError(null)
+
+    try {
+      await reativarUnimed.mutateAsync()
+      setMessage('Automação Unimed reativada.')
+    } catch (submitError) {
+      setError(getHttpErrorMessage(submitError, 'Não foi possível reativar a automação Unimed.'))
     }
   }
 
@@ -233,6 +309,18 @@ export function ConfiguracoesPage() {
           >
             Templates de E-mails
           </Link>
+          <button
+            type="button"
+            onClick={() => setActiveTab('unimed')}
+            className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${
+              activeTab === 'unimed'
+                ? 'bg-cyan-400 text-slate-950'
+                : 'border border-white/10 bg-white/5 text-slate-200 hover:bg-white/10'
+            }`}
+            data-testid="configuracoes-tab-unimed"
+          >
+            Unimed RDA
+          </button>
         </div>
       </section>
 
@@ -421,6 +509,174 @@ export function ConfiguracoesPage() {
             data-testid="configuracoes-emails-salvar"
           >
             {salvarEmailSettings.isPending ? 'Salvando...' : 'Salvar configurações de email'}
+          </button>
+        </form>
+      ) : null}
+
+      {activeTab === 'unimed' ? (
+        <form
+          onSubmit={handleUnimedSubmit}
+          className="space-y-6"
+          data-testid="configuracoes-unimed-form"
+        >
+          <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
+            <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-white">Portal Unimed RDA</h3>
+                <p className="mt-1 text-sm text-slate-300">
+                  Convênio e credenciais usados pela automação de guias no portal RDA.
+                </p>
+              </div>
+              <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-200">
+                <input
+                  type="checkbox"
+                  checked={unimedForm.credential.ativo}
+                  onChange={(event) =>
+                    setUnimedForm((current) => ({
+                      ...current,
+                      credential: { ...current.credential, ativo: event.target.checked },
+                    }))
+                  }
+                  className="size-4 rounded border-white/20 bg-white/10"
+                  data-testid="unimed-credencial-ativo"
+                />
+                Ativo
+              </label>
+            </div>
+
+            {unimedSettingsQuery.isLoading ? (
+              <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
+                Carregando configurações Unimed...
+              </div>
+            ) : null}
+
+            <div className="mt-5 grid gap-4 md:grid-cols-2">
+              <label className="space-y-2">
+                <span className="text-sm font-medium text-slate-200">Convênio Unimed</span>
+                <select
+                  value={unimedForm.convenio_id}
+                  onChange={(event) =>
+                    setUnimedForm((current) => ({
+                      ...current,
+                      convenio_id: event.target.value,
+                    }))
+                  }
+                  className={inputClasses()}
+                  data-testid="unimed-convenio"
+                >
+                  <option value="">Nenhum convênio vinculado</option>
+                  {(unimedSettingsQuery.data?.convenios ?? []).map((convenio) => (
+                    <option key={convenio.id} value={convenio.id}>
+                      {convenio.nome}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="space-y-2">
+                <span className="text-sm font-medium text-slate-200">Login</span>
+                <input
+                  value={unimedForm.credential.login}
+                  onChange={(event) =>
+                    setUnimedForm((current) => ({
+                      ...current,
+                      credential: { ...current.credential, login: event.target.value },
+                    }))
+                  }
+                  className={inputClasses()}
+                  data-testid="unimed-login"
+                />
+              </label>
+              <label className="space-y-2">
+                <span className="text-sm font-medium text-slate-200">Senha</span>
+                <input
+                  type="password"
+                  value={unimedForm.credential.password}
+                  onChange={(event) =>
+                    setUnimedForm((current) => ({
+                      ...current,
+                      credential: { ...current.credential, password: event.target.value },
+                    }))
+                  }
+                  className={inputClasses()}
+                  placeholder={
+                    unimedSettingsQuery.data?.credential?.senha_configurada
+                      ? 'Senha já configurada'
+                      : 'Informe a senha'
+                  }
+                  data-testid="unimed-password"
+                />
+              </label>
+              <label className="space-y-2">
+                <span className="text-sm font-medium text-slate-200">Base URL</span>
+                <input
+                  value={unimedForm.credential.base_url}
+                  onChange={(event) =>
+                    setUnimedForm((current) => ({
+                      ...current,
+                      credential: { ...current.credential, base_url: event.target.value },
+                    }))
+                  }
+                  className={inputClasses()}
+                  placeholder="https://portal.unimed.coop.br"
+                  data-testid="unimed-base-url"
+                />
+              </label>
+            </div>
+
+            <div className="mt-5 flex flex-wrap items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-4">
+              <div className="min-w-52 flex-1">
+                <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Worker</p>
+                <p className="mt-1 text-sm font-medium text-white">
+                  {unimedWorkerHealth.data?.status ?? 'Não consultado'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => void unimedWorkerHealth.refetch()}
+                disabled={unimedWorkerHealth.isFetching}
+                className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10 disabled:opacity-60"
+                data-testid="unimed-worker-health"
+              >
+                {unimedWorkerHealth.isFetching ? 'Consultando...' : 'Healthcheck'}
+              </button>
+              {unimedSettingsQuery.data?.credential?.automation_paused_at ? (
+                <button
+                  type="button"
+                  onClick={() => void handleReativarUnimed()}
+                  disabled={reativarUnimed.isPending}
+                  className="rounded-2xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 text-sm font-semibold text-emerald-100 transition hover:bg-emerald-400/20 disabled:opacity-60"
+                  data-testid="unimed-reativar"
+                >
+                  {reativarUnimed.isPending ? 'Reativando...' : 'Reativar automação'}
+                </button>
+              ) : null}
+              {unimedSettingsQuery.data?.credential?.automation_paused_reason ? (
+                <p className="basis-full text-sm text-amber-100">
+                  Pausada: {unimedSettingsQuery.data.credential.automation_paused_reason}
+                </p>
+              ) : null}
+            </div>
+          </section>
+
+          {message ? (
+            <p className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+              {message}
+            </p>
+          ) : null}
+
+          {error ? (
+            <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+              {error}
+            </p>
+          ) : null}
+
+          <button
+            type="submit"
+            disabled={salvarUnimedSettings.isPending}
+            className="inline-flex w-full items-center justify-center rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:opacity-60"
+            data-testid="configuracoes-unimed-salvar"
+          >
+            {salvarUnimedSettings.isPending ? 'Salvando...' : 'Salvar configurações Unimed'}
           </button>
         </form>
       ) : null}

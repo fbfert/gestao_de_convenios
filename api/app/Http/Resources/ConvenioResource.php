@@ -14,6 +14,7 @@ class ConvenioResource extends JsonResource
             'nome' => $this->nome,
             'descricao' => $this->descricao,
             'connector_type' => $this->connector_type,
+            'connector_driver' => $this->connector_driver,
             'ativo' => $this->ativo,
         ];
     }

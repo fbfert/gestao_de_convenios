@@ -54,4 +54,14 @@ class Solicitacao extends Model
     {
         return $this->hasOne(Guia::class);
     }
+
+    public function itens()
+    {
+        return $this->hasMany(SolicitacaoItem::class);
+    }
+
+    public function documentos()
+    {
+        return $this->hasMany(SolicitacaoDocumento::class);
+    }
 }

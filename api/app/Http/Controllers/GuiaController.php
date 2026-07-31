@@ -6,6 +6,7 @@ use App\Http\Requests\MutateGuiaStatusRequest;
 use App\Http\Requests\StoreGuiaRequest;
 use App\Http\Resources\GuiaResource;
 use App\Models\Guia;
+use App\Services\Automation\ConsultarStatusUnimedService;
 use App\Services\GuiaService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -50,5 +51,20 @@ class GuiaController extends Controller
     public function negar(MutateGuiaStatusRequest $request, Guia $guia): GuiaResource
     {
         return new GuiaResource($this->service->negar($guia, $request->input('observacoes')));
+    }
+
+    public function consultarUnimed(Guia $guia, ConsultarStatusUnimedService $consultarStatus): JsonResponse
+    {
+        $execucao = $consultarStatus->enviar($guia);
+
+        return response()->json([
+            'data' => [
+                'id' => $execucao->id,
+                'status' => $execucao->status,
+                'operacao' => $execucao->operacao,
+                'guia_id' => $execucao->guia_id,
+                'queued_at' => $execucao->queued_at?->toISOString(),
+            ],
+        ], 202);
     }
 }

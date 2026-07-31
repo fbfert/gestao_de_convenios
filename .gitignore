@@ -33,3 +33,6 @@ coverage/
 .env
 .env.*
 
+# Segredos do deploy (o .example fica versionado)
+deploy/.secrets.env
+

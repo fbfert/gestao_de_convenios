@@ -1,0 +1,46 @@
+services:
+  gescon-db:
+    image: mariadb:11
+    container_name: gescon-db
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: gestao_convenios
+      MARIADB_USER: gestao_convenios
+      MARIADB_PASSWORD: ${DB_PASS}
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT}
+    volumes:
+      - gescon_db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    networks: [gescon]
+
+  gescon-app:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: gescon-app:latest
+    container_name: gescon-app
+    restart: unless-stopped
+    depends_on:
+      gescon-db:
+        condition: service_healthy
+    environment:
+      DB_HOST: gescon-db
+      DB_PORT: "3306"
+    volumes:
+      - ../api/.env:/var/www/html/.env:ro
+      - gescon_storage:/var/www/html/storage
+    ports:
+      - "127.0.0.1:4105:80"
+    networks: [gescon]
+
+volumes:
+  gescon_db_data:
+  gescon_storage:
+
+networks:
+  gescon:
+    name: gescon

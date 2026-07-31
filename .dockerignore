@@ -1,0 +1,10 @@
+.git
+**/node_modules
+web/dist
+api/vendor
+api/.env
+api/storage/logs/*
+api/storage/framework/cache/data/*
+api/storage/framework/sessions/*
+api/storage/framework/views/*
+**/.DS_Store

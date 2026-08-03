@@ -5,6 +5,7 @@ export type ConvenioRef = {
   id: number
   nome: string
   connector_type: string
+  connector_driver?: 'unimed_rda' | null
 }
 
 export type EspecialidadeRef = {
@@ -33,6 +34,7 @@ export type PacienteRef = {
   convenio?: {
     id: number
     nome: string
+    connector_driver?: 'unimed_rda' | null
   }
 }
 

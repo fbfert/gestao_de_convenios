@@ -1,5 +1,7 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
+import { useEspecialidades, useProfissionais } from '../../lib/queries/useReferenceData'
+import { useAuthStore } from '../../stores/authStore'
 import {
   getHttpErrorMessage,
   useEmailSettings,
@@ -16,8 +18,14 @@ import {
 import {
   useReativarUnimed,
   useSalvarUnimedSettings,
+  useSalvarUnimedEspecialidadeMapeamento,
+  useSalvarUnimedProfissionalMapeamento,
+  useUnimedEspecialidadeMapeamentos,
+  useUnimedProfissionalMapeamentos,
   useUnimedSettings,
   useUnimedWorkerHealth,
+  type UnimedEspecialidadeMapeamentoForm,
+  type UnimedProfissionalMapeamentoForm,
   type UnimedSettingsForm,
 } from './useUnimedSettings'
 
@@ -44,6 +52,25 @@ const emptyUnimedCredentialForm: UnimedSettingsForm['credential'] = {
   login: '',
   password: '',
   base_url: 'https://portal.unimed.coop.br',
+  ativo: true,
+}
+
+const emptyEspecialidadeMapeamentoForm: UnimedEspecialidadeMapeamentoForm = {
+  convenio_id: '',
+  especialidade_id: '',
+  codigo_procedimento: '',
+  descricao_operadora: '',
+  quantidade_padrao: '10',
+  usa_descricao_generica: false,
+  valor_generico: '',
+  ativo: true,
+}
+
+const emptyProfissionalMapeamentoForm: UnimedProfissionalMapeamentoForm = {
+  convenio_id: '',
+  profissional_id: '',
+  codigo_operadora: '',
+  nome_operadora: '',
   ativo: true,
 }
 
@@ -79,6 +106,8 @@ function inputClasses() {
 }
 
 export function ConfiguracoesPage() {
+  const user = useAuthStore((state) => state.user)
+  const canManageUnimed = user?.role === 'admin'
   const emailSettingsQuery = useEmailSettings()
   const salvarEmailSettings = useSalvarEmailSettings()
   const aiSettingsQuery = useAiSettings()
@@ -88,6 +117,10 @@ export function ConfiguracoesPage() {
   const salvarUnimedSettings = useSalvarUnimedSettings()
   const unimedWorkerHealth = useUnimedWorkerHealth()
   const reativarUnimed = useReativarUnimed()
+  const especialidadesQuery = useEspecialidades()
+  const profissionaisQuery = useProfissionais({ incluir_inativos: true })
+  const salvarEspecialidadeMapeamento = useSalvarUnimedEspecialidadeMapeamento()
+  const salvarProfissionalMapeamento = useSalvarUnimedProfissionalMapeamento()
   const [activeTab, setActiveTab] = useState<'geral' | 'emails' | 'ia' | 'unimed'>('emails')
   const [form, setForm] = useState<EmailSettingsForm>({
     smtp: emptySmtpForm,
@@ -100,8 +133,18 @@ export function ConfiguracoesPage() {
     convenio_id: '',
     credential: emptyUnimedCredentialForm,
   })
+  const [especialidadeMapeamentoForm, setEspecialidadeMapeamentoForm] =
+    useState<UnimedEspecialidadeMapeamentoForm>(emptyEspecialidadeMapeamentoForm)
+  const [profissionalMapeamentoForm, setProfissionalMapeamentoForm] =
+    useState<UnimedProfissionalMapeamentoForm>(emptyProfissionalMapeamentoForm)
+  const [editingEspecialidadeMapeamentoId, setEditingEspecialidadeMapeamentoId] = useState<number | undefined>()
+  const [editingProfissionalMapeamentoId, setEditingProfissionalMapeamentoId] = useState<number | undefined>()
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const especialidadeMapeamentosQuery = useUnimedEspecialidadeMapeamentos(unimedForm.convenio_id)
+  const profissionalMapeamentosQuery = useUnimedProfissionalMapeamentos(unimedForm.convenio_id)
+  const especialidades = useMemo(() => especialidadesQuery.data ?? [], [especialidadesQuery.data])
+  const profissionais = useMemo(() => profissionaisQuery.data ?? [], [profissionaisQuery.data])
 
   useEffect(() => {
     const data = emailSettingsQuery.data
@@ -166,6 +209,19 @@ export function ConfiguracoesPage() {
         : emptyUnimedCredentialForm,
     })
   }, [unimedSettingsQuery.data])
+
+  useEffect(() => {
+    setEspecialidadeMapeamentoForm((current) => ({
+      ...current,
+      convenio_id: current.convenio_id || unimedForm.convenio_id,
+      especialidade_id: current.especialidade_id || (especialidades[0] ? String(especialidades[0].id) : ''),
+    }))
+    setProfissionalMapeamentoForm((current) => ({
+      ...current,
+      convenio_id: current.convenio_id || unimedForm.convenio_id,
+      profissional_id: current.profissional_id || (profissionais[0] ? String(profissionais[0].id) : ''),
+    }))
+  }, [unimedForm.convenio_id, especialidades, profissionais])
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -251,6 +307,50 @@ export function ConfiguracoesPage() {
       setMessage('Automação Unimed reativada.')
     } catch (submitError) {
       setError(getHttpErrorMessage(submitError, 'Não foi possível reativar a automação Unimed.'))
+    }
+  }
+
+  const handleEspecialidadeMapeamentoSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setMessage(null)
+    setError(null)
+
+    try {
+      await salvarEspecialidadeMapeamento.mutateAsync({
+        id: editingEspecialidadeMapeamentoId,
+        payload: especialidadeMapeamentoForm,
+      })
+      setMessage('Mapeamento de especialidade salvo.')
+      setEditingEspecialidadeMapeamentoId(undefined)
+      setEspecialidadeMapeamentoForm({
+        ...emptyEspecialidadeMapeamentoForm,
+        convenio_id: unimedForm.convenio_id,
+        especialidade_id: especialidades[0] ? String(especialidades[0].id) : '',
+      })
+    } catch (submitError) {
+      setError(getHttpErrorMessage(submitError, 'Não foi possível salvar o mapeamento de especialidade.'))
+    }
+  }
+
+  const handleProfissionalMapeamentoSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setMessage(null)
+    setError(null)
+
+    try {
+      await salvarProfissionalMapeamento.mutateAsync({
+        id: editingProfissionalMapeamentoId,
+        payload: profissionalMapeamentoForm,
+      })
+      setMessage('Mapeamento de profissional salvo.')
+      setEditingProfissionalMapeamentoId(undefined)
+      setProfissionalMapeamentoForm({
+        ...emptyProfissionalMapeamentoForm,
+        convenio_id: unimedForm.convenio_id,
+        profissional_id: profissionais[0] ? String(profissionais[0].id) : '',
+      })
+    } catch (submitError) {
+      setError(getHttpErrorMessage(submitError, 'Não foi possível salvar o mapeamento de profissional.'))
     }
   }
 
@@ -539,6 +639,7 @@ export function ConfiguracoesPage() {
                   }
                   className="size-4 rounded border-white/20 bg-white/10"
                   data-testid="unimed-credencial-ativo"
+                  disabled={!canManageUnimed}
                 />
                 Ativo
               </label>
@@ -563,6 +664,7 @@ export function ConfiguracoesPage() {
                   }
                   className={inputClasses()}
                   data-testid="unimed-convenio"
+                  disabled={!canManageUnimed}
                 >
                   <option value="">Nenhum convênio vinculado</option>
                   {(unimedSettingsQuery.data?.convenios ?? []).map((convenio) => (
@@ -584,6 +686,7 @@ export function ConfiguracoesPage() {
                   }
                   className={inputClasses()}
                   data-testid="unimed-login"
+                  disabled={!canManageUnimed}
                 />
               </label>
               <label className="space-y-2">
@@ -604,6 +707,7 @@ export function ConfiguracoesPage() {
                       : 'Informe a senha'
                   }
                   data-testid="unimed-password"
+                  disabled={!canManageUnimed}
                 />
               </label>
               <label className="space-y-2">
@@ -619,6 +723,7 @@ export function ConfiguracoesPage() {
                   className={inputClasses()}
                   placeholder="https://portal.unimed.coop.br"
                   data-testid="unimed-base-url"
+                  disabled={!canManageUnimed}
                 />
               </label>
             </div>
@@ -643,7 +748,7 @@ export function ConfiguracoesPage() {
                 <button
                   type="button"
                   onClick={() => void handleReativarUnimed()}
-                  disabled={reativarUnimed.isPending}
+                  disabled={reativarUnimed.isPending || !canManageUnimed}
                   className="rounded-2xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 text-sm font-semibold text-emerald-100 transition hover:bg-emerald-400/20 disabled:opacity-60"
                   data-testid="unimed-reativar"
                 >
@@ -657,6 +762,151 @@ export function ConfiguracoesPage() {
               ) : null}
             </div>
           </section>
+
+          {canManageUnimed ? (
+            <section className="grid gap-6 xl:grid-cols-2">
+              <div className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
+                <h3 className="text-lg font-semibold text-white">Especialidade x Convênio</h3>
+                <form onSubmit={handleEspecialidadeMapeamentoSubmit} className="mt-4 grid gap-3">
+                  <select
+                    value={especialidadeMapeamentoForm.especialidade_id}
+                    onChange={(event) =>
+                      setEspecialidadeMapeamentoForm((current) => ({
+                        ...current,
+                        convenio_id: unimedForm.convenio_id,
+                        especialidade_id: event.target.value,
+                      }))
+                    }
+                    className={inputClasses()}
+                    data-testid="unimed-mapeamento-especialidade"
+                  >
+                    {especialidades.map((especialidade) => (
+                      <option key={especialidade.id} value={especialidade.id}>
+                        {especialidade.nome}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    value={especialidadeMapeamentoForm.codigo_procedimento}
+                    onChange={(event) =>
+                      setEspecialidadeMapeamentoForm((current) => ({ ...current, codigo_procedimento: event.target.value }))
+                    }
+                    className={inputClasses()}
+                    placeholder="Código procedimento"
+                    data-testid="unimed-mapeamento-codigo-procedimento"
+                  />
+                  <input
+                    type="number"
+                    min="1"
+                    value={especialidadeMapeamentoForm.quantidade_padrao}
+                    onChange={(event) =>
+                      setEspecialidadeMapeamentoForm((current) => ({ ...current, quantidade_padrao: event.target.value }))
+                    }
+                    className={inputClasses()}
+                    data-testid="unimed-mapeamento-quantidade"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!unimedForm.convenio_id || !especialidadeMapeamentoForm.codigo_procedimento}
+                    className="rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 disabled:opacity-60"
+                    data-testid="unimed-mapeamento-especialidade-salvar"
+                  >
+                    Salvar
+                  </button>
+                </form>
+                <div className="mt-4 space-y-2">
+                  {(especialidadeMapeamentosQuery.data ?? []).map((mapeamento) => (
+                    <button
+                      key={mapeamento.id}
+                      type="button"
+                      onClick={() => {
+                        setEditingEspecialidadeMapeamentoId(mapeamento.id)
+                        setEspecialidadeMapeamentoForm({
+                          convenio_id: String(mapeamento.convenio_id),
+                          especialidade_id: String(mapeamento.especialidade_id),
+                          codigo_procedimento: mapeamento.codigo_procedimento,
+                          descricao_operadora: mapeamento.descricao_operadora ?? '',
+                          quantidade_padrao: String(mapeamento.quantidade_padrao),
+                          usa_descricao_generica: mapeamento.usa_descricao_generica,
+                          valor_generico: mapeamento.valor_generico ?? '',
+                          ativo: mapeamento.ativo,
+                        })
+                      }}
+                      className="block w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left text-sm text-slate-200"
+                    >
+                      {mapeamento.especialidade?.nome ?? mapeamento.especialidade_id} · {mapeamento.codigo_procedimento}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
+                <h3 className="text-lg font-semibold text-white">Profissional x Convênio</h3>
+                <form onSubmit={handleProfissionalMapeamentoSubmit} className="mt-4 grid gap-3">
+                  <select
+                    value={profissionalMapeamentoForm.profissional_id}
+                    onChange={(event) =>
+                      setProfissionalMapeamentoForm((current) => ({
+                        ...current,
+                        convenio_id: unimedForm.convenio_id,
+                        profissional_id: event.target.value,
+                      }))
+                    }
+                    className={inputClasses()}
+                    data-testid="unimed-mapeamento-profissional"
+                  >
+                    {profissionais.map((profissional) => (
+                      <option key={profissional.id} value={profissional.id}>
+                        {profissional.nome}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    value={profissionalMapeamentoForm.codigo_operadora}
+                    onChange={(event) =>
+                      setProfissionalMapeamentoForm((current) => ({ ...current, codigo_operadora: event.target.value }))
+                    }
+                    className={inputClasses()}
+                    placeholder="Código operadora"
+                    data-testid="unimed-mapeamento-codigo-operadora"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!unimedForm.convenio_id || !profissionalMapeamentoForm.codigo_operadora}
+                    className="rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 disabled:opacity-60"
+                    data-testid="unimed-mapeamento-profissional-salvar"
+                  >
+                    Salvar
+                  </button>
+                </form>
+                <div className="mt-4 space-y-2">
+                  {(profissionalMapeamentosQuery.data ?? []).map((mapeamento) => (
+                    <button
+                      key={mapeamento.id}
+                      type="button"
+                      onClick={() => {
+                        setEditingProfissionalMapeamentoId(mapeamento.id)
+                        setProfissionalMapeamentoForm({
+                          convenio_id: String(mapeamento.convenio_id),
+                          profissional_id: String(mapeamento.profissional_id),
+                          codigo_operadora: mapeamento.codigo_operadora,
+                          nome_operadora: mapeamento.nome_operadora ?? '',
+                          ativo: mapeamento.ativo,
+                        })
+                      }}
+                      className="block w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left text-sm text-slate-200"
+                    >
+                      {mapeamento.profissional?.nome ?? mapeamento.profissional_id} · {mapeamento.codigo_operadora}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </section>
+          ) : (
+            <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6 text-sm text-slate-300">
+              Seu usuário não possui permissão para editar configurações Unimed.
+            </section>
+          )}
 
           {message ? (
             <p className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
@@ -672,7 +922,7 @@ export function ConfiguracoesPage() {
 
           <button
             type="submit"
-            disabled={salvarUnimedSettings.isPending}
+            disabled={salvarUnimedSettings.isPending || !canManageUnimed}
             className="inline-flex w-full items-center justify-center rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:opacity-60"
             data-testid="configuracoes-unimed-salvar"
           >

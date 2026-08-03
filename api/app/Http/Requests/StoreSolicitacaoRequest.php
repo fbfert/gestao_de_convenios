@@ -45,6 +45,7 @@ class StoreSolicitacaoRequest extends FormRequest
                 'integer',
                 Rule::exists('medicos', 'id')->where(fn ($query) => $query->where('tenant_id', $tenantId)),
             ],
+            'cid' => ['nullable', 'string', 'max:255'],
             'solicitado_em' => ['required', 'date'],
             'observacoes' => ['nullable', 'string'],
             'pedido_medico_upload_id' => ['nullable', 'string', 'max:500'],

@@ -41,8 +41,9 @@ class PacienteController extends Controller
 
     public function store(StorePacienteRequest $request): JsonResponse
     {
+        $dados = $this->normalizarCarteirinhaUnimed($request->validated(), $request->user()->tenant_id);
         $paciente = Paciente::query()->create([
-            ...$request->validated(),
+            ...$dados,
             'tenant_id' => $request->user()->tenant_id,
             'ativo' => $request->boolean('ativo', true),
         ]);
@@ -54,10 +55,30 @@ class PacienteController extends Controller
 
     public function update(UpdatePacienteRequest $request, Paciente $paciente): PacienteResource
     {
-        $paciente->fill($request->validated());
+        $paciente->fill($this->normalizarCarteirinhaUnimed($request->validated(), $request->user()->tenant_id, $paciente));
         $paciente->save();
         $paciente->load('convenio');
 
         return new PacienteResource($paciente);
+    }
+
+    private function normalizarCarteirinhaUnimed(array $dados, int $tenantId, ?Paciente $paciente = null): array
+    {
+        $convenioId = $dados['convenio_id'] ?? $paciente?->convenio_id;
+
+        if (! $convenioId || ! array_key_exists('carteirinha', $dados)) {
+            return $dados;
+        }
+
+        $convenio = \App\Models\Convenio::query()
+            ->where('tenant_id', $tenantId)
+            ->whereKey($convenioId)
+            ->first();
+
+        if ($convenio?->connector_driver === 'unimed_rda') {
+            $dados['carteirinha'] = preg_replace('/\D+/', '', (string) $dados['carteirinha']);
+        }
+
+        return $dados;
     }
 }

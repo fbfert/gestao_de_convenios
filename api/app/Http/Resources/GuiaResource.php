@@ -24,6 +24,9 @@ class GuiaResource extends JsonResource
             'unimed_status' => $this->unimed_status,
             'unimed_last_checked_at' => $this->unimed_last_checked_at?->toISOString(),
             'unimed_next_check_at' => $this->unimed_next_check_at?->toISOString(),
+            'sessoes_solicitadas' => $this->sessoes_solicitadas,
+            'sessoes_autorizadas' => $this->sessoes_autorizadas,
+            'protocolo_operadora' => $this->protocolo_operadora,
             'data_solicitacao' => $this->data_solicitacao?->toDateString(),
             'data_finalizacao' => $this->data_finalizacao?->toDateString(),
             'senha' => $this->senha,
@@ -37,6 +40,7 @@ class GuiaResource extends JsonResource
             'convenio' => $this->whenLoaded('convenio', fn () => [
                 'id' => $this->convenio->id,
                 'nome' => $this->convenio->nome,
+                'connector_driver' => $this->convenio->connector_driver,
             ]),
             'profissional' => $this->whenLoaded('profissional', fn () => [
                 'id' => $this->profissional->id,

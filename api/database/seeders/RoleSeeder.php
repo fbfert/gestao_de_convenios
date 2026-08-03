@@ -49,6 +49,7 @@ class RoleSeeder extends Seeder
                 'permissoes.manage',
                 'manual.manage',
                 'configuracoes.manage',
+                'configuracoes.unimed.manage',
             ],
             'funcionario' => [
                 'dashboard.convenios',

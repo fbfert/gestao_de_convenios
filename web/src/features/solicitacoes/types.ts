@@ -9,6 +9,7 @@ export type Solicitacao = {
   especialidade_id: number
   convenio_id: number
   medico_id: number
+  cid: string | null
   medico?: {
     id: number
     nome: string
@@ -56,6 +57,10 @@ export type SolicitacaoItem = {
   especialidade?: {
     id: number
     nome: string
+    mapeamento_convenio?: {
+      codigo_procedimento: string
+      descricao_operadora: string | null
+    } | null
   } | null
   profissional?: {
     id: number
@@ -103,6 +108,7 @@ export type SolicitacaoForm = {
   quantidade: string
   convenio_id: string
   medico_id: string
+  cid: string
   solicitado_em: string
   observacoes: string
   pedido_medico_upload_id?: string

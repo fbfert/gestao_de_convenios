@@ -42,6 +42,8 @@ function statusTone(status: string) {
     case 'approved':
     case 'finalized':
       return 'bg-emerald-400/15 text-emerald-100 border-emerald-400/20'
+    case 'needs_verification':
+      return 'bg-amber-400/15 text-amber-100 border-amber-400/20'
     case 'canceled':
     case 'denied':
       return 'bg-rose-400/15 text-rose-100 border-rose-400/20'
@@ -434,6 +436,7 @@ export function GuiasPage() {
                 <option value="under_review">Em análise</option>
                 <option value="approved">Aprovado</option>
                 <option value="finalized">Aprovado</option>
+                <option value="needs_verification">Verificar Restrição</option>
                 <option value="canceled">Cancelado</option>
                 <option value="denied">Negado</option>
                 <option value="expired">Vencido</option>
@@ -509,11 +512,16 @@ export function GuiasPage() {
               <table className="w-full border-collapse text-left text-sm">
                 <thead className="bg-white/5 text-xs uppercase tracking-[0.25em] text-slate-400">
                   <tr>
-                    <th className="px-4 py-3">Número</th>
+                    <th className="px-4 py-3">Nº Guia</th>
                     <th className="px-4 py-3">Paciente</th>
-                    <th className="px-4 py-3">Convênio</th>
+                    <th className="px-4 py-3">Carteirinha</th>
+                    <th className="px-4 py-3">Especialidade</th>
+                    <th className="px-4 py-3">Profissional</th>
                     <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3">Sessões</th>
                     <th className="px-4 py-3">Senha</th>
+                    <th className="px-4 py-3">Validade</th>
+                    <th className="px-4 py-3">Última consulta</th>
                     <th className="px-4 py-3">Ações</th>
                   </tr>
                 </thead>
@@ -522,16 +530,22 @@ export function GuiasPage() {
                     <tr key={guia.id} data-testid={`guia-row-${guia.id}`}>
                       <td className="px-4 py-4 font-medium text-white">
                         <Link to={`/guias/${guia.id}`} className="text-cyan-100 underline decoration-cyan-300/40 underline-offset-4 hover:text-cyan-50">
-                          {guia.numero_guia}
+                          {guia.numero_guia ?? 'Aguardando número'}
                         </Link>
                       </td>
                         <td className="px-4 py-4 text-slate-200">
-                          {pacientes.find((item) => item.id === guia.paciente_id)?.nome ??
+                          {guia.paciente?.nome ??
+                            pacientes.find((item) => item.id === guia.paciente_id)?.nome ??
                             guia.paciente_id}
                         </td>
                         <td className="px-4 py-4 text-slate-200">
-                          {convenios.find((item) => item.id === guia.convenio_id)?.nome ??
-                            guia.convenio_id}
+                          {guia.paciente?.carteirinha ?? '-'}
+                        </td>
+                        <td className="px-4 py-4 text-slate-200">
+                          {guia.especialidade?.nome ?? guia.especialidade_id}
+                        </td>
+                        <td className="px-4 py-4 text-slate-200">
+                          {guia.profissional?.nome ?? guia.profissional_id}
                         </td>
                         <td className="px-4 py-4">
                           <div className="flex flex-col gap-2">
@@ -554,7 +568,12 @@ export function GuiasPage() {
                             ) : null}
                           </div>
                         </td>
+                        <td className="px-4 py-4 text-slate-200">
+                          {guia.sessoes_solicitadas ?? '-'} / {guia.sessoes_autorizadas ?? '-'}
+                        </td>
+                        <td className="px-4 py-4 text-slate-200">{guia.senha ?? '-'}</td>
                         <td className="px-4 py-4 text-slate-200">{guia.validade_senha ?? '-'}</td>
+                        <td className="px-4 py-4 text-slate-200">{guia.unimed_last_checked_at ?? '-'}</td>
                         <td className="px-4 py-4">
                           <div className="flex flex-wrap gap-2">
                             <GuiaStatusActions guia={guia} />
@@ -573,7 +592,7 @@ export function GuiasPage() {
                   ))}
                   {guias.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-4 py-8 text-center text-slate-300">
+                      <td colSpan={11} className="px-4 py-8 text-center text-slate-300">
                         Nenhuma guia encontrada.
                       </td>
                     </tr>

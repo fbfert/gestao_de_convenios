@@ -20,4 +20,9 @@ class Especialidade extends Model
     {
         return $this->hasMany(Profissional::class);
     }
+
+    public function convenioMapeamentos()
+    {
+        return $this->hasMany(ConvenioEspecialidadeMapeamento::class);
+    }
 }

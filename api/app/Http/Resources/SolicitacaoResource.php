@@ -16,6 +16,7 @@ class SolicitacaoResource extends JsonResource
             'especialidade_id' => $this->especialidade_id,
             'convenio_id' => $this->convenio_id,
             'medico_id' => $this->medico_id,
+            'cid' => $this->cid,
             'medico' => $this->whenLoaded('medico', fn () => [
                 'id' => $this->medico->id,
                 'nome' => $this->medico->nome,
@@ -59,6 +60,7 @@ class SolicitacaoResource extends JsonResource
                 'especialidade' => $item->relationLoaded('especialidade') && $item->especialidade ? [
                     'id' => $item->especialidade->id,
                     'nome' => $item->especialidade->nome,
+                    'mapeamento_convenio' => $this->mapeamentoEspecialidade($item),
                 ] : null,
                 'profissional' => $item->relationLoaded('profissional') && $item->profissional ? [
                     'id' => $item->profissional->id,
@@ -88,6 +90,25 @@ class SolicitacaoResource extends JsonResource
             ] : null,
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
+        ];
+    }
+
+    private function mapeamentoEspecialidade($item): ?array
+    {
+        if (! $this->convenio_id || ! $item->especialidade_id) {
+            return null;
+        }
+
+        $mapeamento = $item->especialidade?->convenioMapeamentos
+            ?->firstWhere('convenio_id', $this->convenio_id);
+
+        if (! $mapeamento || ! $mapeamento->ativo) {
+            return null;
+        }
+
+        return [
+            'codigo_procedimento' => $mapeamento->codigo_procedimento,
+            'descricao_operadora' => $mapeamento->descricao_operadora,
         ];
     }
 }

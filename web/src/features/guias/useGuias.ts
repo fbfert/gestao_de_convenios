@@ -50,6 +50,10 @@ export function useCriarGuia() {
         paciente_id: Number(payload.paciente_id),
         profissional_id: Number(payload.profissional_id),
         especialidade_id: Number(payload.especialidade_id),
+        numero_guia: payload.numero_guia.trim() || null,
+        sessoes_solicitadas: payload.sessoes_solicitadas ? Number(payload.sessoes_solicitadas) : null,
+        sessoes_autorizadas: payload.sessoes_autorizadas ? Number(payload.sessoes_autorizadas) : null,
+        protocolo_operadora: payload.protocolo_operadora?.trim() || null,
       })
 
       return data.data

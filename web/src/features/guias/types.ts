@@ -7,12 +7,15 @@ export type Guia = {
   paciente_id: number
   profissional_id: number
   especialidade_id: number
-  numero_guia: string
+  numero_guia: string | null
   tipo_terapia: string
   status: string
   unimed_status: string | null
   unimed_last_checked_at: string | null
   unimed_next_check_at: string | null
+  sessoes_solicitadas: number | null
+  sessoes_autorizadas: number | null
+  protocolo_operadora: string | null
   data_solicitacao: string
   data_finalizacao: string | null
   senha: string | null
@@ -101,6 +104,9 @@ export type GuiaForm = {
   numero_guia: string
   tipo_terapia: string
   data_solicitacao: string
+  sessoes_solicitadas?: string
+  sessoes_autorizadas?: string
+  protocolo_operadora?: string
 }
 
 export type GuiaFinalizarForm = {

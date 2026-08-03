@@ -37,6 +37,7 @@ class PermissionCatalog
         'permissoes.manage',
         'manual.manage',
         'configuracoes.manage',
+        'configuracoes.unimed.manage',
     ];
 
     public static function all(): array

@@ -92,7 +92,7 @@ class UnimedSettingsApiTest extends TestCase
         ]);
 
         app(PermissionRegistrar::class)->setPermissionsTeamId($tenant->id);
-        $permission = Permission::findOrCreate('configuracoes.manage', 'web');
+        $permission = Permission::findOrCreate('configuracoes.unimed.manage', 'web');
         $role = Role::findOrCreate('admin', 'web');
         $role->givePermissionTo($permission);
         $user->assignRole($role);
@@ -103,6 +103,18 @@ class UnimedSettingsApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.credential', null)
             ->assertJsonPath('data.convenio_id', null);
+    }
+
+    public function test_exige_permissao_dedicada_para_configuracoes_unimed(): void
+    {
+        $user = User::query()->where('email', 'admin@clinica-exemplo.test')->firstOrFail();
+        app(PermissionRegistrar::class)->setPermissionsTeamId($user->tenant_id);
+        $user->roles()->detach();
+        Sanctum::actingAs($user);
+
+        $this->getJson('/api/configuracoes/unimed')->assertForbidden();
+        $this->getJson('/api/configuracoes/unimed/worker-health')->assertForbidden();
+        $this->postJson('/api/configuracoes/unimed/reativar')->assertForbidden();
     }
 
     public function test_rejeita_convenio_de_outro_tenant(): void

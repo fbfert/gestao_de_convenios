@@ -48,9 +48,12 @@ class StoreGuiaRequest extends FormRequest
                 'integer',
                 Rule::exists('especialidades', 'id')->where(fn ($query) => $query->where('tenant_id', $tenantId)),
             ],
-            'numero_guia' => ['required', 'string', 'max:255'],
+            'numero_guia' => ['nullable', 'string', 'max:255'],
             'tipo_terapia' => ['required', 'in:especializada,convencional,outro'],
             'data_solicitacao' => ['required', 'date'],
+            'sessoes_solicitadas' => ['nullable', 'integer', 'min:1'],
+            'sessoes_autorizadas' => ['nullable', 'integer', 'min:0'],
+            'protocolo_operadora' => ['nullable', 'string', 'max:255'],
             'observacoes' => ['nullable', 'string'],
         ];
     }

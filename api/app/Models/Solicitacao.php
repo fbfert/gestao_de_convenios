@@ -14,7 +14,7 @@ class Solicitacao extends Model
 
     protected $fillable = [
         'tenant_id', 'paciente_id', 'profissional_id', 'especialidade_id',
-        'convenio_id', 'medico_id', 'status', 'solicitado_em', 'observacoes',
+        'convenio_id', 'medico_id', 'cid', 'status', 'solicitado_em', 'observacoes',
         'pedido_medico_path', 'pedido_medico_nome_original', 'pedido_medico_mime',
         'pedido_medico_ai_result',
     ];

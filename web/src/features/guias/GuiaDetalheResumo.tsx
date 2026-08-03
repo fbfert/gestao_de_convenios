@@ -21,7 +21,9 @@ export function GuiaDetalheResumo({ guia }: { guia: Guia }) {
       <section className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Guia</p>
-          <h2 className="mt-2 text-3xl font-semibold text-white">{guia.numero_guia}</h2>
+          <h2 className="mt-2 text-3xl font-semibold text-white">
+            {guia.numero_guia ?? 'Aguardando número'}
+          </h2>
           <p className="mt-2 text-sm text-slate-300">{guia.tipo_terapia}</p>
         </div>
         <span className="inline-flex w-fit rounded-full border border-cyan-400/20 bg-cyan-400/15 px-3 py-1 text-xs font-semibold text-cyan-100">
@@ -46,6 +48,9 @@ export function GuiaDetalheResumo({ guia }: { guia: Guia }) {
           <span className={validadeVencendo ? 'text-amber-200' : undefined}>{guia.validade_senha ?? '-'}</span>
           {validadeVencendo ? <p className="mt-1 text-xs font-normal text-amber-200">Vencendo em até 7 dias</p> : null}
         </DetailItem>
+        <DetailItem label="Sessões solicitadas">{guia.sessoes_solicitadas ?? '-'}</DetailItem>
+        <DetailItem label="Sessões autorizadas">{guia.sessoes_autorizadas ?? '-'}</DetailItem>
+        <DetailItem label="Protocolo operadora">{guia.protocolo_operadora ?? '-'}</DetailItem>
       </section>
 
       {guia.solicitacao_item || guia.automacao_execucao ? (

@@ -14,6 +14,7 @@ class Guia extends Model
         'tenant_id', 'solicitacao_id', 'solicitacao_item_id', 'convenio_id', 'paciente_id',
         'automacao_execucao_id', 'profissional_id', 'especialidade_id', 'numero_guia', 'tipo_terapia',
         'status', 'unimed_status', 'unimed_last_checked_at', 'unimed_next_check_at',
+        'sessoes_solicitadas', 'sessoes_autorizadas', 'protocolo_operadora',
         'data_solicitacao', 'data_finalizacao', 'senha', 'validade_senha', 'observacoes',
     ];
 
@@ -23,6 +24,8 @@ class Guia extends Model
         'validade_senha' => 'date',
         'unimed_last_checked_at' => 'datetime',
         'unimed_next_check_at' => 'datetime',
+        'sessoes_solicitadas' => 'integer',
+        'sessoes_autorizadas' => 'integer',
     ];
 
     public function solicitacao()

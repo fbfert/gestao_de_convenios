@@ -51,6 +51,7 @@ export function useCriarSolicitacao() {
         especialidade_id: Number(payload.especialidade_id),
         convenio_id: Number(payload.convenio_id),
         medico_id: Number(payload.medico_id),
+        cid: payload.cid.trim() || null,
         itens: itens.map((item) => ({
           especialidade_id: Number(item.especialidade_id),
           profissional_id: Number(item.profissional_id),

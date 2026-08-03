@@ -10,6 +10,7 @@ export type Paciente = {
   convenio?: {
     id: number
     nome: string
+    connector_driver?: 'unimed_rda' | null
   }
 }
 

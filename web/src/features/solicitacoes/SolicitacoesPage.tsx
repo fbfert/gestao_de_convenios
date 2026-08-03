@@ -33,6 +33,7 @@ const emptyForm: SolicitacaoForm = {
   quantidade: '10',
   convenio_id: '',
   medico_id: '',
+  cid: '',
   solicitado_em: new Date().toISOString().slice(0, 10),
   observacoes: '',
 }
@@ -231,6 +232,7 @@ export function SolicitacoesPage() {
       paciente_id: current.paciente_id,
       profissional_id: current.profissional_id,
       medico_id: current.medico_id,
+      cid: current.cid,
     }))
     setFormError(null)
   }
@@ -258,6 +260,7 @@ export function SolicitacoesPage() {
         paciente_id: current.paciente_id,
         profissional_id: current.profissional_id,
         medico_id: current.medico_id,
+        cid: current.cid,
       }))
       if (isCreateRoute) {
         navigate('/solicitacoes')
@@ -542,6 +545,22 @@ export function SolicitacoesPage() {
             </label>
 
             <label className="block space-y-2">
+              <span className="text-sm font-medium text-slate-200">CID</span>
+              <input
+                value={form.cid}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    cid: event.target.value,
+                  }))
+                }
+                className={selectClasses()}
+                placeholder="Opcional"
+                data-testid="solicitacao-cid"
+              />
+            </label>
+
+            <label className="block space-y-2">
               <span className="text-sm font-medium text-slate-200">Observações</span>
               <textarea
                 value={form.observacoes}
@@ -699,7 +718,11 @@ export function SolicitacoesPage() {
                                 className="flex flex-col gap-2 rounded-2xl border border-white/10 bg-white/5 p-3"
                               >
                                 <p>
-                                  {item.especialidade?.nome ?? item.especialidade_id} ·{' '}
+                                  {item.especialidade?.nome ?? item.especialidade_id}
+                                  {item.especialidade?.mapeamento_convenio?.codigo_procedimento
+                                    ? ` · ${item.especialidade.mapeamento_convenio.codigo_procedimento}`
+                                    : ''}{' '}
+                                  ·{' '}
                                   {item.profissional?.nome ?? item.profissional_id} ·{' '}
                                   {item.quantidade}
                                 </p>

@@ -5,6 +5,8 @@ namespace App\Services\Automation;
 use App\Exceptions\AutomationConcurrencyException;
 use App\Jobs\ExecutarAutomacaoUnimedJob;
 use App\Models\AutomacaoExecucao;
+use App\Models\ConvenioEspecialidadeMapeamento;
+use App\Models\ConvenioProfissionalMapeamento;
 use App\Models\Guia;
 use App\Models\SolicitacaoItem;
 use App\Models\UnimedRdaCredential;
@@ -56,6 +58,14 @@ class GerarGuiaUnimedService
 
         if (! $item->profissional || ! $item->especialidade) {
             $motivos[] = 'Profissional e especialidade do item são obrigatórios.';
+        }
+
+        if ($solicitacao?->convenio_id && $item->especialidade_id && ! $this->mapeamentoEspecialidade($item)) {
+            $motivos[] = 'Mapeamento Especialidade x Convênio não configurado.';
+        }
+
+        if ($solicitacao?->convenio_id && $item->profissional_id && ! $this->mapeamentoProfissional($item)) {
+            $motivos[] = 'Mapeamento Profissional x Convênio não configurado.';
         }
 
         if ($item->guia) {
@@ -127,15 +137,15 @@ class GerarGuiaUnimedService
         return DB::transaction(function () use ($execucao, $resultado) {
             $execucao = $this->automacoes->concluir($execucao, $resultado);
 
-            if ($execucao->status === 'succeeded' && filled($resultado['numero_guia'] ?? null)) {
-                $this->criarOuAtualizarGuia($execucao, (string) $resultado['numero_guia']);
+            if ($execucao->status === 'succeeded') {
+                $this->criarOuAtualizarGuia($execucao, $resultado);
             }
 
             return $execucao->refresh();
         });
     }
 
-    private function criarOuAtualizarGuia(AutomacaoExecucao $execucao, string $numeroGuia): Guia
+    private function criarOuAtualizarGuia(AutomacaoExecucao $execucao, array $resultado): Guia
     {
         $item = $execucao->solicitacaoItem()->with(['solicitacao', 'profissional', 'especialidade'])->firstOrFail();
         $solicitacao = $item->solicitacao;
@@ -154,9 +164,14 @@ class GerarGuiaUnimedService
             'paciente_id' => $solicitacao->paciente_id,
             'profissional_id' => $item->profissional_id,
             'especialidade_id' => $item->especialidade_id,
-            'numero_guia' => $numeroGuia,
+            'numero_guia' => $resultado['numero_guia'] ?? null,
             'tipo_terapia' => 'especializada',
-            'status' => 'under_review',
+            'status' => $resultado['guia_status'] ?? $resultado['status_guia'] ?? 'under_review',
+            'unimed_status' => $resultado['unimed_status'] ?? $resultado['status_operadora'] ?? null,
+            'sessoes_solicitadas' => $resultado['sessoes_solicitadas'] ?? null,
+            'sessoes_autorizadas' => $resultado['sessoes_autorizadas'] ?? null,
+            'protocolo_operadora' => $resultado['protocolo_operadora'] ?? null,
+            'senha' => $resultado['senha'] ?? null,
             'data_solicitacao' => today(),
             'observacoes' => $solicitacao->observacoes,
         ])->save();
@@ -170,10 +185,13 @@ class GerarGuiaUnimedService
     {
         $item->loadMissing(['solicitacao.paciente', 'solicitacao.convenio', 'especialidade', 'profissional']);
         $pedidoMedico = $this->pedidoMedico($item);
+        $mapeamentoEspecialidade = $this->mapeamentoEspecialidade($item);
+        $mapeamentoProfissional = $this->mapeamentoProfissional($item);
 
         return [
             'solicitacao_id' => $item->solicitacao_id,
             'solicitacao_item_id' => $item->id,
+            'cid' => $item->solicitacao->cid,
             'paciente' => [
                 'id' => $item->solicitacao->paciente_id,
                 'nome' => $item->solicitacao->paciente?->nome,
@@ -181,7 +199,14 @@ class GerarGuiaUnimedService
             ],
             'convenio_id' => $item->solicitacao->convenio_id,
             'especialidade' => $item->especialidade?->nome,
+            'codigo_procedimento' => $mapeamentoEspecialidade?->codigo_procedimento,
+            'descricao_operadora' => $mapeamentoEspecialidade?->descricao_operadora,
+            'quantidade_padrao' => $mapeamentoEspecialidade?->quantidade_padrao,
+            'usa_descricao_generica' => $mapeamentoEspecialidade?->usa_descricao_generica,
+            'valor_generico' => $mapeamentoEspecialidade?->valor_generico,
             'profissional' => $item->profissional?->nome,
+            'codigo_profissional_operadora' => $mapeamentoProfissional?->codigo_operadora,
+            'nome_profissional_operadora' => $mapeamentoProfissional?->nome_operadora,
             'quantidade' => $item->quantidade,
             'pedido_medico' => $pedidoMedico ? [
                 'id' => $pedidoMedico->id,
@@ -196,5 +221,29 @@ class GerarGuiaUnimedService
 
         return $item->solicitacao?->documentos
             ->firstWhere('tipo', 'pedido_medico');
+    }
+
+    private function mapeamentoEspecialidade(SolicitacaoItem $item): ?ConvenioEspecialidadeMapeamento
+    {
+        $item->loadMissing('solicitacao');
+
+        return ConvenioEspecialidadeMapeamento::query()
+            ->where('tenant_id', $item->tenant_id)
+            ->where('convenio_id', $item->solicitacao?->convenio_id)
+            ->where('especialidade_id', $item->especialidade_id)
+            ->where('ativo', true)
+            ->first();
+    }
+
+    private function mapeamentoProfissional(SolicitacaoItem $item): ?ConvenioProfissionalMapeamento
+    {
+        $item->loadMissing('solicitacao');
+
+        return ConvenioProfissionalMapeamento::query()
+            ->where('tenant_id', $item->tenant_id)
+            ->where('convenio_id', $item->solicitacao?->convenio_id)
+            ->where('profissional_id', $item->profissional_id)
+            ->where('ativo', true)
+            ->first();
     }
 }

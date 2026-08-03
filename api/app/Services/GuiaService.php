@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Exceptions\GuiaStatusInvalidoException;
+use App\Support\GuiaStatus;
 use Illuminate\Validation\ValidationException;
 use App\Models\Guia;
 use App\Support\TenantContext;
@@ -78,7 +79,10 @@ class GuiaService
             'especialidade_id' => $dados['especialidade_id'],
             'numero_guia' => $dados['numero_guia'],
             'tipo_terapia' => $dados['tipo_terapia'],
-            'status' => 'under_review',
+            'status' => GuiaStatus::UNDER_REVIEW,
+            'sessoes_solicitadas' => $dados['sessoes_solicitadas'] ?? null,
+            'sessoes_autorizadas' => $dados['sessoes_autorizadas'] ?? null,
+            'protocolo_operadora' => $dados['protocolo_operadora'] ?? null,
             'data_solicitacao' => $dados['data_solicitacao'],
             'data_finalizacao' => null,
             'senha' => null,
@@ -105,8 +109,8 @@ class GuiaService
 
     public function finalizar(Guia $guia, array $dados): Guia
     {
-        if ($guia->status !== 'under_review') {
-            throw GuiaStatusInvalidoException::transicaoInvalida($guia->status, 'finalized');
+        if ($guia->status !== GuiaStatus::UNDER_REVIEW) {
+            throw GuiaStatusInvalidoException::transicaoInvalida($guia->status, GuiaStatus::FINALIZED);
         }
 
         $senha = $dados['senha'] ?? null;
@@ -143,7 +147,7 @@ class GuiaService
         }
 
         $guia->fill([
-            'status' => 'finalized',
+            'status' => GuiaStatus::FINALIZED,
             'senha' => $senha,
             'data_finalizacao' => $dataFinalizacao,
             'validade_senha' => $validadeSenha,
@@ -157,12 +161,12 @@ class GuiaService
 
     public function negar(Guia $guia, ?string $observacoes = null): Guia
     {
-        if ($guia->status !== 'under_review') {
-            throw GuiaStatusInvalidoException::transicaoInvalida($guia->status, 'denied');
+        if ($guia->status !== GuiaStatus::UNDER_REVIEW) {
+            throw GuiaStatusInvalidoException::transicaoInvalida($guia->status, GuiaStatus::DENIED);
         }
 
         $guia->fill([
-            'status' => 'denied',
+            'status' => GuiaStatus::DENIED,
             'observacoes' => $observacoes ?? $guia->observacoes,
         ]);
         $guia->save();

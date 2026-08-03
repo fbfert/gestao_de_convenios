@@ -15,6 +15,8 @@ const emptyForm: PacienteForm = {
   ativo: true,
 }
 
+const unimedBlockSizes = [4, 4, 6, 2, 1]
+
 function selectClasses() {
   return 'w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20'
 }
@@ -37,6 +39,21 @@ function toForm(paciente: Paciente): PacienteForm {
   }
 }
 
+function splitUnimedCarteirinha(value: string): string[] {
+  const digits = value.replace(/\D/g, '')
+  let offset = 0
+
+  return unimedBlockSizes.map((size) => {
+    const block = digits.slice(offset, offset + size)
+    offset += size
+    return block
+  })
+}
+
+function joinUnimedCarteirinha(blocks: string[]): string {
+  return blocks.join('')
+}
+
 export function PacientesPage() {
   const navigate = useNavigate()
   const isCreateRoute = useMatch('/pacientes/novo') !== null
@@ -54,6 +71,15 @@ export function PacientesPage() {
 
   const pacientes = useMemo(() => pacientesQuery.data ?? [], [pacientesQuery.data])
   const convenios = useMemo(() => conveniosQuery.data ?? [], [conveniosQuery.data])
+  const selectedConvenio = useMemo(
+    () => convenios.find((convenio) => String(convenio.id) === form.convenio_id),
+    [convenios, form.convenio_id],
+  )
+  const isUnimedRda = selectedConvenio?.connector_driver === 'unimed_rda'
+  const unimedCarteirinhaBlocks = useMemo(
+    () => splitUnimedCarteirinha(form.carteirinha),
+    [form.carteirinha],
+  )
   const totalAtivos = pacientes.filter((paciente) => paciente.ativo).length
   const totalInativos = pacientes.length - totalAtivos
 
@@ -69,7 +95,9 @@ export function PacientesPage() {
 
   const formIsComplete =
     form.nome.trim() !== '' &&
-    form.carteirinha.trim() !== '' &&
+    (isUnimedRda
+      ? unimedCarteirinhaBlocks.every((block, index) => block.length === unimedBlockSizes[index])
+      : form.carteirinha.trim() !== '') &&
     form.convenio_id !== '' &&
     conveniosQuery.isSuccess
 
@@ -249,18 +277,6 @@ export function PacientesPage() {
             </label>
 
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Carteirinha</span>
-              <input
-                value={form.carteirinha}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, carteirinha: event.target.value }))
-                }
-                className={selectClasses()}
-                data-testid="paciente-carteirinha"
-              />
-            </label>
-
-            <label className="block space-y-2">
               <span className="text-sm font-medium text-slate-200">Convênio</span>
               <Select
                 value={form.convenio_id}
@@ -281,6 +297,44 @@ export function PacientesPage() {
                 ))}
               </Select>
             </label>
+
+            {isUnimedRda ? (
+              <div className="space-y-2">
+                <span className="text-sm font-medium text-slate-200">Carteirinha</span>
+                <div className="grid grid-cols-[1fr_1fr_1.5fr_.8fr_.7fr] gap-2">
+                  {unimedBlockSizes.map((size, index) => (
+                    <input
+                      key={index}
+                      value={unimedCarteirinhaBlocks[index] ?? ''}
+                      onChange={(event) => {
+                        const nextBlocks = [...unimedCarteirinhaBlocks]
+                        nextBlocks[index] = event.target.value.replace(/\D/g, '').slice(0, size)
+                        setForm((current) => ({
+                          ...current,
+                          carteirinha: joinUnimedCarteirinha(nextBlocks),
+                        }))
+                      }}
+                      inputMode="numeric"
+                      maxLength={size}
+                      className={selectClasses()}
+                      data-testid={`paciente-carteirinha-unimed-${index + 1}`}
+                    />
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <label className="block space-y-2">
+                <span className="text-sm font-medium text-slate-200">Carteirinha</span>
+                <input
+                  value={form.carteirinha}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, carteirinha: event.target.value }))
+                  }
+                  className={selectClasses()}
+                  data-testid="paciente-carteirinha"
+                />
+              </label>
+            )}
 
             <label className="block space-y-2">
               <span className="text-sm font-medium text-slate-200">Telefone</span>

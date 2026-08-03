@@ -31,6 +31,11 @@ class Profissional extends Model
         return $this->belongsTo(Especialidade::class);
     }
 
+    public function convenioMapeamentos()
+    {
+        return $this->hasMany(ConvenioProfissionalMapeamento::class);
+    }
+
     public function lancamentos()
     {
         return $this->hasMany(Lancamento::class);

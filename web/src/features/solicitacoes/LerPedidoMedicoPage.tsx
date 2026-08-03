@@ -31,6 +31,7 @@ const emptyForm: SolicitacaoForm = {
   quantidade: '10',
   convenio_id: '',
   medico_id: '',
+  cid: '',
   solicitado_em: new Date().toISOString().slice(0, 10),
   observacoes: '',
 }

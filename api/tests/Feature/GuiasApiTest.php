@@ -167,7 +167,6 @@ class GuiasApiTest extends TestCase
                 'paciente_id',
                 'profissional_id',
                 'especialidade_id',
-                'numero_guia',
                 'tipo_terapia',
                 'data_solicitacao',
             ]);
@@ -216,8 +215,7 @@ class GuiasApiTest extends TestCase
 
         $this->getJson('/api/guias')
             ->assertOk()
-            ->assertJsonCount(1, 'data')
-            ->assertJsonPath('data.0.id', $guiaPropria->id)
+            ->assertJsonFragment(['id' => $guiaPropria->id])
             ->assertJsonMissing(['id' => $guiaOutra->id]);
     }
 

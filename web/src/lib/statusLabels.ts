@@ -21,6 +21,7 @@ const statusLabels: Record<StatusEntidade, Record<string, string>> = {
     finalized: 'Aprovado',
     canceled: 'Cancelado',
     denied: 'Negado',
+    needs_verification: 'Verificar Restrição',
     expired: 'Vencido',
   },
   antecipacoes: {

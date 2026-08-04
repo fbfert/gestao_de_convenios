@@ -11,6 +11,7 @@ use App\Models\Guia;
 use App\Models\SolicitacaoItem;
 use App\Models\UnimedRdaCredential;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 class GerarGuiaUnimedService
@@ -183,15 +184,29 @@ class GerarGuiaUnimedService
 
     private function payloadPersistido(SolicitacaoItem $item): array
     {
-        $item->loadMissing(['solicitacao.paciente', 'solicitacao.convenio', 'especialidade', 'profissional']);
+        $item->loadMissing([
+            'solicitacao.paciente',
+            'solicitacao.convenio',
+            'solicitacao.medico',
+            'solicitacao.documentos',
+            'documentos',
+            'especialidade',
+            'profissional',
+        ]);
         $pedidoMedico = $this->pedidoMedico($item);
         $mapeamentoEspecialidade = $this->mapeamentoEspecialidade($item);
         $mapeamentoProfissional = $this->mapeamentoProfissional($item);
+        $documentos = $this->documentosPayload($item);
 
         return [
             'solicitacao_id' => $item->solicitacao_id,
             'solicitacao_item_id' => $item->id,
             'cid' => $item->solicitacao->cid,
+            'medico' => [
+                'id' => $item->solicitacao->medico_id,
+                'nome' => $item->solicitacao->medico?->nome,
+                'crm' => $item->solicitacao->medico?->crm,
+            ],
             'paciente' => [
                 'id' => $item->solicitacao->paciente_id,
                 'nome' => $item->solicitacao->paciente?->nome,
@@ -211,7 +226,12 @@ class GerarGuiaUnimedService
             'pedido_medico' => $pedidoMedico ? [
                 'id' => $pedidoMedico->id,
                 'nome_original' => $pedidoMedico->nome_original,
+                'mime' => $pedidoMedico->mime,
+                'path' => $pedidoMedico->path,
+                'local_path' => $this->localPath($pedidoMedico->path),
+                'size' => $this->fileSize($pedidoMedico->path),
             ] : null,
+            'anexos' => $documentos,
         ];
     }
 
@@ -221,6 +241,44 @@ class GerarGuiaUnimedService
 
         return $item->solicitacao?->documentos
             ->firstWhere('tipo', 'pedido_medico');
+    }
+
+    private function documentosPayload(SolicitacaoItem $item): array
+    {
+        $item->loadMissing(['solicitacao.documentos', 'documentos']);
+
+        return $item->solicitacao?->documentos
+            ->merge($item->documentos)
+            ->reject(fn ($documento) => $documento->tipo === 'pedido_medico')
+            ->map(fn ($documento) => [
+                'id' => $documento->id,
+                'tipo' => $documento->tipo,
+                'nome_original' => $documento->nome_original,
+                'mime' => $documento->mime,
+                'path' => $documento->path,
+                'local_path' => $this->localPath($documento->path),
+                'size' => $this->fileSize($documento->path),
+            ])
+            ->values()
+            ->all() ?? [];
+    }
+
+    private function localPath(?string $path): ?string
+    {
+        if (blank($path)) {
+            return null;
+        }
+
+        return Storage::disk('local')->path($path);
+    }
+
+    private function fileSize(?string $path): ?int
+    {
+        if (blank($path) || ! Storage::disk('local')->exists($path)) {
+            return null;
+        }
+
+        return Storage::disk('local')->size($path);
     }
 
     private function mapeamentoEspecialidade(SolicitacaoItem $item): ?ConvenioEspecialidadeMapeamento

@@ -8,6 +8,8 @@ use App\Models\AuditLog;
 use App\Models\AutomacaoExecucao;
 use App\Models\AutomacaoEvento;
 use App\Models\Convenio;
+use App\Models\ConvenioEspecialidadeMapeamento;
+use App\Models\ConvenioProfissionalMapeamento;
 use App\Models\Especialidade;
 use App\Models\Guia;
 use App\Models\Medico;
@@ -91,6 +93,49 @@ class GerarGuiaUnimedApiTest extends TestCase
         $this->assertSame($execucao->id, $guia->automacao_execucao_id);
         $this->assertSame('guia_generated', $item->refresh()->status_operacional);
         $this->assertSame('senha-unimed', $worker->calls[0]['payload']['credential']['password']);
+    }
+
+    public function test_payload_para_worker_inclui_medico_mapeamentos_e_documentos(): void
+    {
+        Queue::fake();
+        $item = $this->prepararItemUnimed();
+
+        $execucao = app(GerarGuiaUnimedService::class)->enviar($item);
+        $payload = app(GerarGuiaUnimedService::class)->payloadParaWorker($execucao);
+
+        $this->assertSame('Dr. Carlos Almeida', $payload['medico']['nome']);
+        $this->assertNotEmpty($payload['medico']['crm']);
+        $this->assertNotEmpty($payload['codigo_procedimento']);
+        $this->assertNotEmpty($payload['codigo_profissional_operadora']);
+        $this->assertSame('pedido.pdf', $payload['pedido_medico']['nome_original']);
+        $this->assertSame('pedidos-medicos/teste.pdf', $payload['pedido_medico']['path']);
+        $this->assertArrayHasKey('local_path', $payload['pedido_medico']);
+    }
+
+    public function test_resultado_needs_verification_cria_guia_sem_numero(): void
+    {
+        $item = $this->prepararItemUnimed();
+        $execucao = app(AutomacaoService::class)->enfileirar($item->tenant_id, 'gerar_guia', $item);
+        $this->app->instance(UnimedWorkerClient::class, new FakeUnimedWorkerClient([
+            'status' => 'succeeded',
+            'guia_status' => 'needs_verification',
+            'numero_guia' => null,
+            'unimed_status' => 'Restrição Administrativa',
+        ]));
+
+        (new ExecutarAutomacaoUnimedJob($execucao->id))->handle(
+            app(AutomacaoService::class),
+            app(UnimedWorkerClient::class),
+            app(GerarGuiaUnimedService::class),
+            app(\App\Services\Automation\ConsultarStatusUnimedService::class),
+            app(\App\Services\Automation\UnimedCircuitBreakerService::class),
+        );
+
+        $guia = Guia::query()->where('solicitacao_item_id', $item->id)->firstOrFail();
+
+        $this->assertNull($guia->numero_guia);
+        $this->assertSame('needs_verification', $guia->status);
+        $this->assertSame('Restrição Administrativa', $guia->unimed_status);
     }
 
     public function test_detalhe_da_guia_retorna_item_e_resumo_da_execucao_sem_segredos(): void
@@ -362,6 +407,29 @@ class GerarGuiaUnimedApiTest extends TestCase
         $especialidade = Especialidade::query()->where('tenant_id', $tenantId)->firstOrFail();
         $profissional = Profissional::query()->where('tenant_id', $tenantId)->where('especialidade_id', $especialidade->id)->firstOrFail();
         $medico = Medico::query()->where('tenant_id', $tenantId)->firstOrFail();
+
+        ConvenioEspecialidadeMapeamento::query()->updateOrCreate([
+            'tenant_id' => $tenantId,
+            'convenio_id' => $convenio->id,
+            'especialidade_id' => $especialidade->id,
+        ], [
+            'codigo_procedimento' => '50000470',
+            'descricao_operadora' => 'Terapia especializada',
+            'quantidade_padrao' => 10,
+            'usa_descricao_generica' => false,
+            'valor_generico' => null,
+            'ativo' => true,
+        ]);
+
+        ConvenioProfissionalMapeamento::query()->updateOrCreate([
+            'tenant_id' => $tenantId,
+            'convenio_id' => $convenio->id,
+            'profissional_id' => $profissional->id,
+        ], [
+            'codigo_operadora' => '1234',
+            'nome_operadora' => $profissional->nome,
+            'ativo' => true,
+        ]);
 
         $solicitacao = Solicitacao::query()->create([
             'tenant_id' => $tenantId,

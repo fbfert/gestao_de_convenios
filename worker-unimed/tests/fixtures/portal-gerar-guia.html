@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Fixture Unimed Gerar Guia</title>
+  <style>
+    body { font-family: Arial, sans-serif; }
+    .hidden { display: none; }
+    table { border-collapse: collapse; }
+    td { border: 1px solid #ccc; padding: 4px; }
+  </style>
+</head>
+<body>
+  <main id="app"></main>
+  <script>
+    const params = new URLSearchParams(location.search)
+    const scenario = params.get('scenario') || 'success'
+    window.__forceUploadFailure = scenario === 'upload-fail'
+    const app = document.querySelector('#app')
+    let searchStep = 'crm'
+
+    function html(content) {
+      app.innerHTML = content
+      bind()
+    }
+
+    function processing(next) {
+      app.insertAdjacentHTML('beforeend', '<div id="processing">Processando, por favor aguarde...</div>')
+      setTimeout(() => {
+        document.querySelector('#processing')?.remove()
+        next()
+      }, 20)
+    }
+
+    function bind() {
+      document.querySelector('#login-form')?.addEventListener('submit', (event) => {
+        event.preventDefault()
+        processing(showHome)
+      })
+
+      document.querySelector('#novo-exame')?.addEventListener('click', showCardPopup)
+      document.querySelector('#ignora-cartao')?.addEventListener('click', showCardStart)
+      document.querySelector('#cadastrar-beneficiario')?.addEventListener('click', showBeneficiaryForm)
+      document.querySelector('[name="Button_Insert"]')?.addEventListener('click', () => {
+        processing(() => {
+          if (scenario === 'restriction') {
+            html('<h1>Restrição Administrativa</h1><p>Restrição Administrativa: procurar atendimento presencial.</p>')
+          } else if (scenario === 'update') {
+            showUpdate()
+          } else {
+            showSpSadt()
+          }
+        })
+      })
+      document.querySelector('[name="Button_Update"]')?.addEventListener('click', () => processing(showSpSadt))
+      document.querySelector('#sp-sadt')?.addEventListener('click', showManual)
+      document.querySelector('#solicitacao-manual')?.addEventListener('click', showForm)
+      document.querySelector('#link_busca_contrt')?.addEventListener('click', showProviderSearch)
+      document.querySelector('[name="Button_DoSearch"]')?.addEventListener('click', runProviderSearch)
+      document.querySelector('#refazer-pesquisa')?.addEventListener('click', showProviderSearch)
+      document.querySelector('[name="CD_ITEM_1"]')?.addEventListener('blur', maybeGenericFields)
+      document.querySelector('[name="Button_Finalizar"]')?.addEventListener('click', () => {
+        if (scenario === 'uncertain') {
+          app.insertAdjacentHTML('beforeend', '<div>Processando, por favor aguarde...</div>')
+          return
+        }
+        processing(showResult)
+      })
+    }
+
+    function showLogin() {
+      html(`
+        <form id="login-form">
+          <input id="login" name="login">
+          <input id="passwordTemp" name="passwordTemp" type="password">
+          <button name="Button_DoLogin">Entrar</button>
+        </form>
+      `)
+    }
+
+    function showHome() {
+      html('<button id="novo-exame">+ Novo Exame</button>')
+    }
+
+    function showCardPopup() {
+      html('<a id="ignora-cartao" href="#">clique aqui</a>')
+    }
+
+    function showCardStart() {
+      html('<button id="cadastrar-beneficiario">Cadastre o beneficiário e prossiga com o atendimento.</button>')
+    }
+
+    function showBeneficiaryForm() {
+      html(`
+        <input id="CD_UNIMED" name="CD_UNIMED">
+        <input id="CD_CARTAO" name="CD_CARTAO">
+        <input id="CD_BENEF" name="CD_BENEF">
+        <input id="CD_DEPEN" name="CD_DEPEN">
+        <input id="NR_DV" name="NR_DV">
+        <button name="Button_Insert">Verificar</button>
+      `)
+    }
+
+    function showUpdate() {
+      html('<h1>Atualização cadastral</h1><button name="Button_Update">Atualizar</button>')
+    }
+
+    function showSpSadt() {
+      html('<button id="sp-sadt">Digitação de guia SP/SADT</button>')
+    }
+
+    function showManual() {
+      html('<button id="solicitacao-manual">Digitar solicitação manualmente e realizar validação para autorizar.</button>')
+    }
+
+    function showForm() {
+      html(`
+        <input id="DT_EMISSAO_GUIA" name="DT_EMISSAO_GUIA">
+        <select id="FG_ATENDIMENTO_RN" name="FG_ATENDIMENTO_RN"><option value="N">Não</option></select>
+        <select id="DM_CARATER_SOLIC" name="DM_CARATER_SOLIC"><option value="1">Eletivo</option></select>
+        <select id="DM_TP_ATEND_SADT" name="DM_TP_ATEND_SADT"><option value="03">Outras Terapias</option></select>
+        <select id="DM_TP_ACIDENTE" name="DM_TP_ACIDENTE"><option value="9">Não acidente</option></select>
+        <textarea id="DS_INDIC_CLINICA" name="DS_INDIC_CLINICA"></textarea>
+        <button id="link_busca_contrt">Buscar prestador</button>
+        <input id="CD_ITEM_1" name="CD_ITEM_1">
+        <input id="NR_QTD_1" name="NR_QTD_1">
+        <div id="generic-slot"></div>
+        <input type="file" data-tipo="pedido_medico">
+        <ul id="uploaded-files"></ul>
+        <select id="CD_PROFISSIONAL" name="CD_PROFISSIONAL">
+          <option value="">Selecione</option>
+          <option value="1234">TERAPEUTA TESTE</option>
+        </select>
+        <button name="Button_Finalizar">Finalizar e Gerar guia</button>
+      `)
+    }
+
+    function showProviderSearch() {
+      html(`
+        <input id="s_nr_crm" name="s_nr_crm">
+        <input id="s_nm_prestador" name="s_nm_prestador">
+        <button name="Button_DoSearch">Localizar</button>
+        <button id="refazer-pesquisa">Refazer pesquisa</button>
+        <table id="provider-results"></table>
+      `)
+    }
+
+    function runProviderSearch() {
+      const crm = document.querySelector('[name="s_nr_crm"]').value
+      const name = document.querySelector('[name="s_nm_prestador"]').value.toUpperCase()
+      const rows = document.querySelector('#provider-results')
+      rows.innerHTML = ''
+
+      if (scenario === 'provider-name' && crm) {
+        rows.innerHTML = '<tr><td>Não foram encontrados registros.</td></tr>'
+        return
+      }
+
+      if (scenario === 'provider-fallback' && (crm || !name.includes('NAO COOPERADO'))) {
+        rows.innerHTML = '<tr><td>Não foram encontrados registros.</td></tr>'
+        return
+      }
+
+      const providerName = name.includes('NAO COOPERADO') ? 'MEDICO NAO COOPERADO' : 'DR. CARLOS ALMEIDA'
+      rows.innerHTML = `
+        <tr data-prestador-row>
+          <td>${providerName}</td>
+          <td>OK - Ativo</td>
+          <td><button type="button" onclick="window.__providerSelected='${providerName}'; showForm()">Selecionar</button></td>
+        </tr>
+      `
+    }
+
+    function maybeGenericFields() {
+      if (scenario !== 'generic') return
+      document.querySelector('#generic-slot').innerHTML = `
+        <input id="DS_ITEM_GENERICO_1" name="DS_ITEM_GENERICO_1">
+        <input id="VL_ITEM_GENERICO_1" name="VL_ITEM_GENERICO_1">
+      `
+    }
+
+    function showResult() {
+      html(`
+        <section id="resultado-guia" data-result="guia">
+          Protocolo: PROTO-77
+          Guia: GUIA-8899
+          Situação: Autorizado
+          Qtd: 10 - Qtd Aut: 8
+          Senha: SENHA-ABC
+        </section>
+      `)
+    }
+
+    showLogin()
+  </script>
+</body>
+</html>

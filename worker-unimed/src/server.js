@@ -1,4 +1,5 @@
 import http from 'node:http'
+import { executarGerarGuia } from './operations/gerarGuia.js'
 
 const port = Number(process.env.UNIMED_WORKER_PORT ?? 8787)
 const token = process.env.UNIMED_WORKER_TOKEN ?? ''
@@ -36,7 +37,7 @@ const server = http.createServer(async (request, response) => {
   if (request.method === 'GET' && request.url === '/health') {
     sendJson(response, 200, {
       status: 'available',
-      browser: 'mock',
+      browser: 'playwright',
     })
     return
   }
@@ -45,6 +46,17 @@ const server = http.createServer(async (request, response) => {
     try {
       const operation = request.url.split('/').pop()
       const payload = await readJson(request)
+
+      if (operation === 'gerar_guia') {
+        const result = await executarGerarGuia({
+          executionId: payload.execution_id ?? null,
+          idempotencyKey: payload.idempotency_key ?? null,
+          payload: payload.payload ?? {},
+        })
+
+        sendJson(response, 200, result)
+        return
+      }
 
       sendJson(response, 200, {
         status: 'succeeded',

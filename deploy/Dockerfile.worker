@@ -1,0 +1,26 @@
+# Worker Playwright das automacoes Unimed.
+#
+# A tag da imagem acompanha a versao exata do playwright fixada em
+# worker-unimed/package-lock.json (1.62.1). Isso importa: a imagem traz os
+# binarios dos navegadores pre-instalados em /ms-playwright, e a lib npm so
+# funciona com os navegadores da mesma versao. Ao subir o playwright no
+# package.json, suba esta tag junto.
+FROM mcr.microsoft.com/playwright:v1.62.1-jammy
+
+WORKDIR /app
+
+# Dependencias primeiro, para aproveitar o cache de camada enquanto so o
+# codigo do worker muda.
+COPY worker-unimed/package.json worker-unimed/package-lock.json ./
+RUN npm ci --omit=dev
+
+COPY worker-unimed/ ./
+
+# 0.0.0.0 e obrigatorio aqui: o default do server.js e 127.0.0.1, que dentro
+# do container so responderia a ele mesmo, e o gescon-app nao alcancaria.
+ENV UNIMED_WORKER_HOST=0.0.0.0 \
+    UNIMED_WORKER_PORT=8787
+
+EXPOSE 8787
+
+CMD ["node", "src/server.js"]

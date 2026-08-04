@@ -12,8 +12,10 @@ COMPOSE=(docker compose --env-file "$DEPLOY/.secrets.env" -f "$DEPLOY/docker-com
 echo "==> git pull"
 git -C "$REPO" pull --ff-only origin main
 
-echo "==> build da imagem"
-"${COMPOSE[@]}" build gescon-app
+echo "==> build das imagens (gescon-app + gescon-worker)"
+# Sem nome de servico: builda tudo que tem secao `build:`. Antes estava fixo em
+# gescon-app, o que deixava o worker preso numa imagem velha apos o git pull.
+"${COMPOSE[@]}" build
 
 echo "==> recriar container"
 "${COMPOSE[@]}" up -d
@@ -24,6 +26,11 @@ sleep 12
 echo "==> smoke test"
 code=$(curl -s -o /dev/null -w "%{http_code}" https://gescon.xiax.com.br/)
 echo "   https://gescon.xiax.com.br/ -> HTTP $code"
+
+# O worker nao tem porta publicada: so da para checa-lo de dentro da rede.
+worker=$("${COMPOSE[@]}" ps --format '{{.Service}} {{.Status}}' 2>/dev/null | grep '^gescon-worker' || true)
+echo "   gescon-worker -> ${worker:-ausente}"
+
 "${COMPOSE[@]}" ps
 
 if [ "$code" = "200" ]; then

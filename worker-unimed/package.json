@@ -7,7 +7,7 @@
     "check": "node --check src/server.js && node --check src/portal.js && node --check src/operations/gerarGuia.js && node --check src/operations/statusSenha.js",
     "test": "node --test"
   },
-  "devDependencies": {
+  "dependencies": {
     "playwright": "^1.62.1"
   }
 }

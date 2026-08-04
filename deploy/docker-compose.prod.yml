@@ -37,6 +37,31 @@ services:
       - "127.0.0.1:4105:80"
     networks: [gescon]
 
+  # Automacoes Unimed (Node + Playwright). Sem `ports:` de proposito: so o
+  # gescon-app precisa alcanca-lo, e isso acontece pela rede interna em
+  # http://gescon-worker:8787. Publicar no host exporia o browser headless.
+  gescon-worker:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.worker
+    image: gescon-worker:latest
+    container_name: gescon-worker
+    restart: unless-stopped
+    environment:
+      UNIMED_WORKER_HOST: 0.0.0.0
+      UNIMED_WORKER_PORT: "8787"
+      UNIMED_WORKER_TOKEN: ${WORKER_TOKEN}
+    healthcheck:
+      # /health passa pelo mesmo gate de auth do resto da API, entao o
+      # healthcheck precisa mandar o Bearer. O token vem do env do proprio
+      # container, nunca literal no compose.
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8787/health',{headers:{authorization:'Bearer '+process.env.UNIMED_WORKER_TOKEN}}).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks: [gescon]
+
 volumes:
   gescon_db_data:
   gescon_storage:

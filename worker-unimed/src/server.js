@@ -3,6 +3,9 @@ import { executarGerarGuia } from './operations/gerarGuia.js'
 import { executarCapturarAutorizacaoBatch, executarConsultarStatusBatch } from './operations/statusSenha.js'
 
 const port = Number(process.env.UNIMED_WORKER_PORT ?? 8787)
+// Padrao 127.0.0.1 para execucao local. Em container precisa ser 0.0.0.0,
+// senao o gescon-app nao alcanca o worker pela rede interna do Docker.
+const host = process.env.UNIMED_WORKER_HOST ?? '127.0.0.1'
 const token = process.env.UNIMED_WORKER_TOKEN ?? ''
 
 function sendJson(response, status, body) {
@@ -101,6 +104,6 @@ const server = http.createServer(async (request, response) => {
   sendJson(response, 404, { status: 'not_found' })
 })
 
-server.listen(port, '127.0.0.1', () => {
-  console.log(`Unimed worker listening on http://127.0.0.1:${port}`)
+server.listen(port, host, () => {
+  console.log(`Unimed worker listening on http://${host}:${port}`)
 })

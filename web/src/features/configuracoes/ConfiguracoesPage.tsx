@@ -107,7 +107,7 @@ function inputClasses() {
 
 export function ConfiguracoesPage() {
   const user = useAuthStore((state) => state.user)
-  const canManageUnimed = user?.role === 'admin'
+  const canManageUnimed = user?.permissions?.includes('configuracoes.unimed.manage') ?? user?.role === 'admin'
   const emailSettingsQuery = useEmailSettings()
   const salvarEmailSettings = useSalvarEmailSettings()
   const aiSettingsQuery = useAiSettings()
@@ -756,8 +756,11 @@ export function ConfiguracoesPage() {
                 </button>
               ) : null}
               {unimedSettingsQuery.data?.credential?.automation_paused_reason ? (
-                <p className="basis-full text-sm text-amber-100">
+                <p className="basis-full text-sm text-amber-100" data-testid="unimed-automation-paused">
                   Pausada: {unimedSettingsQuery.data.credential.automation_paused_reason}
+                  {unimedSettingsQuery.data.credential.automation_paused_at
+                    ? ` · ${unimedSettingsQuery.data.credential.automation_paused_at}`
+                    : ''}
                 </p>
               ) : null}
             </div>

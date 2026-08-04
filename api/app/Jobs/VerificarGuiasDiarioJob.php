@@ -19,6 +19,10 @@ class VerificarGuiasDiarioJob implements ShouldQueue
     {
         Guia::query()
             ->where('status', 'under_review')
+            ->whereHas('convenio', fn ($query) => $query->where(function ($query) {
+                $query->whereNull('connector_driver')
+                    ->orWhere('connector_driver', '!=', 'unimed_rda');
+            }))
             ->with('convenio')
             ->orderBy('convenio_id')
             ->get()

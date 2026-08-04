@@ -108,6 +108,39 @@ class UnimedSettingsApiTest extends TestCase
     public function test_exige_permissao_dedicada_para_configuracoes_unimed(): void
     {
         $user = User::query()->where('email', 'admin@clinica-exemplo.test')->firstOrFail();
+        $convenio = Convenio::query()->create([
+            'tenant_id' => $user->tenant_id,
+            'nome' => 'Convênio Permissão',
+            'connector_type' => 'manual',
+            'ativo' => true,
+        ]);
+        $especialidade = \App\Models\Especialidade::query()->create([
+            'tenant_id' => $user->tenant_id,
+            'nome' => 'Especialidade Permissão',
+            'ativo' => true,
+        ]);
+        $profissional = \App\Models\Profissional::query()->create([
+            'tenant_id' => $user->tenant_id,
+            'especialidade_id' => $especialidade->id,
+            'nome' => 'Profissional Permissão',
+            'conselho_registro' => 'CRP-1',
+            'ativo' => true,
+        ]);
+        $especialidadeMapeamento = \App\Models\ConvenioEspecialidadeMapeamento::query()->create([
+            'tenant_id' => $user->tenant_id,
+            'convenio_id' => $convenio->id,
+            'especialidade_id' => $especialidade->id,
+            'codigo_procedimento' => '50000470',
+            'quantidade_padrao' => 10,
+            'ativo' => true,
+        ]);
+        $profissionalMapeamento = \App\Models\ConvenioProfissionalMapeamento::query()->create([
+            'tenant_id' => $user->tenant_id,
+            'convenio_id' => $convenio->id,
+            'profissional_id' => $profissional->id,
+            'codigo_operadora' => '1234',
+            'ativo' => true,
+        ]);
         app(PermissionRegistrar::class)->setPermissionsTeamId($user->tenant_id);
         $user->roles()->detach();
         Sanctum::actingAs($user);
@@ -115,6 +148,12 @@ class UnimedSettingsApiTest extends TestCase
         $this->getJson('/api/configuracoes/unimed')->assertForbidden();
         $this->getJson('/api/configuracoes/unimed/worker-health')->assertForbidden();
         $this->postJson('/api/configuracoes/unimed/reativar')->assertForbidden();
+        $this->getJson('/api/configuracoes/unimed/mapeamentos/especialidades')->assertForbidden();
+        $this->postJson('/api/configuracoes/unimed/mapeamentos/especialidades')->assertForbidden();
+        $this->patchJson("/api/configuracoes/unimed/mapeamentos/especialidades/{$especialidadeMapeamento->id}")->assertForbidden();
+        $this->getJson('/api/configuracoes/unimed/mapeamentos/profissionais')->assertForbidden();
+        $this->postJson('/api/configuracoes/unimed/mapeamentos/profissionais')->assertForbidden();
+        $this->patchJson("/api/configuracoes/unimed/mapeamentos/profissionais/{$profissionalMapeamento->id}")->assertForbidden();
     }
 
     public function test_rejeita_convenio_de_outro_tenant(): void

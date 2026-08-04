@@ -384,6 +384,88 @@ class GerarGuiaUnimedApiTest extends TestCase
         $this->assertSame(1, AuditLog::query()->where('acao', 'unimed_rda.automation_paused')->count());
     }
 
+    public function test_circuit_breaker_pausa_conector_para_novos_erros_estruturais(): void
+    {
+        foreach ([
+            'LOGIN_ERROR',
+            'SESSION_LOST_UNRECOVERABLE',
+            'WORKER_INTERNAL_FATAL',
+            'CONFIGURATION_INVALID_GLOBAL',
+        ] as $code) {
+            $item = $this->prepararItemUnimed();
+            $execucao = app(AutomacaoService::class)->enfileirar($item->tenant_id, 'gerar_guia', $item);
+            $this->app->instance(UnimedWorkerClient::class, new FakeUnimedWorkerClient([
+                'status' => 'failed',
+                'error_code' => $code,
+                'message' => 'falha estrutural',
+            ]));
+
+            (new ExecutarAutomacaoUnimedJob($execucao->id))->handle(
+                app(AutomacaoService::class),
+                app(UnimedWorkerClient::class),
+                app(GerarGuiaUnimedService::class),
+                app(ConsultarStatusUnimedService::class),
+                app(\App\Services\Automation\UnimedCircuitBreakerService::class),
+            );
+
+            $credential = UnimedRdaCredential::query()->where('tenant_id', $item->tenant_id)->firstOrFail();
+            $this->assertFalse($credential->ativo);
+            $this->assertSame($code, $credential->automation_paused_reason);
+
+            AutomacaoExecucao::query()->delete();
+            AuditLog::query()->where('acao', 'unimed_rda.automation_paused')->delete();
+            $credential->forceFill([
+                'ativo' => true,
+                'automation_paused_at' => null,
+                'automation_paused_reason' => null,
+            ])->save();
+        }
+    }
+
+    public function test_portal_unavailable_so_pausa_apos_retry_limitado(): void
+    {
+        $item = $this->prepararItemUnimed();
+        $execucao = app(AutomacaoService::class)->enfileirar($item->tenant_id, 'gerar_guia', $item);
+        $this->app->instance(UnimedWorkerClient::class, new FakeUnimedWorkerClient([
+            'status' => 'failed',
+            'error_code' => 'PORTAL_UNAVAILABLE',
+            'attempt' => 1,
+            'max_attempts' => 3,
+        ]));
+
+        (new ExecutarAutomacaoUnimedJob($execucao->id))->handle(
+            app(AutomacaoService::class),
+            app(UnimedWorkerClient::class),
+            app(GerarGuiaUnimedService::class),
+            app(ConsultarStatusUnimedService::class),
+            app(\App\Services\Automation\UnimedCircuitBreakerService::class),
+        );
+
+        $credential = UnimedRdaCredential::query()->where('tenant_id', $item->tenant_id)->firstOrFail();
+        $this->assertTrue($credential->ativo);
+
+        AutomacaoExecucao::query()->delete();
+        $execucao = app(AutomacaoService::class)->enfileirar($item->tenant_id, 'gerar_guia', $item);
+        $this->app->instance(UnimedWorkerClient::class, new FakeUnimedWorkerClient([
+            'status' => 'failed',
+            'error_code' => 'PORTAL_UNAVAILABLE',
+            'attempt' => 3,
+            'max_attempts' => 3,
+        ]));
+
+        (new ExecutarAutomacaoUnimedJob($execucao->id))->handle(
+            app(AutomacaoService::class),
+            app(UnimedWorkerClient::class),
+            app(GerarGuiaUnimedService::class),
+            app(ConsultarStatusUnimedService::class),
+            app(\App\Services\Automation\UnimedCircuitBreakerService::class),
+        );
+
+        $credential->refresh();
+        $this->assertFalse($credential->ativo);
+        $this->assertSame('PORTAL_UNAVAILABLE', $credential->automation_paused_reason);
+    }
+
     public function test_retencao_de_evidencias_suporta_dry_run_e_preserva_documentos_medicos(): void
     {
         Storage::fake('local');

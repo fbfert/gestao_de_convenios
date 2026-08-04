@@ -29,8 +29,22 @@ class VerificarGuiasDiarioJobTest extends TestCase
         $this->assertSame(3, ConectorExecucao::query()->where('status', 'pending_manual')->count());
     }
 
+    public function test_job_legado_ignora_guias_unimed_rda(): void
+    {
+        $this->criarGuiasUnderReview();
+        Convenio::query()->where('nome', 'Unimed')->update(['connector_driver' => 'unimed_rda']);
+
+        app(VerificarGuiasDiarioJob::class)->handle(app(\App\Services\Connectors\ConnectorResolver::class));
+
+        $this->assertSame(2, ConectorExecucao::query()->count());
+        $this->assertDatabaseMissing('conector_execucoes', [
+            'convenio_id' => Convenio::query()->where('nome', 'Unimed')->firstOrFail()->id,
+        ]);
+    }
+
     private function criarGuiasUnderReview(): void
     {
+        Guia::query()->delete();
         $tenant = Tenant::query()->where('slug', 'clinica-exemplo')->firstOrFail();
         $especialidade = Especialidade::query()->where('nome', 'Fisioterapia')->firstOrFail();
         $profissional = Profissional::query()->where('especialidade_id', $especialidade->id)->firstOrFail();

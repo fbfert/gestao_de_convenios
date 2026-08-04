@@ -15,7 +15,7 @@ class UnimedCircuitBreakerService
     {
         $code = $result['error_code'] ?? $result['erro_codigo'] ?? null;
 
-        if (! $this->catalog->isStructural($code)) {
+        if (! $this->catalog->isStructuralResult($result)) {
             return;
         }
 

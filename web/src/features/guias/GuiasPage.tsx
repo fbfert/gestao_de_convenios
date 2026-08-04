@@ -573,7 +573,21 @@ export function GuiasPage() {
                         </td>
                         <td className="px-4 py-4 text-slate-200">{guia.senha ?? '-'}</td>
                         <td className="px-4 py-4 text-slate-200">{guia.validade_senha ?? '-'}</td>
-                        <td className="px-4 py-4 text-slate-200">{guia.unimed_last_checked_at ?? '-'}</td>
+                        <td className="px-4 py-4 text-slate-200">
+                          <div className="space-y-1">
+                            <p>{guia.unimed_last_checked_at ?? '-'}</p>
+                            {guia.ultima_automacao_unimed ? (
+                              <p className="text-xs text-slate-400">
+                                {guia.ultima_automacao_unimed.operacao} · {guia.ultima_automacao_unimed.status}
+                              </p>
+                            ) : null}
+                            {guia.ultima_automacao_unimed?.erro_codigo ? (
+                              <p className="text-xs text-rose-200">
+                                {guia.ultima_automacao_unimed.erro_codigo}
+                              </p>
+                            ) : null}
+                          </div>
+                        </td>
                         <td className="px-4 py-4">
                           <div className="flex flex-wrap gap-2">
                             <GuiaStatusActions guia={guia} />

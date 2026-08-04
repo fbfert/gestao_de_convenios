@@ -27,6 +27,7 @@ export type Guia = {
   especialidade?: GuiaReferencia
   solicitacao_item?: GuiaSolicitacaoItem | null
   automacao_execucao?: GuiaAutomacaoExecucao | null
+  ultima_automacao_unimed?: GuiaAutomacaoExecucao | null
   antecipacoes?: GuiaAntecipacao[]
   conciliacoes?: GuiaConciliacao[]
 }
@@ -34,6 +35,7 @@ export type Guia = {
 export type GuiaReferencia = {
   id: number
   nome: string
+  connector_driver?: string | null
 }
 
 export type GuiaPaciente = GuiaReferencia & {

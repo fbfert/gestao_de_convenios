@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "start": "node src/server.js",
-    "check": "node --check src/server.js && node --check src/operations/gerarGuia.js",
+    "check": "node --check src/server.js && node --check src/portal.js && node --check src/operations/gerarGuia.js && node --check src/operations/statusSenha.js",
     "test": "node --test"
   },
   "devDependencies": {

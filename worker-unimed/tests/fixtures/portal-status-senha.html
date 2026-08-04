@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Fixture Unimed Status Senha</title>
+</head>
+<body>
+  <main id="app">
+    <form id="login-form">
+      <input id="login" name="login">
+      <input id="passwordTemp" name="passwordTemp" type="password">
+      <button name="Button_DoLogin" type="button">Entrar</button>
+    </form>
+  </main>
+  <script>
+    const params = new URLSearchParams(location.search)
+    const scenario = params.get('scenario') || 'status-approved'
+    const app = document.querySelector('#app')
+    let openPage = 1
+
+    document.querySelector('[name="Button_DoLogin"]').addEventListener('click', renderHome)
+
+    function renderHome() {
+      app.innerHTML = `
+        <button id="novo-exame" type="button">+ Novo Exame</button>
+        <a id="exames-abertos" href="#">Exames em aberto</a>
+      `
+      document.querySelector('#novo-exame').addEventListener('click', renderCardPopup)
+      document.querySelector('#exames-abertos').addEventListener('click', (event) => {
+        event.preventDefault()
+        openPage = 1
+        renderOpenExams()
+      })
+    }
+
+    function renderCardPopup() {
+      app.innerHTML = `
+        <a id="ignora-cartao" href="#">clique aqui</a>
+        <a id="cadastrar-beneficiario" href="#">Cadastre o beneficiário e prossiga com o atendimento.</a>
+      `
+      document.querySelector('#ignora-cartao').addEventListener('click', (event) => event.preventDefault())
+      document.querySelector('#cadastrar-beneficiario').addEventListener('click', (event) => {
+        event.preventDefault()
+        renderBeneficiary()
+      })
+    }
+
+    function renderBeneficiary() {
+      app.innerHTML = `
+        <input id="CD_UNIMED" name="CD_UNIMED">
+        <input id="CD_CARTAO" name="CD_CARTAO">
+        <input id="CD_BENEF" name="CD_BENEF">
+        <input id="CD_DEPEN" name="CD_DEPEN">
+        <input id="NR_DV" name="NR_DV">
+        <button name="Button_Insert" type="button">Verificar</button>
+      `
+      document.querySelector('[name="Button_Insert"]').addEventListener('click', renderLocateGuide)
+    }
+
+    function renderLocateGuide() {
+      if (scenario === 'status-restriction') {
+        app.innerHTML = '<p>Restrição Administrativa - procurar atendimento</p>'
+        return
+      }
+
+      app.innerHTML = `
+        <a id="localizar-guia-link" href="#">Localizar Guia</a>
+        <a id="home" href="#">Início</a>
+      `
+      document.querySelector('#home').addEventListener('click', (event) => {
+        event.preventDefault()
+        renderHome()
+      })
+      document.querySelector('#localizar-guia-link').addEventListener('click', (event) => {
+        event.preventDefault()
+        app.innerHTML = `
+          <input id="s_NR_GUIA" name="s_NR_GUIA">
+          <button id="localizar-guia" name="Button_DoSearch" type="button">Localizar</button>
+        `
+        document.querySelector('#localizar-guia').addEventListener('click', renderGuideStatus)
+      })
+    }
+
+    function renderGuideStatus() {
+      const statusByScenario = {
+        'status-approved': 'Autorizado',
+        'status-under-review': 'Em Análise',
+        'status-denied': 'Negado',
+        'status-canceled': 'Cancelado',
+      }
+      const status = statusByScenario[scenario] || 'Autorizado'
+      app.innerHTML = `
+        <table>
+          <tr data-guia-row>
+            <td>UNI-123</td>
+            <td>Situação: ${status}</td>
+            <td>Paciente Teste</td>
+          </tr>
+        </table>
+      `
+    }
+
+    function renderOpenExams() {
+      if (scenario === 'capture-not-found') {
+        app.innerHTML = `
+          <table><tr data-guia-row><td>OUTRA-999</td><td>Paciente Teste</td></tr></table>
+        `
+        return
+      }
+
+      if (scenario === 'capture-page-2' && openPage === 1) {
+        app.innerHTML = `
+          <table><tr data-guia-row><td>OUTRA-111</td><td>Paciente Teste</td></tr></table>
+          <a data-next-page href="#">Próxima</a>
+        `
+        document.querySelector('[data-next-page]').addEventListener('click', (event) => {
+          event.preventDefault()
+          openPage = 2
+          renderOpenExams()
+        })
+        return
+      }
+
+      app.innerHTML = `
+        <table>
+          <tr data-guia-row>
+            <td><a href="#" data-open-guide>UNI-123</a></td>
+            <td>Paciente Teste</td>
+            <td>12345678123456012</td>
+          </tr>
+        </table>
+      `
+      document.querySelector('[data-open-guide]').addEventListener('click', (event) => {
+        event.preventDefault()
+        renderExecution()
+      })
+    }
+
+    function renderExecution() {
+      app.innerHTML = `
+        <input id="NR_SENHA" name="NR_SENHA" value="SENHA-321">
+        <input id="DT_VALIDADE_SENHA" name="DT_VALIDADE_SENHA" value="15/09/2026">
+        <a id="voltar-exames-abertos" href="#">Exames em aberto</a>
+      `
+      document.querySelector('#voltar-exames-abertos').addEventListener('click', (event) => {
+        event.preventDefault()
+        renderOpenExams()
+      })
+    }
+  </script>
+</body>
+</html>

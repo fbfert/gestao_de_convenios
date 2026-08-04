@@ -7,19 +7,15 @@ use App\Jobs\ExecutarAutomacaoUnimedJob;
 use App\Models\AutomacaoExecucao;
 use App\Models\Guia;
 use App\Models\UnimedRdaCredential;
-use App\Services\GuiaService;
 use Illuminate\Validation\ValidationException;
 
-class ConsultarStatusUnimedService
+class CapturarSenhaValidadeUnimedService
 {
     private const ACTIVE_STATUSES = ['queued', 'running'];
-    private const DEFAULT_DUE_HOURS = 24;
-    public const OPERATION = 'consult_status_batch';
+    public const OPERATION = 'capture_authorization_data_batch';
 
-    public function __construct(
-        private readonly AutomacaoService $automacoes,
-        private readonly GuiaService $guiaService,
-    ) {
+    public function __construct(private readonly AutomacaoService $automacoes)
+    {
     }
 
     public function enviar(Guia $guia, bool $dispatch = true): AutomacaoExecucao
@@ -31,19 +27,26 @@ class ConsultarStatusUnimedService
         }
 
         try {
+            $parent = AutomacaoExecucao::query()
+                ->where('tenant_id', $guia->tenant_id)
+                ->where('guia_id', $guia->id)
+                ->where('operacao', self::OPERATION)
+                ->whereNotIn('status', self::ACTIVE_STATUSES)
+                ->latest('id')
+                ->first();
+
             $execucao = $this->automacoes->enfileirar(
                 $guia->tenant_id,
                 self::OPERATION,
                 guia: $guia,
                 payload: $this->payloadPersistido($guia),
+                parent: $parent,
             );
         } catch (AutomationConcurrencyException $exception) {
             throw ValidationException::withMessages([
                 'guia' => ["Já existe execução Unimed ativa para este tenant ({$exception->execucaoId})."],
             ]);
         }
-
-        $guia->forceFill(['unimed_next_check_at' => now()->addHours(self::DEFAULT_DUE_HOURS)])->save();
 
         if ($dispatch) {
             ExecutarAutomacaoUnimedJob::dispatch($execucao->id);
@@ -54,7 +57,7 @@ class ConsultarStatusUnimedService
 
     public function avaliar(Guia $guia): array
     {
-        $guia->loadMissing(['convenio', 'automacaoExecucao', 'solicitacaoItem']);
+        $guia->loadMissing(['convenio']);
         $motivos = [];
         $credential = UnimedRdaCredential::query()
             ->where('tenant_id', $guia->tenant_id)
@@ -65,27 +68,31 @@ class ConsultarStatusUnimedService
             $motivos[] = 'A Guia não pertence a Convênio Unimed RDA.';
         }
 
-        if (blank($guia->numero_guia)) {
-            $motivos[] = 'A Guia precisa ter número da operadora para consulta de status.';
-        }
-
-        if (in_array($guia->status, ['approved', 'denied', 'canceled', 'finalized', 'needs_verification'], true)) {
-            $motivos[] = 'A Guia não possui status elegível para consulta.';
-        }
-
         if (! $credential || blank($credential->password)) {
             $motivos[] = 'A credencial Unimed ativa não está configurada.';
+        }
+
+        if ($guia->status !== 'approved') {
+            $motivos[] = 'A Guia precisa estar aprovada para buscar senha e validade.';
+        }
+
+        if (blank($guia->numero_guia)) {
+            $motivos[] = 'A Guia precisa ter número da operadora.';
+        }
+
+        if (filled($guia->senha) && filled($guia->validade_senha)) {
+            $motivos[] = 'A Guia já possui senha e validade.';
         }
 
         $active = AutomacaoExecucao::query()
             ->where('tenant_id', $guia->tenant_id)
             ->where('guia_id', $guia->id)
-            ->whereIn('operacao', [self::OPERATION, 'consultar_status'])
+            ->where('operacao', self::OPERATION)
             ->whereIn('status', self::ACTIVE_STATUSES)
             ->exists();
 
         if ($active) {
-            $motivos[] = 'Já existe consulta de status em andamento para esta Guia.';
+            $motivos[] = 'Já existe busca de senha/validade em andamento para esta Guia.';
         }
 
         return [
@@ -96,7 +103,6 @@ class ConsultarStatusUnimedService
 
     public function payloadParaWorker(AutomacaoExecucao $execucao): array
     {
-        $execucao->loadMissing('guia');
         $credential = UnimedRdaCredential::query()
             ->where('tenant_id', $execucao->tenant_id)
             ->where('ativo', true)
@@ -114,26 +120,27 @@ class ConsultarStatusUnimedService
     public function aplicarResultado(AutomacaoExecucao $execucao, array $resultado): AutomacaoExecucao
     {
         $execucao = $this->automacoes->concluir($execucao, $resultado);
-        $guia = $execucao->guia()->with('convenio')->firstOrFail();
-        $portalStatus = $resultado['unimed_status']
-            ?? $resultado['status_operadora']
-            ?? $resultado['portal_status']
-            ?? null;
-        $guiaStatus = $resultado['guia_status'] ?? $resultado['status_guia'] ?? $resultado['portal_status'] ?? null;
-        $conclusivo = (bool) ($resultado['conclusivo'] ?? ($resultado['status'] ?? null) === 'succeeded');
+        $guia = $execucao->guia()->firstOrFail();
 
-        if ($conclusivo && filled($guiaStatus)) {
-            $guia->forceFill([
-                'status' => $guiaStatus,
-                'unimed_status' => $portalStatus,
-                'unimed_last_checked_at' => now(),
-                'unimed_next_check_at' => now()->addHours(self::DEFAULT_DUE_HOURS),
-            ])->save();
-        } else {
-            $this->automacoes->registrarEvento($execucao, 'dados_indisponiveis', $execucao->status, [
-                'mensagem' => $resultado['message'] ?? 'Consulta de status sem resultado conclusivo.',
-                'proxima_consulta' => $guia->unimed_next_check_at?->toISOString(),
+        if (($resultado['status'] ?? null) !== 'succeeded') {
+            $this->automacoes->registrarEvento($execucao, 'autorizacao_indisponivel', $execucao->status, [
+                'codigo' => $resultado['error_code'] ?? null,
+                'mensagem' => $resultado['message'] ?? 'Senha ou validade não encontrada no portal.',
             ]);
+
+            return $execucao->refresh();
+        }
+
+        $updates = [];
+        if (filled($resultado['senha'] ?? null)) {
+            $updates['senha'] = $resultado['senha'];
+        }
+        if (filled($resultado['validade_senha'] ?? null)) {
+            $updates['validade_senha'] = $resultado['validade_senha'];
+        }
+
+        if ($updates !== []) {
+            $guia->forceFill($updates)->save();
         }
 
         return $execucao->refresh();
@@ -141,7 +148,7 @@ class ConsultarStatusUnimedService
 
     private function payloadPersistido(Guia $guia): array
     {
-        $guia->loadMissing(['paciente', 'convenio', 'solicitacaoItem']);
+        $guia->loadMissing(['paciente', 'convenio']);
 
         return [
             'guia_id' => $guia->id,
@@ -152,7 +159,6 @@ class ConsultarStatusUnimedService
                 'carteirinha' => $guia->paciente?->carteirinha,
             ],
             'convenio_id' => $guia->convenio_id,
-            'solicitacao_item_id' => $guia->solicitacao_item_id,
         ];
     }
 }

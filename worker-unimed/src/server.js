@@ -1,5 +1,6 @@
 import http from 'node:http'
 import { executarGerarGuia } from './operations/gerarGuia.js'
+import { executarCapturarAutorizacaoBatch, executarConsultarStatusBatch } from './operations/statusSenha.js'
 
 const port = Number(process.env.UNIMED_WORKER_PORT ?? 8787)
 const token = process.env.UNIMED_WORKER_TOKEN ?? ''
@@ -58,6 +59,28 @@ const server = http.createServer(async (request, response) => {
         return
       }
 
+      if (operation === 'consult_status_batch' || operation === 'consultar_status') {
+        const result = await executarConsultarStatusBatch({
+          executionId: payload.execution_id ?? null,
+          idempotencyKey: payload.idempotency_key ?? null,
+          payload: payload.payload ?? {},
+        })
+
+        sendJson(response, 200, result)
+        return
+      }
+
+      if (operation === 'capture_authorization_data_batch' || operation === 'capturar_senha_validade') {
+        const result = await executarCapturarAutorizacaoBatch({
+          executionId: payload.execution_id ?? null,
+          idempotencyKey: payload.idempotency_key ?? null,
+          payload: payload.payload ?? {},
+        })
+
+        sendJson(response, 200, result)
+        return
+      }
+
       sendJson(response, 200, {
         status: 'succeeded',
         operation,
@@ -79,5 +102,5 @@ const server = http.createServer(async (request, response) => {
 })
 
 server.listen(port, '127.0.0.1', () => {
-  console.log(`Unimed worker mock listening on http://127.0.0.1:${port}`)
+  console.log(`Unimed worker listening on http://127.0.0.1:${port}`)
 })

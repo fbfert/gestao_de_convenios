@@ -116,6 +116,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/guias/{guia}/finalizar', [GuiaController::class, 'finalizar']);
     Route::patch('/guias/{guia}/negar', [GuiaController::class, 'negar']);
     Route::post('/guias/{guia}/consultar-unimed', [GuiaController::class, 'consultarUnimed']);
+    Route::post('/guias/{guia}/buscar-senha-validade-unimed', [GuiaController::class, 'buscarSenhaValidadeUnimed']);
 
     Route::get('/antecipacoes', [AntecipacaoController::class, 'index']);
     Route::get('/antecipacoes/{antecipacao}', [AntecipacaoController::class, 'show']);

@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\AutomacaoExecucao;
 use App\Services\Automation\AutomacaoService;
+use App\Services\Automation\CapturarSenhaValidadeUnimedService;
 use App\Services\Automation\ConsultarStatusUnimedService;
 use App\Services\Automation\GerarGuiaUnimedService;
 use App\Services\Automation\UnimedCircuitBreakerService;
@@ -33,7 +34,8 @@ class ExecutarAutomacaoUnimedJob implements ShouldQueue
         UnimedCircuitBreakerService $circuitBreaker,
     ): void {
         $execucao = AutomacaoExecucao::query()->findOrFail($this->execucaoId);
-        $lock = Cache::lock("automacao:unimed:tenant:{$execucao->tenant_id}", 300);
+        $capturarSenhaValidadeUnimed = app(CapturarSenhaValidadeUnimedService::class);
+        $lock = Cache::lock("automacao:unimed:tenant:{$execucao->tenant_id}:{$execucao->operacao}", 300);
 
         if (! $lock->get()) {
             $automacoes->falhar(
@@ -49,7 +51,8 @@ class ExecutarAutomacaoUnimedJob implements ShouldQueue
             $execucao = $automacoes->iniciar($execucao);
             $payload = match ($execucao->operacao) {
                 'gerar_guia' => $gerarGuiaUnimed->payloadParaWorker($execucao),
-                'consultar_status' => $consultarStatusUnimed->payloadParaWorker($execucao),
+                'consultar_status', ConsultarStatusUnimedService::OPERATION => $consultarStatusUnimed->payloadParaWorker($execucao),
+                CapturarSenhaValidadeUnimedService::OPERATION => $capturarSenhaValidadeUnimed->payloadParaWorker($execucao),
                 default => $execucao->payload ?? [],
             };
             $resultado = $worker->executar($execucao, $payload);
@@ -57,8 +60,10 @@ class ExecutarAutomacaoUnimedJob implements ShouldQueue
 
             if ($execucao->operacao === 'gerar_guia') {
                 $gerarGuiaUnimed->aplicarResultado($execucao, $resultado);
-            } elseif ($execucao->operacao === 'consultar_status') {
+            } elseif ($execucao->operacao === 'consultar_status' || $execucao->operacao === ConsultarStatusUnimedService::OPERATION) {
                 $consultarStatusUnimed->aplicarResultado($execucao, $resultado);
+            } elseif ($execucao->operacao === CapturarSenhaValidadeUnimedService::OPERATION) {
+                $capturarSenhaValidadeUnimed->aplicarResultado($execucao, $resultado);
             } else {
                 $automacoes->concluir($execucao, $resultado);
             }

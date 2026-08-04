@@ -53,7 +53,7 @@ export function GuiaDetalheResumo({ guia }: { guia: Guia }) {
         <DetailItem label="Protocolo operadora">{guia.protocolo_operadora ?? '-'}</DetailItem>
       </section>
 
-      {guia.solicitacao_item || guia.automacao_execucao ? (
+      {guia.solicitacao_item || guia.automacao_execucao || guia.ultima_automacao_unimed ? (
         <section className="rounded-[1.75rem] border border-cyan-300/20 bg-cyan-400/10 p-6">
           <h3 className="text-lg font-semibold text-white">Operação Unimed</h3>
           <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -90,13 +90,23 @@ export function GuiaDetalheResumo({ guia }: { guia: Guia }) {
             <DetailItem label="Conclusão">
               {guia.automacao_execucao?.finished_at ?? '-'}
             </DetailItem>
+            <DetailItem label="Última operação Unimed">
+              {guia.ultima_automacao_unimed
+                ? `${guia.ultima_automacao_unimed.operacao} · ${guia.ultima_automacao_unimed.status}`
+                : '-'}
+            </DetailItem>
+            <DetailItem label="Erro recente">
+              {guia.ultima_automacao_unimed?.erro_codigo
+                ? `${guia.ultima_automacao_unimed.erro_codigo}: ${guia.ultima_automacao_unimed.erro_mensagem ?? '-'}`
+                : '-'}
+            </DetailItem>
           </div>
 
-          {guia.automacao_execucao?.eventos.length ? (
+          {(guia.ultima_automacao_unimed?.eventos.length || guia.automacao_execucao?.eventos.length) ? (
             <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4">
               <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Eventos</p>
               <div className="mt-3 space-y-2 text-sm text-slate-200">
-                {guia.automacao_execucao.eventos.map((evento) => (
+                {(guia.ultima_automacao_unimed?.eventos ?? guia.automacao_execucao?.eventos ?? []).map((evento) => (
                   <p key={evento.id}>
                     {evento.registrado_em ?? '-'} · {evento.tipo} · {evento.status ?? '-'}
                   </p>

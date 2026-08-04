@@ -1,13 +1,14 @@
 import { Link, useParams } from 'react-router-dom'
 import { GuiaDetalheResumo } from './GuiaDetalheResumo'
 import { GuiaStatusActions } from './GuiaStatusActions'
-import { getHttpErrorMessage, useConsultarGuiaUnimed, useGuia } from './useGuias'
+import { getHttpErrorMessage, useBuscarSenhaValidadeGuiaUnimed, useConsultarGuiaUnimed, useGuia } from './useGuias'
 
 export function GuiaDetalhePage() {
   const { id } = useParams()
   const guiaId = id && /^\d+$/.test(id) ? Number(id) : null
   const guiaQuery = useGuia(guiaId)
   const consultarGuiaUnimed = useConsultarGuiaUnimed()
+  const buscarSenhaValidadeUnimed = useBuscarSenhaValidadeGuiaUnimed()
 
   if (guiaId === null) {
     return (
@@ -36,13 +37,23 @@ export function GuiaDetalhePage() {
   }
 
   const guia = guiaQuery.data
-  const canConsultarUnimed = guia.convenio?.nome && (guia.solicitacao_item_id || guia.automacao_execucao_id)
+  const isUnimed = guia.convenio?.connector_driver === 'unimed_rda'
+  const canConsultarUnimed = isUnimed && Boolean(guia.numero_guia) && !['approved', 'denied', 'canceled', 'finalized', 'needs_verification'].includes(guia.status)
+  const canBuscarSenhaValidade = isUnimed && guia.status === 'approved' && Boolean(guia.numero_guia) && (!guia.senha || !guia.validade_senha)
 
   const handleConsultarUnimed = async () => {
     try {
       await consultarGuiaUnimed.mutateAsync(guia.id)
     } catch (error) {
       window.alert(getHttpErrorMessage(error, 'Não foi possível consultar a Unimed.'))
+    }
+  }
+
+  const handleBuscarSenhaValidade = async () => {
+    try {
+      await buscarSenhaValidadeUnimed.mutateAsync(guia.id)
+    } catch (error) {
+      window.alert(getHttpErrorMessage(error, 'Não foi possível buscar senha e validade na Unimed.'))
     }
   }
 
@@ -71,6 +82,15 @@ export function GuiaDetalhePage() {
             data-testid="guia-consultar-unimed"
           >
             {consultarGuiaUnimed.isPending ? 'Consultando...' : 'Consultar Unimed'}
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleBuscarSenhaValidade()}
+            disabled={!canBuscarSenhaValidade || buscarSenhaValidadeUnimed.isPending}
+            className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1.5 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-400/20 disabled:cursor-not-allowed disabled:opacity-50"
+            data-testid="guia-buscar-senha-validade-unimed"
+          >
+            {buscarSenhaValidadeUnimed.isPending ? 'Buscando...' : 'Buscar senha/validade'}
           </button>
         </div>
       </section>

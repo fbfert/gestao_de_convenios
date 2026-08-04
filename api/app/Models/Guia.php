@@ -43,6 +43,11 @@ class Guia extends Model
         return $this->belongsTo(AutomacaoExecucao::class);
     }
 
+    public function ultimaAutomacaoUnimed()
+    {
+        return $this->hasOne(AutomacaoExecucao::class)->latestOfMany();
+    }
+
     public function convenio()
     {
         return $this->belongsTo(Convenio::class);

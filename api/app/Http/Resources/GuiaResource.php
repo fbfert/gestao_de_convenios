@@ -83,6 +83,24 @@ class GuiaResource extends JsonResource
                     ])->values()
                     : [],
             ] : null),
+            'ultima_automacao_unimed' => $this->whenLoaded('ultimaAutomacaoUnimed', fn () => $this->ultimaAutomacaoUnimed ? [
+                'id' => $this->ultimaAutomacaoUnimed->id,
+                'operacao' => $this->ultimaAutomacaoUnimed->operacao,
+                'status' => $this->ultimaAutomacaoUnimed->status,
+                'erro_codigo' => $this->ultimaAutomacaoUnimed->erro_codigo,
+                'erro_mensagem' => $this->ultimaAutomacaoUnimed->erro_mensagem,
+                'queued_at' => $this->ultimaAutomacaoUnimed->queued_at?->toISOString(),
+                'started_at' => $this->ultimaAutomacaoUnimed->started_at?->toISOString(),
+                'finished_at' => $this->ultimaAutomacaoUnimed->finished_at?->toISOString(),
+                'eventos' => $this->ultimaAutomacaoUnimed->relationLoaded('eventos')
+                    ? $this->ultimaAutomacaoUnimed->eventos->map(fn ($evento) => [
+                        'id' => $evento->id,
+                        'tipo' => $evento->tipo,
+                        'status' => $evento->status,
+                        'registrado_em' => $evento->registrado_em?->toISOString(),
+                    ])->values()
+                    : [],
+            ] : null),
             'antecipacoes' => $this->whenLoaded('antecipacoes', fn () => $this->antecipacoes->map(fn ($antecipacao) => [
                 'id' => $antecipacao->id,
                 'qtd_autorizada' => $antecipacao->qtd_autorizada,

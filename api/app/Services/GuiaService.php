@@ -35,6 +35,7 @@ class GuiaService
                 'solicitacaoItem.especialidade',
                 'solicitacaoItem.profissional',
                 'automacaoExecucao',
+                'ultimaAutomacaoUnimed',
             ]),
             'guias.view',
             'guias.viewOwn',
@@ -102,6 +103,7 @@ class GuiaService
             'solicitacaoItem.especialidade',
             'solicitacaoItem.profissional',
             'automacaoExecucao.eventos',
+            'ultimaAutomacaoUnimed.eventos',
             'antecipacoes',
             'conciliacoes',
         ])->findOrFail($id);

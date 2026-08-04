@@ -20,6 +20,7 @@ use App\Models\SolicitacaoItem;
 use App\Models\UnimedRdaCredential;
 use App\Models\User;
 use App\Services\Automation\AutomacaoService;
+use App\Services\Automation\CapturarSenhaValidadeUnimedService;
 use App\Services\Automation\ConsultarStatusUnimedService;
 use App\Services\Automation\FakeUnimedWorkerClient;
 use App\Services\Automation\GerarGuiaUnimedService;
@@ -229,26 +230,62 @@ class GerarGuiaUnimedApiTest extends TestCase
         $this->postJson("/api/guias/{$guia->id}/consultar-unimed")
             ->assertAccepted()
             ->assertJsonPath('data.status', 'queued')
-            ->assertJsonPath('data.operacao', 'consultar_status')
+            ->assertJsonPath('data.operacao', 'consult_status_batch')
             ->assertJsonPath('data.guia_id', $guia->id);
 
         $this->assertNotNull($guia->refresh()->unimed_next_check_at);
         Queue::assertPushed(ExecutarAutomacaoUnimedJob::class);
     }
 
-    public function test_consulta_status_captura_senha_validade_e_finaliza_guia(): void
+    public function test_consulta_status_atualiza_status_sem_capturar_senha(): void
     {
         $guia = $this->criarGuiaUnimedPendente();
         $execucao = app(AutomacaoService::class)->enfileirar(
             $guia->tenant_id,
-            'consultar_status',
+            'consult_status_batch',
             guia: $guia,
             payload: ['numero_guia' => $guia->numero_guia],
         );
         $this->app->instance(UnimedWorkerClient::class, new FakeUnimedWorkerClient([
             'status' => 'succeeded',
-            'portal_status' => 'approved',
-            'senha' => 'SENHA-123',
+            'guia_status' => 'approved',
+            'unimed_status' => 'Autorizado',
+            'conclusivo' => true,
+        ]));
+
+        (new ExecutarAutomacaoUnimedJob($execucao->id))->handle(
+            app(AutomacaoService::class),
+            app(UnimedWorkerClient::class),
+            app(GerarGuiaUnimedService::class),
+            app(ConsultarStatusUnimedService::class),
+            app(\App\Services\Automation\UnimedCircuitBreakerService::class),
+        );
+
+        $guia->refresh();
+
+        $this->assertSame('approved', $guia->status);
+        $this->assertSame('Autorizado', $guia->unimed_status);
+        $this->assertNull($guia->senha);
+        $this->assertNotNull($guia->unimed_last_checked_at);
+        $this->assertNotNull($guia->unimed_next_check_at);
+    }
+
+    public function test_captura_senha_validade_preserva_valores_existentes_quando_worker_retorna_vazio(): void
+    {
+        $guia = $this->criarGuiaUnimedPendente([
+            'status' => 'approved',
+            'senha' => 'SENHA-ANTIGA',
+            'validade_senha' => null,
+        ]);
+        $execucao = app(AutomacaoService::class)->enfileirar(
+            $guia->tenant_id,
+            'capture_authorization_data_batch',
+            guia: $guia,
+            payload: ['numero_guia' => $guia->numero_guia],
+        );
+        $this->app->instance(UnimedWorkerClient::class, new FakeUnimedWorkerClient([
+            'status' => 'succeeded',
+            'senha' => '',
             'validade_senha' => today()->addDays(30)->toDateString(),
         ]));
 
@@ -262,11 +299,9 @@ class GerarGuiaUnimedApiTest extends TestCase
 
         $guia->refresh();
 
-        $this->assertSame('finalized', $guia->status);
-        $this->assertSame('approved', $guia->unimed_status);
-        $this->assertSame('SENHA-123', $guia->senha);
-        $this->assertNotNull($guia->unimed_last_checked_at);
-        $this->assertNotNull($guia->unimed_next_check_at);
+        $this->assertSame('approved', $guia->status);
+        $this->assertSame('SENHA-ANTIGA', $guia->senha);
+        $this->assertSame(today()->addDays(30)->toDateString(), $guia->validade_senha->toDateString());
     }
 
     public function test_consulta_sem_dados_reagenda_sem_falha_estrutural(): void
@@ -276,6 +311,7 @@ class GerarGuiaUnimedApiTest extends TestCase
         $this->app->instance(UnimedWorkerClient::class, new FakeUnimedWorkerClient([
             'status' => 'succeeded',
             'portal_status' => 'pending',
+            'conclusivo' => false,
         ]));
 
         (new ExecutarAutomacaoUnimedJob($execucao->id))->handle(
@@ -289,8 +325,8 @@ class GerarGuiaUnimedApiTest extends TestCase
         $guia->refresh();
 
         $this->assertSame('under_review', $guia->status);
-        $this->assertSame('pending', $guia->unimed_status);
-        $this->assertNotNull($guia->unimed_next_check_at);
+        $this->assertNull($guia->unimed_status);
+        $this->assertNull($guia->unimed_last_checked_at);
         $this->assertDatabaseHas('automacao_eventos', [
             'automacao_execucao_id' => $execucao->id,
             'tipo' => 'dados_indisponiveis',
@@ -305,16 +341,19 @@ class GerarGuiaUnimedApiTest extends TestCase
         $due = $this->criarGuiaUnimedPendente(['unimed_next_check_at' => now()->subMinute()]);
         $future = $this->criarGuiaUnimedPendente(['unimed_next_check_at' => now()->addDay()]);
 
-        (new EnfileirarConsultasUnimedDueJob())->handle(app(ConsultarStatusUnimedService::class));
+        (new EnfileirarConsultasUnimedDueJob())->handle(
+            app(ConsultarStatusUnimedService::class),
+            app(CapturarSenhaValidadeUnimedService::class),
+        );
 
-        $this->assertSame(1, AutomacaoExecucao::query()->where('operacao', 'consultar_status')->count());
+        $this->assertSame(1, AutomacaoExecucao::query()->where('operacao', 'consult_status_batch')->count());
         $this->assertDatabaseHas('automacao_execucoes', [
             'guia_id' => $due->id,
-            'operacao' => 'consultar_status',
+            'operacao' => 'consult_status_batch',
         ]);
         $this->assertDatabaseMissing('automacao_execucoes', [
             'guia_id' => $future->id,
-            'operacao' => 'consultar_status',
+            'operacao' => 'consult_status_batch',
         ]);
         Queue::assertPushed(ExecutarAutomacaoUnimedJob::class, 1);
     }
@@ -471,7 +510,7 @@ class GerarGuiaUnimedApiTest extends TestCase
         $item = $this->prepararItemUnimed();
         $solicitacao = $item->solicitacao;
 
-        return Guia::query()->create([
+        return Guia::query()->create(array_merge([
             'tenant_id' => $item->tenant_id,
             'solicitacao_id' => $solicitacao->id,
             'solicitacao_item_id' => $item->id,
@@ -487,6 +526,6 @@ class GerarGuiaUnimedApiTest extends TestCase
             'senha' => null,
             'validade_senha' => null,
             'observacoes' => null,
-        ] + $overrides);
+        ], $overrides));
     }
 }

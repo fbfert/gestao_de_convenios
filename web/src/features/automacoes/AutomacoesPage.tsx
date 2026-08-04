@@ -178,7 +178,8 @@ export function AutomacoesPage() {
           >
             <option value="">Todas as operações</option>
             <option value="gerar_guia">gerar_guia</option>
-            <option value="consultar_status">consultar_status</option>
+            <option value="consult_status_batch">consult_status_batch</option>
+            <option value="capture_authorization_data_batch">capture_authorization_data_batch</option>
           </select>
           <label className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-slate-200">
             <input

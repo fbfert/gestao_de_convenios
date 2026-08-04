@@ -95,7 +95,7 @@ class AutomacaoUnimedInfraTest extends TestCase
     {
         $item = SolicitacaoItem::query()->firstOrFail();
         $execucao = app(AutomacaoService::class)->enfileirar($item->tenant_id, 'operacao_mock', $item);
-        $lock = Cache::lock("automacao:unimed:tenant:{$item->tenant_id}", 300);
+        $lock = Cache::lock("automacao:unimed:tenant:{$item->tenant_id}:operacao_mock", 300);
         $lock->get();
 
         try {

@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\Guia;
+use App\Services\Automation\CapturarSenhaValidadeUnimedService;
 use App\Services\Automation\ConsultarStatusUnimedService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -21,24 +22,25 @@ class EnfileirarConsultasUnimedDueJob implements ShouldQueue
         $this->onQueue('automacoes');
     }
 
-    public function handle(ConsultarStatusUnimedService $consultarStatus): void
+    public function handle(
+        ConsultarStatusUnimedService $consultarStatus,
+        CapturarSenhaValidadeUnimedService $capturarSenhaValidade,
+    ): void
     {
         Guia::query()
             ->with('convenio')
             ->whereHas('convenio', fn ($query) => $query->where('connector_driver', 'unimed_rda'))
+            ->whereNotNull('numero_guia')
+            ->whereNotIn('status', ['approved', 'denied', 'canceled', 'finalized', 'needs_verification'])
             ->where(function ($query) {
                 $query->whereNull('unimed_next_check_at')
                     ->orWhere('unimed_next_check_at', '<=', now());
-            })
-            ->where(function ($query) {
-                $query->whereNull('senha')
-                    ->orWhereNull('validade_senha');
             })
             ->orderBy('tenant_id')
             ->orderBy('id')
             ->get()
             ->each(function (Guia $guia) use ($consultarStatus) {
-                $lock = Cache::lock("automacao:unimed:due:tenant:{$guia->tenant_id}", 60);
+                $lock = Cache::lock("automacao:unimed:due:tenant:{$guia->tenant_id}:consult_status_batch", 60);
 
                 if (! $lock->get()) {
                     return;
@@ -46,6 +48,34 @@ class EnfileirarConsultasUnimedDueJob implements ShouldQueue
 
                 try {
                     $consultarStatus->enviar($guia);
+                } catch (ValidationException) {
+                    // Guia deixou de ser elegivel entre a busca e o enqueue.
+                } finally {
+                    $lock->release();
+                }
+            });
+
+        Guia::query()
+            ->with('convenio')
+            ->whereHas('convenio', fn ($query) => $query->where('connector_driver', 'unimed_rda'))
+            ->where('status', 'approved')
+            ->whereNotNull('numero_guia')
+            ->where(function ($query) {
+                $query->whereNull('senha')
+                    ->orWhereNull('validade_senha');
+            })
+            ->orderBy('tenant_id')
+            ->orderBy('id')
+            ->get()
+            ->each(function (Guia $guia) use ($capturarSenhaValidade) {
+                $lock = Cache::lock("automacao:unimed:due:tenant:{$guia->tenant_id}:capture_authorization_data_batch", 60);
+
+                if (! $lock->get()) {
+                    return;
+                }
+
+                try {
+                    $capturarSenhaValidade->enviar($guia);
                 } catch (ValidationException) {
                     // Guia deixou de ser elegivel entre a busca e o enqueue.
                 } finally {

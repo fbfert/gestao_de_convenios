@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { useMatch, useNavigate } from 'react-router-dom'
 import {
   getHttpErrorMessage,
@@ -42,14 +42,17 @@ function toPayload(form: EspecialidadeForm): EspecialidadePayload {
 export function EspecialidadesPage() {
   const navigate = useNavigate()
   const isCreateRoute = useMatch('/especialidades/nova') !== null
+  const editRouteMatch = useMatch('/especialidades/:id/editar')
+  const editingId = editRouteMatch ? Number(editRouteMatch.params.id) : null
+  const isEditRoute = editingId !== null && Number.isInteger(editingId)
+  const isFormRoute = isCreateRoute || isEditRoute
   const [busca, setBusca] = useState('')
   const [draftBusca, setDraftBusca] = useState('')
   const [statusFiltro, setStatusFiltro] = useState<StatusFiltro>('todas')
   const [draftStatusFiltro, setDraftStatusFiltro] = useState<StatusFiltro>('todas')
-  const [editingId, setEditingId] = useState<number | null>(null)
-  const [isFormOpen, setIsFormOpen] = useState(false)
   const [form, setForm] = useState<EspecialidadeForm>(emptyForm)
   const [formError, setFormError] = useState<string | null>(null)
+  const carregadoRef = useRef<number | null>(null)
 
   const especialidadesQuery = useEspecialidadesCrud(busca)
   const criarEspecialidade = useCriarEspecialidade()
@@ -72,6 +75,27 @@ export function EspecialidadesPage() {
     [especialidades],
   )
   const totalInativas = especialidades.length - totalAtivas
+  const especialidadeEmEdicao = useMemo(
+    () => (isEditRoute ? especialidades.find((especialidade) => especialidade.id === editingId) ?? null : null),
+    [isEditRoute, editingId, especialidades],
+  )
+
+  // Carrega o registro no formulário uma única vez por id: evita que um refetch
+  // em background sobrescreva o que o usuário já digitou.
+  useEffect(() => {
+    if (!isEditRoute) {
+      carregadoRef.current = null
+      return
+    }
+
+    if (!especialidadeEmEdicao || carregadoRef.current === especialidadeEmEdicao.id) {
+      return
+    }
+
+    carregadoRef.current = especialidadeEmEdicao.id
+    setForm(toForm(especialidadeEmEdicao))
+    setFormError(null)
+  }, [isEditRoute, especialidadeEmEdicao])
 
   const handleFilterSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -80,10 +104,10 @@ export function EspecialidadesPage() {
   }
 
   const handleNew = () => {
-    navigate('/especialidades/nova')
-    setEditingId(null)
     setForm(emptyForm)
     setFormError(null)
+    carregadoRef.current = null
+    navigate('/especialidades/nova')
   }
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -93,7 +117,7 @@ export function EspecialidadesPage() {
     try {
       const payload = toPayload(form)
 
-      if (editingId) {
+      if (isEditRoute && editingId) {
         await atualizarEspecialidade.mutateAsync({
           id: editingId,
           payload,
@@ -102,23 +126,17 @@ export function EspecialidadesPage() {
         await criarEspecialidade.mutateAsync(payload)
       }
 
-      setEditingId(null)
       setForm(emptyForm)
-      if (isCreateRoute) {
-        navigate('/especialidades')
-      } else {
-        setIsFormOpen(false)
-      }
+      carregadoRef.current = null
+      navigate('/especialidades')
     } catch (error) {
       setFormError(getHttpErrorMessage(error, 'Não foi possível salvar a especialidade.'))
     }
   }
 
   const handleEdit = (especialidade: Especialidade) => {
-    setEditingId(especialidade.id)
-    setForm(toForm(especialidade))
     setFormError(null)
-    setIsFormOpen(true)
+    navigate(`/especialidades/${especialidade.id}/editar`)
   }
 
   const handleToggleAtivo = async (especialidade: Especialidade) => {
@@ -135,20 +153,15 @@ export function EspecialidadesPage() {
   }
 
   const handleCancel = () => {
-    setEditingId(null)
     setForm(emptyForm)
     setFormError(null)
-    if (isCreateRoute) {
-      navigate('/especialidades')
-      return
-    }
-
-    setIsFormOpen(false)
+    carregadoRef.current = null
+    navigate('/especialidades')
   }
 
   return (
     <div className="space-y-8" data-testid="especialidades-page">
-      {!isCreateRoute ? (
+      {!isFormRoute ? (
       <section className="space-y-4">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -191,7 +204,7 @@ export function EspecialidadesPage() {
       </section>
       ) : null}
 
-      {isFormOpen || isCreateRoute ? (
+      {isFormRoute && (!isEditRoute || especialidadeEmEdicao) ? (
         <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
           <form onSubmit={handleSubmit} className="space-y-4" data-testid="especialidade-form">
             <div className="flex items-start justify-between gap-4">
@@ -277,7 +290,32 @@ export function EspecialidadesPage() {
         </section>
       ) : null}
 
-      {!isCreateRoute ? (
+      {isEditRoute && !especialidadeEmEdicao ? (
+        <section
+          className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6"
+          data-testid="especialidade-edicao-indisponivel"
+        >
+          {especialidadesQuery.isLoading ? (
+            <p className="text-sm text-slate-300">Carregando especialidade...</p>
+          ) : (
+            <div className="space-y-4">
+              <p className="text-sm text-rose-100">
+                Especialidade não encontrada. Ela pode ter sido removida ou o endereço está incorreto.
+              </p>
+              <button
+                type="button"
+                onClick={handleCancel}
+                className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+                data-testid="especialidade-voltar"
+              >
+                Voltar para a lista
+              </button>
+            </div>
+          )}
+        </section>
+      ) : null}
+
+      {!isFormRoute ? (
       <section className="space-y-4 rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>

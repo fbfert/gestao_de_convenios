@@ -57,8 +57,10 @@ export function AppRoutes() {
           <Route path="/conciliacao" element={<ConciliacaoPage />} />
           <Route path="/profissionais" element={<ProfissionaisPage />} />
           <Route path="/profissionais/novo" element={<ProfissionaisPage />} />
+          <Route path="/profissionais/:id/editar" element={<ProfissionaisPage />} />
           <Route path="/especialidades" element={<EspecialidadesPage />} />
           <Route path="/especialidades/nova" element={<EspecialidadesPage />} />
+          <Route path="/especialidades/:id/editar" element={<EspecialidadesPage />} />
           <Route path="/medicos" element={<MedicosPage />} />
           <Route path="/medicos/novo" element={<MedicosPage />} />
           <Route path="/permissoes" element={<PermissoesPage />} />

@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { useMatch, useNavigate } from 'react-router-dom'
 import { useEspecialidades } from '../../lib/queries/useReferenceData'
 import { getHttpErrorMessage, useAtualizarProfissional, useCriarProfissional, useProfissionaisCrud } from './useProfissionais'
@@ -45,14 +45,17 @@ function toPayload(form: ProfissionalForm): ProfissionalPayload {
 export function ProfissionaisPage() {
   const navigate = useNavigate()
   const isCreateRoute = useMatch('/profissionais/novo') !== null
+  const editRouteMatch = useMatch('/profissionais/:id/editar')
+  const editingId = editRouteMatch ? Number(editRouteMatch.params.id) : null
+  const isEditRoute = editingId !== null && Number.isInteger(editingId)
+  const isFormRoute = isCreateRoute || isEditRoute
   const [busca, setBusca] = useState('')
   const [draftBusca, setDraftBusca] = useState('')
   const [especialidadeFiltro, setEspecialidadeFiltro] = useState('')
   const [draftEspecialidadeFiltro, setDraftEspecialidadeFiltro] = useState('')
-  const [editingId, setEditingId] = useState<number | null>(null)
-  const [isFormOpen, setIsFormOpen] = useState(false)
   const [form, setForm] = useState<ProfissionalForm>(emptyForm)
   const [formError, setFormError] = useState<string | null>(null)
+  const carregadoRef = useRef<number | null>(null)
 
   const especialidadesQuery = useEspecialidades()
   const profissionaisQuery = useProfissionaisCrud({
@@ -67,6 +70,27 @@ export function ProfissionaisPage() {
   const profissionais = useMemo(() => profissionaisQuery.data ?? [], [profissionaisQuery.data])
   const totalAtivos = useMemo(() => profissionais.filter((profissional) => profissional.ativo).length, [profissionais])
   const totalInativos = profissionais.length - totalAtivos
+  const profissionalEmEdicao = useMemo(
+    () => (isEditRoute ? profissionais.find((profissional) => profissional.id === editingId) ?? null : null),
+    [isEditRoute, editingId, profissionais],
+  )
+
+  // Carrega o registro no formulário uma única vez por id: evita que um refetch
+  // em background sobrescreva o que o usuário já digitou.
+  useEffect(() => {
+    if (!isEditRoute) {
+      carregadoRef.current = null
+      return
+    }
+
+    if (!profissionalEmEdicao || carregadoRef.current === profissionalEmEdicao.id) {
+      return
+    }
+
+    carregadoRef.current = profissionalEmEdicao.id
+    setForm(toForm(profissionalEmEdicao))
+    setFormError(null)
+  }, [isEditRoute, profissionalEmEdicao])
 
   const handleFilterSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -75,13 +99,13 @@ export function ProfissionaisPage() {
   }
 
   const handleNew = () => {
-    navigate('/profissionais/novo')
-    setEditingId(null)
     setForm({
       ...emptyForm,
       especialidade_id: draftEspecialidadeFiltro,
     })
     setFormError(null)
+    carregadoRef.current = null
+    navigate('/profissionais/novo')
   }
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -91,7 +115,7 @@ export function ProfissionaisPage() {
     try {
       const payload = toPayload(form)
 
-      if (editingId) {
+      if (isEditRoute && editingId) {
         await atualizarProfissional.mutateAsync({
           id: editingId,
           payload,
@@ -100,23 +124,17 @@ export function ProfissionaisPage() {
         await criarProfissional.mutateAsync(payload)
       }
 
-      setEditingId(null)
       setForm(emptyForm)
-      if (isCreateRoute) {
-        navigate('/profissionais')
-      } else {
-        setIsFormOpen(false)
-      }
+      carregadoRef.current = null
+      navigate('/profissionais')
     } catch (error) {
       setFormError(getHttpErrorMessage(error, 'Não foi possível salvar o profissional.'))
     }
   }
 
   const handleEdit = (profissional: Profissional) => {
-    setEditingId(profissional.id)
-    setForm(toForm(profissional))
     setFormError(null)
-    setIsFormOpen(true)
+    navigate(`/profissionais/${profissional.id}/editar`)
   }
 
   const handleToggleAtivo = async (profissional: Profissional) => {
@@ -133,20 +151,15 @@ export function ProfissionaisPage() {
   }
 
   const handleCancel = () => {
-    setEditingId(null)
     setForm(emptyForm)
     setFormError(null)
-    if (isCreateRoute) {
-      navigate('/profissionais')
-      return
-    }
-
-    setIsFormOpen(false)
+    carregadoRef.current = null
+    navigate('/profissionais')
   }
 
   return (
     <div className="space-y-8" data-testid="profissionais-page">
-      {!isCreateRoute ? (
+      {!isFormRoute ? (
       <section className="space-y-4">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -189,7 +202,7 @@ export function ProfissionaisPage() {
       </section>
       ) : null}
 
-      {isFormOpen || isCreateRoute ? (
+      {isFormRoute && (!isEditRoute || profissionalEmEdicao) ? (
         <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
           <form onSubmit={handleSubmit} className="space-y-4" data-testid="profissional-form">
             <div className="flex items-start justify-between gap-4">
@@ -324,7 +337,32 @@ export function ProfissionaisPage() {
         </section>
       ) : null}
 
-      {!isCreateRoute ? (
+      {isEditRoute && !profissionalEmEdicao ? (
+        <section
+          className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6"
+          data-testid="profissional-edicao-indisponivel"
+        >
+          {profissionaisQuery.isLoading ? (
+            <p className="text-sm text-slate-300">Carregando profissional...</p>
+          ) : (
+            <div className="space-y-4">
+              <p className="text-sm text-rose-100">
+                Profissional não encontrado. Ele pode ter sido removido ou o endereço está incorreto.
+              </p>
+              <button
+                type="button"
+                onClick={handleCancel}
+                className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+                data-testid="profissional-voltar"
+              >
+                Voltar para a lista
+              </button>
+            </div>
+          )}
+        </section>
+      ) : null}
+
+      {!isFormRoute ? (
       <section className="space-y-4 rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>

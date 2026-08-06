@@ -84,17 +84,23 @@
     function renderGuideStatus() {
       const statusByScenario = {
         'status-approved': 'Autorizado',
+        'status-approved-com-quantidades': 'Autorizado',
         'status-under-review': 'Em Análise',
         'status-denied': 'Negado',
         'status-canceled': 'Cancelado',
       }
       const status = statusByScenario[scenario] || 'Autorizado'
+      // Nem toda listagem traz as quantidades; o cenário abaixo cobre quando traz.
+      const quantidades = scenario === 'status-approved-com-quantidades'
+        ? '<td>Qtd: 10</td><td>Qtd Aut: 6</td>'
+        : ''
       app.innerHTML = `
         <table>
           <tr data-guia-row>
             <td>UNI-123</td>
             <td>Situação: ${status}</td>
             <td>Paciente Teste</td>
+            ${quantidades}
           </tr>
         </table>
       `

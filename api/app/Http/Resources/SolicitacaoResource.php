@@ -66,20 +66,13 @@ class SolicitacaoResource extends JsonResource
                     'id' => $item->profissional->id,
                     'nome' => $item->profissional->nome,
                 ] : null,
-                'documentos' => $item->relationLoaded('documentos') ? $item->documentos->map(fn ($documento) => [
-                    'id' => $documento->id,
-                    'tipo' => $documento->tipo,
-                    'nome_original' => $documento->nome_original,
-                    'mime' => $documento->mime,
-                ])->values() : [],
+                'documentos' => $item->relationLoaded('documentos')
+                    ? $item->documentos->map(fn ($documento) => $this->documento($documento))->values()
+                    : [],
             ])->values()),
-            'documentos' => $this->whenLoaded('documentos', fn () => $this->documentos->map(fn ($documento) => [
-                'id' => $documento->id,
-                'solicitacao_item_id' => $documento->solicitacao_item_id,
-                'tipo' => $documento->tipo,
-                'nome_original' => $documento->nome_original,
-                'mime' => $documento->mime,
-            ])->values()),
+            'documentos' => $this->whenLoaded('documentos', fn () => $this->documentos
+                ->map(fn ($documento) => $this->documento($documento))
+                ->values()),
             'status' => $this->status,
             'solicitado_em' => $this->solicitado_em?->toDateString(),
             'observacoes' => $this->observacoes,
@@ -90,6 +83,18 @@ class SolicitacaoResource extends JsonResource
             ] : null,
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
+        ];
+    }
+
+    private function documento($documento): array
+    {
+        return [
+            'id' => $documento->id,
+            'solicitacao_item_id' => $documento->solicitacao_item_id,
+            'tipo' => $documento->tipo,
+            'nome_original' => $documento->nome_original,
+            'mime' => $documento->mime,
+            'url' => url("/api/solicitacoes/{$documento->solicitacao_id}/documentos/{$documento->id}"),
         ];
     }
 

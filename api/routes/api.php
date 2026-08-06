@@ -26,6 +26,7 @@ use App\Http\Controllers\PacienteController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\SolicitacaoController;
 use App\Http\Controllers\ProfissionalController;
+use App\Http\Controllers\SolicitacaoDocumentoController;
 use App\Http\Controllers\UnimedSettingsController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -105,6 +106,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/solicitacoes/medicos-rapido', [SolicitacaoController::class, 'storeMedicoRapido']);
     Route::get('/solicitacoes/{solicitacao}', [SolicitacaoController::class, 'show']);
     Route::get('/solicitacoes/{solicitacao}/pedido-medico', [SolicitacaoController::class, 'pedidoMedico']);
+    Route::post('/solicitacoes/{solicitacao}/documentos', [SolicitacaoDocumentoController::class, 'store']);
+    Route::get('/solicitacoes/{solicitacao}/documentos/{documento}', [SolicitacaoDocumentoController::class, 'download']);
+    Route::delete('/solicitacoes/{solicitacao}/documentos/{documento}', [SolicitacaoDocumentoController::class, 'destroy']);
     Route::patch('/solicitacoes/{solicitacao}/status', [SolicitacaoController::class, 'updateStatus']);
     Route::patch('/solicitacoes/{solicitacao}/aprovar', [SolicitacaoController::class, 'aprovar']);
     Route::patch('/solicitacoes/{solicitacao}/negar', [SolicitacaoController::class, 'negar']);

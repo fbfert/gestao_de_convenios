@@ -17,7 +17,10 @@ import {
   usePacientes,
   useProfissionais,
 } from '../../lib/queries/useReferenceData'
+import { formatUnimedCarteirinha } from '../../lib/carteirinha'
 import { SolicitacaoGuiaModal } from './SolicitacaoGuiaModal'
+import { SolicitacaoItensFields } from './SolicitacaoItensFields'
+import { emptyItem, itensEstaoCompletos } from './solicitacaoItens'
 
 const emptyArray: never[] = []
 
@@ -28,14 +31,12 @@ const defaultFilters: SolicitacaoFilters = {
 
 const emptyForm: SolicitacaoForm = {
   paciente_id: '',
-  profissional_id: '',
-  especialidade_id: '',
-  quantidade: '10',
   convenio_id: '',
   medico_id: '',
   cid: '',
   solicitado_em: new Date().toISOString().slice(0, 10),
   observacoes: '',
+  itens: [{ ...emptyItem }],
 }
 
 const statusActions: Array<{ status: SolicitacaoStatus; label: string; className: string }> = [
@@ -86,15 +87,17 @@ export function SolicitacoesPage() {
   const [draftFilters, setDraftFilters] = useState(defaultFilters)
   const [page, setPage] = useState(1)
   const [isFormOpen, setIsFormOpen] = useState(false)
-  const [selectedSolicitacao, setSelectedSolicitacao] = useState<Solicitacao | null>(null)
+  const [selectedSolicitacaoId, setSelectedSolicitacaoId] = useState<number | null>(null)
   const [form, setForm] = useState<SolicitacaoForm>(emptyForm)
   const [formError, setFormError] = useState<string | null>(null)
 
   const conveniosQuery = useConvenios()
-  const especialidadesQuery = useEspecialidades()
+  // O código do procedimento é por convênio, então a listagem acompanha o convênio do form.
+  const especialidadesQuery = useEspecialidades({ convenio_id: form.convenio_id })
   const medicosQuery = useMedicos()
   const pacientesQuery = usePacientes({ convenio_id: form.convenio_id })
-  const profissionaisQuery = useProfissionais({ especialidade_id: form.especialidade_id })
+  // Todos os profissionais: cada linha de item filtra pela sua própria especialidade.
+  const profissionaisQuery = useProfissionais()
   const solicitacoesQuery = useSolicitacoes(filters, page)
   const criarSolicitacao = useCriarSolicitacao()
   const atualizarStatusSolicitacao = useAtualizarStatusSolicitacao()
@@ -118,29 +121,19 @@ export function SolicitacoesPage() {
     pacientes.length > 0 &&
     profissionais.length > 0 &&
     form.convenio_id !== '' &&
-    form.especialidade_id !== '' &&
     form.paciente_id !== '' &&
-    form.profissional_id !== '' &&
-    form.quantidade !== '' &&
-    form.medico_id !== ''
+    form.medico_id !== '' &&
+    itensEstaoCompletos(form.itens)
 
   useEffect(() => {
     if (!formReady) {
       return
     }
 
-    setForm((current) => {
-      if (current.convenio_id && current.especialidade_id) {
-        return current
-      }
-
-      return {
-        ...current,
-        convenio_id: current.convenio_id || String(convenios[0].id),
-        especialidade_id: current.especialidade_id || String(especialidades[0].id),
-      }
-    })
-  }, [convenios, especialidades, formReady])
+    setForm((current) =>
+      current.convenio_id ? current : { ...current, convenio_id: String(convenios[0].id) },
+    )
+  }, [convenios, formReady])
 
   useEffect(() => {
     if (pacientes.length === 0) {
@@ -161,26 +154,6 @@ export function SolicitacoesPage() {
   }, [pacientes])
 
   useEffect(() => {
-    if (profissionais.length === 0) {
-      return
-    }
-
-    setForm((current) => {
-      const hasSelected = profissionais.some(
-        (profissional) => String(profissional.id) === current.profissional_id,
-      )
-      if (hasSelected) {
-        return current
-      }
-
-      return {
-        ...current,
-        profissional_id: String(profissionais[0].id),
-      }
-    })
-  }, [profissionais])
-
-  useEffect(() => {
     if (medicos.length === 0) {
       return
     }
@@ -198,19 +171,18 @@ export function SolicitacoesPage() {
     })
   }, [medicos])
 
-  useEffect(() => {
-    if (convenios.length === 0 || especialidades.length === 0) {
-      return
-    }
-
-    setForm((current) => ({
-      ...current,
-      convenio_id: current.convenio_id || String(convenios[0].id),
-      especialidade_id: current.especialidade_id || String(especialidades[0].id),
-    }))
-  }, [convenios, especialidades])
-
   const totalPages = solicitacoesQuery.data?.meta?.last_page ?? 1
+
+  const solicitacoes = useMemo(
+    () => solicitacoesQuery.data?.data ?? emptyArray,
+    [solicitacoesQuery.data],
+  )
+  // Mantemos só o id: assim o modal enxerga o resultado de um anexo recém-enviado,
+  // que chega pelo refetch da lista, em vez de um objeto congelado no clique.
+  const selectedSolicitacao = useMemo(
+    () => solicitacoes.find((item) => item.id === selectedSolicitacaoId) ?? null,
+    [solicitacoes, selectedSolicitacaoId],
+  )
 
   const currentConvenio = useMemo(
     () => convenios.find((item) => String(item.id) === form.convenio_id),
@@ -228,11 +200,10 @@ export function SolicitacoesPage() {
     setForm((current) => ({
       ...emptyForm,
       convenio_id: current.convenio_id,
-      especialidade_id: current.especialidade_id,
       paciente_id: current.paciente_id,
-      profissional_id: current.profissional_id,
       medico_id: current.medico_id,
       cid: current.cid,
+      itens: [{ ...emptyItem }],
     }))
     setFormError(null)
   }
@@ -256,11 +227,10 @@ export function SolicitacoesPage() {
       setForm((current) => ({
         ...emptyForm,
         convenio_id: current.convenio_id,
-        especialidade_id: current.especialidade_id,
         paciente_id: current.paciente_id,
-        profissional_id: current.profissional_id,
         medico_id: current.medico_id,
         cid: current.cid,
+        itens: [{ ...emptyItem }],
       }))
       if (isCreateRoute) {
         navigate('/solicitacoes')
@@ -427,81 +397,20 @@ export function SolicitacoesPage() {
                 </option>
                 {pacientes.map((item) => (
                   <option key={item.id} value={item.id}>
-                    {item.nome} · {item.carteirinha}
+                    {item.nome} · {formatUnimedCarteirinha(item.carteirinha)}
                     {item.convenio?.nome ? ` · ${item.convenio.nome}` : ''}
                   </option>
                 ))}
               </Select>
             </label>
 
-            <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Profissional executante</span>
-              <Select
-                value={form.profissional_id}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    profissional_id: event.target.value,
-                  }))
-                }
-                className={selectClasses()}
-                data-testid="solicitacao-profissional"
-                disabled={profissionaisQuery.isLoading || profissionais.length === 0}
-              >
-                <option value="" disabled>
-                  Selecione
-                </option>
-                {profissionais.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.nome}
-                    {item.especialidade?.nome ? ` · ${item.especialidade.nome}` : ''}
-                  </option>
-                ))}
-              </Select>
-            </label>
-
-            <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Especialidade</span>
-              <Select
-                value={form.especialidade_id}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    especialidade_id: event.target.value,
-                    profissional_id: '',
-                  }))
-                }
-                className={selectClasses()}
-                data-testid="solicitacao-especialidade"
-                disabled={especialidadesQuery.isLoading}
-              >
-                <option value="" disabled>
-                  Selecione
-                </option>
-                {especialidades.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.nome}
-                  </option>
-                ))}
-              </Select>
-            </label>
-
-            <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Quantidade do item</span>
-              <input
-                type="number"
-                min="1"
-                value={form.quantidade}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    quantidade: event.target.value,
-                  }))
-                }
-                className={selectClasses()}
-                data-testid="solicitacao-quantidade"
-              />
-            </label>
+            <SolicitacaoItensFields
+              itens={form.itens}
+              onChange={(itens) => setForm((current) => ({ ...current, itens }))}
+              especialidades={especialidades}
+              profissionais={profissionais}
+              disabled={especialidadesQuery.isLoading || profissionaisQuery.isLoading}
+            />
 
             <label className="block space-y-2">
               <span className="text-sm font-medium text-slate-200">Médico solicitante</span>
@@ -680,14 +589,14 @@ export function SolicitacoesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/10 bg-slate-950/30">
-                {(solicitacoesQuery.data?.data ?? []).map((solicitacao) => (
+                {solicitacoes.map((solicitacao) => (
                   <tr key={solicitacao.id} data-testid={`solicitacao-row-${solicitacao.id}`}>
                     <td className="px-4 py-4 font-medium text-white">#{solicitacao.id}</td>
                     <td className="px-4 py-4 text-slate-200">
                       <button
                         type="button"
                         className="text-left font-medium text-cyan-100 underline decoration-cyan-400/40 underline-offset-4 transition hover:text-cyan-50"
-                        onClick={() => setSelectedSolicitacao(solicitacao)}
+                        onClick={() => setSelectedSolicitacaoId(solicitacao.id)}
                         data-testid={`solicitacao-paciente-${solicitacao.id}`}
                       >
                         {solicitacao.paciente?.nome ??
@@ -787,11 +696,19 @@ export function SolicitacoesPage() {
                             {action.label}
                           </button>
                         ))}
+                        <button
+                          type="button"
+                          onClick={() => setSelectedSolicitacaoId(solicitacao.id)}
+                          className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/10"
+                          data-testid={`solicitacao-anexos-${solicitacao.id}`}
+                        >
+                          Anexos ({solicitacao.documentos?.length ?? 0})
+                        </button>
                       </div>
                     </td>
                   </tr>
                 ))}
-                {solicitacoesQuery.data?.data?.length === 0 ? (
+                {solicitacoes.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="px-4 py-8 text-center text-slate-300">
                       Nenhuma solicitação encontrada.
@@ -831,7 +748,7 @@ export function SolicitacoesPage() {
 
       <SolicitacaoGuiaModal
         solicitacao={selectedSolicitacao}
-        onClose={() => setSelectedSolicitacao(null)}
+        onClose={() => setSelectedSolicitacaoId(null)}
       />
     </div>
   )

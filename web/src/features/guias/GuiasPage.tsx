@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link, useMatch, useNavigate } from 'react-router-dom'
 import { Select } from '../../components/ui/Select'
 import { translateStatus } from '../../lib/statusLabels'
+import { formatUnimedCarteirinha } from '../../lib/carteirinha'
 import { useConvenios, useEspecialidades, usePacientes, useProfissionais } from '../../lib/queries/useReferenceData'
 import {
   getHttpErrorMessage,
@@ -309,7 +310,7 @@ export function GuiasPage() {
               >
                 {pacientes.map((item) => (
                   <option key={item.id} value={item.id}>
-                    {item.nome} · {item.carteirinha}
+                    {item.nome} · {formatUnimedCarteirinha(item.carteirinha)}
                   </option>
                 ))}
               </Select>
@@ -508,7 +509,9 @@ export function GuiasPage() {
                 {conciliacaoError}
               </p>
             ) : null}
-            <div className="overflow-hidden rounded-3xl border border-white/10">
+            {/* Com as colunas de sessões separadas a tabela não cabe mais em telas médias:
+                rola na horizontal em vez de cortar Senha, Validade e Ações. */}
+            <div className="overflow-x-auto rounded-3xl border border-white/10">
               <table className="w-full border-collapse text-left text-sm">
                 <thead className="bg-white/5 text-xs uppercase tracking-[0.25em] text-slate-400">
                   <tr>
@@ -518,7 +521,8 @@ export function GuiasPage() {
                     <th className="px-4 py-3">Especialidade</th>
                     <th className="px-4 py-3">Profissional</th>
                     <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3">Sessões</th>
+                    <th className="px-4 py-3">Nº de Sessões</th>
+                    <th className="px-4 py-3">Sessões Autorizadas</th>
                     <th className="px-4 py-3">Senha</th>
                     <th className="px-4 py-3">Validade</th>
                     <th className="px-4 py-3">Última consulta</th>
@@ -538,8 +542,8 @@ export function GuiasPage() {
                             pacientes.find((item) => item.id === guia.paciente_id)?.nome ??
                             guia.paciente_id}
                         </td>
-                        <td className="px-4 py-4 text-slate-200">
-                          {guia.paciente?.carteirinha ?? '-'}
+                        <td className="px-4 py-4 tabular-nums text-slate-200">
+                          {formatUnimedCarteirinha(guia.paciente?.carteirinha) || '-'}
                         </td>
                         <td className="px-4 py-4 text-slate-200">
                           {guia.especialidade?.nome ?? guia.especialidade_id}
@@ -568,8 +572,17 @@ export function GuiasPage() {
                             ) : null}
                           </div>
                         </td>
-                        <td className="px-4 py-4 text-slate-200">
-                          {guia.sessoes_solicitadas ?? '-'} / {guia.sessoes_autorizadas ?? '-'}
+                        <td
+                          className="px-4 py-4 tabular-nums text-slate-200"
+                          data-testid={`guia-sessoes-solicitadas-${guia.id}`}
+                        >
+                          {guia.sessoes_solicitadas ?? '-'}
+                        </td>
+                        <td
+                          className="px-4 py-4 tabular-nums text-slate-200"
+                          data-testid={`guia-sessoes-autorizadas-${guia.id}`}
+                        >
+                          {guia.sessoes_autorizadas ?? '-'}
                         </td>
                         <td className="px-4 py-4 text-slate-200">{guia.senha ?? '-'}</td>
                         <td className="px-4 py-4 text-slate-200">{guia.validade_senha ?? '-'}</td>
@@ -606,7 +619,7 @@ export function GuiasPage() {
                   ))}
                   {guias.length === 0 ? (
                     <tr>
-                      <td colSpan={11} className="px-4 py-8 text-center text-slate-300">
+                      <td colSpan={12} className="px-4 py-8 text-center text-slate-300">
                         Nenhuma guia encontrada.
                       </td>
                     </tr>

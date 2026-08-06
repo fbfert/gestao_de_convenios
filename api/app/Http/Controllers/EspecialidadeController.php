@@ -21,10 +21,15 @@ class EspecialidadeController extends Controller
             abort(403);
         }
 
+        $convenioId = (int) $request->integer('convenio_id');
+
         return EspecialidadeResource::collection(
             Especialidade::query()
                 ->when(! $incluirInativos, fn ($query) => $query->where('ativo', true))
                 ->when($busca !== '', fn ($query) => $query->where('nome', 'like', "%{$busca}%"))
+                ->when($convenioId > 0, fn ($query) => $query->with([
+                    'convenioMapeamentos' => fn ($relacao) => $relacao->where('convenio_id', $convenioId),
+                ]))
                 ->orderBy('nome')
                 ->get()
         );

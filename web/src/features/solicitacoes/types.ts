@@ -69,13 +69,39 @@ export type SolicitacaoItem = {
   documentos?: SolicitacaoDocumento[]
 }
 
+export type SolicitacaoDocumentoTipo =
+  | 'pedido_medico'
+  | 'laudo_medico'
+  | 'plano_individualizado'
+  | 'relatorio_evolucao'
+
 export type SolicitacaoDocumento = {
   id: number
   solicitacao_item_id?: number | null
-  tipo: string
+  tipo: SolicitacaoDocumentoTipo | string
   nome_original: string
   mime: string | null
+  url?: string
 }
+
+export const DOCUMENTO_LABELS: Record<SolicitacaoDocumentoTipo, string> = {
+  pedido_medico: 'Pedido Médico',
+  laudo_medico: 'Laudo Médico',
+  plano_individualizado: 'Plano Individualizado',
+  relatorio_evolucao: 'Relatório de Evolução',
+}
+
+/** Anexos que valem para a solicitação inteira. */
+export const DOCUMENTOS_DA_SOLICITACAO: SolicitacaoDocumentoTipo[] = [
+  'pedido_medico',
+  'laudo_medico',
+]
+
+/** Anexos que existem por especialidade, ou seja, por item. */
+export const DOCUMENTOS_POR_ITEM: SolicitacaoDocumentoTipo[] = [
+  'plano_individualizado',
+  'relatorio_evolucao',
+]
 
 export type PaginatedResponse<T> = {
   data: T[]
@@ -103,9 +129,6 @@ export type SolicitacaoFilters = {
 
 export type SolicitacaoForm = {
   paciente_id: string
-  profissional_id: string
-  especialidade_id: string
-  quantidade: string
   convenio_id: string
   medico_id: string
   cid: string
@@ -115,7 +138,7 @@ export type SolicitacaoForm = {
   pedido_medico_nome_original?: string
   pedido_medico_mime?: string
   pedido_medico_ai_result?: PedidoMedicoAiResult
-  itens?: SolicitacaoFormItem[]
+  itens: SolicitacaoFormItem[]
 }
 
 export type SolicitacaoFormItem = {

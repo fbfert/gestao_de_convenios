@@ -113,6 +113,52 @@ class GerarGuiaUnimedApiTest extends TestCase
         $this->assertArrayHasKey('local_path', $payload['pedido_medico']);
     }
 
+    public function test_anexos_do_worker_ignoram_documentos_de_outra_especialidade(): void
+    {
+        Queue::fake();
+        $item = $this->prepararItemUnimed();
+        $solicitacao = $item->solicitacao;
+        $outroItem = $solicitacao->itens()->create([
+            'tenant_id' => $item->tenant_id,
+            'especialidade_id' => $item->especialidade_id,
+            'profissional_id' => $item->profissional_id,
+            'quantidade' => 10,
+            'status_operacional' => 'pending',
+        ]);
+
+        $solicitacao->documentos()->create([
+            'tenant_id' => $item->tenant_id,
+            'solicitacao_item_id' => null,
+            'tipo' => 'laudo_medico',
+            'nome_original' => 'laudo-geral.pdf',
+            'mime' => 'application/pdf',
+            'path' => 'solicitacoes/laudo-geral.pdf',
+        ]);
+        $solicitacao->documentos()->create([
+            'tenant_id' => $item->tenant_id,
+            'solicitacao_item_id' => $item->id,
+            'tipo' => 'plano_individualizado',
+            'nome_original' => 'plano-do-item.pdf',
+            'mime' => 'application/pdf',
+            'path' => 'solicitacoes/plano-do-item.pdf',
+        ]);
+        $solicitacao->documentos()->create([
+            'tenant_id' => $item->tenant_id,
+            'solicitacao_item_id' => $outroItem->id,
+            'tipo' => 'plano_individualizado',
+            'nome_original' => 'plano-de-outra-especialidade.pdf',
+            'mime' => 'application/pdf',
+            'path' => 'solicitacoes/plano-de-outra.pdf',
+        ]);
+
+        $execucao = app(GerarGuiaUnimedService::class)->enviar($item->fresh());
+        $payload = app(GerarGuiaUnimedService::class)->payloadParaWorker($execucao);
+        $nomes = array_column($payload['anexos'], 'nome_original');
+
+        sort($nomes);
+        $this->assertSame(['laudo-geral.pdf', 'plano-do-item.pdf'], $nomes);
+    }
+
     public function test_resultado_needs_verification_cria_guia_sem_numero(): void
     {
         $item = $this->prepararItemUnimed();
@@ -268,6 +314,55 @@ class GerarGuiaUnimedApiTest extends TestCase
         $this->assertNull($guia->senha);
         $this->assertNotNull($guia->unimed_last_checked_at);
         $this->assertNotNull($guia->unimed_next_check_at);
+    }
+
+    public function test_consulta_status_atualiza_sessoes_autorizadas_quando_o_portal_informa(): void
+    {
+        $guia = $this->criarGuiaUnimedPendente();
+        $guia->forceFill(['sessoes_solicitadas' => 10, 'sessoes_autorizadas' => 10])->save();
+
+        $consultar = function (array $resultado) use ($guia) {
+            $execucao = app(AutomacaoService::class)->enfileirar(
+                $guia->tenant_id,
+                'consult_status_batch',
+                guia: $guia,
+                payload: ['numero_guia' => $guia->numero_guia],
+            );
+            $this->app->instance(UnimedWorkerClient::class, new FakeUnimedWorkerClient($resultado));
+
+            (new ExecutarAutomacaoUnimedJob($execucao->id))->handle(
+                app(AutomacaoService::class),
+                app(UnimedWorkerClient::class),
+                app(GerarGuiaUnimedService::class),
+                app(ConsultarStatusUnimedService::class),
+                app(\App\Services\Automation\UnimedCircuitBreakerService::class),
+            );
+
+            $execucao->forceFill(['idempotency_key' => 'reconsulta-'.uniqid()])->save();
+        };
+
+        $consultar([
+            'status' => 'succeeded',
+            'guia_status' => 'approved',
+            'unimed_status' => 'Autorizado',
+            'conclusivo' => true,
+            'sessoes_solicitadas' => 10,
+            'sessoes_autorizadas' => 6,
+        ]);
+
+        $this->assertSame(6, $guia->refresh()->sessoes_autorizadas);
+
+        // Portal sem a informação: mantém o que já estava, não zera.
+        $consultar([
+            'status' => 'succeeded',
+            'guia_status' => 'approved',
+            'unimed_status' => 'Autorizado',
+            'conclusivo' => true,
+        ]);
+
+        $guia->refresh();
+        $this->assertSame(6, $guia->sessoes_autorizadas);
+        $this->assertSame(10, $guia->sessoes_solicitadas);
     }
 
     public function test_captura_senha_validade_preserva_valores_existentes_quando_worker_retorna_vazio(): void

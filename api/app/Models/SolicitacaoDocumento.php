@@ -10,6 +10,19 @@ class SolicitacaoDocumento extends Model
 {
     use BelongsToTenant, HasFactory;
 
+    /** Anexos que valem para a Solicitação inteira. */
+    public const TIPOS_DA_SOLICITACAO = ['pedido_medico', 'laudo_medico'];
+
+    /** Anexos que existem por especialidade, ou seja, por item da Solicitação. */
+    public const TIPOS_POR_ITEM = ['plano_individualizado', 'relatorio_evolucao'];
+
+    public const TIPOS = [
+        'pedido_medico',
+        'laudo_medico',
+        'plano_individualizado',
+        'relatorio_evolucao',
+    ];
+
     protected $table = 'solicitacao_documentos';
 
     protected $fillable = [

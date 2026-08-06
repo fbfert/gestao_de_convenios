@@ -5,6 +5,7 @@ import type {
   PaginatedResponse,
   PedidoMedicoAiResult,
   Solicitacao,
+  SolicitacaoDocumentoTipo,
   SolicitacaoFilters,
   SolicitacaoForm,
   SolicitacaoStatus,
@@ -33,26 +34,13 @@ export function useCriarSolicitacao() {
 
   return useMutation({
     mutationFn: async (payload: SolicitacaoForm) => {
-      const itens = payload.itens?.length
-        ? payload.itens
-        : [
-            {
-              especialidade_id: payload.especialidade_id,
-              profissional_id: payload.profissional_id,
-              quantidade: payload.quantidade || '10',
-              observacoes: undefined,
-            },
-          ]
-
       const { data } = await apiClient.post<{ data: Solicitacao }>('/solicitacoes', {
         ...payload,
         paciente_id: Number(payload.paciente_id),
-        profissional_id: Number(payload.profissional_id),
-        especialidade_id: Number(payload.especialidade_id),
         convenio_id: Number(payload.convenio_id),
         medico_id: Number(payload.medico_id),
         cid: payload.cid.trim() || null,
-        itens: itens.map((item) => ({
+        itens: payload.itens.map((item) => ({
           especialidade_id: Number(item.especialidade_id),
           profissional_id: Number(item.profissional_id),
           quantidade: item.quantidade ? Number(item.quantidade) : undefined,
@@ -88,7 +76,7 @@ export function useCriarPacienteRapido() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (payload: { nome: string; convenio_id: number }) => {
+    mutationFn: async (payload: { nome: string; convenio_id: number; carteirinha: string }) => {
       const { data } = await apiClient.post<{ data: PacienteRef }>(
         '/solicitacoes/pacientes-rapido',
         payload,
@@ -153,6 +141,88 @@ export async function abrirPedidoMedico(solicitacaoId: number, nomeOriginal?: st
   const link = document.createElement('a')
   link.href = url
   link.download = nomeOriginal || `pedido-medico-${solicitacaoId}`
+  link.click()
+  window.setTimeout(() => window.URL.revokeObjectURL(url), 1000)
+}
+
+export function useAnexarDocumento() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      solicitacaoId,
+      tipo,
+      arquivo,
+      solicitacaoItemId,
+    }: {
+      solicitacaoId: number
+      tipo: SolicitacaoDocumentoTipo
+      arquivo: File
+      solicitacaoItemId?: number | null
+    }) => {
+      const formData = new FormData()
+      formData.append('arquivo', arquivo)
+      formData.append('tipo', tipo)
+      if (solicitacaoItemId) {
+        formData.append('solicitacao_item_id', String(solicitacaoItemId))
+      }
+
+      const { data } = await apiClient.post<{ data: Solicitacao }>(
+        `/solicitacoes/${solicitacaoId}/documentos`,
+        formData,
+      )
+
+      return data.data
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['solicitacoes'] })
+    },
+  })
+}
+
+export function useRemoverDocumento() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      solicitacaoId,
+      documentoId,
+    }: {
+      solicitacaoId: number
+      documentoId: number
+    }) => {
+      const { data } = await apiClient.delete<{ data: Solicitacao }>(
+        `/solicitacoes/${solicitacaoId}/documentos/${documentoId}`,
+      )
+
+      return data.data
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['solicitacoes'] })
+    },
+  })
+}
+
+export async function abrirDocumento(
+  solicitacaoId: number,
+  documentoId: number,
+  nomeOriginal?: string | null,
+) {
+  const { data } = await apiClient.get<Blob>(
+    `/solicitacoes/${solicitacaoId}/documentos/${documentoId}`,
+    { responseType: 'blob' },
+  )
+  const url = window.URL.createObjectURL(data)
+  const opened = window.open(url, '_blank', 'noreferrer')
+
+  if (opened) {
+    window.setTimeout(() => window.URL.revokeObjectURL(url), 1000)
+    return
+  }
+
+  const link = document.createElement('a')
+  link.href = url
+  link.download = nomeOriginal || `documento-${documentoId}`
   link.click()
   window.setTimeout(() => window.URL.revokeObjectURL(url), 1000)
 }

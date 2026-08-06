@@ -50,6 +50,17 @@ test('consulta status aprovado usando fixture local', async () => {
   assert.equal(result.guia_status, 'approved')
   assert.equal(result.unimed_status, 'Autorizado')
   assert.equal(result.conclusivo, true)
+  // Listagem sem quantidades: não inventa números para a API sobrescrever.
+  assert.equal(result.sessoes_autorizadas, undefined)
+  assert.equal(result.sessoes_solicitadas, undefined)
+})
+
+test('consulta status captura quantidades quando a listagem traz', async () => {
+  const result = await run(executarConsultarStatusBatch, 'status-approved-com-quantidades')
+
+  assert.equal(result.status, 'succeeded')
+  assert.equal(result.sessoes_solicitadas, 10)
+  assert.equal(result.sessoes_autorizadas, 6)
 })
 
 test('consulta status negado e cancelado mapeia status interno', async () => {

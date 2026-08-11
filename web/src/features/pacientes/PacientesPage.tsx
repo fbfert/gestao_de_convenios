@@ -3,6 +3,13 @@ import { useMatch, useNavigate } from 'react-router-dom'
 import { useConvenios } from '../../lib/queries/useReferenceData'
 import { Select } from '../../components/ui/Select'
 import { getHttpErrorMessage, useAtualizarPaciente, useCriarPaciente, usePacientesCrud } from './usePacientes'
+import {
+  formatUnimedCarteirinha,
+  isUnimedCarteirinhaCompleta,
+  joinUnimedCarteirinha,
+  splitUnimedCarteirinha,
+} from '../../lib/carteirinha'
+import { CarteirinhaUnimedInput } from '../../components/ui/CarteirinhaUnimedInput'
 import type { Paciente, PacienteForm } from './types'
 
 const emptyForm: PacienteForm = {
@@ -14,8 +21,6 @@ const emptyForm: PacienteForm = {
   clinica_agil_id: '',
   ativo: true,
 }
-
-const unimedBlockSizes = [4, 4, 6, 2, 1]
 
 function selectClasses() {
   return 'w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20'
@@ -39,21 +44,6 @@ function toForm(paciente: Paciente): PacienteForm {
   }
 }
 
-function splitUnimedCarteirinha(value: string): string[] {
-  const digits = value.replace(/\D/g, '')
-  let offset = 0
-
-  return unimedBlockSizes.map((size) => {
-    const block = digits.slice(offset, offset + size)
-    offset += size
-    return block
-  })
-}
-
-function joinUnimedCarteirinha(blocks: string[]): string {
-  return blocks.join('')
-}
-
 export function PacientesPage() {
   const navigate = useNavigate()
   const isCreateRoute = useMatch('/pacientes/novo') !== null
@@ -62,6 +52,9 @@ export function PacientesPage() {
   const [editingId, setEditingId] = useState<number | null>(null)
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [form, setForm] = useState<PacienteForm>(emptyForm)
+  // Os blocos vivem em estado próprio: derivá-los de form.carteirinha fazia os dígitos
+  // migrarem de bloco assim que um bloco anterior ficava incompleto.
+  const [unimedBlocks, setUnimedBlocks] = useState<string[]>(() => splitUnimedCarteirinha(''))
   const [formError, setFormError] = useState<string | null>(null)
 
   const pacientesQuery = usePacientesCrud(busca)
@@ -76,10 +69,6 @@ export function PacientesPage() {
     [convenios, form.convenio_id],
   )
   const isUnimedRda = selectedConvenio?.connector_driver === 'unimed_rda'
-  const unimedCarteirinhaBlocks = useMemo(
-    () => splitUnimedCarteirinha(form.carteirinha),
-    [form.carteirinha],
-  )
   const totalAtivos = pacientes.filter((paciente) => paciente.ativo).length
   const totalInativos = pacientes.length - totalAtivos
 
@@ -93,11 +82,22 @@ export function PacientesPage() {
     )
   }, [convenios])
 
+  // Trocar para um convênio Unimed reaproveita o que já estava digitado no campo único.
+  useEffect(() => {
+    if (!isUnimedRda) {
+      return
+    }
+
+    setUnimedBlocks((current) =>
+      joinUnimedCarteirinha(current) === form.carteirinha.replace(/\D/g, '')
+        ? current
+        : splitUnimedCarteirinha(form.carteirinha),
+    )
+  }, [isUnimedRda, form.carteirinha])
+
   const formIsComplete =
     form.nome.trim() !== '' &&
-    (isUnimedRda
-      ? unimedCarteirinhaBlocks.every((block, index) => block.length === unimedBlockSizes[index])
-      : form.carteirinha.trim() !== '') &&
+    (isUnimedRda ? isUnimedCarteirinhaCompleta(unimedBlocks) : form.carteirinha.trim() !== '') &&
     form.convenio_id !== '' &&
     conveniosQuery.isSuccess
 
@@ -113,12 +113,14 @@ export function PacientesPage() {
       ...emptyForm,
       convenio_id: current.convenio_id,
     }))
+    setUnimedBlocks(splitUnimedCarteirinha(''))
     setFormError(null)
   }
 
   const handleEdit = (paciente: Paciente) => {
     setEditingId(paciente.id)
     setForm(toForm(paciente))
+    setUnimedBlocks(splitUnimedCarteirinha(paciente.carteirinha))
     setFormError(null)
     setIsFormOpen(true)
   }
@@ -139,6 +141,7 @@ export function PacientesPage() {
   const handleCancel = () => {
     setEditingId(null)
     setForm(emptyForm)
+    setUnimedBlocks(splitUnimedCarteirinha(''))
     setFormError(null)
     if (isCreateRoute) {
       navigate('/pacientes')
@@ -301,26 +304,14 @@ export function PacientesPage() {
             {isUnimedRda ? (
               <div className="space-y-2">
                 <span className="text-sm font-medium text-slate-200">Carteirinha</span>
-                <div className="grid grid-cols-[1fr_1fr_1.5fr_.8fr_.7fr] gap-2">
-                  {unimedBlockSizes.map((size, index) => (
-                    <input
-                      key={index}
-                      value={unimedCarteirinhaBlocks[index] ?? ''}
-                      onChange={(event) => {
-                        const nextBlocks = [...unimedCarteirinhaBlocks]
-                        nextBlocks[index] = event.target.value.replace(/\D/g, '').slice(0, size)
-                        setForm((current) => ({
-                          ...current,
-                          carteirinha: joinUnimedCarteirinha(nextBlocks),
-                        }))
-                      }}
-                      inputMode="numeric"
-                      maxLength={size}
-                      className={selectClasses()}
-                      data-testid={`paciente-carteirinha-unimed-${index + 1}`}
-                    />
-                  ))}
-                </div>
+                <CarteirinhaUnimedInput
+                  blocks={unimedBlocks}
+                  onChange={(blocks, carteirinha) => {
+                    setUnimedBlocks(blocks)
+                    setForm((current) => ({ ...current, carteirinha }))
+                  }}
+                  testIdPrefix="paciente-carteirinha-unimed"
+                />
               </div>
             ) : (
               <label className="block space-y-2">
@@ -471,7 +462,9 @@ export function PacientesPage() {
                       <div className="font-medium">{paciente.nome}</div>
                       <div className="text-xs text-slate-400">#{paciente.id}</div>
                     </td>
-                    <td className="px-4 py-4 text-slate-200">{paciente.carteirinha}</td>
+                    <td className="px-4 py-4 tabular-nums text-slate-200">
+                      {formatUnimedCarteirinha(paciente.carteirinha)}
+                    </td>
                     <td className="px-4 py-4 text-slate-200">
                       {paciente.convenio?.nome ?? paciente.convenio_id}
                     </td>

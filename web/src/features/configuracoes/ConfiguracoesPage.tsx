@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { useEspecialidades, useProfissionais } from '../../lib/queries/useReferenceData'
 import { useAuthStore } from '../../stores/authStore'
+import { themeOptions, useThemeStore } from '../../stores/themeStore'
 import {
   getHttpErrorMessage,
   useEmailSettings,
@@ -121,6 +122,8 @@ export function ConfiguracoesPage() {
   const profissionaisQuery = useProfissionais({ incluir_inativos: true })
   const salvarEspecialidadeMapeamento = useSalvarUnimedEspecialidadeMapeamento()
   const salvarProfissionalMapeamento = useSalvarUnimedProfissionalMapeamento()
+  const theme = useThemeStore((state) => state.theme)
+  const setTheme = useThemeStore((state) => state.setTheme)
   const [activeTab, setActiveTab] = useState<'geral' | 'emails' | 'ia' | 'unimed'>('emails')
   const [form, setForm] = useState<EmailSettingsForm>({
     smtp: emptySmtpForm,
@@ -425,12 +428,77 @@ export function ConfiguracoesPage() {
       </section>
 
       {activeTab === 'geral' ? (
-        <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
-          <h3 className="text-lg font-semibold text-white">Configurações gerais</h3>
-          <p className="mt-2 text-sm text-slate-300">
-            Esta aba permanece reservada para parâmetros operacionais futuros.
-          </p>
-        </section>
+        <div className="space-y-6" data-testid="configuracoes-geral">
+          <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
+            <h3 className="text-lg font-semibold text-white">Aparência</h3>
+            <p className="mt-2 text-sm text-slate-300">
+              Escolha o tema visual do sistema. A preferência vale para este navegador e é aplicada
+              imediatamente.
+            </p>
+
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              {themeOptions.map((option) => {
+                const isActive = theme === option.value
+
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setTheme(option.value)}
+                    aria-pressed={isActive}
+                    className={`rounded-2xl border p-4 text-left transition ${
+                      isActive
+                        ? 'border-cyan-300/70 bg-cyan-400/10 ring-2 ring-cyan-300/20'
+                        : 'border-white/10 bg-white/5 hover:bg-white/10'
+                    }`}
+                    data-testid={`configuracoes-tema-${option.value}`}
+                  >
+                    <span className="flex items-center justify-between gap-3">
+                      <span className="text-sm font-semibold text-white">{option.label}</span>
+                      {isActive ? (
+                        <span className="rounded-full bg-cyan-400 px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wide text-slate-950">
+                          Ativo
+                        </span>
+                      ) : null}
+                    </span>
+                    <span className="mt-2 block text-xs leading-5 text-slate-400">
+                      {option.description}
+                    </span>
+                    <span
+                      aria-hidden="true"
+                      className="mt-3 flex h-12 items-center gap-2 overflow-hidden rounded-xl border border-white/10 px-3"
+                      style={
+                        option.value === 'claro'
+                          ? { background: 'linear-gradient(180deg, #f7f9fc 0%, #eef2f7 100%)' }
+                          : { background: 'linear-gradient(180deg, #07111f 0%, #0f172a 100%)' }
+                      }
+                    >
+                      <span
+                        className="h-2 w-16 rounded-full"
+                        style={{
+                          background: option.value === 'claro' ? '#1e293b' : '#e2e8f0',
+                        }}
+                      />
+                      <span
+                        className="h-2 w-8 rounded-full"
+                        style={{
+                          background: option.value === 'claro' ? '#0e7490' : '#22d3ee',
+                        }}
+                      />
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          </section>
+
+          <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
+            <h3 className="text-lg font-semibold text-white">Configurações gerais</h3>
+            <p className="mt-2 text-sm text-slate-300">
+              Esta aba permanece reservada para parâmetros operacionais futuros.
+            </p>
+          </section>
+        </div>
       ) : null}
 
       {activeTab === 'emails' ? (

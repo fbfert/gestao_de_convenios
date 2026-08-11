@@ -128,6 +128,9 @@ class ConsultarStatusUnimedService
                 'unimed_status' => $portalStatus,
                 'unimed_last_checked_at' => now(),
                 'unimed_next_check_at' => now()->addHours(self::DEFAULT_DUE_HOURS),
+                // A operadora pode revisar a quantidade autorizada depois da geração;
+                // só sobrescrevemos quando o portal realmente informou o número.
+                ...$this->quantidadesInformadas($resultado),
             ])->save();
         } else {
             $this->automacoes->registrarEvento($execucao, 'dados_indisponiveis', $execucao->status, [
@@ -137,6 +140,20 @@ class ConsultarStatusUnimedService
         }
 
         return $execucao->refresh();
+    }
+
+    /** @return array<string, int> */
+    private function quantidadesInformadas(array $resultado): array
+    {
+        $quantidades = [];
+
+        foreach (['sessoes_solicitadas', 'sessoes_autorizadas'] as $campo) {
+            if (filled($resultado[$campo] ?? null)) {
+                $quantidades[$campo] = (int) $resultado[$campo];
+            }
+        }
+
+        return $quantidades;
     }
 
     private function payloadPersistido(Guia $guia): array

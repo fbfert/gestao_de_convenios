@@ -7,6 +7,7 @@ use App\Http\Requests\MutateSolicitacaoStatusRequest;
 use App\Http\Requests\StoreSolicitacaoRequest;
 use App\Http\Requests\UpdateSolicitacaoStatusRequest;
 use App\Http\Resources\SolicitacaoResource;
+use App\Models\Convenio;
 use App\Models\Especialidade;
 use App\Models\Medico;
 use App\Models\Paciente;
@@ -20,6 +21,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class SolicitacaoController extends Controller
 {
@@ -114,13 +116,33 @@ class SolicitacaoController extends Controller
         $validated = $request->validate([
             'nome' => ['required', 'string', 'max:255'],
             'convenio_id' => ['required', 'integer', 'exists:convenios,id'],
+            'carteirinha' => ['required', 'string', 'max:255'],
         ]);
+
+        $convenio = Convenio::query()
+            ->where('tenant_id', $request->user()->tenant_id)
+            ->whereKey($validated['convenio_id'])
+            ->firstOrFail();
+
+        // O cadastro rápido gerava uma carteirinha fictícia, e o paciente nascia
+        // inutilizável para a Unimed. Aqui vale a mesma regra do cadastro completo.
+        if ($convenio->connector_driver === 'unimed_rda') {
+            $digitos = preg_replace('/\D+/', '', $validated['carteirinha']);
+
+            if (strlen($digitos) !== 17) {
+                throw ValidationException::withMessages([
+                    'carteirinha' => ['A carteirinha Unimed deve conter 17 dígitos nos blocos 4+4+6+2+1.'],
+                ]);
+            }
+
+            $validated['carteirinha'] = $digitos;
+        }
 
         $paciente = Paciente::query()->create([
             'tenant_id' => $request->user()->tenant_id,
             'nome' => $validated['nome'],
             'convenio_id' => $validated['convenio_id'],
-            'carteirinha' => 'PEDIDO-MEDICO-'.Str::upper(Str::random(8)),
+            'carteirinha' => $validated['carteirinha'],
             'ativo' => true,
         ]);
 

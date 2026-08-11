@@ -36,9 +36,9 @@ test('fluxo completo de negocio', async ({ page }, testInfo: TestInfo) => {
   await expect(page.getByTestId('solicitacoes-page')).toBeVisible()
   await page.getByRole('button', { name: 'Novo' }).click()
   await selectOption(page, 'solicitacao-convenio', 'Unimed')
-  await selectOption(page, 'solicitacao-especialidade', 'Fisioterapia')
   await selectOption(page, 'solicitacao-paciente', 'Ana Paula Ribeiro · UNI-2026-0001 · Unimed')
-  await selectOption(page, 'solicitacao-profissional', 'Dra. Marina Tavares · Fisioterapia')
+  await selectOption(page, 'solicitacao-item-especialidade-0', 'Fisioterapia')
+  await selectOption(page, 'solicitacao-item-profissional-0', 'Dra. Marina Tavares')
   await selectOption(page, 'solicitacao-medico', 'Dr. Carlos Almeida')
   const solicitacaoResponsePromise = page.waitForResponse((response) => {
     return response.request().method() === 'POST' && response.url().includes('/solicitacoes')
@@ -334,6 +334,68 @@ test('detalhe de guia abre pela lista e atualiza após finalizar', async ({ page
   await page.getByTestId(`guia-finalizar-confirmar-${guideId}`).click()
   expect((await finalizeResponsePromise).status()).toBe(200)
   await expect(page.getByText('Aprovado', { exact: true })).toBeVisible()
+})
+
+test('pedido com duas especialidades recebe anexos por especialidade', async ({ page }) => {
+  await login(page)
+
+  await page.goto('/solicitacoes/nova', { waitUntil: 'domcontentloaded' })
+  await selectOption(page, 'solicitacao-convenio', 'Unimed')
+  await selectOption(page, 'solicitacao-paciente', 'Ana Paula Ribeiro · UNI-2026-0001 · Unimed')
+  await selectOption(page, 'solicitacao-item-especialidade-0', 'Fisioterapia')
+  await selectOption(page, 'solicitacao-item-profissional-0', 'Dra. Marina Tavares')
+
+  await page.getByTestId('solicitacao-item-adicionar').click()
+  await selectOption(page, 'solicitacao-item-especialidade-1', 'Fonoaudiologia')
+  await selectOption(page, 'solicitacao-item-profissional-1', 'Dra. Paula Menezes')
+  await selectOption(page, 'solicitacao-medico', 'Dr. Carlos Almeida')
+
+  const createPromise = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'POST' && response.url().endsWith('/api/solicitacoes'),
+  )
+  await page.getByTestId('solicitacao-submit').click()
+  const created = await createPromise
+  expect(created.status()).toBe(201)
+
+  const body = await created.json()
+  const solicitacaoId = body.data.id as number
+  const itens = body.data.itens as Array<{ id: number }>
+  expect(itens).toHaveLength(2)
+
+  await page.getByTestId(`solicitacao-anexos-${solicitacaoId}`).click()
+  await expect(page.getByTestId('solicitacao-anexos')).toBeVisible()
+
+  // Pedido Médico vale para o pedido inteiro; Plano é por especialidade.
+  const uploadPedido = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'POST' &&
+      response.url().includes(`/solicitacoes/${solicitacaoId}/documentos`),
+  )
+  await page
+    .getByTestId('anexo-slot-pedido_medico')
+    .locator('input[type="file"]')
+    .setInputFiles({ name: 'pedido.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4') })
+  expect((await uploadPedido).status()).toBe(201)
+  await expect(page.getByTestId('anexo-slot-pedido_medico')).toContainText('pedido.pdf')
+
+  const uploadPlano = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'POST' &&
+      response.url().includes(`/solicitacoes/${solicitacaoId}/documentos`),
+  )
+  await page
+    .getByTestId(`anexo-slot-plano_individualizado-item-${itens[1].id}`)
+    .locator('input[type="file"]')
+    .setInputFiles({ name: 'plano-fono.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4') })
+  expect((await uploadPlano).status()).toBe(201)
+
+  await expect(
+    page.getByTestId(`anexo-slot-plano_individualizado-item-${itens[1].id}`),
+  ).toContainText('plano-fono.pdf')
+  await expect(
+    page.getByTestId(`anexo-slot-plano_individualizado-item-${itens[0].id}`),
+  ).toContainText('Nenhum arquivo anexado')
 })
 
 test('detalhe de guia inexistente exibe erro tratado', async ({ page }) => {

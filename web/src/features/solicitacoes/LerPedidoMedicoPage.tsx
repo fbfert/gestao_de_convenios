@@ -20,20 +20,44 @@ import {
   useCriarPacienteRapido,
   useCriarSolicitacao,
 } from './useSolicitacoes'
-import type { PedidoMedicoAiResult, PedidoMedicoSuggestion, SolicitacaoForm } from './types'
+import {
+  formatUnimedCarteirinha,
+  isUnimedCarteirinhaCompleta,
+  splitUnimedCarteirinha,
+} from '../../lib/carteirinha'
+import { CarteirinhaUnimedInput } from '../../components/ui/CarteirinhaUnimedInput'
+import { SolicitacaoItensFields } from './SolicitacaoItensFields'
+import { emptyItem, itensEstaoCompletos } from './solicitacaoItens'
+import type {
+  PedidoMedicoAiResult,
+  PedidoMedicoSuggestion,
+  SolicitacaoForm,
+  SolicitacaoFormItem,
+} from './types'
 
 const emptyArray: never[] = []
 
 const emptyForm: SolicitacaoForm = {
   paciente_id: '',
-  profissional_id: '',
-  especialidade_id: '',
-  quantidade: '10',
   convenio_id: '',
   medico_id: '',
   cid: '',
   solicitado_em: new Date().toISOString().slice(0, 10),
   observacoes: '',
+  itens: [{ ...emptyItem }],
+}
+
+/**
+ * A IA lê uma especialidade só. Ela entra na primeira linha; as demais o operador
+ * acrescenta à mão antes de salvar.
+ */
+function comEspecialidadeNaPrimeiraLinha(
+  itens: SolicitacaoFormItem[],
+  especialidadeId: string,
+): SolicitacaoFormItem[] {
+  const [primeiro = { ...emptyItem }, ...resto] = itens
+
+  return [{ ...primeiro, especialidade_id: especialidadeId, profissional_id: '' }, ...resto]
 }
 
 type QuickModalKind = 'paciente' | 'especialidade' | 'medico'
@@ -63,6 +87,7 @@ function QuickCreateModal({
   initialName,
   isSaving,
   error,
+  isUnimedRda,
   onClose,
   onSubmit,
 }: {
@@ -70,10 +95,13 @@ function QuickCreateModal({
   initialName: string
   isSaving: boolean
   error: string | null
+  isUnimedRda: boolean
   onClose: () => void
-  onSubmit: (nome: string) => void
+  onSubmit: (nome: string, carteirinha: string) => void
 }) {
   const [nome, setNome] = useState(initialName)
+  const [carteirinha, setCarteirinha] = useState('')
+  const [blocks, setBlocks] = useState<string[]>(() => splitUnimedCarteirinha(''))
   const labels = {
     paciente: 'Novo paciente',
     especialidade: 'Nova especialidade',
@@ -82,11 +110,17 @@ function QuickCreateModal({
 
   useEffect(() => {
     setNome(initialName)
+    setCarteirinha('')
+    setBlocks(splitUnimedCarteirinha(''))
   }, [initialName, kind])
 
   if (!kind) {
     return null
   }
+
+  const exigeCarteirinha = kind === 'paciente'
+  const carteirinhaOk = !exigeCarteirinha
+    || (isUnimedRda ? isUnimedCarteirinhaCompleta(blocks) : carteirinha.trim() !== '')
 
   return (
     <Dialog open={kind !== null} onClose={onClose} className="relative z-50">
@@ -109,7 +143,7 @@ function QuickCreateModal({
               className="mt-6 space-y-4"
               onSubmit={(event) => {
                 event.preventDefault()
-                onSubmit(nome)
+                onSubmit(nome, carteirinha)
               }}
             >
               <label className="block space-y-2">
@@ -122,6 +156,29 @@ function QuickCreateModal({
                 />
               </label>
 
+              {exigeCarteirinha ? (
+                <div className="space-y-2">
+                  <span className="text-sm font-medium text-slate-200">Carteirinha</span>
+                  {isUnimedRda ? (
+                    <CarteirinhaUnimedInput
+                      blocks={blocks}
+                      onChange={(next, valor) => {
+                        setBlocks(next)
+                        setCarteirinha(valor)
+                      }}
+                      testIdPrefix="pedido-medico-carteirinha-unimed"
+                    />
+                  ) : (
+                    <input
+                      value={carteirinha}
+                      onChange={(event) => setCarteirinha(event.target.value)}
+                      className={selectClasses()}
+                      data-testid="pedido-medico-carteirinha"
+                    />
+                  )}
+                </div>
+              ) : null}
+
               {error ? (
                 <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
                   {error}
@@ -130,7 +187,7 @@ function QuickCreateModal({
 
               <button
                 type="submit"
-                disabled={isSaving || nome.trim() === ''}
+                disabled={isSaving || nome.trim() === '' || !carteirinhaOk}
                 className="inline-flex w-full items-center justify-center rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:opacity-60"
               >
                 {isSaving ? 'Salvando...' : 'Salvar'}
@@ -157,10 +214,10 @@ export function LerPedidoMedicoPage() {
   const [formError, setFormError] = useState<string | null>(null)
 
   const conveniosQuery = useConvenios()
-  const especialidadesQuery = useEspecialidades()
+  const especialidadesQuery = useEspecialidades({ convenio_id: form.convenio_id })
   const medicosQuery = useMedicos()
   const pacientesQuery = usePacientes({ convenio_id: form.convenio_id })
-  const profissionaisQuery = useProfissionais({ especialidade_id: form.especialidade_id })
+  const profissionaisQuery = useProfissionais()
   const analisarPedido = useAnalisarPedidoMedico()
   const criarSolicitacao = useCriarSolicitacao()
   const criarPaciente = useCriarPacienteRapido()
@@ -168,6 +225,10 @@ export function LerPedidoMedicoPage() {
   const criarMedico = useCriarMedicoRapido()
 
   const convenios = useMemo(() => conveniosQuery.data ?? emptyArray, [conveniosQuery.data])
+  const convenioSelecionado = useMemo(
+    () => convenios.find((item) => String(item.id) === form.convenio_id),
+    [convenios, form.convenio_id],
+  )
   const pacientesBase = useMemo(() => pacientesQuery.data ?? emptyArray, [pacientesQuery.data])
   const especialidadesBase = useMemo(
     () => especialidadesQuery.data ?? emptyArray,
@@ -223,10 +284,9 @@ export function LerPedidoMedicoPage() {
   const formIsComplete =
     form.convenio_id !== '' &&
     form.paciente_id !== '' &&
-    form.profissional_id !== '' &&
-    form.especialidade_id !== '' &&
     form.medico_id !== '' &&
     form.solicitado_em !== '' &&
+    itensEstaoCompletos(form.itens) &&
     resultado !== null
 
   const openQuickModal = (kind: QuickModalKind, initialName = '') => {
@@ -260,7 +320,9 @@ export function LerPedidoMedicoPage() {
       setForm((current) => ({
         ...current,
         paciente_id: topPaciente ? String(topPaciente.id) : '',
-        especialidade_id: topEspecialidade ? String(topEspecialidade.id) : current.especialidade_id,
+        itens: topEspecialidade
+          ? comEspecialidadeNaPrimeiraLinha(current.itens, String(topEspecialidade.id))
+          : current.itens,
         medico_id: topMedico ? String(topMedico.id) : '',
         solicitado_em: data.dados.solicitado_em || current.solicitado_em,
         observacoes,
@@ -274,7 +336,7 @@ export function LerPedidoMedicoPage() {
     }
   }
 
-  const handleQuickSubmit = async (nome: string) => {
+  const handleQuickSubmit = async (nome: string, carteirinha: string) => {
     const trimmed = nome.trim()
     setQuickError(null)
 
@@ -287,6 +349,7 @@ export function LerPedidoMedicoPage() {
         const paciente = await criarPaciente.mutateAsync({
           nome: trimmed,
           convenio_id: Number(form.convenio_id),
+          carteirinha: carteirinha.trim(),
         })
         setCreatedPacientes((current) => [...current, paciente])
         setForm((current) => ({ ...current, paciente_id: String(paciente.id) }))
@@ -297,8 +360,7 @@ export function LerPedidoMedicoPage() {
         setCreatedEspecialidades((current) => [...current, especialidade])
         setForm((current) => ({
           ...current,
-          especialidade_id: String(especialidade.id),
-          profissional_id: '',
+          itens: comEspecialidadeNaPrimeiraLinha(current.itens, String(especialidade.id)),
         }))
       }
 
@@ -450,34 +512,11 @@ export function LerPedidoMedicoPage() {
                 {pacientes.map((item) => (
                   <option key={item.id} value={item.id}>
                     {item.nome}
-                    {item.carteirinha ? ` · ${item.carteirinha}` : ''}
+                    {item.carteirinha ? ` · ${formatUnimedCarteirinha(item.carteirinha)}` : ''}
                   </option>
                 ))}
               </Select>
             </div>
-
-            <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Profissional executante</span>
-              <Select
-                value={form.profissional_id}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, profissional_id: event.target.value }))
-                }
-                className={selectClasses()}
-                disabled={profissionaisQuery.isLoading || profissionais.length === 0}
-                data-testid="pedido-medico-profissional"
-              >
-                <option value="" disabled>
-                  Selecione
-                </option>
-                {profissionais.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.nome}
-                    {item.especialidade?.nome ? ` · ${item.especialidade.nome}` : ''}
-                  </option>
-                ))}
-              </Select>
-            </label>
 
             <div className="space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-3">
@@ -501,39 +540,25 @@ export function LerPedidoMedicoPage() {
                       onClick={() =>
                         setForm((current) => ({
                           ...current,
-                          especialidade_id: String(item.id),
-                          profissional_id: '',
+                          itens: comEspecialidadeNaPrimeiraLinha(current.itens, String(item.id)),
                         }))
                       }
                       className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1.5 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-400/20"
+                      title="Aplica na primeira especialidade do pedido"
                     >
                       {item.nome} · {item.similaridade}%
                     </button>
                   ))}
                 </div>
               ) : null}
-              <Select
-                value={form.especialidade_id}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    especialidade_id: event.target.value,
-                    profissional_id: '',
-                  }))
-                }
-                className={selectClasses()}
-                disabled={especialidadesQuery.isLoading || especialidades.length === 0}
-                data-testid="pedido-medico-especialidade"
-              >
-                <option value="" disabled>
-                  Selecione
-                </option>
-                {especialidades.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.nome}
-                  </option>
-                ))}
-              </Select>
+
+              <SolicitacaoItensFields
+                itens={form.itens}
+                onChange={(itens) => setForm((current) => ({ ...current, itens }))}
+                especialidades={especialidades}
+                profissionais={profissionais}
+                disabled={especialidadesQuery.isLoading || profissionaisQuery.isLoading}
+              />
             </div>
 
             <div className="space-y-3">
@@ -632,8 +657,9 @@ export function LerPedidoMedicoPage() {
         initialName={quickInitialName}
         isSaving={criarPaciente.isPending || criarEspecialidade.isPending || criarMedico.isPending}
         error={quickError}
+        isUnimedRda={convenioSelecionado?.connector_driver === 'unimed_rda'}
         onClose={() => setQuickModal(null)}
-        onSubmit={(nome) => void handleQuickSubmit(nome)}
+        onSubmit={(nome, carteirinha) => void handleQuickSubmit(nome, carteirinha)}
       />
     </div>
   )

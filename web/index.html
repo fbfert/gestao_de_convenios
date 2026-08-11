@@ -5,6 +5,16 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>web</title>
+    <script>
+      // Aplica o tema antes da primeira pintura para não piscar o tema errado.
+      // A chave precisa acompanhar `themeStorageKey` em src/stores/themeStore.ts.
+      try {
+        var tema = localStorage.getItem('gestao-convenios-tema')
+        document.documentElement.dataset.theme = tema === 'claro' ? 'claro' : 'escuro'
+      } catch (erro) {
+        document.documentElement.dataset.theme = 'escuro'
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

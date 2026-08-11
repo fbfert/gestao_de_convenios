@@ -2,6 +2,7 @@ import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/re
 import { GuiaDetalheResumo } from '../guias/GuiaDetalheResumo'
 import { getHttpErrorMessage, useGuia } from '../guias/useGuias'
 import { abrirPedidoMedico } from './useSolicitacoes'
+import { SolicitacaoAnexos } from './SolicitacaoAnexos'
 import type { Solicitacao } from './types'
 
 type SolicitacaoGuiaModalProps = {
@@ -13,6 +14,9 @@ export function SolicitacaoGuiaModal({ solicitacao, onClose }: SolicitacaoGuiaMo
   const guiaId = solicitacao?.guia?.id ?? null
   const guiaQuery = useGuia(guiaId)
   const open = solicitacao !== null
+  const temDocumentoPedidoMedico = (solicitacao?.documentos ?? []).some(
+    (documento) => documento.tipo === 'pedido_medico',
+  )
 
   return (
     <Dialog open={open} onClose={onClose} className="relative z-50">
@@ -25,9 +29,11 @@ export function SolicitacaoGuiaModal({ solicitacao, onClose }: SolicitacaoGuiaMo
           >
             <div className="flex items-start justify-between gap-4">
               <div>
-                <DialogTitle className="text-xl font-semibold">Detalhes da guia</DialogTitle>
+                <DialogTitle className="text-xl font-semibold">
+                  Detalhes da solicitação{solicitacao ? ` #${solicitacao.id}` : ''}
+                </DialogTitle>
                 <p className="mt-1 text-sm text-slate-300">
-                  Clique no nome do paciente para consultar a guia sem sair da lista de solicitações.
+                  Anexos do pedido e da guia vinculada, sem sair da lista de solicitações.
                 </p>
               </div>
               <button
@@ -39,9 +45,13 @@ export function SolicitacaoGuiaModal({ solicitacao, onClose }: SolicitacaoGuiaMo
               </button>
             </div>
 
-            <div className="mt-6">
-              {solicitacao?.pedido_medico ? (
-                <div className="mb-4 rounded-3xl border border-cyan-400/20 bg-cyan-500/10 p-5 text-sm text-cyan-50">
+            <div className="mt-6 space-y-6">
+              {solicitacao ? <SolicitacaoAnexos solicitacao={solicitacao} /> : null}
+
+              {/* Fallback para solicitações antigas, anteriores à tabela de documentos:
+                  elas têm o arquivo no campo legado mas nenhuma linha em solicitacao_documentos. */}
+              {solicitacao?.pedido_medico && !temDocumentoPedidoMedico ? (
+                <div className="rounded-3xl border border-cyan-400/20 bg-cyan-500/10 p-5 text-sm text-cyan-50">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <p className="font-semibold">Pedido médico anexado</p>

@@ -11,6 +11,8 @@ export type ConvenioRef = {
 export type EspecialidadeRef = {
   id: number
   nome: string
+  /** Preenchido apenas quando a listagem é pedida com convenio_id. */
+  codigo_procedimento?: string | null
 }
 
 export type ProfissionalRef = {
@@ -62,11 +64,13 @@ export function useConvenios() {
   })
 }
 
-export function useEspecialidades() {
+export function useEspecialidades(filtros?: { convenio_id?: string | number }) {
   return useQuery({
-    queryKey: ['especialidades'],
+    queryKey: ['especialidades', filtros?.convenio_id ?? ''],
     queryFn: async () => {
-      const { data } = await apiClient.get<ListResponse<EspecialidadeRef>>('/especialidades')
+      const { data } = await apiClient.get<ListResponse<EspecialidadeRef>>('/especialidades', {
+        params: { convenio_id: filtros?.convenio_id || undefined },
+      })
       return data.data
     },
   })

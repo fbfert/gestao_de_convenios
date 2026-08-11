@@ -7,7 +7,6 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Laravel\Sanctum\Sanctum;
-use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 class AnaliticosApiTest extends TestCase
@@ -76,7 +75,7 @@ class AnaliticosApiTest extends TestCase
             'arquivo_nome_original' => 'arquivo-antigo.xlsx',
             'arquivo_path' => 'analiticos/arquivo-antigo.xlsx',
             'status' => 'pendente',
-            'importado_em' => Carbon::parse('2026-01-15 10:00:00'),
+            'importado_em' => now()->subMonths(6)->startOfMonth(),
             'total_linhas_analitico' => 0,
             'total_linhas_glosa' => 0,
             'total_linhas_conciliacao' => 0,
@@ -85,7 +84,12 @@ class AnaliticosApiTest extends TestCase
             'saldo_total' => 0,
         ]);
 
-        $response = $this->getJson('/api/analiticos?busca=item3.3&status=importado&importado_de=2026-07-01&importado_ate=2026-07-31');
+        // A janela acompanha o mês corrente: o lote recém-importado usa now(), então
+        // datas fixas faziam o teste passar só no mês em que foi escrito.
+        $de = now()->startOfMonth()->toDateString();
+        $ate = now()->endOfMonth()->toDateString();
+
+        $response = $this->getJson("/api/analiticos?busca=item3.3&status=importado&importado_de={$de}&importado_ate={$ate}");
 
         $response->assertOk()
             ->assertJsonCount(1, 'data')

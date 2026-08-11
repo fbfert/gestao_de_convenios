@@ -247,7 +247,10 @@ class GerarGuiaUnimedService
     {
         $item->loadMissing(['solicitacao.documentos', 'documentos']);
 
+        // Documentos da Solicitação valem para todos os itens; os por item só valem para
+        // o seu. Sem o filtro, o Plano de uma especialidade subiria na guia de outra.
         return $item->solicitacao?->documentos
+            ->whereNull('solicitacao_item_id')
             ->merge($item->documentos)
             ->reject(fn ($documento) => $documento->tipo === 'pedido_medico')
             ->map(fn ($documento) => [

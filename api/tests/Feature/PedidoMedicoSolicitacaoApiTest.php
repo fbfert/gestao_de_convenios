@@ -98,9 +98,16 @@ class PedidoMedicoSolicitacaoApiTest extends TestCase
         $this->postJson('/api/solicitacoes/pacientes-rapido', [
             'nome' => 'Paciente Novo IA',
             'convenio_id' => $convenio->id,
+            'carteirinha' => 'UNI-2026-9999',
         ])
             ->assertCreated()
-            ->assertJsonPath('data.nome', 'Paciente Novo IA');
+            ->assertJsonPath('data.nome', 'Paciente Novo IA')
+            ->assertJsonPath('data.carteirinha', 'UNI-2026-9999');
+
+        $this->postJson('/api/solicitacoes/pacientes-rapido', [
+            'nome' => 'Paciente Sem Carteirinha',
+            'convenio_id' => $convenio->id,
+        ])->assertStatus(422)->assertJsonValidationErrors('carteirinha');
 
         $this->postJson('/api/solicitacoes/especialidades-rapido', [
             'nome' => 'Terapia Ocupacional IA',

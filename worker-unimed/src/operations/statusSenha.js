@@ -7,6 +7,7 @@ import {
   fillIfVisible,
   login,
   mapPortalStatus,
+  parseNumber,
   pickValue,
   preencherCarteirinha,
   splitCarteirinha,
@@ -106,6 +107,7 @@ async function consultarStatusGuia(page, guia) {
       unimed_status: statusText,
       status_operadora: statusText,
       conclusivo: true,
+      ...(await lerQuantidades(page, guia.numero_guia)),
     })
   } catch (error) {
     if (error instanceof WorkerResultError) {
@@ -176,6 +178,31 @@ async function capturarAutorizacaoBatch(page, request) {
     results,
     ...singleResultCompat(results),
   }
+}
+
+/**
+ * A operadora pode revisar a quantidade autorizada depois da guia gerada. Usamos os
+ * mesmos rótulos que o gerarGuia já lê do HTML real ("Qtd:" e "Qtd Aut:"). Quando a
+ * tela não traz essas informações, devolvemos objeto vazio e nada é sobrescrito.
+ */
+async function lerQuantidades(page, numeroGuia) {
+  const row = await rowByGuia(page, numeroGuia)
+  const texto = row
+    ? await row.innerText().catch(() => '')
+    : await page.locator('body').innerText({ timeout: DEFAULT_TIMEOUT }).catch(() => '')
+
+  const solicitadas = parseNumber(pickValue(texto, /Qtd:\s*(\d+)/i))
+  const autorizadas = parseNumber(pickValue(texto, /Qtd\s*Aut\.?:\s*(\d+)/i))
+  const quantidades = {}
+
+  if (solicitadas !== null) {
+    quantidades.sessoes_solicitadas = solicitadas
+  }
+  if (autorizadas !== null) {
+    quantidades.sessoes_autorizadas = autorizadas
+  }
+
+  return quantidades
 }
 
 async function abrirLocalizarGuia(page) {

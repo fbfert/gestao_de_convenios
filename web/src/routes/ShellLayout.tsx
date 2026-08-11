@@ -14,6 +14,7 @@ const navItems = [
   { to: '/automacoes', label: 'Automações' },
   { to: '/convenios', label: 'Convênios' },
   { to: '/profissionais', label: 'Profissionais' },
+  { to: '/especialidades', label: 'Especialidades' },
   { to: '/medicos', label: 'Médicos' },
   { to: '/usuarios', label: 'Usuários' },
   { to: '/configuracoes', label: 'Configurações' },

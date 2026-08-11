@@ -48,8 +48,22 @@ class UserSeeder extends Seeder
             ]
         );
 
+        // Administrador nominal do sistema. Fica aqui alem da migration
+        // 2026_08_07_100000 porque `migrate:fresh --seed` derruba o schema:
+        // sem isso a conta some do ambiente local e do banco de testes.
+        $felipe = User::query()->updateOrCreate(
+            ['email' => 'fbfert@gmail.com'],
+            [
+                'tenant_id' => $tenant->id,
+                'name' => 'Felipe B. Fert',
+                'password' => 'polenta22POLENTA@@',
+                'ativo' => true,
+            ]
+        );
+
         $admin->syncRoles(['admin']);
         $funcionario->syncRoles(['funcionario']);
         $profissionalUser->syncRoles(['profissional']);
+        $felipe->syncRoles(['admin']);
     }
 }

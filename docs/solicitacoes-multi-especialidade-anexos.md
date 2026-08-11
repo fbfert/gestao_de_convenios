@@ -25,7 +25,8 @@ O backend já aceitava `itens[]` desde `2026_07_31_100000_create_solicitacao_ite
 - uma linha por especialidade, cada uma com o seu profissional executante e quantidade;
 - o select de profissional é filtrado pelos profissionais da especialidade da linha e fica bloqueado até ela ser escolhida;
 - a última linha não pode ser removida — o pedido precisa de pelo menos uma especialidade;
-- especialidade repetida gera aviso, não bloqueio: cada item vira uma guia separada na operadora, e há casos em que isso é intencional.
+- especialidade repetida gera aviso, não bloqueio: cada item vira uma guia separada na operadora, e há casos em que isso é intencional;
+- o botão **Adicionar especialidade** fica abaixo das linhas, não no cabeçalho do bloco: a nova linha aparece logo acima dele, então o olho já está no lugar certo depois do clique.
 
 No fluxo de IA, a especialidade lida do pedido médico entra na primeira linha; as demais são acrescentadas à mão. A IA lê uma especialidade só.
 

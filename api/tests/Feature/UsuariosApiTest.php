@@ -20,9 +20,11 @@ class UsuariosApiTest extends TestCase
     {
         $this->autenticar();
 
+        // 3 contas de exemplo + o administrador inicial do sistema
+        // (ver database/migrations/2026_08_07_100000_create_admin_inicial_fbfert).
         $this->getJson('/api/usuarios')
             ->assertOk()
-            ->assertJsonCount(3, 'data')
+            ->assertJsonCount(4, 'data')
             ->assertJsonPath('data.0.name', 'Admin Clínica Exemplo');
     }
 

@@ -47,24 +47,11 @@ export function SolicitacaoItensFields({
 
   return (
     <div className="space-y-3" data-testid="solicitacao-itens">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <span className="text-sm font-medium text-slate-200">Especialidades do pedido</span>
-          <p className="text-xs text-slate-400">
-            Cada especialidade vira um item com o seu próprio profissional executante.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() =>
-            onChange([...itens, { especialidade_id: '', profissional_id: '', quantidade: '10' }])
-          }
-          disabled={disabled}
-          className="rounded-2xl border border-cyan-300/30 bg-cyan-400/10 px-4 py-2 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-400/20 disabled:opacity-50"
-          data-testid="solicitacao-item-adicionar"
-        >
-          Adicionar especialidade
-        </button>
+      <div>
+        <span className="text-sm font-medium text-slate-200">Especialidades do pedido</span>
+        <p className="text-xs text-slate-400">
+          Cada especialidade vira um item com o seu próprio profissional executante.
+        </p>
       </div>
 
       {itens.map((item, index) => {
@@ -155,6 +142,20 @@ export function SolicitacaoItensFields({
           </div>
         )
       })}
+
+      <div className="flex">
+        <button
+          type="button"
+          onClick={() =>
+            onChange([...itens, { especialidade_id: '', profissional_id: '', quantidade: '10' }])
+          }
+          disabled={disabled}
+          className="rounded-2xl border border-cyan-300/30 bg-cyan-400/10 px-4 py-2 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-400/20 disabled:opacity-50"
+          data-testid="solicitacao-item-adicionar"
+        >
+          Adicionar especialidade
+        </button>
+      </div>
 
       {repetidas ? (
         <p

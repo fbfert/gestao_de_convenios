@@ -4,12 +4,99 @@
   --font-sans: "Inter", "Segoe UI", sans-serif;
 }
 
+/*
+ * Temas visuais
+ * -------------
+ * As telas usam diretamente as classes utilitárias do Tailwind (text-slate-200,
+ * bg-white/5, bg-cyan-400, ...). No Tailwind v4 cada utilitário resolve para
+ * var(--color-*), então basta redefinir essas variáveis em
+ * :root[data-theme='claro'] para o app inteiro trocar de tema — sem tocar em JSX.
+ *
+ * Regra de leitura da paleta clara: a escala fica invertida. No tema escuro os
+ * tons baixos (100/200) são claros e os altos (900/950) são escuros; no tema
+ * claro é o contrário. Assim `text-slate-200` continua sendo "texto principal" e
+ * `bg-slate-950` continua sendo "superfície", em qualquer tema.
+ *
+ * As redefinições ficam dentro de @media screen de propósito: a impressão sempre
+ * usa a paleta padrão, onde `bg-white` é branco e `text-slate-950` é escuro.
+ */
+
+:root {
+  --app-bg:
+    radial-gradient(circle at top, rgba(30, 41, 59, 0.25), transparent 42%),
+    linear-gradient(180deg, #07111f 0%, #0f172a 100%);
+  --app-color-scheme: dark;
+}
+
+@media screen {
+  :root[data-theme='claro'] {
+    --app-bg:
+      radial-gradient(circle at top, rgba(8, 145, 178, 0.08), transparent 46%),
+      linear-gradient(180deg, #f7f9fc 0%, #eef2f7 100%);
+    --app-color-scheme: light;
+
+    /* Neutros ------------------------------------------------------------ */
+    /* branco vira o tom de tinta: text-white = texto escuro,
+       bg-white/5 = leve véu cinza, border-white/10 = borda discreta. */
+    --color-white: oklch(21% 0.04 265.755);
+    /* preto continua preto: as sombras (shadow-black/60) precisam dele. */
+
+    --color-slate-50: oklch(20.8% 0.042 265.755);
+    --color-slate-100: oklch(24% 0.042 265.755);
+    --color-slate-200: oklch(29.5% 0.041 260.031);
+    --color-slate-300: oklch(38.5% 0.044 257.287);
+    --color-slate-400: oklch(52% 0.045 257.417);
+    --color-slate-500: oklch(63% 0.042 257);
+    --color-slate-600: oklch(80% 0.028 255);
+    --color-slate-700: oklch(88% 0.02 253);
+    --color-slate-800: oklch(93.5% 0.013 255.508);
+    --color-slate-900: oklch(97% 0.007 247.896);
+    /* superfícies: bg-slate-950/40 · /60 · /80 e cartões sólidos */
+    --color-slate-950: oklch(100% 0 0);
+
+    /* Ciano — cor de ação ------------------------------------------------ */
+    --color-cyan-50: oklch(36% 0.065 227.392);
+    --color-cyan-100: oklch(42% 0.08 225);
+    --color-cyan-200: oklch(45% 0.085 224.283);
+    /* hover de botão sólido e borda de foco: mais escuro que o 400 */
+    --color-cyan-300: oklch(47.5% 0.102 223.128);
+    /* botão sólido (bg-cyan-400 + text-slate-950 → branco): ~4.6:1 */
+    --color-cyan-400: oklch(55.5% 0.118 222);
+    --color-cyan-500: oklch(50% 0.11 222);
+    --color-cyan-600: oklch(45% 0.095 223);
+    --color-cyan-950: oklch(85% 0.05 210);
+
+    /* Rosa — erro -------------------------------------------------------- */
+    --color-rose-50: oklch(40% 0.155 14);
+    --color-rose-100: oklch(44% 0.17 15);
+    --color-rose-200: oklch(48% 0.19 16);
+    --color-rose-300: oklch(52% 0.21 17);
+    --color-rose-400: oklch(58% 0.23 17.585);
+    --color-rose-500: oklch(60% 0.24 17);
+
+    /* Esmeralda — sucesso ------------------------------------------------ */
+    --color-emerald-50: oklch(36% 0.08 166);
+    --color-emerald-100: oklch(40% 0.09 165);
+    --color-emerald-200: oklch(43% 0.1 164);
+    --color-emerald-300: oklch(46% 0.1 163);
+    --color-emerald-400: oklch(52% 0.115 162);
+    --color-emerald-500: oklch(55% 0.12 162);
+
+    /* Âmbar — atenção ---------------------------------------------------- */
+    --color-amber-50: oklch(38% 0.07 70);
+    --color-amber-100: oklch(42% 0.08 70);
+    --color-amber-200: oklch(46% 0.09 68);
+    --color-amber-300: oklch(58% 0.13 70);
+    --color-amber-400: oklch(65% 0.15 68);
+    --color-amber-500: oklch(63% 0.15 66);
+  }
+}
+
 @layer base {
   html {
     font-family: var(--font-sans);
-    background:
-      radial-gradient(circle at top, rgba(30, 41, 59, 0.25), transparent 42%),
-      linear-gradient(180deg, #07111f 0%, #0f172a 100%);
+    background: var(--app-bg);
+    color-scheme: var(--app-color-scheme);
   }
 
   body {
@@ -17,6 +104,16 @@
     margin: 0;
     color: #e2e8f0;
     background: transparent;
+  }
+
+  :root[data-theme='claro'] body {
+    color: oklch(29.5% 0.041 260.031);
+  }
+
+  @media print {
+    html {
+      background: #fff;
+    }
   }
 
   #root {

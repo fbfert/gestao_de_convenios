@@ -13,6 +13,8 @@
     --ambar-fundo: #fffbeb;
     --roxo: #6d28d9;
     --roxo-fundo: #f5f3ff;
+    --rosa: #be185d;
+    --rosa-fundo: #fdf2f8;
     --cinza-texto: #1f2937;
     --cinza-borda: #e2e8f0;
     --cinza-fundo: #f8fafc;
@@ -57,7 +59,7 @@
   .barra { width: 100%; max-width: 1080px; height: 2px; background: var(--cinza-borda); }
 
   .ramos {
-    display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 18px;
     width: 100%; max-width: 1080px;
   }
   .ramo { display: flex; flex-direction: column; align-items: stretch; }
@@ -70,6 +72,7 @@
   .ramo-verde .ramo-titulo { background: var(--verde-fundo); color: var(--verde); }
   .ramo-ambar .ramo-titulo { background: var(--ambar-fundo); color: var(--ambar); }
   .ramo-roxo .ramo-titulo { background: var(--roxo-fundo); color: var(--roxo); }
+  .ramo-rosa .ramo-titulo { background: var(--rosa-fundo); color: var(--rosa); }
 
   .folhas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
   .folhas li {
@@ -87,6 +90,7 @@
   .ramo-verde .folhas li { border-color: #a7f3d0; }
   .ramo-ambar .folhas li { border-color: #fde68a; }
   .ramo-roxo .folhas li { border-color: #ddd6fe; }
+  .ramo-rosa .folhas li { border-color: #fbcfe8; }
 
   .rodape-nota {
     max-width: 1080px; margin: 8px auto 0; padding: 14px 20px;
@@ -94,6 +98,9 @@
     font-size: 13px; color: #475569;
   }
 
+  @media (max-width: 1100px) {
+    .ramos { grid-template-columns: repeat(3, 1fr); row-gap: 32px; }
+  }
   @media (max-width: 860px) {
     .ramos { grid-template-columns: repeat(2, 1fr); row-gap: 32px; }
   }
@@ -108,81 +115,101 @@
   <p class="kicker">Documentação interna</p>
   <h1>Mapa Mental — Gestão de Convênios</h1>
   <p>
-    Visão de topo do sistema: o núcleo (o próprio sistema) e os quatro grandes ramos que organizam o trabalho —
-    o fluxo operacional do atendimento, os cadastros de apoio, a administração/sistema e os papéis de acesso.
-    Use isso para enxergar rapidamente onde cada tela se encaixa antes de ler o manual completo.
+    Visão de topo do sistema, organizada do mesmo jeito que o menu superior: a tela inicial e os grupos
+    Cadastros, Operação, Configurações e Administração, mais os papéis de acesso. Use para localizar
+    rapidamente onde cada tela se encaixa antes de ler o manual completo.
   </p>
 </div>
 
 <div class="legenda">
-  <span><i style="background:var(--azul)"></i> Fluxo operacional (o caminho de um atendimento)</span>
-  <span><i style="background:var(--verde)"></i> Cadastros de apoio (referência)</span>
-  <span><i style="background:var(--ambar)"></i> Administração &amp; sistema</span>
-  <span><i style="background:var(--roxo)"></i> Papéis de acesso</span>
+  <span><i style="background:var(--verde)"></i> Cadastros (bases que mudam pouco)</span>
+  <span><i style="background:var(--azul)"></i> Operação (o caminho de um atendimento)</span>
+  <span><i style="background:var(--ambar)"></i> Configurações</span>
+  <span><i style="background:var(--roxo)"></i> Administração &amp; sistema</span>
+  <span><i style="background:var(--rosa)"></i> Papéis de acesso</span>
 </div>
 
 <div class="mapa">
   <div class="raiz">
     GESTÃO DE CONVÊNIOS
-    <small>sistema · multi-clínica (tenant)</small>
+    <small>tela inicial · sistema multi-clínica (tenant)</small>
   </div>
   <div class="tronco"></div>
   <div class="barra"></div>
 
   <div class="ramos">
-    <div class="ramo ramo-azul">
+    <div class="ramo ramo-verde">
       <div class="stub"></div>
-      <div class="ramo-titulo">Fluxo Operacional</div>
+      <div class="ramo-titulo">Cadastros</div>
       <ul class="folhas">
-        <li><b>Solicitação</b><small>pedido de autorização ao convênio</small></li>
-        <li><b>Guia</b><small>senha + validade</small></li>
-        <li><b>Antecipação</b><small>cota de sessões por ciclo</small></li>
-        <li><b>Sessões (Lançamentos)</b><small>registro do atendimento</small></li>
-        <li><b>Analítico</b><small>importação do extrato do convênio</small></li>
-        <li><b>Conciliação</b><small>pendente → conferida → paga</small></li>
+        <li><b>Pacientes</b><small>quem é atendido · carteirinha no formato do convênio</small></li>
+        <li><b>Profissionais</b><small>quem executa · atua em uma ou mais especialidades</small></li>
+        <li><b>Especialidades</b><small>ex.: fisioterapia, fono</small></li>
+        <li><b>Médicos</b><small>quem solicita a terapia</small></li>
+        <li><b>Convênios</b><small>regras, valores e formato da carteirinha</small></li>
+        <li><b>Usuários</b><small>quem entra no sistema</small></li>
       </ul>
     </div>
 
-    <div class="ramo ramo-verde">
+    <div class="ramo ramo-azul">
       <div class="stub"></div>
-      <div class="ramo-titulo">Cadastros de Apoio</div>
+      <div class="ramo-titulo">Operação</div>
       <ul class="folhas">
-        <li><b>Pacientes</b><small>quem é atendido</small></li>
-        <li><b>Profissionais</b><small>quem executa a terapia</small></li>
-        <li><b>Médicos</b><small>quem solicita a terapia</small></li>
-        <li><b>Especialidades</b><small>ex.: fisioterapia, fono</small></li>
-        <li><b>Convênios</b><small>regras + tabela de valores</small></li>
+        <li><b>1. Pacientes</b><small>confira antes de abrir o pedido</small></li>
+        <li><b>2. Solicitações</b><small>pedido médico · várias especialidades · leitura por IA</small></li>
+        <li><b>3. Guias</b><small>senha + validade, uma por especialidade</small></li>
+        <li><b>4. Sessões</b><small>atendimento realizado, baixado na guia</small></li>
+        <li><b>5. Antecipações</b><small>lote de pagamento ao profissional</small></li>
+        <li><b>6. Analíticos</b><small>extrato de pagamento do convênio</small></li>
+        <li><b>7. Conciliações</b><small>pendente → conferida → paga</small></li>
       </ul>
     </div>
 
     <div class="ramo ramo-ambar">
       <div class="stub"></div>
-      <div class="ramo-titulo">Administração &amp; Sistema</div>
+      <div class="ramo-titulo">Configurações</div>
       <ul class="folhas">
-        <li><b>Usuários</b><small>quem loga no sistema</small></li>
-        <li><b>Permissões</b><small>o que cada papel pode fazer</small></li>
-        <li><b>Auditoria</b><small>histórico de ações</small></li>
-        <li><b>Configurações</b><small>reservado para o futuro</small></li>
-        <li><b>Manual</b><small>esta documentação</small></li>
+        <li><b>Aparência</b><small>tema claro/escuro, por navegador</small></li>
+        <li><b>Globais</b><small>tempo de sessão e padrões das telas</small></li>
+        <li><b>Envio de E-mails</b><small>SMTP + envio de teste</small></li>
+        <li><b>Configurações de IA</b><small>chave OpenAI e modelo padrão</small></li>
+        <li><b>Prompts Operacionais</b><small>instruções da leitura automática</small></li>
+        <li><b>Templates de E-mails</b><small>texto das mensagens</small></li>
+        <li><b>Unimed RDA</b><small>credencial e de-para da automação</small></li>
       </ul>
     </div>
 
     <div class="ramo ramo-roxo">
       <div class="stub"></div>
+      <div class="ramo-titulo">Administração</div>
+      <ul class="folhas">
+        <li><b>Clínicas</b><small>tenants · só administrador do sistema</small></li>
+        <li><b>Permissões</b><small>o que cada papel pode fazer</small></li>
+        <li><b>Auditoria</b><small>histórico de ações</small></li>
+        <li><b>Automações</b><small>execuções no portal do convênio</small></li>
+        <li><b>Manual</b><small>esta documentação</small></li>
+      </ul>
+    </div>
+
+    <div class="ramo ramo-rosa">
+      <div class="stub"></div>
       <div class="ramo-titulo">Papéis de Acesso</div>
       <ul class="folhas">
-        <li><b>admin</b><small>administração completa</small></li>
+        <li><b>admin</b><small>administração completa da clínica</small></li>
         <li><b>funcionario</b><small>operação do dia a dia</small></li>
         <li><b>profissional</b><small>só enxerga o que é seu</small></li>
+        <li><b>administrador do sistema</b><small>marca fora do catálogo · abre Clínicas</small></li>
       </ul>
     </div>
   </div>
 
   <div class="rodape-nota">
-    <strong>Como ler:</strong> o atendimento sempre segue a coluna azul de cima para baixo (Solicitação → Guia →
-    Antecipação → Sessões → Analítico → Conciliação). As colunas verde e âmbar são cadastros e telas de suporte
-    que alimentam esse fluxo, mas não têm uma ordem fixa entre si. A coluna roxa mostra quem pode ver/fazer o quê —
-    detalhes de cada permissão estão na tela de <em>Permissões</em>, descrita no manual completo.
+    <strong>Como ler:</strong> a coluna azul é a sequência de um atendimento, de cima para baixo — os números são a
+    ordem de uso. A verde reúne as bases que essa sequência consulta; nada pode ser aberto sem que o cadastro exista
+    antes. Âmbar e roxo são telas de apoio, sem ordem entre si. A coluna rosa mostra quem enxerga o quê: os três
+    primeiros são papéis, editáveis na tela de <em>Permissões</em>; o último é uma marca separada, concedida fora do
+    sistema. <strong>Pacientes aparece em duas colunas</strong> — é a mesma tela, listada em Operação por ser o
+    primeiro passo do fluxo.
   </div>
 </div>
 

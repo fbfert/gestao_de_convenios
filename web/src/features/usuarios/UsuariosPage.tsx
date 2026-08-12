@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { useMatch, useNavigate } from 'react-router-dom'
 import { Select } from '../../components/ui/Select'
 import {
@@ -44,13 +44,20 @@ function toForm(usuario: Usuario): UsuarioForm {
 export function UsuariosPage() {
   const navigate = useNavigate()
   const isCreateRoute = useMatch('/usuarios/novo') !== null
+  const editRouteMatch = useMatch('/usuarios/:id/editar')
+  const routeEditingId = editRouteMatch ? Number(editRouteMatch.params.id) : null
+  const isEditRoute = routeEditingId !== null && Number.isInteger(routeEditingId)
+  // Criar e editar acontecem em tela propria: com a lista junto, o formulario
+  // ficava espremido e a pagina rolava de volta ao topo a cada acao.
+  const isFormRoute = isCreateRoute || isEditRoute
   const [filters, setFilters] = useState({ busca: '' })
   const [draftFilters, setDraftFilters] = useState({ busca: '' })
   const [page, setPage] = useState(1)
   const [editingId, setEditingId] = useState<number | null>(null)
-  const [isFormOpen, setIsFormOpen] = useState(false)
   const [form, setForm] = useState<UsuarioForm>(emptyForm)
   const [formError, setFormError] = useState<string | null>(null)
+
+  const carregadoRef = useRef<number | null>(null)
 
   const usuariosQuery = useUsuarios(filters, page)
   const rolesQuery = useRolesDoTenant()
@@ -103,6 +110,32 @@ export function UsuariosPage() {
     })
   }, [profissionais])
 
+  const usuarioEmEdicao = useMemo(
+    () => (isEditRoute ? usuarios.find((usuario) => usuario.id === routeEditingId) ?? null : null),
+    [isEditRoute, routeEditingId, usuarios],
+  )
+
+  /*
+    Preenche o formulario quando a tela de edicao e aberta direto pela URL ou
+    recarregada — nesses casos handleEdit nunca rodou. O ref evita sobrescrever
+    o que o operador ja digitou a cada refetch da lista.
+  */
+  useEffect(() => {
+    if (!isEditRoute) {
+      carregadoRef.current = null
+      return
+    }
+
+    if (!usuarioEmEdicao || carregadoRef.current === usuarioEmEdicao.id) {
+      return
+    }
+
+    carregadoRef.current = usuarioEmEdicao.id
+    setEditingId(usuarioEmEdicao.id)
+    setForm(toForm(usuarioEmEdicao))
+    setFormError(null)
+  }, [isEditRoute, usuarioEmEdicao])
+
   const handleFilterSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setPage(1)
@@ -149,11 +182,7 @@ export function UsuariosPage() {
 
       setEditingId(null)
       setForm(emptyForm)
-      if (isCreateRoute) {
-        navigate('/usuarios')
-      } else {
-        setIsFormOpen(false)
-      }
+      navigate('/usuarios')
     } catch (error) {
       setFormError(getHttpErrorMessage(error, 'Não foi possível salvar o usuário.'))
     }
@@ -163,7 +192,7 @@ export function UsuariosPage() {
     setEditingId(usuario.id)
     setForm(toForm(usuario))
     setFormError(null)
-    setIsFormOpen(true)
+    navigate(`/usuarios/${usuario.id}/editar`)
   }
 
   const handleToggleAtivo = async (usuario: Usuario) => {
@@ -185,12 +214,7 @@ export function UsuariosPage() {
     setEditingId(null)
     setForm(emptyForm)
     setFormError(null)
-    if (isCreateRoute) {
-      navigate('/usuarios')
-      return
-    }
-
-    setIsFormOpen(false)
+    navigate('/usuarios')
   }
 
   const handleRoleChange = (value: string) => {
@@ -212,7 +236,7 @@ export function UsuariosPage() {
 
   return (
     <div className="space-y-8" data-testid="usuarios-page">
-      {!isCreateRoute ? (
+      {!isFormRoute ? (
       <section className="space-y-4">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -253,7 +277,7 @@ export function UsuariosPage() {
       </section>
       ) : null}
 
-      {isFormOpen || isCreateRoute ? (
+      {isFormRoute ? (
         <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
           <form onSubmit={handleSubmit} className="space-y-4" data-testid="usuario-form">
             <div className="flex items-start justify-between gap-4">
@@ -419,7 +443,7 @@ export function UsuariosPage() {
         </section>
       ) : null}
 
-      {!isCreateRoute ? (
+      {!isFormRoute ? (
       <section className="space-y-4 rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>

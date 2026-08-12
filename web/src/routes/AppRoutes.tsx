@@ -77,6 +77,7 @@ export function AppRoutes() {
           <Route path="/permissoes" element={<PermissoesPage />} />
           <Route path="/usuarios" element={<UsuariosPage />} />
           <Route path="/usuarios/novo" element={<UsuariosPage />} />
+          <Route path="/usuarios/:id/editar" element={<UsuariosPage />} />
           <Route path="/configuracoes" element={<ConfiguracoesGeralPage />} />
           <Route path="/configuracoes/globais" element={<ConfiguracoesGlobaisPage />} />
           <Route path="/configuracoes/emails" element={<ConfiguracoesPage aba="emails" />} />

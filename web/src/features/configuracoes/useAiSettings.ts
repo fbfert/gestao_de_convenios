@@ -7,6 +7,8 @@ export type AiOpenaiSettings = {
   base_url: string
   organization_id: string | null
   project_id: string | null
+  /** Modelo usado quando o prompt não define um próprio. */
+  model_id: string | null
   ativo: boolean
   api_key_configurada: boolean
 }
@@ -32,6 +34,7 @@ export type AiOpenaiForm = {
   base_url: string
   organization_id: string
   project_id: string
+  model_id: string
   ativo: boolean
 }
 
@@ -83,6 +86,7 @@ export function useSalvarAiSettings() {
           base_url: payload.openai.base_url,
           organization_id: payload.openai.organization_id.trim() || null,
           project_id: payload.openai.project_id.trim() || null,
+          model_id: payload.openai.model_id.trim() || null,
           ativo: payload.openai.ativo,
         },
       })

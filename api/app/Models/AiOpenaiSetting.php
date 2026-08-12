@@ -15,6 +15,7 @@ class AiOpenaiSetting extends Model
         'base_url',
         'organization_id',
         'project_id',
+        'model_id',
         'ativo',
     ];
 

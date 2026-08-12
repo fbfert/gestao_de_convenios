@@ -17,6 +17,7 @@ class AiSettingsResource extends JsonResource
                 'base_url' => $openai->base_url,
                 'organization_id' => $openai->organization_id,
                 'project_id' => $openai->project_id,
+                'model_id' => $openai->model_id,
                 'ativo' => $openai->ativo,
                 'api_key_configurada' => filled($openai->api_key),
             ] : null,

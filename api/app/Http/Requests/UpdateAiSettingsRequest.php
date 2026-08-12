@@ -19,6 +19,7 @@ class UpdateAiSettingsRequest extends FormRequest
             'openai.base_url' => ['required', 'url', 'max:255'],
             'openai.organization_id' => ['nullable', 'string', 'max:255'],
             'openai.project_id' => ['nullable', 'string', 'max:255'],
+            'openai.model_id' => ['nullable', 'string', 'max:255'],
             'openai.ativo' => ['required', 'boolean'],
             // `prompts` saiu daqui: passaram a ter CRUD proprio em
             // /configuracoes/ia/prompts, com chave livre por tenant. Manter a

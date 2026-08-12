@@ -34,7 +34,10 @@ class PedidoMedicoAiService
             ]);
         }
 
-        $model = $prompt->model_id ?: 'gpt-5.6-luna';
+        // Prompt manda; sem ele, o modelo padrao da conexao; o literal fica
+        // como ultimo recurso, para uma instalacao que nunca configurou nada
+        // nao quebrar sozinha. Ver a migration 2026_08_12_190000.
+        $model = $prompt->model_id ?: ($openai->model_id ?: 'gpt-5.6-luna');
         $mime = $arquivo->getMimeType() ?: 'application/octet-stream';
         $base64 = base64_encode(Storage::disk('local')->get($path));
         $fileData = "data:{$mime};base64,{$base64}";

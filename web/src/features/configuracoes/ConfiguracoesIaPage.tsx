@@ -17,6 +17,7 @@ const openaiVazio: AiOpenaiForm = {
   base_url: 'https://api.openai.com/v1',
   organization_id: '',
   project_id: '',
+  model_id: '',
   ativo: false,
 }
 
@@ -47,6 +48,7 @@ export function ConfiguracoesIaPage() {
       base_url: openai.base_url,
       organization_id: openai.organization_id ?? '',
       project_id: openai.project_id ?? '',
+      model_id: openai.model_id ?? '',
       ativo: openai.ativo,
     })
   }, [settingsQuery.data])
@@ -169,6 +171,22 @@ export function ConfiguracoesIaPage() {
           </label>
         </div>
 
+        <label className="mt-4 block space-y-2">
+          <span className="text-sm font-medium text-slate-200">Modelo padrão</span>
+          <input
+            value={form.model_id}
+            onChange={(event) => alterar('model_id', event.target.value)}
+            className={inputClasses()}
+            placeholder="gpt-5.6-luna"
+            list="ia-modelos-disponiveis"
+            data-testid="ia-openai-model"
+          />
+          <span className="block text-xs text-slate-400">
+            Usado quando o prompt não define um modelo próprio. Digite, escolha na lista do campo
+            ou clique num modelo abaixo depois de listar.
+          </span>
+        </label>
+
         <div className="mt-5 flex flex-wrap items-center gap-3">
           <button
             type="button"
@@ -195,17 +213,30 @@ export function ConfiguracoesIaPage() {
               Modelos disponíveis
             </p>
             <p className="mt-1 text-xs text-slate-400">
-              Copie o identificador e informe no campo Modelo do prompt desejado.
+              Clique num modelo para usá-lo como padrão. Lembre de salvar depois.
             </p>
             <div className="mt-3 flex max-h-44 flex-wrap gap-2 overflow-y-auto">
-              {modelosQuery.data.map((model) => (
-                <span
-                  key={model.id}
-                  className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5 text-xs font-semibold text-cyan-100"
-                >
-                  {model.id}
-                </span>
-              ))}
+              {modelosQuery.data.map((model) => {
+                const selecionado = form.model_id === model.id
+
+                return (
+                  <button
+                    key={model.id}
+                    type="button"
+                    onClick={() => alterar('model_id', model.id)}
+                    aria-pressed={selecionado}
+                    className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                      selecionado
+                        ? 'border-cyan-300/70 bg-cyan-400/30 text-cyan-50 ring-2 ring-cyan-300/20'
+                        : 'border-cyan-400/20 bg-cyan-400/10 text-cyan-100 hover:bg-cyan-400/20'
+                    }`}
+                    data-testid={`ia-modelo-${model.id}`}
+                  >
+                    {model.id}
+                    {selecionado ? ' ✓' : ''}
+                  </button>
+                )
+              })}
             </div>
           </div>
         ) : null}
@@ -222,6 +253,13 @@ export function ConfiguracoesIaPage() {
           {error}
         </p>
       ) : null}
+
+      {/* Alimenta o `list` do campo Modelo padrão acima. */}
+      <datalist id="ia-modelos-disponiveis">
+        {(modelosQuery.data ?? []).map((model) => (
+          <option key={model.id} value={model.id} />
+        ))}
+      </datalist>
 
       <button
         type="submit"

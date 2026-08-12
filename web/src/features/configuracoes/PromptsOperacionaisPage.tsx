@@ -33,7 +33,6 @@ type Edicao = null | 'novo' | number
 
 export function PromptsOperacionaisPage() {
   const promptsQuery = useAiPrompts()
-  const modelosQuery = useAiModels(false)
   const criar = useCriarAiPrompt()
   const atualizar = useAtualizarAiPrompt()
   const excluir = useExcluirAiPrompt()
@@ -43,6 +42,14 @@ export function PromptsOperacionaisPage() {
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [confirmandoExclusao, setConfirmandoExclusao] = useState<number | null>(null)
+
+  /*
+    Só busca os modelos quando o editor está aberto. A listagem sozinha não
+    precisa deles, e a chamada bate na OpenAI — carregar sempre gastaria uma
+    ida à API a cada visita. Antes o `datalist` era montado com uma query que
+    nunca disparava, então o campo Modelo nunca oferecia nada.
+  */
+  const modelosQuery = useAiModels(edicao !== null)
 
   const prompts = promptsQuery.data ?? []
   const editandoSistema =
@@ -204,10 +211,17 @@ export function PromptsOperacionaisPage() {
                 value={form.model_id}
                 onChange={(event) => alterar('model_id', event.target.value)}
                 className={inputClasses()}
-                placeholder="Em branco usa o modelo padrão do backend"
+                placeholder="Em branco usa o modelo padrão da conexão"
                 list="ia-modelos-disponiveis"
                 data-testid="prompt-modelo"
               />
+              <span className="block text-xs text-slate-400">
+                {modelosQuery.isFetching
+                  ? 'Carregando os modelos disponíveis...'
+                  : modelosQuery.data?.length
+                    ? `${modelosQuery.data.length} modelos disponíveis na lista do campo.`
+                    : 'Deixe em branco para usar o modelo padrão definido em Configurações de IA.'}
+              </span>
             </label>
           </div>
 

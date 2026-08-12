@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useLogout } from '../features/auth'
 import { useAuthStore } from '../stores/authStore'
-import { isGroup, navEntries, type NavGroup } from './navigation'
+import { isGroup, montarMenu, type NavGroup } from './navigation'
 
 const linkBase = 'rounded-full border px-4 py-2 text-sm font-medium transition'
 const linkAtivo = 'border-cyan-300/40 bg-cyan-400/15 text-cyan-50'
@@ -117,6 +117,7 @@ export function ShellLayout() {
   const user = useAuthStore((state) => state.user)
   const tenant = useAuthStore((state) => state.tenant)
   const logout = useLogout()
+  const entradas = montarMenu(Boolean(user?.super_admin))
   const [grupoAberto, setGrupoAberto] = useState<string | null>(null)
   const navRef = useRef<HTMLElement | null>(null)
   const timerFechar = useRef<number | null>(null)
@@ -203,7 +204,7 @@ export function ShellLayout() {
       <header className="relative z-50 border-b border-white/10 bg-slate-950/60 backdrop-blur">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-6 py-4 lg:flex-row lg:items-center lg:justify-between">
           <nav ref={navRef} className="flex flex-wrap items-center gap-2">
-            {navEntries.map((entry) =>
+            {entradas.map((entry) =>
               isGroup(entry) ? (
                 <GrupoNav
                   key={entry.to}

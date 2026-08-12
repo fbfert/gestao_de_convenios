@@ -30,6 +30,7 @@ import {
 import { ConveniosPage, ConvenioDetalhePage } from '../features/convenios/ConveniosPage'
 import { ConvenioAjudaPage } from '../features/convenios/ConvenioAjudaPage'
 import { ManualPage } from '../features/manual'
+import { TenantsPage } from '../features/tenants'
 
 export function AppRoutes() {
   return (
@@ -82,6 +83,7 @@ export function AppRoutes() {
           <Route path="/configuracoes/unimed" element={<ConfiguracoesPage aba="unimed" />} />
           <Route path="/configuracoes/templates-emails" element={<EmailTemplatesPage />} />
           <Route path="/manual" element={<ManualPage />} />
+          <Route path="/clinicas" element={<TenantsPage />} />
         </Route>
       </Route>
       {/* Rota desconhecida cai na inicial, que agora e a Gestao de Convenios. */}

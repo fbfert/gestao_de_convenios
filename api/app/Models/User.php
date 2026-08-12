@@ -34,7 +34,19 @@ class User extends Authenticatable
         'password' => 'hashed',
         'ativo' => 'boolean',
         'profissional_id' => 'integer',
+        'super_admin' => 'boolean',
     ];
+
+    /**
+     * Administra tenants. `super_admin` fica fora do $fillable de proposito:
+     * a flag nunca pode ser atribuida em massa a partir de um request. Ver a
+     * migration 2026_08_12_180000 para o motivo de nao ser uma permissao do
+     * PermissionCatalog.
+     */
+    public function ehSuperAdmin(): bool
+    {
+        return (bool) $this->super_admin;
+    }
 
     public function tenant()
     {

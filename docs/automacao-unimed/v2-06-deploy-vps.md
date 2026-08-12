@@ -338,3 +338,30 @@ ausência de `php` no host, o que é acaso, não proteção. A correção seria 
 `api/.env.testing` com um banco separado, ou apontar o script para um
 `--database` explícito. **Enquanto isso não for feito, não rode `test:e2e`
 nesta VPS.**
+
+### 9.5 Conceder ou revogar `super_admin`
+
+A gestão de clínicas (`/clinicas`) é restrita a `users.super_admin`. **Não há
+tela para conceder a flag**, de propósito: é a única credencial do sistema que
+atravessa tenants, e ela fica fora do `PermissionCatalog` justamente para que o
+administrador de uma clínica não possa conceder a si mesmo pela tela de
+Permissões. A migration `2026_08_12_180000` concede ao administrador inicial;
+qualquer outra concessão é operação de banco:
+
+```bash
+# conceder
+docker exec gescon-app php artisan tinker --execute="\
+  App\Models\User::where('email','pessoa@exemplo.com')->update(['super_admin'=>true]);"
+
+# revogar
+docker exec gescon-app php artisan tinker --execute="\
+  App\Models\User::where('email','pessoa@exemplo.com')->update(['super_admin'=>false]);"
+
+# conferir quem tem
+docker exec gescon-app php artisan tinker --execute="\
+  foreach(App\Models\User::where('super_admin',true)->get() as \$u) echo \$u->email.PHP_EOL;"
+```
+
+A flag só entra em vigor no **próximo login**: o front lê `super_admin` do
+payload de login e guarda no `localStorage`. Quem já estava logado precisa sair
+e entrar de novo para o menu Clínicas aparecer.

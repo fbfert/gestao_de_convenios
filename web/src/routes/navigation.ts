@@ -197,3 +197,19 @@ export const navEntries: NavEntry[] = [
   configuracoesGroup,
   { to: '/manual', label: 'Manual', descricao: 'Documentação de uso do sistema.' },
 ]
+
+/** Item visível apenas para quem administra clínicas. */
+export const clinicasEntry: NavLeaf = {
+  to: '/clinicas',
+  label: 'Clínicas',
+  descricao: 'Cadastro das clínicas atendidas pelo sistema.',
+}
+
+/**
+ * Menu final. `Clínicas` entra só para super admin — é a única entrada
+ * condicional do menu, e a decisão fica aqui para o ShellLayout não precisar
+ * conhecer a regra.
+ */
+export function montarMenu(superAdmin: boolean): NavEntry[] {
+  return superAdmin ? [...navEntries, clinicasEntry] : navEntries
+}

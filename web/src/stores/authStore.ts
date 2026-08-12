@@ -13,6 +13,11 @@ export type AuthUser = {
   email: string
   role: string
   permissions?: string[]
+  /**
+   * Administra clínicas. Controla apenas a exibição do item de menu; quem
+   * barra de fato é o middleware `super-admin` da API.
+   */
+  super_admin?: boolean
   tenant: AuthTenant
 }
 

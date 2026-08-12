@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Tenant;
+use App\Support\RoleCatalog;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
@@ -15,83 +16,10 @@ class RoleSeeder extends Seeder
 
         app(PermissionRegistrar::class)->setPermissionsTeamId($tenant->id);
 
-        $roles = [
-            'admin' => [
-                'dashboard.convenios',
-                'dashboard.solicitacoes',
-                'dashboard.guias',
-                'dashboard.antecipacoes',
-                'dashboard.lancamentos',
-                'dashboard.conciliacoes',
-                'dashboard.pacientes',
-                'dashboard.profissionais',
-                'dashboard.medicos',
-                'dashboard.especialidades',
-                'dashboard.usuarios',
-                'dashboard.analiticos',
-                'dashboard.auditoria',
-                'solicitacoes.view',
-                'solicitacoes.manage',
-                'guias.view',
-                'guias.viewOwn',
-                'guias.manage',
-                'antecipacoes.view',
-                'antecipacoes.viewOwn',
-                'lancamentos.view',
-                'lancamentos.viewOwn',
-                'lancamentos.manage',
-                'conciliacoes.view',
-                'conciliacoes.viewOwn',
-                'conciliacoes.manage',
-                'profissionais.manage',
-                'medicos.manage',
-                'especialidades.manage',
-                'usuarios.manage',
-                'convenios.manage',
-                'permissoes.manage',
-                'manual.manage',
-                'configuracoes.manage',
-                'configuracoes.unimed.manage',
-            ],
-            'funcionario' => [
-                'dashboard.convenios',
-                'dashboard.solicitacoes',
-                'dashboard.guias',
-                'dashboard.antecipacoes',
-                'dashboard.lancamentos',
-                'dashboard.conciliacoes',
-                'dashboard.pacientes',
-                'dashboard.profissionais',
-                'dashboard.medicos',
-                'dashboard.especialidades',
-                'dashboard.analiticos',
-                'solicitacoes.view',
-                'solicitacoes.manage',
-                'guias.view',
-                'guias.viewOwn',
-                'guias.manage',
-                'antecipacoes.view',
-                'antecipacoes.viewOwn',
-                'lancamentos.view',
-                'lancamentos.viewOwn',
-                'lancamentos.manage',
-                'conciliacoes.view',
-                'conciliacoes.viewOwn',
-                'conciliacoes.manage',
-                'profissionais.manage',
-                'medicos.manage',
-            ],
-            'profissional' => [
-                'dashboard.guias',
-                'dashboard.antecipacoes',
-                'dashboard.lancamentos',
-                'dashboard.conciliacoes',
-                'guias.viewOwn',
-                'antecipacoes.viewOwn',
-                'lancamentos.viewOwn',
-                'conciliacoes.viewOwn',
-            ],
-        ];
+        // O mapa vive em App\Support\RoleCatalog: a criacao de tenant pela
+        // tela de gestao usa exatamente o mesmo, para uma clinica nova nao
+        // nascer com permissoes diferentes das que o seeder entrega.
+        $roles = RoleCatalog::all();
 
         foreach ($roles as $name => $permissions) {
             $role = Role::findOrCreate($name, 'web');

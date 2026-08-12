@@ -26,6 +26,7 @@ use App\Http\Controllers\ManualController;
 use App\Http\Controllers\PacienteController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\SolicitacaoController;
+use App\Http\Controllers\TenantController;
 use App\Http\Controllers\ProfissionalController;
 use App\Http\Controllers\SolicitacaoDocumentoController;
 use App\Http\Controllers\UnimedSettingsController;
@@ -99,6 +100,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/permissions', [PermissionController::class, 'index'])->middleware('permission:permissoes.manage');
     Route::get('/roles/{role}/permissions', [RolePermissionController::class, 'show'])->middleware('permission:permissoes.manage');
     Route::put('/roles/{role}/permissions', [RolePermissionController::class, 'update'])->middleware('permission:permissoes.manage');
+
+    // Gestão de clínicas. `super-admin` em vez de `permission:`: a capacidade
+    // fica fora do PermissionCatalog para que o admin de um tenant não possa
+    // conceder a si mesmo (ver migration 2026_08_12_180000).
+    Route::get('/tenants', [TenantController::class, 'index'])->middleware('super-admin');
+    Route::post('/tenants', [TenantController::class, 'store'])->middleware('super-admin');
+    Route::put('/tenants/{tenant}', [TenantController::class, 'update'])->middleware('super-admin');
 
     Route::get('/usuarios', [UserController::class, 'index'])->middleware('permission:usuarios.manage');
     Route::post('/usuarios', [UserController::class, 'store'])->middleware('permission:usuarios.manage');

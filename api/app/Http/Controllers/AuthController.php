@@ -37,6 +37,10 @@ class AuthController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'role' => $user->roles()->first()?->name ?? $user->getRoleNames()->first(),
+                // Só para o menu decidir se mostra a gestão de tenants. A
+                // restrição de verdade é o middleware `super-admin` — este
+                // campo apenas evita exibir um item que responderia 403.
+                'super_admin' => $user->ehSuperAdmin(),
                 'tenant' => [
                     'id' => $user->tenant->id,
                     'nome' => $user->tenant->nome,

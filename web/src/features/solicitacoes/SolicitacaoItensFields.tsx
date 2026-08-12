@@ -31,9 +31,18 @@ export function SolicitacaoItensFields({
     const mapa = new Map<number, ProfissionalRef[]>()
 
     for (const profissional of profissionais) {
-      const lista = mapa.get(profissional.especialidade_id) ?? []
-      lista.push(profissional)
-      mapa.set(profissional.especialidade_id, lista)
+      // Um profissional pode atender em varias especialidades; entra na lista
+      // de cada uma. `especialidade_ids` so falta em resposta antiga em cache,
+      // e nesse caso a principal serve de fallback.
+      const ids = profissional.especialidade_ids?.length
+        ? profissional.especialidade_ids
+        : [profissional.especialidade_id]
+
+      for (const id of ids) {
+        const lista = mapa.get(id) ?? []
+        lista.push(profissional)
+        mapa.set(id, lista)
+      }
     }
 
     return mapa

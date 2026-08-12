@@ -20,9 +20,15 @@ class ProfissionalController extends Controller
 
         return ProfissionalResource::collection(
             Profissional::query()
-                ->with('especialidade')
+                ->with(['especialidade', 'especialidades'])
                 ->when(! $incluirInativos, fn ($query) => $query->where('ativo', true))
-                ->when($especialidadeId, fn ($query) => $query->where('especialidade_id', $especialidadeId))
+                // Filtra pela ligacao, nao pela coluna: quem atua na
+                // especialidade tem que aparecer mesmo que ela nao seja a
+                // principal dele.
+                ->when($especialidadeId, fn ($query) => $query->whereHas(
+                    'especialidades',
+                    fn ($nested) => $nested->where('especialidades.id', $especialidadeId),
+                ))
                 ->when($busca !== '', function ($query) use ($busca) {
                     $query->where(function ($nested) use ($busca) {
                         $nested->where('nome', 'like', "%{$busca}%")
@@ -39,13 +45,19 @@ class ProfissionalController extends Controller
 
     public function store(StoreProfissionalRequest $request): JsonResponse
     {
+        $dados = $request->validated();
+        $especialidadeIds = $dados['especialidade_ids'] ?? [];
+        unset($dados['especialidade_ids']);
+
         $profissional = Profissional::query()->create([
-            ...$request->validated(),
+            ...$dados,
             'tenant_id' => $request->user()->tenant_id,
             'ativo' => $request->boolean('ativo', true),
         ]);
 
-        return (new ProfissionalResource($profissional->load('especialidade')))
+        $profissional->sincronizarEspecialidades($especialidadeIds);
+
+        return (new ProfissionalResource($profissional->load(['especialidade', 'especialidades'])))
             ->response()
             ->setStatusCode(201);
     }
@@ -54,9 +66,19 @@ class ProfissionalController extends Controller
     {
         abort_if($profissional->tenant_id !== $request->user()->tenant_id, 404);
 
-        $profissional->fill($request->validated());
+        $dados = $request->validated();
+        $especialidadeIds = $dados['especialidade_ids'] ?? null;
+        unset($dados['especialidade_ids']);
+
+        $profissional->fill($dados);
         $profissional->save();
 
-        return new ProfissionalResource($profissional->load('especialidade'));
+        // `null` = o cliente nao mandou a lista; nesse caso so reafirma a
+        // invariante da principal, sem apagar o que ja estava ligado.
+        $profissional->sincronizarEspecialidades(
+            $especialidadeIds ?? $profissional->especialidades()->pluck('especialidades.id')->all(),
+        );
+
+        return new ProfissionalResource($profissional->load(['especialidade', 'especialidades']));
     }
 }

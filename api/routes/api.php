@@ -22,6 +22,7 @@ use App\Http\Controllers\LancamentoPrintTemplateController;
 use App\Http\Controllers\AnaliticoController;
 use App\Http\Controllers\AiPromptTemplateController;
 use App\Http\Controllers\AiSettingsController;
+use App\Http\Controllers\ConfiguracaoGlobalController;
 use App\Http\Controllers\ManualController;
 use App\Http\Controllers\PacienteController;
 use App\Http\Controllers\UserController;
@@ -35,7 +36,9 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
 
-Route::middleware('auth:sanctum')->group(function () {
+// EncerrarSessaoExpirada vem logo apos o auth: precisa do usuario resolvido
+// para saber o prazo do tenant, e tem que barrar antes de qualquer rota.
+Route::middleware(['auth:sanctum', \App\Http\Middleware\EncerrarSessaoExpirada::class])->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
@@ -55,6 +58,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/configuracoes/emails/templates', [EmailTemplateController::class, 'store'])->middleware('permission:configuracoes.manage');
     Route::put('/configuracoes/emails/templates/{emailTemplate}', [EmailTemplateController::class, 'update'])->middleware('permission:configuracoes.manage');
     Route::delete('/configuracoes/emails/templates/{emailTemplate}', [EmailTemplateController::class, 'destroy'])->middleware('permission:configuracoes.manage');
+    Route::get('/configuracoes/globais', [ConfiguracaoGlobalController::class, 'show'])->middleware('permission:configuracoes.manage');
+    Route::put('/configuracoes/globais', [ConfiguracaoGlobalController::class, 'update'])->middleware('permission:configuracoes.manage');
     Route::get('/configuracoes/ia', [AiSettingsController::class, 'show'])->middleware('permission:configuracoes.manage');
     Route::put('/configuracoes/ia', [AiSettingsController::class, 'update'])->middleware('permission:configuracoes.manage');
     Route::get('/configuracoes/ia/modelos', [AiSettingsController::class, 'models'])->middleware('permission:configuracoes.manage');

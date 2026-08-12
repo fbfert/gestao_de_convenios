@@ -19,7 +19,10 @@ export type EspecialidadeRef = {
 export type ProfissionalRef = {
   id: number
   nome: string
+  /** Especialidade principal. Para saber onde ele atende, use especialidade_ids. */
   especialidade_id: number
+  /** Todas em que atende, principal incluída. */
+  especialidade_ids?: number[]
   conselho_registro: string | null
   percentual_repasse?: string | null
   ativo: boolean

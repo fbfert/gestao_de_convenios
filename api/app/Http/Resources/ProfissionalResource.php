@@ -20,6 +20,21 @@ class ProfissionalResource extends JsonResource
                 'id' => $this->especialidade->id,
                 'nome' => $this->especialidade->nome,
             ]),
+            // Todas em que atende, principal incluída. A tela usa esta lista
+            // para saber quais profissionais oferecer em cada especialidade.
+            'especialidades' => $this->whenLoaded(
+                'especialidades',
+                fn () => $this->especialidades
+                    ->map(fn ($especialidade) => [
+                        'id' => $especialidade->id,
+                        'nome' => $especialidade->nome,
+                    ])
+                    ->values(),
+            ),
+            'especialidade_ids' => $this->whenLoaded(
+                'especialidades',
+                fn () => $this->especialidades->pluck('id')->values(),
+            ),
         ];
     }
 }

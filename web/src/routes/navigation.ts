@@ -130,6 +130,12 @@ export const operacaoItems: NavLeaf[] = [
 
 export const configuracoesItems: NavLeaf[] = [
   {
+    to: '/configuracoes/globais',
+    label: 'Globais',
+    descricao:
+      'Parâmetros de comportamento do sistema: tempo de sessão, antecedência do aviso de senha vencendo, sessões sugeridas por especialidade e itens por página.',
+  },
+  {
     to: '/configuracoes/emails',
     label: 'Envio de E-mails',
     descricao:

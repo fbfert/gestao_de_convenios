@@ -22,6 +22,7 @@ import { CadastrosPage, OperacaoConveniosPage } from '../features/grupos'
 import { AuditoriaPage } from '../features/auditoria'
 import {
   ConfiguracoesGeralPage,
+  ConfiguracoesGlobaisPage,
   ConfiguracoesIaPage,
   ConfiguracoesPage,
   EmailTemplatesPage,
@@ -77,6 +78,7 @@ export function AppRoutes() {
           <Route path="/usuarios" element={<UsuariosPage />} />
           <Route path="/usuarios/novo" element={<UsuariosPage />} />
           <Route path="/configuracoes" element={<ConfiguracoesGeralPage />} />
+          <Route path="/configuracoes/globais" element={<ConfiguracoesGlobaisPage />} />
           <Route path="/configuracoes/emails" element={<ConfiguracoesPage aba="emails" />} />
           <Route path="/configuracoes/ia" element={<ConfiguracoesIaPage />} />
           <Route path="/configuracoes/ia/prompts" element={<PromptsOperacionaisPage />} />

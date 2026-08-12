@@ -7,6 +7,7 @@ import type { Profissional, ProfissionalForm, ProfissionalPayload } from './type
 const emptyForm: ProfissionalForm = {
   nome: '',
   especialidade_id: '',
+  especialidade_ids: [],
   conselho_registro: '',
   percentual_repasse: '',
   ativo: true,
@@ -26,6 +27,7 @@ function toForm(profissional: Profissional): ProfissionalForm {
   return {
     nome: profissional.nome,
     especialidade_id: String(profissional.especialidade_id),
+    especialidade_ids: profissional.especialidade_ids ?? [profissional.especialidade_id],
     conselho_registro: profissional.conselho_registro ?? '',
     percentual_repasse: profissional.percentual_repasse ?? '',
     ativo: profissional.ativo,
@@ -36,6 +38,7 @@ function toPayload(form: ProfissionalForm): ProfissionalPayload {
   return {
     nome: form.nome.trim(),
     especialidade_id: Number(form.especialidade_id),
+    especialidade_ids: form.especialidade_ids,
     conselho_registro: form.conselho_registro.trim() === '' ? null : form.conselho_registro.trim(),
     percentual_repasse: form.percentual_repasse.trim() === '' ? null : Number(form.percentual_repasse),
     ativo: form.ativo,
@@ -251,7 +254,52 @@ export function ProfissionaisPage() {
                   </option>
                 ))}
               </select>
+              <span className="block text-xs text-slate-400">
+                A de registro no conselho. Ela entra automaticamente na lista abaixo.
+              </span>
             </label>
+
+            <div className="space-y-2">
+              <span className="text-sm font-medium text-slate-200">Atende também em</span>
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {especialidades.map((especialidade) => {
+                  const ehPrincipal = String(especialidade.id) === form.especialidade_id
+                  const marcada = ehPrincipal || form.especialidade_ids.includes(especialidade.id)
+
+                  return (
+                    <label
+                      key={especialidade.id}
+                      className={`flex items-center gap-2 rounded-2xl border px-3 py-2 text-sm transition ${
+                        marcada
+                          ? 'border-cyan-300/40 bg-cyan-400/10 text-cyan-50'
+                          : 'border-white/10 bg-white/5 text-slate-200'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={marcada}
+                        /* A principal fica travada marcada: desmarca-la criaria
+                           um profissional que nao atende na propria
+                           especialidade de registro. O backend reforca isso. */
+                        disabled={ehPrincipal}
+                        onChange={(event) =>
+                          setForm((current) => ({
+                            ...current,
+                            especialidade_ids: event.target.checked
+                              ? [...current.especialidade_ids, especialidade.id]
+                              : current.especialidade_ids.filter((id) => id !== especialidade.id),
+                          }))
+                        }
+                        className="size-4 rounded border-white/20 bg-white/10 disabled:opacity-60"
+                        data-testid={`profissional-especialidade-${especialidade.id}`}
+                      />
+                      {especialidade.nome}
+                      {ehPrincipal ? <span className="text-xs text-cyan-200">principal</span> : null}
+                    </label>
+                  )
+                })}
+              </div>
+            </div>
 
             <label className="block space-y-2">
               <span className="text-sm font-medium text-slate-200">Conselho / registro</span>

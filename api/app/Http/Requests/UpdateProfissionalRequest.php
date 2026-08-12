@@ -24,6 +24,14 @@ class UpdateProfissionalRequest extends FormRequest
                 'integer',
                 Rule::exists('especialidades', 'id')->where(fn ($query) => $query->where('tenant_id', $tenantId)),
             ],
+            // Especialidades adicionais em que o profissional atende. A
+            // principal entra sozinha no model, entao esta lista pode vir
+            // vazia ou nem vir — ver Profissional::sincronizarEspecialidades.
+            'especialidade_ids' => ['sometimes', 'array'],
+            'especialidade_ids.*' => [
+                'integer',
+                Rule::exists('especialidades', 'id')->where(fn ($query) => $query->where('tenant_id', $tenantId)),
+            ],
             'conselho_registro' => ['sometimes', 'nullable', 'string', 'max:255'],
             'percentual_repasse' => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:100'],
             'ativo' => ['sometimes', 'boolean'],

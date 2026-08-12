@@ -82,8 +82,16 @@ class AiSettingsController extends Controller
         }
 
         if ($response->failed()) {
+            // A mensagem da OpenAI vai crua para a tela. A versao anterior
+            // dizia so "verifique a API key e o projeto", o que escondia o
+            // motivo real: um `Invalid project ID 'gescon'` ficava
+            // indistinguivel de uma chave revogada ou de cota estourada.
+            $erro = $response->json('error') ?? [];
+            $detalhe = $erro['message'] ?? $response->body();
+
             throw ValidationException::withMessages([
-                'openai' => 'A OpenAI recusou a listagem de modelos. Verifique a API key e o projeto.',
+                'openai' => 'A OpenAI recusou a listagem de modelos (HTTP '
+                    .$response->status().'): '.$detalhe,
             ]);
         }
 

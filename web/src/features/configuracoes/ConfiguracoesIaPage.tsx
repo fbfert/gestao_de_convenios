@@ -134,15 +134,24 @@ export function ConfiguracoesIaPage() {
               data-testid="ia-openai-base-url"
             />
           </label>
+          {/*
+            Os dois campos abaixo viram cabecalhos HTTP (OpenAI-Organization e
+            OpenAI-Project) e sao identificadores, nao nomes. Um nome amigavel
+            aqui derruba a chamada com 400 invalid_project — por isso o aviso
+            de "deixe em branco", que e o caso certo para chaves sk-proj-*.
+          */}
           <label className="space-y-2">
             <span className="text-sm font-medium text-slate-200">Organização</span>
             <input
               value={form.organization_id}
               onChange={(event) => alterar('organization_id', event.target.value)}
               className={inputClasses()}
-              placeholder="org_..."
+              placeholder="org_... (opcional)"
               data-testid="ia-openai-organization"
             />
+            <span className="block text-xs text-slate-400">
+              O identificador, começando por <code>org_</code> — não o nome da organização.
+            </span>
           </label>
           <label className="space-y-2">
             <span className="text-sm font-medium text-slate-200">Projeto</span>
@@ -150,9 +159,13 @@ export function ConfiguracoesIaPage() {
               value={form.project_id}
               onChange={(event) => alterar('project_id', event.target.value)}
               className={inputClasses()}
-              placeholder="proj_..."
+              placeholder="proj_... (opcional)"
               data-testid="ia-openai-project"
             />
+            <span className="block text-xs text-slate-400">
+              O identificador, começando por <code>proj_</code> — não o nome do projeto. Chaves{' '}
+              <code>sk-proj-*</code> já vêm presas a um projeto: deixe em branco.
+            </span>
           </label>
         </div>
 

@@ -24,8 +24,23 @@ echo "==> aguardando o app subir"
 sleep 12
 
 echo "==> smoke test"
-code=$(curl -s -o /dev/null -w "%{http_code}" https://gescon.xiax.com.br/)
-echo "   https://gescon.xiax.com.br/ -> HTTP $code"
+# O host tem que ser gescon.gestaonossa.com.br: e o unico com vhost apontando
+# para 127.0.0.1:4105. gescon.xiax.com.br nao tem vhost nem DNS, cai no vhost
+# padrao (o Next.js do gestaonossa) e devolvia 200 do app errado — o script
+# reportava OK sem ter publicado nada.
+URL=https://gescon.gestaonossa.com.br/
+body=$(mktemp)
+code=$(curl -s -o "$body" -w "%{http_code}" "$URL")
+echo "   $URL -> HTTP $code"
+
+# 200 sozinho nao prova nada: confirma que quem respondeu e a SPA do gescon.
+if grep -q 'gestao-convenios-tema' "$body"; then
+  identidade=ok
+else
+  identidade=falha
+  echo "   ATENCAO: resposta nao parece o gescon (vhost errado?)"
+fi
+rm -f "$body"
 
 # O worker nao tem porta publicada: so da para checa-lo de dentro da rede.
 worker=$("${COMPOSE[@]}" ps --format '{{.Service}} {{.Status}}' 2>/dev/null | grep '^gescon-worker' || true)
@@ -33,9 +48,9 @@ echo "   gescon-worker -> ${worker:-ausente}"
 
 "${COMPOSE[@]}" ps
 
-if [ "$code" = "200" ]; then
+if [ "$code" = "200" ] && [ "$identidade" = "ok" ]; then
   echo "==> OK"
 else
-  echo "==> ATENCAO: HTTP $code — checar 'docker logs gescon-app'"
+  echo "==> ATENCAO: HTTP $code / identidade=$identidade — checar 'docker logs gescon-app'"
   exit 1
 fi

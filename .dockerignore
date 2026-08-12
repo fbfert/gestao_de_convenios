@@ -7,4 +7,10 @@ api/storage/logs/*
 api/storage/framework/cache/data/*
 api/storage/framework/sessions/*
 api/storage/framework/views/*
+# Cache de package discovery do Laravel. Se um `artisan` rodar no host com as
+# dependencias de dev instaladas, esse arquivo passa a listar provedores de dev
+# (Collision, Telescope, ...) e vai junto para a imagem, que tem vendor
+# --no-dev: o container morre com "Class ... not found" logo no boot. O
+# entrypoint refaz o discover, entao a imagem nao precisa desse cache.
+api/bootstrap/cache/*.php
 **/.DS_Store

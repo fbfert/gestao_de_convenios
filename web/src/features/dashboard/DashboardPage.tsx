@@ -44,7 +44,14 @@ export function DashboardPage() {
     queryFn: async () => (await apiClient.get<{ data: DashboardResponse }>('/dashboard')).data.data,
   })
 
-  const blocks = dashboardQuery.data?.blocks ?? []
+  /*
+    Usuários sai do resumo para a grade fechar em múltiplo de 3 (12 blocos com
+    o papel de administrador, três por linha em telas largas). O bloco continua
+    vindo da API: a tela de Cadastros mostra essa mesma métrica, então filtrar
+    aqui em vez de remover do DashboardController evita derrubá-la de lá junto.
+    A tela de Usuários segue acessível pelo menu Cadastros.
+  */
+  const blocks = (dashboardQuery.data?.blocks ?? []).filter((block) => block.key !== 'usuarios')
   const recentAudits = dashboardQuery.data?.recent_audits ?? []
 
   return (
@@ -52,12 +59,16 @@ export function DashboardPage() {
       <section className="overflow-hidden rounded-[2rem] border border-cyan-300/20 bg-gradient-to-br from-cyan-400/10 via-slate-950 to-slate-900 p-6 shadow-2xl shadow-slate-950/30">
         <div className="space-y-4">
           <div className="space-y-4">
-            <p className="text-xs uppercase tracking-[0.35em] text-cyan-300/80">Dashboard</p>
             <h2 className="text-4xl font-semibold text-white">Visão geral operacional</h2>
             <p className="max-w-3xl text-sm leading-6 text-slate-300">
-              Este é o ponto de entrada do sistema. Os blocos abaixo refletem o que o seu papel
-              pode ver, com atalhos para abrir as telas operacionais e um resumo da auditoria
-              recente.
+              Clique nos Atalhos ou Acesse pelo Menu Superior. Em caso de dúvidas acesse o{' '}
+              <Link
+                to="/manual"
+                className="font-semibold text-cyan-200 underline underline-offset-2 transition hover:text-cyan-100"
+              >
+                Manual
+              </Link>
+              .
             </p>
           </div>
         </div>

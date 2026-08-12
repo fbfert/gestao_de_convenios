@@ -3,7 +3,6 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class UpdateAiSettingsRequest extends FormRequest
 {
@@ -21,18 +20,10 @@ class UpdateAiSettingsRequest extends FormRequest
             'openai.organization_id' => ['nullable', 'string', 'max:255'],
             'openai.project_id' => ['nullable', 'string', 'max:255'],
             'openai.ativo' => ['required', 'boolean'],
-            'prompts' => ['present', 'array'],
-            'prompts.*.chave' => [
-                'required',
-                'string',
-                Rule::in(['ler_solicitacao_medica', 'ler_sessoes_escaneadas']),
-            ],
-            'prompts.*.nome' => ['required', 'string', 'max:255'],
-            'prompts.*.descricao' => ['nullable', 'string'],
-            'prompts.*.model_id' => ['nullable', 'string', 'max:255'],
-            'prompts.*.system_prompt' => ['required', 'string'],
-            'prompts.*.user_prompt' => ['required', 'string'],
-            'prompts.*.ativo' => ['required', 'boolean'],
+            // `prompts` saiu daqui: passaram a ter CRUD proprio em
+            // /configuracoes/ia/prompts, com chave livre por tenant. Manter a
+            // lista neste PUT exigiria repetir as regras e a trava das chaves
+            // de sistema em dois lugares.
         ];
     }
 }

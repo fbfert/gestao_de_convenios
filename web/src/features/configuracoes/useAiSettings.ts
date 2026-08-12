@@ -35,9 +35,12 @@ export type AiOpenaiForm = {
   ativo: boolean
 }
 
+/**
+ * So a conexao. Os prompts sairam deste formulario quando ganharam CRUD
+ * proprio (useAiPrompts) — o PUT /configuracoes/ia nao os aceita mais.
+ */
 export type AiSettingsForm = {
   openai: AiOpenaiForm
-  prompts: AiPromptTemplate[]
 }
 
 export type AiModelOption = {
@@ -82,7 +85,6 @@ export function useSalvarAiSettings() {
           project_id: payload.openai.project_id.trim() || null,
           ativo: payload.openai.ativo,
         },
-        prompts: payload.prompts,
       })
 
       return data.data

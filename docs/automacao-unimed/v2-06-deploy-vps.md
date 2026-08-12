@@ -1,7 +1,13 @@
 # v2-06 — Deploy na VPS de produção
 
-Primeiro deploy do GESCON em `gescon.xiax.com.br`. Este documento é o registro
+Primeiro deploy do GESCON em `gescon.gestaonossa.com.br`. Este documento é o registro
 do que foi instalado e o runbook de operação.
+
+> **Correção de 2026-08-12.** Este documento nasceu apontando para
+> `gescon.xiax.com.br`, endereço que **não existe**: não há vhost no Apache nem
+> registro na zona DNS. Um acesso a ele cai no vhost padrão e é atendido pelo
+> Next.js do `gestaonossa` — um aplicativo completamente diferente. O endereço
+> real sempre foi `gescon.gestaonossa.com.br`. Ver a seção 9.
 
 ---
 
@@ -28,7 +34,7 @@ Nenhum valor de segredo aparece nesta documentação — apenas os caminhos.
 > **Divergência importante em relação ao plano original.** O plano previa nginx
 > no host + `certbot --nginx`. Esta VPS **não usa nginx no host**: ela roda
 > Apache sob Virtualmin, servindo três domínios (`xiax.com.br`,
-> `gestaonossa.com.br` e `gescon.xiax.com.br`) nas portas 80/443. Instalar
+> `gestaonossa.com.br` e `gescon.gestaonossa.com.br`) nas portas 80/443. Instalar
 > nginx exigiria parar o Apache e derrubaria dois sites em produção. O proxy
 > reverso foi feito no Apache, que é o mesmo padrão já usado pelo
 > `gestaonossa.com.br` (containers em `127.0.0.1:4101/4102`).
@@ -37,7 +43,7 @@ Nenhum valor de segredo aparece nesta documentação — apenas os caminhos.
 Internet
    │  443/80
    ▼
-Apache (Virtualmin)  ── vhost gescon.xiax.com.br
+Apache (Virtualmin)  ── vhost gescon.gestaonossa.com.br
    │   ProxyPass /.well-known !      ← ACME fica no host (renovação do cert)
    │   ProxyPass / → 127.0.0.1:4105
    │   RequestHeader X-Forwarded-Proto
@@ -140,8 +146,8 @@ $C down                    # derrubar o stack (dados ficam nos volumes)
 Logs do Apache (camada de proxy, fora do Docker):
 
 ```bash
-tail -f /var/log/virtualmin/gescon.xiax.com.br_error_log
-tail -f /var/log/virtualmin/gescon.xiax.com.br_access_log
+tail -f /var/log/virtualmin/gescon.gestaonossa.com.br_error_log
+tail -f /var/log/virtualmin/gescon.gestaonossa.com.br_access_log
 ```
 
 Health do worker — **só de dentro da rede Docker**, ele não tem porta pública.
@@ -173,7 +179,7 @@ docker exec gescon-worker node -e "fetch('http://127.0.0.1:8787/health',{headers
 
 O certificado é gerido pelo **Virtualmin**, não por `certbot --nginx`.
 
-1. `certbot certificates` — veja a validade de `gescon.xiax.com.br`.
+1. `certbot certificates` — veja a validade de `gescon.gestaonossa.com.br`.
 2. Confirme que a renovação automática está ligada:
    `grep letsencrypt_renew /etc/webmin/virtual-server/domains/178587246817599`
    (precisa ser `=1`; vazio significa renovação desligada e expiração
@@ -181,16 +187,16 @@ O certificado é gerido pelo **Virtualmin**, não por `certbot --nginx`.
 3. Confirme que o ACME não está sendo capturado pelo proxy — o
    `ProxyPass /.well-known !` **precisa** vir antes do `ProxyPass /` no vhost:
    ```bash
-   curl -o /dev/null -w '%{http_code}\n' http://gescon.xiax.com.br/.well-known/acme-challenge/x
+   curl -o /dev/null -w '%{http_code}\n' http://gescon.gestaonossa.com.br/.well-known/acme-challenge/x
    ```
    Tem que responder `404` (tratado no host). Se responder `502`/`503`, foi
    para o container e a renovação vai falhar.
-4. Renovação manual: `virtualmin generate-letsencrypt-cert --domain gescon.xiax.com.br --renew ...`
+4. Renovação manual: `virtualmin generate-letsencrypt-cert --domain gescon.gestaonossa.com.br --renew ...`
 5. Depois de renovar, confira que a cadeia ficou completa — já houve caso de o
    `ssl.combined` sair só com a folha e quebrar o TLS:
    ```bash
    grep -c 'BEGIN CERTIFICATE' /etc/ssl/virtualmin/178587246817599/ssl.combined  # esperado: 3
-   openssl s_client -connect 127.0.0.1:443 -servername gescon.xiax.com.br </dev/null 2>/dev/null | grep 'Verify return code'
+   openssl s_client -connect 127.0.0.1:443 -servername gescon.gestaonossa.com.br </dev/null 2>/dev/null | grep 'Verify return code'
    ```
 
 ### A fila parou
@@ -253,3 +259,82 @@ no `firewall-cmd --list-all`, é erro de configuração.
   produção (ver `v2-05-homologacao-real.md`).
 - Decidir quando dar `git push` — o commit deste deploy foi feito localmente,
   **sem push**.
+
+---
+
+## 9. Armadilhas descobertas em 2026-08-12
+
+Quatro problemas apareceram numa sessão de manutenção. Os três primeiros já
+estão corrigidos no repositório; o quarto continua aberto.
+
+### 9.1 O domínio da documentação não existia
+
+`gescon.xiax.com.br` não tem vhost no Apache nem registro em
+`/var/named/xiax.com.br.hosts`. Quem acessa cai no vhost padrão e recebe o
+**Next.js do gestaonossa**. O único endereço que chega ao GESCON é
+`gescon.gestaonossa.com.br`, cujo vhost faz `ProxyPass / → 127.0.0.1:4105`.
+
+O efeito colateral era grave: o smoke test do `redeploy.sh` batia justamente no
+endereço errado, recebia **HTTP 200 do aplicativo errado** e imprimia `==> OK`
+mesmo quando o deploy não havia publicado nada. O script agora aponta para o
+domínio certo e confere um marcador do bundle (`gestao-convenios-tema`) além do
+código HTTP — 200 sozinho não prova que quem respondeu é o GESCON.
+
+O `api/.env` também apontava para o domínio inexistente em `APP_URL`,
+`SESSION_DOMAIN`, `SANCTUM_STATEFUL_DOMAINS` e `MAIL_FROM_ADDRESS`. Corrigido.
+O login não estava quebrado por causa disso porque o front usa token `Bearer`
+com `VITE_API_URL=/api`, ou seja, mesma origem.
+
+### 9.2 Build sem `up -d` deixa a imagem parada no disco
+
+A imagem `gescon-app:latest` de 2026-08-11 20:26 continha o código atual, mas o
+container em execução era de 2026-08-04. **Por uma semana a produção serviu
+código velho com a imagem nova pronta ao lado.** `docker compose build` não
+recria nada; sem o `up -d` o deploy não acontece.
+
+Para conferir se o que roda é o que foi construído:
+
+```bash
+docker image inspect gescon-app:latest --format 'imagem : {{.Created}}'
+docker inspect gescon-app --format 'container: {{.Created}}'
+```
+
+Se o container for mais antigo que a imagem, falta `up -d`.
+
+### 9.3 `bootstrap/cache` do host contamina a imagem
+
+Rodar qualquer `artisan` no host com as dependências de dev instaladas grava
+`api/bootstrap/cache/packages.php` listando provedores de dev (Collision,
+etc.). Esse arquivo entrava na imagem, que tem `vendor --no-dev`, e o container
+morria no boot:
+
+```
+Class "NunoMaduro\Collision\Adapters\Laravel\CollisionServiceProvider" not found
+```
+
+O `entrypoint.sh` roda `package:discover || true`, então a falha era engolida e
+o erro só aparecia no `migrate` seguinte. O `.dockerignore` agora exclui
+`api/bootstrap/cache/*.php`. Se acontecer de novo:
+
+```bash
+rm -f /opt/gescon/api/bootstrap/cache/*.php   # e rebuild
+```
+
+### 9.4 `npm run test:e2e` apagaria o banco de produção — não corrigido
+
+O script em `web/package.json` começa com:
+
+```
+php ../api/artisan migrate:fresh --seed --env=testing --force
+```
+
+Não existe `api/.env.testing`. Sem esse arquivo, `--env=testing` **não troca o
+banco**: o Laravel lê o `DB_*` do `.env`, que aponta para `gestao_convenios` em
+produção. Um `migrate:fresh` ali derruba todas as tabelas.
+
+A suíte PHP é segura porque o `phpunit.xml` força `sqlite`/`:memory:` — mas o
+e2e não passa pelo `phpunit.xml`. Hoje o acidente é impedido apenas pela
+ausência de `php` no host, o que é acaso, não proteção. A correção seria criar
+`api/.env.testing` com um banco separado, ou apontar o script para um
+`--database` explícito. **Enquanto isso não for feito, não rode `test:e2e`
+nesta VPS.**

@@ -18,8 +18,15 @@ import { PermissoesPage } from '../features/permissoes'
 import { UsuariosPage } from '../features/usuarios'
 import { ProfissionaisPage } from '../features/profissionais'
 import { DashboardPage } from '../features/dashboard'
+import { CadastrosPage, OperacaoConveniosPage } from '../features/grupos'
 import { AuditoriaPage } from '../features/auditoria'
-import { ConfiguracoesPage, EmailTemplatesPage } from '../features/configuracoes'
+import {
+  ConfiguracoesGeralPage,
+  ConfiguracoesIaPage,
+  ConfiguracoesPage,
+  EmailTemplatesPage,
+  PromptsOperacionaisPage,
+} from '../features/configuracoes'
 import { ConveniosPage, ConvenioDetalhePage } from '../features/convenios/ConveniosPage'
 import { ConvenioAjudaPage } from '../features/convenios/ConvenioAjudaPage'
 import { ManualPage } from '../features/manual'
@@ -32,6 +39,8 @@ export function AppRoutes() {
         <Route element={<ShellLayout />}>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/cadastros" element={<CadastrosPage />} />
+          <Route path="/operacao-convenios" element={<OperacaoConveniosPage />} />
           <Route path="/auditoria" element={<AuditoriaPage />} />
           <Route path="/automacoes" element={<AutomacoesPage />} />
           <Route path="/automacoes/:id" element={<AutomacoesPage />} />
@@ -66,12 +75,17 @@ export function AppRoutes() {
           <Route path="/permissoes" element={<PermissoesPage />} />
           <Route path="/usuarios" element={<UsuariosPage />} />
           <Route path="/usuarios/novo" element={<UsuariosPage />} />
-          <Route path="/configuracoes" element={<ConfiguracoesPage />} />
+          <Route path="/configuracoes" element={<ConfiguracoesGeralPage />} />
+          <Route path="/configuracoes/emails" element={<ConfiguracoesPage aba="emails" />} />
+          <Route path="/configuracoes/ia" element={<ConfiguracoesIaPage />} />
+          <Route path="/configuracoes/ia/prompts" element={<PromptsOperacionaisPage />} />
+          <Route path="/configuracoes/unimed" element={<ConfiguracoesPage aba="unimed" />} />
           <Route path="/configuracoes/templates-emails" element={<EmailTemplatesPage />} />
           <Route path="/manual" element={<ManualPage />} />
         </Route>
       </Route>
-      <Route path="*" element={<Navigate to="/solicitacoes" replace />} />
+      {/* Rota desconhecida cai na inicial, que agora e a Gestao de Convenios. */}
+      <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   )
 }

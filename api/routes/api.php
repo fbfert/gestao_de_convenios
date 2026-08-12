@@ -20,6 +20,7 @@ use App\Http\Controllers\MedicoController;
 use App\Http\Controllers\LancamentoController;
 use App\Http\Controllers\LancamentoPrintTemplateController;
 use App\Http\Controllers\AnaliticoController;
+use App\Http\Controllers\AiPromptTemplateController;
 use App\Http\Controllers\AiSettingsController;
 use App\Http\Controllers\ManualController;
 use App\Http\Controllers\PacienteController;
@@ -48,6 +49,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/manual/{tipo?}', [ManualController::class, 'update'])->middleware('permission:manual.manage')->where('tipo', 'manual|mapa-mental');
     Route::get('/configuracoes/emails', [EmailSettingsController::class, 'show'])->middleware('permission:configuracoes.manage');
     Route::put('/configuracoes/emails', [EmailSettingsController::class, 'update'])->middleware('permission:configuracoes.manage');
+    Route::post('/configuracoes/emails/teste', [EmailSettingsController::class, 'enviarTeste'])->middleware('permission:configuracoes.manage');
     Route::get('/configuracoes/emails/templates', [EmailTemplateController::class, 'index'])->middleware('permission:configuracoes.manage');
     Route::post('/configuracoes/emails/templates', [EmailTemplateController::class, 'store'])->middleware('permission:configuracoes.manage');
     Route::put('/configuracoes/emails/templates/{emailTemplate}', [EmailTemplateController::class, 'update'])->middleware('permission:configuracoes.manage');
@@ -55,6 +57,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/configuracoes/ia', [AiSettingsController::class, 'show'])->middleware('permission:configuracoes.manage');
     Route::put('/configuracoes/ia', [AiSettingsController::class, 'update'])->middleware('permission:configuracoes.manage');
     Route::get('/configuracoes/ia/modelos', [AiSettingsController::class, 'models'])->middleware('permission:configuracoes.manage');
+    Route::get('/configuracoes/ia/prompts', [AiPromptTemplateController::class, 'index'])->middleware('permission:configuracoes.manage');
+    Route::post('/configuracoes/ia/prompts', [AiPromptTemplateController::class, 'store'])->middleware('permission:configuracoes.manage');
+    Route::put('/configuracoes/ia/prompts/{aiPromptTemplate}', [AiPromptTemplateController::class, 'update'])->middleware('permission:configuracoes.manage');
+    Route::delete('/configuracoes/ia/prompts/{aiPromptTemplate}', [AiPromptTemplateController::class, 'destroy'])->middleware('permission:configuracoes.manage');
     Route::get('/configuracoes/unimed', [UnimedSettingsController::class, 'show'])->middleware('permission:configuracoes.unimed.manage');
     Route::put('/configuracoes/unimed', [UnimedSettingsController::class, 'update'])->middleware('permission:configuracoes.unimed.manage');
     Route::get('/configuracoes/unimed/worker-health', [UnimedSettingsController::class, 'health'])->middleware('permission:configuracoes.unimed.manage');

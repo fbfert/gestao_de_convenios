@@ -194,7 +194,9 @@ export function LancamentoTemplatesPage() {
                 title="Preview do template"
                 srcDoc={previewHtml}
                 sandbox=""
-                className="h-[680px] w-full rounded-2xl border border-white/10 bg-white"
+                /* Branco literal: o preview imita a folha impressa, entao nao
+                   pode acompanhar a inversao de --color-white do tema claro. */
+                className="h-[680px] w-full rounded-2xl border border-white/10 bg-[#ffffff]"
                 data-testid="lancamento-template-preview"
               />
             </div>

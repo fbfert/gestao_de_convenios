@@ -149,4 +149,23 @@ export function useExcluirEmailTemplate() {
   })
 }
 
+/**
+ * Dispara um e-mail de teste pelo SMTP salvo do tenant.
+ *
+ * Nao invalida nenhuma query: o envio nao altera nada no banco, so prova que a
+ * configuracao ja gravada funciona. Por isso tambem exige salvar antes — o
+ * backend le o SMTP da tabela, nao o que esta digitado no formulario.
+ */
+export function useEnviarEmailTeste() {
+  return useMutation({
+    mutationFn: async (email: string) => {
+      const { data } = await apiClient.post<{ data: { mensagem: string } }>(
+        '/configuracoes/emails/teste',
+        { email },
+      )
+      return data.data
+    },
+  })
+}
+
 export { getHttpErrorMessage }

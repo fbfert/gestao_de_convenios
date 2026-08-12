@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AnaliticoUnimedLote;
 use App\Models\Antecipacao;
 use App\Models\AuditLog;
 use App\Models\ConciliacaoFinanceira;
 use App\Models\Convenio;
+use App\Models\Especialidade;
 use App\Models\Guia;
 use App\Models\Lancamento;
 use App\Models\Medico;
@@ -96,12 +98,29 @@ class DashboardController extends Controller
                 'detail' => Medico::query()->count().' cadastrados',
             ],
             [
+                'key' => 'especialidades',
+                'permission' => 'dashboard.especialidades',
+                'label' => 'Especialidades',
+                'href' => '/especialidades',
+                'value' => Especialidade::query()->where('ativo', true)->count(),
+                'detail' => Especialidade::query()->count().' cadastradas',
+            ],
+            [
                 'key' => 'usuarios',
                 'permission' => 'dashboard.usuarios',
                 'label' => 'Usuários',
                 'href' => '/usuarios',
                 'value' => User::query()->where('tenant_id', $user->tenant_id)->where('ativo', true)->count(),
                 'detail' => User::query()->where('tenant_id', $user->tenant_id)->count().' cadastrados',
+            ],
+            [
+                'key' => 'analiticos',
+                'permission' => 'dashboard.analiticos',
+                'label' => 'Analíticos',
+                'href' => '/analiticos',
+                'value' => AnaliticoUnimedLote::query()->count(),
+                // `importado` e o default da coluna: lote lido mas ainda nao conciliado.
+                'detail' => AnaliticoUnimedLote::query()->where('status', 'importado')->count().' importados',
             ],
             [
                 'key' => 'auditoria',

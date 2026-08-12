@@ -120,6 +120,32 @@
     min-height: 100vh;
   }
 
+  /*
+   * Listas de <select>
+   * ------------------
+   * A lista aberta e desenhada pelo navegador, fora do fluxo do documento, e
+   * nao herda o `bg-white/5` translucido do controle: Chrome reaproveita a
+   * background-color do proprio select e o Firefox usa o fundo do sistema,
+   * mas os dois herdam a `color`. Com `bg-white/5 text-white` — a receita
+   * usada nas telas de Automacoes, Configuracoes, Especialidades e
+   * Profissionais — isso dava letra branca sobre fundo branco.
+   *
+   * A correcao fica aqui, e nao nas telas, porque e o unico ponto que alcanca
+   * todos os selects de uma vez. As cores sao literais de proposito: os tokens
+   * --color-* se invertem entre os temas e aqui precisamos do valor final.
+   */
+  select option,
+  select optgroup {
+    background-color: #0f172a;
+    color: #e2e8f0;
+  }
+
+  :root[data-theme='claro'] select option,
+  :root[data-theme='claro'] select optgroup {
+    background-color: #ffffff;
+    color: #1e293b;
+  }
+
   * {
     box-sizing: border-box;
   }

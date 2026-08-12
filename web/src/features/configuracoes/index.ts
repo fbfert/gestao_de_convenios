@@ -1,2 +1,5 @@
 export { ConfiguracoesPage } from './ConfiguracoesPage'
+export { ConfiguracoesGeralPage } from './ConfiguracoesGeralPage'
+export { ConfiguracoesIaPage } from './ConfiguracoesIaPage'
+export { PromptsOperacionaisPage } from './PromptsOperacionaisPage'
 export { EmailTemplatesPage } from './EmailTemplatesPage'

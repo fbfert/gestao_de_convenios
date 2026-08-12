@@ -189,7 +189,9 @@ export function ManualPage() {
           sandbox="allow-same-origin"
           onLoad={prepararIframe}
           style={{ height: altura }}
-          className="w-full rounded-2xl border border-white/10 bg-white"
+          /* Branco literal. `bg-white` resolve para --color-white, que no tema
+             claro vira tinta escura — o papel do manual ficaria preto. */
+          className="w-full rounded-2xl border border-white/10 bg-[#ffffff]"
           data-testid="manual-iframe"
         />
       )}

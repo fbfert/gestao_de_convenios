@@ -17,7 +17,7 @@ class AiSettingsController extends Controller
     {
         $tenantId = (int) request()->user()->tenant_id;
 
-        $this->seedDefaultPrompts($tenantId);
+        AiPromptTemplate::garantirPadroes($tenantId);
 
         return new AiSettingsResource([
             'openai' => AiOpenaiSetting::query()->where('tenant_id', $tenantId)->first(),
@@ -30,9 +30,10 @@ class AiSettingsController extends Controller
 
     public function update(UpdateAiSettingsRequest $request): AiSettingsResource
     {
+        // Só a conexão OpenAI. Os prompts têm CRUD próprio em
+        // AiPromptTemplateController desde que ganharam chave livre.
         $tenantId = (int) $request->user()->tenant_id;
         $openaiPayload = $request->validated('openai');
-        $promptsPayload = $request->validated('prompts');
 
         $openai = AiOpenaiSetting::query()->firstOrNew(['tenant_id' => $tenantId]);
         $apiKey = Arr::pull($openaiPayload, 'api_key');
@@ -43,16 +44,6 @@ class AiSettingsController extends Controller
         }
 
         $openai->save();
-
-        foreach ($promptsPayload as $promptPayload) {
-            AiPromptTemplate::query()->updateOrCreate(
-                [
-                    'tenant_id' => $tenantId,
-                    'chave' => $promptPayload['chave'],
-                ],
-                $promptPayload
-            );
-        }
 
         return $this->show();
     }
@@ -106,39 +97,5 @@ class AiSettingsController extends Controller
             ->values();
 
         return response()->json(['data' => $models]);
-    }
-
-    private function seedDefaultPrompts(int $tenantId): void
-    {
-        $defaults = [
-            [
-                'chave' => 'ler_solicitacao_medica',
-                'nome' => 'Ler solicitação médica',
-                'descricao' => 'Extrai dados de solicitações médicas para criar Solicitações.',
-                'model_id' => null,
-                'system_prompt' => 'Você extrai dados de documentos médicos para um sistema de convênios. Responda somente em JSON válido.',
-                'user_prompt' => 'Leia a solicitação médica escaneada e retorne paciente, médico, convênio, especialidade, data solicitada e observações relevantes.',
-                'ativo' => true,
-            ],
-            [
-                'chave' => 'ler_sessoes_escaneadas',
-                'nome' => 'Ler sessões escaneadas',
-                'descricao' => 'Extrai sessões escaneadas para criar lançamentos no banco.',
-                'model_id' => null,
-                'system_prompt' => 'Você extrai registros de sessões terapêuticas de documentos escaneados. Responda somente em JSON válido.',
-                'user_prompt' => 'Leia o registro de sessões escaneado e retorne data, hora início, hora fim, acompanhante, profissional e resumo das atividades de cada sessão.',
-                'ativo' => true,
-            ],
-        ];
-
-        foreach ($defaults as $default) {
-            AiPromptTemplate::query()->firstOrCreate(
-                [
-                    'tenant_id' => $tenantId,
-                    'chave' => $default['chave'],
-                ],
-                $default
-            );
-        }
     }
 }

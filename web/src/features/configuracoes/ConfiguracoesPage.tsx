@@ -1,21 +1,13 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
 import { useEspecialidades, useProfissionais } from '../../lib/queries/useReferenceData'
 import { useAuthStore } from '../../stores/authStore'
-import { themeOptions, useThemeStore } from '../../stores/themeStore'
 import {
   getHttpErrorMessage,
   useEmailSettings,
+  useEnviarEmailTeste,
   useSalvarEmailSettings,
   type EmailSettingsForm,
 } from './useEmailSettings'
-import {
-  useAiModels,
-  useAiSettings,
-  useSalvarAiSettings,
-  type AiPromptTemplate,
-  type AiSettingsForm,
-} from './useAiSettings'
 import {
   useReativarUnimed,
   useSalvarUnimedSettings,
@@ -38,14 +30,6 @@ const emptySmtpForm: EmailSettingsForm['smtp'] = {
   encryption: 'tls',
   from_email: '',
   from_name: '',
-  ativo: true,
-}
-
-const emptyAiOpenaiForm: AiSettingsForm['openai'] = {
-  api_key: '',
-  base_url: 'https://api.openai.com/v1',
-  organization_id: '',
-  project_id: '',
   ativo: true,
 }
 
@@ -75,45 +59,40 @@ const emptyProfissionalMapeamentoForm: UnimedProfissionalMapeamentoForm = {
   ativo: true,
 }
 
-const defaultAiPrompts: AiPromptTemplate[] = [
-  {
-    id: null,
-    chave: 'ler_solicitacao_medica',
-    nome: 'Ler solicitação médica',
-    descricao: 'Extrai dados de solicitações médicas para criar Solicitações.',
-    model_id: '',
-    system_prompt:
-      'Você extrai dados de documentos médicos para um sistema de convênios. Responda somente em JSON válido.',
-    user_prompt:
-      'Leia a solicitação médica escaneada e retorne paciente, médico, convênio, especialidade, data solicitada e observações relevantes.',
-    ativo: true,
-  },
-  {
-    id: null,
-    chave: 'ler_sessoes_escaneadas',
-    nome: 'Ler sessões escaneadas',
-    descricao: 'Extrai sessões escaneadas para criar lançamentos no banco.',
-    model_id: '',
-    system_prompt:
-      'Você extrai registros de sessões terapêuticas de documentos escaneados. Responda somente em JSON válido.',
-    user_prompt:
-      'Leia o registro de sessões escaneado e retorne data, hora início, hora fim, acompanhante, profissional e resumo das atividades de cada sessão.',
-    ativo: true,
-  },
-]
-
 function inputClasses() {
   return 'w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20'
 }
 
-export function ConfiguracoesPage() {
+/**
+ * Cada aba virou uma rota propria sob /configuracoes, servida pelo submenu do
+ * cabecalho. As duas que sobraram aqui continuam num componente so porque
+ * compartilham estado e handlers; o que muda e qual delas e renderizada.
+ *
+ * A aba de IA saiu: virou ConfiguracoesIaPage (conexao) mais
+ * PromptsOperacionaisPage (CRUD dos prompts).
+ */
+export type ConfiguracoesAba = 'emails' | 'unimed'
+
+const cabecalhoPorAba: Record<ConfiguracoesAba, { titulo: string; descricao: string }> = {
+  emails: {
+    titulo: 'Envio de e-mails',
+    descricao:
+      'Servidor SMTP usado para disparar os e-mails do sistema. Sem isso preenchido, nada sai da caixa.',
+  },
+  unimed: {
+    titulo: 'Unimed RDA',
+    descricao:
+      'Credenciais do portal e o de-para de especialidades e profissionais que a automação usa.',
+  },
+}
+
+export function ConfiguracoesPage({ aba }: { aba: ConfiguracoesAba }) {
+  const activeTab = aba
   const user = useAuthStore((state) => state.user)
   const canManageUnimed = user?.permissions?.includes('configuracoes.unimed.manage') ?? user?.role === 'admin'
   const emailSettingsQuery = useEmailSettings()
   const salvarEmailSettings = useSalvarEmailSettings()
-  const aiSettingsQuery = useAiSettings()
-  const salvarAiSettings = useSalvarAiSettings()
-  const aiModelsQuery = useAiModels(false)
+  const enviarEmailTeste = useEnviarEmailTeste()
   const unimedSettingsQuery = useUnimedSettings()
   const salvarUnimedSettings = useSalvarUnimedSettings()
   const unimedWorkerHealth = useUnimedWorkerHealth()
@@ -122,15 +101,8 @@ export function ConfiguracoesPage() {
   const profissionaisQuery = useProfissionais({ incluir_inativos: true })
   const salvarEspecialidadeMapeamento = useSalvarUnimedEspecialidadeMapeamento()
   const salvarProfissionalMapeamento = useSalvarUnimedProfissionalMapeamento()
-  const theme = useThemeStore((state) => state.theme)
-  const setTheme = useThemeStore((state) => state.setTheme)
-  const [activeTab, setActiveTab] = useState<'geral' | 'emails' | 'ia' | 'unimed'>('emails')
   const [form, setForm] = useState<EmailSettingsForm>({
     smtp: emptySmtpForm,
-  })
-  const [aiForm, setAiForm] = useState<AiSettingsForm>({
-    openai: emptyAiOpenaiForm,
-    prompts: defaultAiPrompts,
   })
   const [unimedForm, setUnimedForm] = useState<UnimedSettingsForm>({
     convenio_id: '',
@@ -142,6 +114,7 @@ export function ConfiguracoesPage() {
     useState<UnimedProfissionalMapeamentoForm>(emptyProfissionalMapeamentoForm)
   const [editingEspecialidadeMapeamentoId, setEditingEspecialidadeMapeamentoId] = useState<number | undefined>()
   const [editingProfissionalMapeamentoId, setEditingProfissionalMapeamentoId] = useState<number | undefined>()
+  const [emailTeste, setEmailTeste] = useState('')
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const especialidadeMapeamentosQuery = useUnimedEspecialidadeMapeamentos(unimedForm.convenio_id)
@@ -171,27 +144,6 @@ export function ConfiguracoesPage() {
         : emptySmtpForm,
     })
   }, [emailSettingsQuery.data])
-
-  useEffect(() => {
-    const data = aiSettingsQuery.data
-
-    if (!data) {
-      return
-    }
-
-    setAiForm({
-      openai: data.openai
-        ? {
-            api_key: '',
-            base_url: data.openai.base_url,
-            organization_id: data.openai.organization_id ?? '',
-            project_id: data.openai.project_id ?? '',
-            ativo: data.openai.ativo,
-          }
-        : emptyAiOpenaiForm,
-      prompts: data.prompts.length > 0 ? data.prompts : defaultAiPrompts,
-    })
-  }, [aiSettingsQuery.data])
 
   useEffect(() => {
     const data = unimedSettingsQuery.data
@@ -226,6 +178,24 @@ export function ConfiguracoesPage() {
     }))
   }, [unimedForm.convenio_id, especialidades, profissionais])
 
+  const handleEnviarTeste = async () => {
+    const destino = emailTeste.trim()
+
+    if (!destino) {
+      return
+    }
+
+    setMessage(null)
+    setError(null)
+
+    try {
+      const resposta = await enviarEmailTeste.mutateAsync(destino)
+      setMessage(resposta.mensagem)
+    } catch (submitError) {
+      setError(getHttpErrorMessage(submitError, 'Não foi possível enviar o e-mail de teste.'))
+    }
+  }
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setMessage(null)
@@ -246,38 +216,6 @@ export function ConfiguracoesPage() {
     }
   }
 
-  const updateAiPrompt = (
-    index: number,
-    field: keyof AiPromptTemplate,
-    value: string | boolean,
-  ) => {
-    setAiForm((current) => ({
-      ...current,
-      prompts: current.prompts.map((prompt, promptIndex) =>
-        promptIndex === index ? { ...prompt, [field]: value } : prompt,
-      ),
-    }))
-  }
-
-  const handleAiSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setMessage(null)
-    setError(null)
-
-    try {
-      await salvarAiSettings.mutateAsync(aiForm)
-      setMessage('Configurações de IA salvas.')
-      setAiForm((current) => ({
-        ...current,
-        openai: {
-          ...current.openai,
-          api_key: '',
-        },
-      }))
-    } catch (submitError) {
-      setError(getHttpErrorMessage(submitError, 'Não foi possível salvar as configurações de IA.'))
-    }
-  }
 
   const handleUnimedSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -359,147 +297,13 @@ export function ConfiguracoesPage() {
 
   return (
     <div className="space-y-6" data-testid="configuracoes-page">
-      <section className="space-y-4">
-        <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Configurações</p>
-          <h2 className="mt-2 text-3xl font-semibold text-white">Ajustes do sistema</h2>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
-            Esta área está reservada para parâmetros operacionais e personalizações futuras do
-            tenant.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap gap-2 border-b border-white/10 pb-3">
-          <button
-            type="button"
-            onClick={() => setActiveTab('geral')}
-            className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${
-              activeTab === 'geral'
-                ? 'bg-cyan-400 text-slate-950'
-                : 'border border-white/10 bg-white/5 text-slate-200 hover:bg-white/10'
-            }`}
-          >
-            Geral
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('emails')}
-            className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${
-              activeTab === 'emails'
-                ? 'bg-cyan-400 text-slate-950'
-                : 'border border-white/10 bg-white/5 text-slate-200 hover:bg-white/10'
-            }`}
-            data-testid="configuracoes-tab-emails"
-          >
-            Envio de emails
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('ia')}
-            className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${
-              activeTab === 'ia'
-                ? 'bg-cyan-400 text-slate-950'
-                : 'border border-white/10 bg-white/5 text-slate-200 hover:bg-white/10'
-            }`}
-            data-testid="configuracoes-tab-ia"
-          >
-            Configurações de IA
-          </button>
-          <Link
-            to="/configuracoes/templates-emails"
-            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-white/10"
-            data-testid="configuracoes-email-templates"
-          >
-            Templates de E-mails
-          </Link>
-          <button
-            type="button"
-            onClick={() => setActiveTab('unimed')}
-            className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${
-              activeTab === 'unimed'
-                ? 'bg-cyan-400 text-slate-950'
-                : 'border border-white/10 bg-white/5 text-slate-200 hover:bg-white/10'
-            }`}
-            data-testid="configuracoes-tab-unimed"
-          >
-            Unimed RDA
-          </button>
-        </div>
+      <section className="space-y-2">
+        <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Configurações</p>
+        <h2 className="text-3xl font-semibold text-white">{cabecalhoPorAba[aba].titulo}</h2>
+        <p className="max-w-3xl text-sm leading-6 text-slate-300">
+          {cabecalhoPorAba[aba].descricao}
+        </p>
       </section>
-
-      {activeTab === 'geral' ? (
-        <div className="space-y-6" data-testid="configuracoes-geral">
-          <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
-            <h3 className="text-lg font-semibold text-white">Aparência</h3>
-            <p className="mt-2 text-sm text-slate-300">
-              Escolha o tema visual do sistema. A preferência vale para este navegador e é aplicada
-              imediatamente.
-            </p>
-
-            <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              {themeOptions.map((option) => {
-                const isActive = theme === option.value
-
-                return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => setTheme(option.value)}
-                    aria-pressed={isActive}
-                    className={`rounded-2xl border p-4 text-left transition ${
-                      isActive
-                        ? 'border-cyan-300/70 bg-cyan-400/10 ring-2 ring-cyan-300/20'
-                        : 'border-white/10 bg-white/5 hover:bg-white/10'
-                    }`}
-                    data-testid={`configuracoes-tema-${option.value}`}
-                  >
-                    <span className="flex items-center justify-between gap-3">
-                      <span className="text-sm font-semibold text-white">{option.label}</span>
-                      {isActive ? (
-                        <span className="rounded-full bg-cyan-400 px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wide text-slate-950">
-                          Ativo
-                        </span>
-                      ) : null}
-                    </span>
-                    <span className="mt-2 block text-xs leading-5 text-slate-400">
-                      {option.description}
-                    </span>
-                    <span
-                      aria-hidden="true"
-                      className="mt-3 flex h-12 items-center gap-2 overflow-hidden rounded-xl border border-white/10 px-3"
-                      style={
-                        option.value === 'claro'
-                          ? { background: 'linear-gradient(180deg, #f7f9fc 0%, #eef2f7 100%)' }
-                          : { background: 'linear-gradient(180deg, #07111f 0%, #0f172a 100%)' }
-                      }
-                    >
-                      <span
-                        className="h-2 w-16 rounded-full"
-                        style={{
-                          background: option.value === 'claro' ? '#1e293b' : '#e2e8f0',
-                        }}
-                      />
-                      <span
-                        className="h-2 w-8 rounded-full"
-                        style={{
-                          background: option.value === 'claro' ? '#0e7490' : '#22d3ee',
-                        }}
-                      />
-                    </span>
-                  </button>
-                )
-              })}
-            </div>
-          </section>
-
-          <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
-            <h3 className="text-lg font-semibold text-white">Configurações gerais</h3>
-            <p className="mt-2 text-sm text-slate-300">
-              Esta aba permanece reservada para parâmetros operacionais futuros.
-            </p>
-          </section>
-        </div>
-      ) : null}
 
       {activeTab === 'emails' ? (
         <form
@@ -655,6 +459,48 @@ export function ConfiguracoesPage() {
                   data-testid="email-smtp-from-name"
                 />
               </label>
+            </div>
+          </section>
+
+          <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
+            <h3 className="text-lg font-semibold text-white">Enviar e-mail de teste</h3>
+            <p className="mt-1 text-sm text-slate-300">
+              O teste usa o SMTP <strong>já salvo</strong>, não o que está digitado acima. Salve
+              antes de testar.
+            </p>
+
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-start">
+              <label className="flex-1 space-y-2">
+                <span className="text-sm font-medium text-slate-200">E-mail de destino</span>
+                <input
+                  type="email"
+                  value={emailTeste}
+                  onChange={(event) => setEmailTeste(event.target.value)}
+                  /*
+                    Enter aqui submeteria o formulario de fora, que salva as
+                    configuracoes — nao e o que quem digitou o destino espera.
+                  */
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      event.preventDefault()
+                      void handleEnviarTeste()
+                    }
+                  }}
+                  className={inputClasses()}
+                  placeholder="destinatario@exemplo.com"
+                  data-testid="email-teste-destino"
+                />
+              </label>
+
+              <button
+                type="button"
+                onClick={() => void handleEnviarTeste()}
+                disabled={enviarEmailTeste.isPending || !emailTeste.trim()}
+                className="rounded-2xl border border-cyan-300/40 bg-cyan-400/15 px-4 py-3 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-400/25 disabled:opacity-60 sm:mt-7"
+                data-testid="email-teste-enviar"
+              >
+                {enviarEmailTeste.isPending ? 'Enviando...' : 'Enviar teste'}
+              </button>
             </div>
           </section>
 
@@ -998,271 +844,6 @@ export function ConfiguracoesPage() {
             data-testid="configuracoes-unimed-salvar"
           >
             {salvarUnimedSettings.isPending ? 'Salvando...' : 'Salvar configurações Unimed'}
-          </button>
-        </form>
-      ) : null}
-
-      {activeTab === 'ia' ? (
-        <form onSubmit={handleAiSubmit} className="space-y-6" data-testid="configuracoes-ia-form">
-          <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
-            <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-white">OpenAI</h3>
-                <p className="mt-1 text-sm text-slate-300">
-                  A conexão é usada pelo backend para listar modelos e preparar futuras leituras de
-                  documentos.
-                </p>
-              </div>
-              <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-200">
-                <input
-                  type="checkbox"
-                  checked={aiForm.openai.ativo}
-                  onChange={(event) =>
-                    setAiForm((current) => ({
-                      ...current,
-                      openai: { ...current.openai, ativo: event.target.checked },
-                    }))
-                  }
-                  className="size-4 rounded border-white/20 bg-white/10"
-                  data-testid="ia-openai-ativo"
-                />
-                Ativo
-              </label>
-            </div>
-
-            {aiSettingsQuery.isLoading ? (
-              <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
-                Carregando configurações de IA...
-              </div>
-            ) : null}
-
-            <div className="mt-5 grid gap-4 md:grid-cols-2">
-              <label className="space-y-2">
-                <span className="text-sm font-medium text-slate-200">API key</span>
-                <input
-                  type="password"
-                  value={aiForm.openai.api_key}
-                  onChange={(event) =>
-                    setAiForm((current) => ({
-                      ...current,
-                      openai: { ...current.openai, api_key: event.target.value },
-                    }))
-                  }
-                  className={inputClasses()}
-                  placeholder={
-                    aiSettingsQuery.data?.openai?.api_key_configurada
-                      ? 'API key já configurada'
-                      : 'sk-...'
-                  }
-                  data-testid="ia-openai-api-key"
-                />
-              </label>
-              <label className="space-y-2">
-                <span className="text-sm font-medium text-slate-200">Base URL</span>
-                <input
-                  value={aiForm.openai.base_url}
-                  onChange={(event) =>
-                    setAiForm((current) => ({
-                      ...current,
-                      openai: { ...current.openai, base_url: event.target.value },
-                    }))
-                  }
-                  className={inputClasses()}
-                  data-testid="ia-openai-base-url"
-                />
-              </label>
-              <label className="space-y-2">
-                <span className="text-sm font-medium text-slate-200">Organização</span>
-                <input
-                  value={aiForm.openai.organization_id}
-                  onChange={(event) =>
-                    setAiForm((current) => ({
-                      ...current,
-                      openai: { ...current.openai, organization_id: event.target.value },
-                    }))
-                  }
-                  className={inputClasses()}
-                  placeholder="org_..."
-                  data-testid="ia-openai-organization"
-                />
-              </label>
-              <label className="space-y-2">
-                <span className="text-sm font-medium text-slate-200">Projeto</span>
-                <input
-                  value={aiForm.openai.project_id}
-                  onChange={(event) =>
-                    setAiForm((current) => ({
-                      ...current,
-                      openai: { ...current.openai, project_id: event.target.value },
-                    }))
-                  }
-                  className={inputClasses()}
-                  placeholder="proj_..."
-                  data-testid="ia-openai-project"
-                />
-              </label>
-            </div>
-
-            <div className="mt-5 flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                onClick={() => void aiModelsQuery.refetch()}
-                disabled={aiModelsQuery.isFetching}
-                className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10 disabled:opacity-60"
-                data-testid="ia-openai-listar-modelos"
-              >
-                {aiModelsQuery.isFetching ? 'Listando modelos...' : 'Listar modelos'}
-              </button>
-              {aiModelsQuery.isError ? (
-                <span className="text-sm text-rose-100">
-                  {getHttpErrorMessage(aiModelsQuery.error, 'Não foi possível listar modelos.')}
-                </span>
-              ) : null}
-            </div>
-
-            {aiModelsQuery.data && aiModelsQuery.data.length > 0 ? (
-              <div className="mt-5 rounded-3xl border border-white/10 bg-white/5 p-4">
-                <p className="text-xs uppercase tracking-[0.25em] text-slate-400">
-                  Modelos disponíveis
-                </p>
-                <div className="mt-3 flex max-h-44 flex-wrap gap-2 overflow-y-auto">
-                  {aiModelsQuery.data.map((model) => (
-                    <button
-                      key={model.id}
-                      type="button"
-                      onClick={() =>
-                        setAiForm((current) => ({
-                          ...current,
-                          prompts: current.prompts.map((prompt) => ({
-                            ...prompt,
-                            model_id: prompt.model_id || model.id,
-                          })),
-                        }))
-                      }
-                      className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-400/20"
-                    >
-                      {model.id}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-          </section>
-
-          <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
-            <div>
-              <h3 className="text-lg font-semibold text-white">Prompts operacionais</h3>
-              <p className="mt-1 text-sm text-slate-300">
-                Cada prompt define como a IA deve transformar documentos em dados estruturados.
-              </p>
-            </div>
-
-            <div className="mt-5 space-y-4">
-              {aiForm.prompts.map((prompt, index) => (
-                <article
-                  key={prompt.chave}
-                  className="rounded-3xl border border-white/10 bg-white/5 p-4"
-                >
-                  <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                    <label className="space-y-2">
-                      <span className="text-sm font-medium text-slate-200">Chave</span>
-                      <input value={prompt.chave} disabled className={`${inputClasses()} opacity-70`} />
-                    </label>
-                    <label className="space-y-2">
-                      <span className="text-sm font-medium text-slate-200">Nome</span>
-                      <input
-                        value={prompt.nome}
-                        onChange={(event) => updateAiPrompt(index, 'nome', event.target.value)}
-                        className={inputClasses()}
-                        data-testid={`ia-prompt-nome-${prompt.chave}`}
-                      />
-                    </label>
-                    <label className="space-y-2 xl:col-span-2">
-                      <span className="text-sm font-medium text-slate-200">Modelo</span>
-                      <input
-                        value={prompt.model_id ?? ''}
-                        onChange={(event) => updateAiPrompt(index, 'model_id', event.target.value)}
-                        className={inputClasses()}
-                        placeholder="Selecione ou informe um modelo"
-                        list="ia-modelos-disponiveis"
-                        data-testid={`ia-prompt-modelo-${prompt.chave}`}
-                      />
-                    </label>
-                  </div>
-
-                  <label className="mt-4 block space-y-2">
-                    <span className="text-sm font-medium text-slate-200">Descrição</span>
-                    <input
-                      value={prompt.descricao ?? ''}
-                      onChange={(event) => updateAiPrompt(index, 'descricao', event.target.value)}
-                      className={inputClasses()}
-                    />
-                  </label>
-
-                  <div className="mt-4 grid gap-4 xl:grid-cols-2">
-                    <label className="space-y-2">
-                      <span className="text-sm font-medium text-slate-200">Prompt de sistema</span>
-                      <textarea
-                        value={prompt.system_prompt}
-                        onChange={(event) =>
-                          updateAiPrompt(index, 'system_prompt', event.target.value)
-                        }
-                        className={`${inputClasses()} min-h-44 font-mono`}
-                        data-testid={`ia-prompt-system-${prompt.chave}`}
-                      />
-                    </label>
-                    <label className="space-y-2">
-                      <span className="text-sm font-medium text-slate-200">Prompt do usuário</span>
-                      <textarea
-                        value={prompt.user_prompt}
-                        onChange={(event) =>
-                          updateAiPrompt(index, 'user_prompt', event.target.value)
-                        }
-                        className={`${inputClasses()} min-h-44 font-mono`}
-                        data-testid={`ia-prompt-user-${prompt.chave}`}
-                      />
-                    </label>
-                  </div>
-
-                  <label className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-slate-200">
-                    <input
-                      type="checkbox"
-                      checked={prompt.ativo}
-                      onChange={(event) => updateAiPrompt(index, 'ativo', event.target.checked)}
-                      className="size-4 rounded border-white/20 bg-white/10"
-                    />
-                    Prompt ativo
-                  </label>
-                </article>
-              ))}
-            </div>
-          </section>
-
-          <datalist id="ia-modelos-disponiveis">
-            {(aiModelsQuery.data ?? []).map((model) => (
-              <option key={model.id} value={model.id} />
-            ))}
-          </datalist>
-
-          {message ? (
-            <p className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
-              {message}
-            </p>
-          ) : null}
-
-          {error ? (
-            <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
-              {error}
-            </p>
-          ) : null}
-
-          <button
-            type="submit"
-            disabled={salvarAiSettings.isPending}
-            className="inline-flex w-full items-center justify-center rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:opacity-60"
-            data-testid="configuracoes-ia-salvar"
-          >
-            {salvarAiSettings.isPending ? 'Salvando...' : 'Salvar configurações de IA'}
           </button>
         </form>
       ) : null}

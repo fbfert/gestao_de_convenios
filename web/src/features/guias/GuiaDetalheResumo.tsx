@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { translateStatus } from '../../lib/statusLabels'
-import { formatUnimedCarteirinha } from '../../lib/carteirinha'
+import { formatCarteirinha } from '../../lib/carteirinha'
 import { isSenhaVencendo } from './senhaValidade'
 import type { Guia } from './types'
 
@@ -39,7 +39,7 @@ export function GuiaDetalheResumo({ guia }: { guia: Guia }) {
             className="mt-1 text-xs font-normal tabular-nums text-slate-300"
             data-testid="guia-carteirinha"
           >
-            Carteirinha: {formatUnimedCarteirinha(guia.paciente?.carteirinha) || '-'}
+            Carteirinha: {formatCarteirinha(guia.paciente?.carteirinha) || '-'}
           </p>
         </DetailItem>
         <DetailItem label="Convênio">{guia.convenio?.nome ?? guia.convenio_id}</DetailItem>

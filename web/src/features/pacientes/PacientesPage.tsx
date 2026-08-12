@@ -4,12 +4,12 @@ import { useConvenios } from '../../lib/queries/useReferenceData'
 import { Select } from '../../components/ui/Select'
 import { getHttpErrorMessage, useAtualizarPaciente, useCriarPaciente, usePacientesCrud } from './usePacientes'
 import {
-  formatUnimedCarteirinha,
-  isUnimedCarteirinhaCompleta,
-  joinUnimedCarteirinha,
-  splitUnimedCarteirinha,
+  formatCarteirinha,
+  isCarteirinhaCompleta,
+  joinCarteirinha,
+  splitCarteirinha,
 } from '../../lib/carteirinha'
-import { CarteirinhaUnimedInput } from '../../components/ui/CarteirinhaUnimedInput'
+import { CarteirinhaBlocosInput } from '../../components/ui/CarteirinhaBlocosInput'
 import type { Paciente, PacienteForm } from './types'
 
 const emptyForm: PacienteForm = {
@@ -54,7 +54,7 @@ export function PacientesPage() {
   const [form, setForm] = useState<PacienteForm>(emptyForm)
   // Os blocos vivem em estado próprio: derivá-los de form.carteirinha fazia os dígitos
   // migrarem de bloco assim que um bloco anterior ficava incompleto.
-  const [unimedBlocks, setUnimedBlocks] = useState<string[]>(() => splitUnimedCarteirinha(''))
+  const [blocosDigitados, setBlocosDigitados] = useState<string[]>([])
   const [formError, setFormError] = useState<string | null>(null)
 
   const pacientesQuery = usePacientesCrud(busca)
@@ -68,7 +68,9 @@ export function PacientesPage() {
     () => convenios.find((convenio) => String(convenio.id) === form.convenio_id),
     [convenios, form.convenio_id],
   )
-  const isUnimedRda = selectedConvenio?.connector_driver === 'unimed_rda'
+  // O formato vem do convenio, nao do driver de automacao: ver a migration
+  // 2026_08_12_200000. `null` significa carteirinha em texto livre.
+  const blocos = selectedConvenio?.carteirinha_blocos ?? null
   const totalAtivos = pacientes.filter((paciente) => paciente.ativo).length
   const totalInativos = pacientes.length - totalAtivos
 
@@ -82,22 +84,25 @@ export function PacientesPage() {
     )
   }, [convenios])
 
-  // Trocar para um convênio Unimed reaproveita o que já estava digitado no campo único.
+  // Trocar para um convenio com formato reaproveita o que ja estava digitado
+  // no campo unico.
   useEffect(() => {
-    if (!isUnimedRda) {
+    if (!blocos) {
       return
     }
 
-    setUnimedBlocks((current) =>
-      joinUnimedCarteirinha(current) === form.carteirinha.replace(/\D/g, '')
+    setBlocosDigitados((current) =>
+      joinCarteirinha(current) === form.carteirinha.replace(/\D/g, '')
         ? current
-        : splitUnimedCarteirinha(form.carteirinha),
+        : splitCarteirinha(form.carteirinha, blocos),
     )
-  }, [isUnimedRda, form.carteirinha])
+  }, [blocos, form.carteirinha])
 
   const formIsComplete =
     form.nome.trim() !== '' &&
-    (isUnimedRda ? isUnimedCarteirinhaCompleta(unimedBlocks) : form.carteirinha.trim() !== '') &&
+    (blocos
+      ? isCarteirinhaCompleta(blocosDigitados, blocos)
+      : form.carteirinha.trim() !== '') &&
     form.convenio_id !== '' &&
     conveniosQuery.isSuccess
 
@@ -113,14 +118,18 @@ export function PacientesPage() {
       ...emptyForm,
       convenio_id: current.convenio_id,
     }))
-    setUnimedBlocks(splitUnimedCarteirinha(''))
+    setBlocosDigitados([])
     setFormError(null)
   }
 
   const handleEdit = (paciente: Paciente) => {
     setEditingId(paciente.id)
     setForm(toForm(paciente))
-    setUnimedBlocks(splitUnimedCarteirinha(paciente.carteirinha))
+    setBlocosDigitados(
+      paciente.convenio?.carteirinha_blocos
+        ? splitCarteirinha(paciente.carteirinha, paciente.convenio.carteirinha_blocos)
+        : [],
+    )
     setFormError(null)
     setIsFormOpen(true)
   }
@@ -141,7 +150,7 @@ export function PacientesPage() {
   const handleCancel = () => {
     setEditingId(null)
     setForm(emptyForm)
-    setUnimedBlocks(splitUnimedCarteirinha(''))
+    setBlocosDigitados([])
     setFormError(null)
     if (isCreateRoute) {
       navigate('/pacientes')
@@ -301,16 +310,17 @@ export function PacientesPage() {
               </Select>
             </label>
 
-            {isUnimedRda ? (
+            {blocos ? (
               <div className="space-y-2">
                 <span className="text-sm font-medium text-slate-200">Carteirinha</span>
-                <CarteirinhaUnimedInput
-                  blocks={unimedBlocks}
+                <CarteirinhaBlocosInput
+                  blocos={blocos}
+                  blocks={blocosDigitados}
                   onChange={(blocks, carteirinha) => {
-                    setUnimedBlocks(blocks)
+                    setBlocosDigitados(blocks)
                     setForm((current) => ({ ...current, carteirinha }))
                   }}
-                  testIdPrefix="paciente-carteirinha-unimed"
+                  testIdPrefix="paciente-carteirinha-blocos"
                 />
               </div>
             ) : (
@@ -463,7 +473,7 @@ export function PacientesPage() {
                       <div className="text-xs text-slate-400">#{paciente.id}</div>
                     </td>
                     <td className="px-4 py-4 tabular-nums text-slate-200">
-                      {formatUnimedCarteirinha(paciente.carteirinha)}
+                      {formatCarteirinha(paciente.carteirinha, paciente.convenio?.carteirinha_blocos ?? undefined)}
                     </td>
                     <td className="px-4 py-4 text-slate-200">
                       {paciente.convenio?.nome ?? paciente.convenio_id}

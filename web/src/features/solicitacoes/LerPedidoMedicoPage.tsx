@@ -20,12 +20,8 @@ import {
   useCriarPacienteRapido,
   useCriarSolicitacao,
 } from './useSolicitacoes'
-import {
-  formatUnimedCarteirinha,
-  isUnimedCarteirinhaCompleta,
-  splitUnimedCarteirinha,
-} from '../../lib/carteirinha'
-import { CarteirinhaUnimedInput } from '../../components/ui/CarteirinhaUnimedInput'
+import { formatCarteirinha, isCarteirinhaCompleta } from '../../lib/carteirinha'
+import { CarteirinhaBlocosInput } from '../../components/ui/CarteirinhaBlocosInput'
 import { SolicitacaoItensFields } from './SolicitacaoItensFields'
 import { emptyItem, itensEstaoCompletos } from './solicitacaoItens'
 import type {
@@ -87,7 +83,7 @@ function QuickCreateModal({
   initialName,
   isSaving,
   error,
-  isUnimedRda,
+  blocos,
   onClose,
   onSubmit,
 }: {
@@ -95,13 +91,14 @@ function QuickCreateModal({
   initialName: string
   isSaving: boolean
   error: string | null
-  isUnimedRda: boolean
+  /** Formato da carteirinha do convenio, ou null para texto livre. */
+  blocos: number[] | null
   onClose: () => void
   onSubmit: (nome: string, carteirinha: string) => void
 }) {
   const [nome, setNome] = useState(initialName)
   const [carteirinha, setCarteirinha] = useState('')
-  const [blocks, setBlocks] = useState<string[]>(() => splitUnimedCarteirinha(''))
+  const [blocks, setBlocks] = useState<string[]>([])
   const labels = {
     paciente: 'Novo paciente',
     especialidade: 'Nova especialidade',
@@ -111,7 +108,7 @@ function QuickCreateModal({
   useEffect(() => {
     setNome(initialName)
     setCarteirinha('')
-    setBlocks(splitUnimedCarteirinha(''))
+    setBlocks([])
   }, [initialName, kind])
 
   if (!kind) {
@@ -120,7 +117,7 @@ function QuickCreateModal({
 
   const exigeCarteirinha = kind === 'paciente'
   const carteirinhaOk = !exigeCarteirinha
-    || (isUnimedRda ? isUnimedCarteirinhaCompleta(blocks) : carteirinha.trim() !== '')
+    || (blocos ? isCarteirinhaCompleta(blocks, blocos) : carteirinha.trim() !== '')
 
   return (
     <Dialog open={kind !== null} onClose={onClose} className="relative z-50">
@@ -159,14 +156,15 @@ function QuickCreateModal({
               {exigeCarteirinha ? (
                 <div className="space-y-2">
                   <span className="text-sm font-medium text-slate-200">Carteirinha</span>
-                  {isUnimedRda ? (
-                    <CarteirinhaUnimedInput
+                  {blocos ? (
+                    <CarteirinhaBlocosInput
+                      blocos={blocos}
                       blocks={blocks}
                       onChange={(next, valor) => {
                         setBlocks(next)
                         setCarteirinha(valor)
                       }}
-                      testIdPrefix="pedido-medico-carteirinha-unimed"
+                      testIdPrefix="pedido-medico-carteirinha-blocos"
                     />
                   ) : (
                     <input
@@ -512,7 +510,7 @@ export function LerPedidoMedicoPage() {
                 {pacientes.map((item) => (
                   <option key={item.id} value={item.id}>
                     {item.nome}
-                    {item.carteirinha ? ` · ${formatUnimedCarteirinha(item.carteirinha)}` : ''}
+                    {item.carteirinha ? ` · ${formatCarteirinha(item.carteirinha)}` : ''}
                   </option>
                 ))}
               </Select>
@@ -657,7 +655,7 @@ export function LerPedidoMedicoPage() {
         initialName={quickInitialName}
         isSaving={criarPaciente.isPending || criarEspecialidade.isPending || criarMedico.isPending}
         error={quickError}
-        isUnimedRda={convenioSelecionado?.connector_driver === 'unimed_rda'}
+        blocos={convenioSelecionado?.carteirinha_blocos ?? null}
         onClose={() => setQuickModal(null)}
         onSubmit={(nome, carteirinha) => void handleQuickSubmit(nome, carteirinha)}
       />

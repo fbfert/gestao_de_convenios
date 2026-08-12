@@ -41,7 +41,7 @@ class PacienteController extends Controller
 
     public function store(StorePacienteRequest $request): JsonResponse
     {
-        $dados = $this->normalizarCarteirinhaUnimed($request->validated(), $request->user()->tenant_id);
+        $dados = $this->normalizarCarteirinha($request->validated(), $request->user()->tenant_id);
         $paciente = Paciente::query()->create([
             ...$dados,
             'tenant_id' => $request->user()->tenant_id,
@@ -55,14 +55,23 @@ class PacienteController extends Controller
 
     public function update(UpdatePacienteRequest $request, Paciente $paciente): PacienteResource
     {
-        $paciente->fill($this->normalizarCarteirinhaUnimed($request->validated(), $request->user()->tenant_id, $paciente));
+        $paciente->fill($this->normalizarCarteirinha($request->validated(), $request->user()->tenant_id, $paciente));
         $paciente->save();
         $paciente->load('convenio');
 
         return new PacienteResource($paciente);
     }
 
-    private function normalizarCarteirinhaUnimed(array $dados, int $tenantId, ?Paciente $paciente = null): array
+    /**
+     * Grava só os dígitos quando o convênio declara um formato de carteirinha.
+     *
+     * O gatilho é `convenios.carteirinha_blocos`, e não mais o
+     * `connector_driver`: o formato é característica do convênio, o driver é o
+     * interruptor da automação (ver migration 2026_08_12_200000). Convênio sem
+     * formato continua guardando o texto como foi digitado, o que preserva as
+     * carteirinhas já cadastradas.
+     */
+    private function normalizarCarteirinha(array $dados, int $tenantId, ?Paciente $paciente = null): array
     {
         $convenioId = $dados['convenio_id'] ?? $paciente?->convenio_id;
 
@@ -75,7 +84,7 @@ class PacienteController extends Controller
             ->whereKey($convenioId)
             ->first();
 
-        if ($convenio?->connector_driver === 'unimed_rda') {
+        if ($convenio?->blocosCarteirinha() !== null) {
             $dados['carteirinha'] = preg_replace('/\D+/', '', (string) $dados['carteirinha']);
         }
 

@@ -4,13 +4,55 @@ import { Link, useMatch, useNavigate, useParams } from 'react-router-dom'
 import { apiClient } from '../../api/client'
 import { Select } from '../../components/ui/Select'
 import { useEspecialidades, useProfissionais } from '../../lib/queries/useReferenceData'
+import { UNIMED_BLOCK_SIZES, formatBlocos, parseBlocos } from '../../lib/carteirinha'
 
 type Convenio = {
   id: number
   nome: string
   descricao: string | null
   connector_type: string
+  /** Tamanhos dos blocos da carteirinha. null = texto livre. */
+  carteirinha_blocos?: number[] | null
   ativo: boolean
+}
+
+/**
+ * Formato da carteirinha do convenio. Fica separado porque o formulario de
+ * convenio aparece duas vezes nesta tela — na rota /convenios/novo e na edicao
+ * em linha — e o atalho da Unimed nao deve divergir entre os dois.
+ */
+function CampoCarteirinha({
+  valor,
+  onChange,
+}: {
+  valor: string
+  onChange: (valor: string) => void
+}) {
+  return (
+    <label className="space-y-1 md:col-span-2">
+      <span className="text-xs text-slate-300">Formato da carteirinha</span>
+      <div className="flex gap-2">
+        <input
+          value={valor}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder="Em branco = texto livre"
+          className={field}
+          data-testid="convenio-carteirinha-blocos"
+        />
+        <button
+          type="button"
+          onClick={() => onChange(formatBlocos([...UNIMED_BLOCK_SIZES]))}
+          className="shrink-0 rounded-xl border border-white/10 bg-white/5 px-3 text-xs font-semibold text-slate-200 transition hover:bg-white/10"
+        >
+          Unimed
+        </button>
+      </div>
+      <span className="block text-xs text-slate-400">
+        Tamanhos dos blocos separados por hifen, ex.: 4-4-6-2-1. Em branco, a carteirinha e
+        digitada em campo unico, sem validacao de tamanho.
+      </span>
+    </label>
+  )
 }
 
 type Regra = {
@@ -47,6 +89,7 @@ export function ConveniosPage() {
   const [nome, setNome] = useState('')
   const [descricao, setDescricao] = useState('')
   const [tipo, setTipo] = useState('manual')
+  const [blocosTexto, setBlocosTexto] = useState('')
   const [ativo, setAtivo] = useState(true)
 
   const abrirNovo = () => {
@@ -55,13 +98,23 @@ export function ConveniosPage() {
     setNome('')
     setDescricao('')
     setTipo('manual')
+    setBlocosTexto('')
     setAtivo(true)
   }
 
   const salvar = (event: FormEvent) => {
     event.preventDefault()
 
-    const payload = { nome, descricao, connector_type: tipo, ativo }
+    const blocos = parseBlocos(blocosTexto)
+    const payload = {
+      nome,
+      descricao,
+      connector_type: tipo,
+      // Lista vazia e o mesmo que "sem formato": o backend normaliza, mas
+      // mandar null deixa a intencao explicita no payload.
+      carteirinha_blocos: blocos.length > 0 ? blocos : null,
+      ativo,
+    }
     const request = form?.id
       ? apiClient.patch(`/convenios/${form.id}`, payload)
       : apiClient.post('/convenios', payload)
@@ -119,6 +172,7 @@ export function ConveniosPage() {
                 <option value="api">API</option>
                 <option value="scraping">Scraping</option>
               </Select>
+              <CampoCarteirinha valor={blocosTexto} onChange={setBlocosTexto} />
               <label className="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -162,6 +216,7 @@ export function ConveniosPage() {
                   <option value="api">API</option>
                   <option value="scraping">Scraping</option>
                 </Select>
+                <CampoCarteirinha valor={blocosTexto} onChange={setBlocosTexto} />
                 <label className="flex items-center gap-2">
                   <input
                     type="checkbox"
@@ -194,6 +249,7 @@ export function ConveniosPage() {
                     setNome(c.nome)
                     setDescricao(c.descricao ?? '')
                     setTipo(c.connector_type)
+                    setBlocosTexto(formatBlocos(c.carteirinha_blocos))
                     setAtivo(c.ativo)
                   }}
                   className="text-cyan-200"

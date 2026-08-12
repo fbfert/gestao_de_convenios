@@ -17,7 +17,7 @@ import {
   usePacientes,
   useProfissionais,
 } from '../../lib/queries/useReferenceData'
-import { formatUnimedCarteirinha } from '../../lib/carteirinha'
+import { formatCarteirinha } from '../../lib/carteirinha'
 import { SolicitacaoGuiaModal } from './SolicitacaoGuiaModal'
 import { SolicitacaoItensFields } from './SolicitacaoItensFields'
 import { emptyItem, itensEstaoCompletos } from './solicitacaoItens'
@@ -397,7 +397,7 @@ export function SolicitacoesPage() {
                 </option>
                 {pacientes.map((item) => (
                   <option key={item.id} value={item.id}>
-                    {item.nome} · {formatUnimedCarteirinha(item.carteirinha)}
+                    {item.nome} · {formatCarteirinha(item.carteirinha, item.convenio?.carteirinha_blocos ?? undefined)}
                     {item.convenio?.nome ? ` · ${item.convenio.nome}` : ''}
                   </option>
                 ))}

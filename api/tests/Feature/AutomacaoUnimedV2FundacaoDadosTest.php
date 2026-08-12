@@ -107,7 +107,14 @@ class AutomacaoUnimedV2FundacaoDadosTest extends TestCase
     {
         $this->autenticar();
         $convenio = Convenio::query()->where('nome', 'Unimed')->firstOrFail();
-        $convenio->forceFill(['connector_driver' => 'unimed_rda'])->save();
+
+        // Quem manda no formato e `carteirinha_blocos`, nao o driver de
+        // automacao. O driver fica ligado aqui de proposito, para o teste
+        // provar que os dois convivem (migration 2026_08_12_200000).
+        $convenio->forceFill([
+            'connector_driver' => 'unimed_rda',
+            'carteirinha_blocos' => [4, 4, 6, 2, 1],
+        ])->save();
 
         $this->postJson('/api/pacientes', [
             'nome' => 'Paciente Unimed Blocos',
@@ -115,9 +122,58 @@ class AutomacaoUnimedV2FundacaoDadosTest extends TestCase
             'convenio_id' => $convenio->id,
         ])->assertCreated()->assertJsonPath('data.carteirinha', '12345678123456019');
 
+        // Nome novo do campo, usado pela tela.
+        $this->postJson('/api/pacientes', [
+            'nome' => 'Paciente Unimed Blocos 2',
+            'carteirinha_blocos' => ['9876', '5432', '654321', '10', '8'],
+            'convenio_id' => $convenio->id,
+        ])->assertCreated()->assertJsonPath('data.carteirinha', '98765432654321108');
+
         $this->postJson('/api/pacientes', [
             'nome' => 'Paciente Unimed Inválido',
             'carteirinha' => '123',
+            'convenio_id' => $convenio->id,
+        ])->assertStatus(422)->assertJsonValidationErrors(['carteirinha']);
+    }
+
+    public function test_driver_de_automacao_sozinho_nao_impoe_formato(): void
+    {
+        $this->autenticar();
+        $convenio = Convenio::query()->where('nome', 'Unimed')->firstOrFail();
+
+        // Automacao ligada, formato nao declarado: carteirinha volta a ser
+        // texto livre. Antes o driver sozinho exigia 17 digitos, o que
+        // obrigava quem so queria a mascara a ligar a automacao junto.
+        $convenio->forceFill([
+            'connector_driver' => 'unimed_rda',
+            'carteirinha_blocos' => null,
+        ])->save();
+
+        $this->postJson('/api/pacientes', [
+            'nome' => 'Paciente Texto Livre',
+            'carteirinha' => 'ABC-123',
+            'convenio_id' => $convenio->id,
+        ])->assertCreated()->assertJsonPath('data.carteirinha', 'ABC-123');
+    }
+
+    public function test_formato_de_carteirinha_vale_para_qualquer_convenio(): void
+    {
+        $this->autenticar();
+        $convenio = Convenio::query()->where('nome', '!=', 'Unimed')->firstOrFail();
+
+        // Sem driver de automacao nenhum: o formato e caracteristica do
+        // convenio e serve para os outros tambem.
+        $convenio->forceFill(['carteirinha_blocos' => [3, 3]])->save();
+
+        $this->postJson('/api/pacientes', [
+            'nome' => 'Paciente Outro Convenio',
+            'carteirinha_blocos' => ['123', '456'],
+            'convenio_id' => $convenio->id,
+        ])->assertCreated()->assertJsonPath('data.carteirinha', '123456');
+
+        $this->postJson('/api/pacientes', [
+            'nome' => 'Paciente Outro Convenio Invalido',
+            'carteirinha' => '12345',
             'convenio_id' => $convenio->id,
         ])->assertStatus(422)->assertJsonValidationErrors(['carteirinha']);
     }

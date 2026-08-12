@@ -6,6 +6,7 @@ export type ConvenioRef = {
   nome: string
   connector_type: string
   connector_driver?: 'unimed_rda' | null
+  carteirinha_blocos?: number[] | null
 }
 
 export type EspecialidadeRef = {
@@ -37,6 +38,7 @@ export type PacienteRef = {
     id: number
     nome: string
     connector_driver?: 'unimed_rda' | null
+    carteirinha_blocos?: number[] | null
   }
 }
 

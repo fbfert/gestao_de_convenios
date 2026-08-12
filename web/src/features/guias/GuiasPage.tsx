@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link, useMatch, useNavigate } from 'react-router-dom'
 import { Select } from '../../components/ui/Select'
 import { translateStatus } from '../../lib/statusLabels'
-import { formatUnimedCarteirinha } from '../../lib/carteirinha'
+import { formatCarteirinha } from '../../lib/carteirinha'
 import { useConvenios, useEspecialidades, usePacientes, useProfissionais } from '../../lib/queries/useReferenceData'
 import {
   getHttpErrorMessage,
@@ -310,7 +310,7 @@ export function GuiasPage() {
               >
                 {pacientes.map((item) => (
                   <option key={item.id} value={item.id}>
-                    {item.nome} · {formatUnimedCarteirinha(item.carteirinha)}
+                    {item.nome} · {formatCarteirinha(item.carteirinha, item.convenio?.carteirinha_blocos ?? undefined)}
                   </option>
                 ))}
               </Select>
@@ -543,7 +543,7 @@ export function GuiasPage() {
                             guia.paciente_id}
                         </td>
                         <td className="px-4 py-4 tabular-nums text-slate-200">
-                          {formatUnimedCarteirinha(guia.paciente?.carteirinha) || '-'}
+                          {formatCarteirinha(guia.paciente?.carteirinha) || '-'}
                         </td>
                         <td className="px-4 py-4 text-slate-200">
                           {guia.especialidade?.nome ?? guia.especialidade_id}

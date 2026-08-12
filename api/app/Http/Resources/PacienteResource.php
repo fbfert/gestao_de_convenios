@@ -22,6 +22,8 @@ class PacienteResource extends JsonResource
                 'id' => $this->convenio->id,
                 'nome' => $this->convenio->nome,
                 'connector_driver' => $this->convenio->connector_driver,
+                // A tela agrupa a carteirinha por estes blocos ao exibir.
+                'carteirinha_blocos' => $this->convenio->blocosCarteirinha(),
             ]),
         ];
     }

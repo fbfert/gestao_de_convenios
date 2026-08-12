@@ -159,9 +159,20 @@ export type PedidoMedicoSuggestion = {
 export type PedidoMedicoAiDados = {
   paciente_nome?: string | null
   medico_nome?: string | null
+  /** Uma entrada por especialidade citada no pedido. */
+  especialidades?: string[] | null
+  /** Chave antiga, no singular. Mantida para leituras já gravadas. */
   especialidade_nome?: string | null
   solicitado_em?: string | null
   observacoes?: string | null
+}
+
+/** Especialidade lida do documento e os cadastros parecidos com ela. */
+export type PedidoMedicoEspecialidadeLida = {
+  termo: string
+  matches: PedidoMedicoSuggestion[]
+  /** Nenhum cadastro parecido o bastante: a tela oferece criar o termo lido. */
+  sugere_cadastro: boolean
 }
 
 export type PedidoMedicoAiResult = {
@@ -176,6 +187,6 @@ export type PedidoMedicoAiResult = {
   sugestoes: {
     pacientes: PedidoMedicoSuggestion[]
     medicos: PedidoMedicoSuggestion[]
-    especialidades: PedidoMedicoSuggestion[]
+    especialidades: PedidoMedicoEspecialidadeLida[]
   }
 }

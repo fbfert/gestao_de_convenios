@@ -44,16 +44,28 @@ const emptyForm: SolicitacaoForm = {
 }
 
 /**
- * A IA lê uma especialidade só. Ela entra na primeira linha; as demais o operador
- * acrescenta à mão antes de salvar.
+ * Acrescenta uma linha de item para a especialidade, se ela ainda nao estiver
+ * no pedido. Reaproveita a primeira linha quando ela esta em branco, para o
+ * caso comum de um pedido com uma especialidade so nao nascer com uma linha
+ * vazia sobrando.
  */
-function comEspecialidadeNaPrimeiraLinha(
+function comEspecialidadeAdicionada(
   itens: SolicitacaoFormItem[],
   especialidadeId: string,
 ): SolicitacaoFormItem[] {
-  const [primeiro = { ...emptyItem }, ...resto] = itens
+  if (itens.some((item) => item.especialidade_id === especialidadeId)) {
+    return itens
+  }
 
-  return [{ ...primeiro, especialidade_id: especialidadeId, profissional_id: '' }, ...resto]
+  const indiceVazio = itens.findIndex((item) => item.especialidade_id === '')
+
+  if (indiceVazio >= 0) {
+    return itens.map((item, indice) =>
+      indice === indiceVazio ? { ...item, especialidade_id: especialidadeId } : item,
+    )
+  }
+
+  return [...itens, { ...emptyItem, especialidade_id: especialidadeId }]
 }
 
 type QuickModalKind = 'paciente' | 'especialidade' | 'medico'
@@ -248,8 +260,14 @@ export function LerPedidoMedicoPage() {
       })),
     [form.convenio_id, resultado],
   )
+  // As sugestoes vem agrupadas por termo lido; o Select quer uma lista plana.
+  // O mergeById adiante cuida das repetidas, que aparecem quando dois termos
+  // do documento casam com o mesmo cadastro.
   const especialidadesSugeridas = useMemo<EspecialidadeRef[]>(
-    () => (resultado?.sugestoes.especialidades ?? []).map((item) => ({ id: item.id, nome: item.nome })),
+    () =>
+      (resultado?.sugestoes.especialidades ?? []).flatMap((lida) =>
+        lida.matches.map((match) => ({ id: match.id, nome: match.nome })),
+      ),
     [resultado],
   )
   const medicosSugeridos = useMemo<MedicoRef[]>(
@@ -305,8 +323,19 @@ export function LerPedidoMedicoPage() {
     try {
       const data = await analisarPedido.mutateAsync(arquivo)
       const topPaciente = data.sugestoes.pacientes[0]
-      const topEspecialidade = data.sugestoes.especialidades[0]
       const topMedico = data.sugestoes.medicos[0]
+      // Uma linha por especialidade lida que casou com um cadastro. As que nao
+      // casaram ficam de fora e aparecem na tela como candidatas a cadastro.
+      const itensLidos = data.sugestoes.especialidades.reduce(
+        (itens, lida) =>
+          // So entra sozinha a especialidade que casou com confianca alta.
+          // Palpite fraco fica de fora: aplicar "Psicologia" num pedido de
+          // "Psicopedagogia" trocaria a terapia do paciente em silencio.
+          !lida.sugere_cadastro && lida.matches[0]
+            ? comEspecialidadeAdicionada(itens, String(lida.matches[0].id))
+            : itens,
+        [{ ...emptyItem }] as SolicitacaoFormItem[],
+      )
       const observacoes = [
         data.dados.observacoes,
         data.raw_text && !data.dados.observacoes ? data.raw_text : '',
@@ -318,9 +347,7 @@ export function LerPedidoMedicoPage() {
       setForm((current) => ({
         ...current,
         paciente_id: topPaciente ? String(topPaciente.id) : '',
-        itens: topEspecialidade
-          ? comEspecialidadeNaPrimeiraLinha(current.itens, String(topEspecialidade.id))
-          : current.itens,
+        itens: itensLidos,
         medico_id: topMedico ? String(topMedico.id) : '',
         solicitado_em: data.dados.solicitado_em || current.solicitado_em,
         observacoes,
@@ -358,7 +385,7 @@ export function LerPedidoMedicoPage() {
         setCreatedEspecialidades((current) => [...current, especialidade])
         setForm((current) => ({
           ...current,
-          itens: comEspecialidadeNaPrimeiraLinha(current.itens, String(especialidade.id)),
+          itens: comEspecialidadeAdicionada(current.itens, String(especialidade.id)),
         }))
       }
 
@@ -387,7 +414,7 @@ export function LerPedidoMedicoPage() {
   }
 
   const extractedPaciente = resultado?.dados.paciente_nome?.trim() ?? ''
-  const extractedEspecialidade = resultado?.dados.especialidade_nome?.trim() ?? ''
+  const especialidadesLidas = resultado?.sugestoes.especialidades ?? []
   const extractedMedico = resultado?.dados.medico_nome?.trim() ?? ''
 
   return (
@@ -519,49 +546,6 @@ export function LerPedidoMedicoPage() {
             <div className="space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <p className="text-sm font-medium text-slate-200">
-                  Especialidade {extractedEspecialidade ? `lida: ${extractedEspecialidade}` : ''}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => openQuickModal('especialidade', extractedEspecialidade)}
-                  className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
-                >
-                  Nova especialidade
-                </button>
-              </div>
-              {resultado.sugestoes.especialidades.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {resultado.sugestoes.especialidades.map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() =>
-                        setForm((current) => ({
-                          ...current,
-                          itens: comEspecialidadeNaPrimeiraLinha(current.itens, String(item.id)),
-                        }))
-                      }
-                      className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1.5 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-400/20"
-                      title="Aplica na primeira especialidade do pedido"
-                    >
-                      {item.nome} · {item.similaridade}%
-                    </button>
-                  ))}
-                </div>
-              ) : null}
-
-              <SolicitacaoItensFields
-                itens={form.itens}
-                onChange={(itens) => setForm((current) => ({ ...current, itens }))}
-                especialidades={especialidades}
-                profissionais={profissionais}
-                disabled={especialidadesQuery.isLoading || profissionaisQuery.isLoading}
-              />
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <p className="text-sm font-medium text-slate-200">
                   Médico solicitante {extractedMedico ? `lido: ${extractedMedico}` : ''}
                 </p>
                 <button
@@ -603,6 +587,93 @@ export function LerPedidoMedicoPage() {
                   </option>
                 ))}
               </Select>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-sm font-medium text-slate-200">
+                  Especialidades do pedido
+                  {especialidadesLidas.length > 0
+                    ? ` · ${especialidadesLidas.length} lida${especialidadesLidas.length > 1 ? 's' : ''} no documento`
+                    : ''}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => openQuickModal('especialidade', '')}
+                  className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
+                >
+                  Nova especialidade
+                </button>
+              </div>
+
+              {/*
+                Um bloco por especialidade lida. Quem casou com cadastro vira
+                atalho para aplicar; quem nao casou vira convite a cadastrar,
+                que e o caso de um pedido com terapia que a clinica ainda nao
+                tem registrada.
+              */}
+              {especialidadesLidas.length > 0 ? (
+                <div className="space-y-2 rounded-2xl border border-white/10 bg-white/5 p-3">
+                  {especialidadesLidas.map((lida) => {
+                    const jaNoPedido = lida.matches.some((match) =>
+                      form.itens.some((item) => item.especialidade_id === String(match.id)),
+                    )
+
+                    return (
+                      <div
+                        key={lida.termo}
+                        className="flex flex-wrap items-center gap-2"
+                        data-testid={`pedido-medico-especialidade-lida-${lida.termo}`}
+                      >
+                        <span className="text-xs text-slate-300">
+                          {lida.termo}
+                          {jaNoPedido ? (
+                            <span className="ml-1 text-emerald-300">no pedido</span>
+                          ) : null}
+                        </span>
+
+                        {lida.sugere_cadastro ? (
+                          <button
+                            type="button"
+                            onClick={() => openQuickModal('especialidade', lida.termo)}
+                            className="rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1.5 text-xs font-semibold text-amber-100 transition hover:bg-amber-400/20"
+                            data-testid={`pedido-medico-criar-especialidade-${lida.termo}`}
+                          >
+                            cadastrar "{lida.termo}"
+                          </button>
+                        ) : null}
+
+                        {lida.matches.length > 0
+                          ? lida.matches.map((match) => (
+                            <button
+                              key={match.id}
+                              type="button"
+                              onClick={() =>
+                                setForm((current) => ({
+                                  ...current,
+                                  itens: comEspecialidadeAdicionada(current.itens, String(match.id)),
+                                }))
+                              }
+                              className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1.5 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-400/20"
+                              title="Acrescenta esta especialidade ao pedido"
+                            >
+                                {match.nome} · {match.similaridade}%
+                              </button>
+                            ))
+                          : null}
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : null}
+
+              <SolicitacaoItensFields
+                itens={form.itens}
+                onChange={(itens) => setForm((current) => ({ ...current, itens }))}
+                especialidades={especialidades}
+                profissionais={profissionais}
+                disabled={especialidadesQuery.isLoading || profissionaisQuery.isLoading}
+              />
             </div>
 
             <label className="block space-y-2">

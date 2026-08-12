@@ -15,6 +15,20 @@ use Illuminate\Validation\ValidationException;
 
 class PedidoMedicoAiService
 {
+    /**
+     * Semelhança mínima, em porcento, para tratar um cadastro como sendo a
+     * mesma especialidade que o documento cita.
+     *
+     * O corte é alto de propósito. `similar_text` dá 75% entre
+     * "Psicopedagogia" e "Psicologia", que são terapias diferentes: aplicar
+     * esse palpite sozinho trocaria a especialidade do paciente em silêncio.
+     * Abaixo do corte a sugestão continua aparecendo na tela, mas como
+     * palpite, ao lado do convite para cadastrar o termo lido — a decisão
+     * fica com o operador, que tem o documento na mão.
+     */
+    private const CONFIANCA_MINIMA = 90;
+
+
     public function analisar(int $tenantId, UploadedFile $arquivo, string $path): array
     {
         $prompt = AiPromptTemplate::query()
@@ -45,7 +59,20 @@ class PedidoMedicoAiService
         $content = [
             [
                 'type' => 'input_text',
-                'text' => $prompt->user_prompt."\n\nRetorne somente JSON com as chaves: paciente_nome, medico_nome, especialidade_nome, solicitado_em no formato YYYY-MM-DD quando possível, observacoes para informações incertas ou não entendidas.",
+                /*
+                  O contrato de saída fica aqui, e não no prompt editável, por
+                  uma razão prática: parseJson() e sugerirEspecialidades()
+                  dependem exatamente destas chaves. Se o operador reescrevesse
+                  o prompt na tela de Prompts e trocasse os nomes, a leitura
+                  passaria a devolver campos vazios sem erro nenhum.
+
+                  `especialidades` é lista: um mesmo pedido costuma trazer
+                  várias (fono, nutrição, psicologia...). Antes a chave era
+                  `especialidade_nome`, no singular, e as demais especialidades
+                  acabavam descritas em `observacoes` — visíveis para o
+                  operador, mas fora dos campos do formulário.
+                */
+                'text' => $prompt->user_prompt."\n\nRetorne somente JSON com as chaves: paciente_nome, medico_nome, especialidades (array com o nome de cada especialidade citada no pedido, uma por item, mesmo que seja só uma), solicitado_em no formato YYYY-MM-DD quando possível, observacoes para informações incertas ou não entendidas. Não repita em observacoes as especialidades já listadas em especialidades.",
             ],
         ];
 
@@ -115,7 +142,7 @@ class PedidoMedicoAiService
             'sugestoes' => [
                 'pacientes' => $this->sugerirPacientes($tenantId, (string) ($dados['paciente_nome'] ?? '')),
                 'medicos' => $this->sugerirMedicos($tenantId, (string) ($dados['medico_nome'] ?? '')),
-                'especialidades' => $this->sugerirEspecialidades($tenantId, (string) ($dados['especialidade_nome'] ?? '')),
+                'especialidades' => $this->sugerirEspecialidadesLidas($tenantId, $dados),
             ],
         ];
     }
@@ -179,16 +206,60 @@ class PedidoMedicoAiService
         );
     }
 
-    private function sugerirEspecialidades(int $tenantId, string $nome): array
+    /**
+     * Uma entrada por especialidade lida, cada uma com os cadastros parecidos.
+     *
+     * A tela precisa saber a que termo do documento cada sugestão pertence:
+     * com quatro especialidades no pedido, uma lista achatada não diria qual
+     * casou com o quê, nem quais não casaram com nada e portanto são
+     * candidatas a cadastro.
+     *
+     * @return array<int, array{termo: string, matches: array}>
+     */
+    private function sugerirEspecialidadesLidas(int $tenantId, array $dados): array
     {
-        return $this->rankByNome(
-            Especialidade::query()->where('tenant_id', $tenantId)->get(['id', 'nome']),
-            $nome,
-            fn ($especialidade) => [
-                'id' => $especialidade->id,
-                'nome' => $especialidade->nome,
-            ],
-        );
+        $cadastradas = Especialidade::query()->where('tenant_id', $tenantId)->get(['id', 'nome']);
+
+        return collect($this->especialidadesLidas($dados))
+            ->map(function (string $termo) use ($cadastradas) {
+                $matches = $this->rankByNome(
+                    $cadastradas,
+                    $termo,
+                    fn ($especialidade) => [
+                        'id' => $especialidade->id,
+                        'nome' => $especialidade->nome,
+                    ],
+                );
+
+                return [
+                    'termo' => $termo,
+                    'matches' => $matches,
+                    // Nenhum cadastro parecido o bastante para ser "o mesmo".
+                    'sugere_cadastro' => ($matches[0]['similaridade'] ?? 0) < self::CONFIANCA_MINIMA,
+                ];
+            })
+            ->all();
+    }
+
+    /**
+     * Nomes de especialidade lidos do documento, sem repetição.
+     *
+     * Aceita `especialidade_nome` além de `especialidades` porque um prompt
+     * antigo, ou um modelo que ignore a instrução, ainda pode devolver a chave
+     * no singular.
+     *
+     * @return string[]
+     */
+    private function especialidadesLidas(array $dados): array
+    {
+        $brutos = $dados['especialidades'] ?? $dados['especialidade_nome'] ?? [];
+
+        return collect(is_array($brutos) ? $brutos : [$brutos])
+            ->map(fn ($nome) => trim((string) $nome))
+            ->filter(fn (string $nome) => $nome !== '')
+            ->unique(fn (string $nome) => mb_strtolower($nome))
+            ->values()
+            ->all();
     }
 
     private function rankByNome($items, string $nome, callable $mapper): array

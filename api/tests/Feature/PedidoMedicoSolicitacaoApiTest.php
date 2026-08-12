@@ -23,6 +23,86 @@ class PedidoMedicoSolicitacaoApiTest extends TestCase
 
     protected bool $seed = true;
 
+    public function test_le_varias_especialidades_e_aponta_as_sem_cadastro(): void
+    {
+        Storage::fake('local');
+        $user = $this->autenticar();
+        $this->configurarIa($user->tenant_id);
+
+        // Caso real: pedido de acompanhamento multidisciplinar. Antes o
+        // contrato pedia `especialidade_nome` no singular e as demais
+        // especialidades sobravam em `observacoes`, fora dos campos da tela.
+        Http::fake([
+            'api.openai.com/v1/responses' => Http::response([
+                'output' => [[
+                    'content' => [[
+                        'type' => 'output_text',
+                        'text' => json_encode([
+                            'paciente_nome' => 'Ana Paula Ribeiro',
+                            'medico_nome' => 'Carlos Almeida',
+                            'especialidades' => ['Fisioterapia', 'Fonoaudiologia', 'Psicopedagogia'],
+                            'solicitado_em' => '2026-07-22',
+                            'observacoes' => 'Todos os métodos citam ABA.',
+                        ]),
+                    ]],
+                ]],
+            ]),
+        ]);
+
+        $lidas = $this->postJson('/api/solicitacoes/ler-pedido-medico', [
+            'arquivo' => UploadedFile::fake()->create('pedido.jpg', 128, 'image/jpeg'),
+        ])->assertOk()->json('data.sugestoes.especialidades');
+
+        $this->assertCount(3, $lidas);
+        $this->assertSame(
+            ['Fisioterapia', 'Fonoaudiologia', 'Psicopedagogia'],
+            array_column($lidas, 'termo'),
+        );
+
+        // Fisioterapia existe no seed e tem que casar.
+        $this->assertSame('Fisioterapia', $lidas[0]['matches'][0]['nome']);
+
+        $this->assertFalse($lidas[0]['sugere_cadastro']);
+
+        // Psicopedagogia nao existe. similar_text a aproxima de "Psicologia"
+        // (75%), que e outra terapia, entao ela fica abaixo do corte e a tela
+        // oferece cadastrar em vez de aplicar o palpite.
+        $semCadastro = collect($lidas)->firstWhere('termo', 'Psicopedagogia');
+        $this->assertTrue($semCadastro['sugere_cadastro']);
+        $this->assertNotSame('Psicopedagogia', $semCadastro['matches'][0]['nome'] ?? null);
+    }
+
+    public function test_aceita_a_chave_antiga_no_singular(): void
+    {
+        Storage::fake('local');
+        $user = $this->autenticar();
+        $this->configurarIa($user->tenant_id);
+
+        // Um prompt editado a mao, ou um modelo que ignore a instrucao, ainda
+        // pode devolver `especialidade_nome`.
+        Http::fake([
+            'api.openai.com/v1/responses' => Http::response([
+                'output' => [[
+                    'content' => [[
+                        'type' => 'output_text',
+                        'text' => json_encode([
+                            'paciente_nome' => 'Ana Paula Ribeiro',
+                            'especialidade_nome' => 'Fisioterapia',
+                        ]),
+                    ]],
+                ]],
+            ]),
+        ]);
+
+        $lidas = $this->postJson('/api/solicitacoes/ler-pedido-medico', [
+            'arquivo' => UploadedFile::fake()->create('pedido.jpg', 128, 'image/jpeg'),
+        ])->assertOk()->json('data.sugestoes.especialidades');
+
+        $this->assertCount(1, $lidas);
+        $this->assertSame('Fisioterapia', $lidas[0]['termo']);
+        $this->assertSame('Fisioterapia', $lidas[0]['matches'][0]['nome']);
+    }
+
     public function test_analisa_pedido_medico_e_cria_solicitacao_com_anexo(): void
     {
         Storage::fake('local');

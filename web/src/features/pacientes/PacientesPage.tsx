@@ -314,9 +314,6 @@ export function PacientesPage() {
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Pacientes</p>
             <h2 className="mt-2 text-3xl font-semibold text-white">Cadastro e referência de pacientes</h2>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
-              Mantenha pacientes do tenant e use a mesma base que alimenta Solicitações, Guias e Antecipações.
-            </p>
           </div>
 
           <button
@@ -347,7 +344,6 @@ export function PacientesPage() {
                 <h3 className="text-lg font-semibold text-white">
                   {editingId ? 'Editar paciente' : 'Novo paciente'}
                 </h3>
-                <p className="text-sm text-slate-300">O convênio vem da API de referência do tenant.</p>
               </div>
               {editingId ? (
                 <span className="rounded-full border border-cyan-300/20 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-100">
@@ -544,12 +540,6 @@ export function PacientesPage() {
       {!isCreateRoute ? (
       <section className="space-y-4 rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <h3 className="text-lg font-semibold text-white">Lista</h3>
-            <p className="text-sm text-slate-300">
-              Pesquisa por nome ou carteirinha, com convênio e status visíveis na mesma tela.
-            </p>
-          </div>
 
           <form className="grid w-full gap-3 md:grid-cols-2 xl:grid-cols-4" onSubmit={handleFilterSubmit}>
             <label className="space-y-2">

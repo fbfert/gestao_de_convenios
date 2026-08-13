@@ -132,10 +132,6 @@ export function MedicosPage() {
             <h2 className="mt-2 text-3xl font-semibold text-white">
               Cadastro e referência de médicos
             </h2>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
-              Use esta tela para manter os médicos que solicitam o atendimento e alimentar o
-              select das solicitações.
-            </p>
           </div>
 
           <div className="flex items-center gap-3">
@@ -168,9 +164,6 @@ export function MedicosPage() {
                 <h3 className="text-lg font-semibold text-white">
                   {editingId ? 'Editar médico solicitante' : 'Novo médico solicitante'}
                 </h3>
-                <p className="text-sm text-slate-300">
-                  O CRM é livre por enquanto; o tenant vem do usuário autenticado.
-                </p>
               </div>
               {editingId ? (
                 <span className="rounded-full border border-cyan-300/20 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-100">
@@ -296,13 +289,6 @@ export function MedicosPage() {
       {!isCreateRoute ? (
       <section className="space-y-4 rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <h3 className="text-lg font-semibold text-white">Lista</h3>
-            <p className="text-sm text-slate-300">
-              Mostra todos os médicos solicitantes do tenant, com pesquisa por nome, CRM e
-              especialidade.
-            </p>
-          </div>
 
           <form className="flex gap-3" onSubmit={handleFilterSubmit}>
             <label className="min-w-56 space-y-2">

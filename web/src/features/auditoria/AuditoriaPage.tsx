@@ -1,5 +1,6 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import { Select } from '../../components/ui/Select'
+import { Tooltip } from '../../components/ui/Tooltip'
 import {
   exportarAuditoria,
   getHttpErrorMessage,
@@ -199,11 +200,21 @@ export function AuditoriaPage() {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Auditoria</p>
-          <h2 className="mt-2 text-3xl font-semibold text-white">Logs de auditoria</h2>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
-            Quem alterou o quê, quando e a partir de onde. Senha e chave aparecem apenas como campo
-            alterado — o valor nunca é registrado.
-          </p>
+          <h2 className="mt-2 flex items-center gap-2 text-3xl font-semibold text-white">
+            Logs de auditoria
+            {/* A promessa de que credencial nunca e gravada nao pode sumir junto
+                com os textos decorativos: virou dica em vez de paragrafo. */}
+            <Tooltip rotulo="O que a auditoria registra">
+              <p className="font-semibold text-white">O que fica registrado</p>
+              <p className="mt-1">
+                Quem alterou o quê, quando e — nos eventos de acesso — a partir de onde.
+              </p>
+              <p className="mt-2">
+                Senha e chave aparecem apenas como campo alterado. O valor nunca é registrado, nem o
+                antigo nem o novo.
+              </p>
+            </Tooltip>
+          </h2>
         </div>
 
         <button

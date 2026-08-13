@@ -167,9 +167,6 @@ export function ManualPage() {
 
       {!isLoading && !isError && editando && (
         <div className="space-y-2">
-          <p className="text-sm text-slate-300">
-            Edite o HTML diretamente. As alterações ficam visíveis para todos os usuários após salvar.
-          </p>
           <textarea
             value={rascunho}
             onChange={(event) => setRascunho(event.target.value)}

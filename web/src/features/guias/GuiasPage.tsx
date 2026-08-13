@@ -197,10 +197,6 @@ export function GuiasPage() {
             <h2 className="mt-2 text-3xl font-semibold text-white">
               Controle da guia e do prazo de senha
             </h2>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
-              O filtro de validade vencendo já está visível como destaque de uso, não escondido num
-              campo genérico.
-            </p>
           </div>
 
           <button
@@ -254,7 +250,6 @@ export function GuiasPage() {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h3 className="text-lg font-semibold text-white">Nova guia</h3>
-                <p className="text-sm text-slate-300">Cadastro manual com dados reais da API.</p>
               </div>
               <button
                 type="button"
@@ -414,12 +409,6 @@ export function GuiasPage() {
       {!isCreateRoute ? (
       <section className="space-y-4 rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <h3 className="text-lg font-semibold text-white">Filtros e lista</h3>
-            <p className="text-sm text-slate-300">
-              Status, convênio, paciente e prazo aparecem do jeito que a equipe usa.
-            </p>
-          </div>
 
           <form className="grid gap-3 md:grid-cols-2 xl:grid-cols-4" onSubmit={handleFilterSubmit}>
             <label className="space-y-2">

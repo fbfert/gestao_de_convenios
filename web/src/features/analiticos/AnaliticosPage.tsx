@@ -177,9 +177,6 @@ function LotesTable({
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <h3 className="text-lg font-semibold text-white">Lotes importados</h3>
-          <p className="text-sm text-slate-300">
-          Histórico dos analíticos já salvos para conferência e conciliação.
-          </p>
         </div>
       </div>
 
@@ -377,10 +374,6 @@ export function AnaliticosPage() {
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Analíticos</p>
             <h2 className="mt-2 text-3xl font-semibold text-white">Importação e conferência</h2>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
-              Esta tela segue o modelo do arquivo `item3.3.xlsx` e concentra a leitura do Excel da
-              Unimed, a pré-visualização das linhas e a revisão final antes da operação seguir.
-            </p>
           </div>
 
           <Link
@@ -424,10 +417,6 @@ export function AnaliticosPage() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <h3 className="text-lg font-semibold text-white">Importar analítico</h3>
-              <p className="text-sm text-slate-300">
-                O arquivo é lido, normalizado e salvo para conferência operacional antes do
-                fechamento.
-              </p>
             </div>
           </div>
 

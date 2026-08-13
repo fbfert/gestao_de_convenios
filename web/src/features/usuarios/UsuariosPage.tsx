@@ -243,10 +243,6 @@ export function UsuariosPage() {
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Usuários</p>
             <h2 className="mt-2 text-3xl font-semibold text-white">Cadastro e vínculo de acesso</h2>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
-              O administrador cria, edita e desativa usuários do tenant, incluindo vínculo
-              opcional com profissional quando o papel for profissional.
-            </p>
           </div>
 
           <div className="flex items-center gap-3">
@@ -279,9 +275,6 @@ export function UsuariosPage() {
                 <h3 className="text-lg font-semibold text-white">
                   {editingId ? 'Editar usuário' : 'Novo usuário'}
                 </h3>
-                <p className="text-sm text-slate-300">
-                  Papéis e profissionais vêm da API real do tenant autenticado.
-                </p>
               </div>
               {editingId ? (
                 <span className="rounded-full border border-cyan-300/20 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-100">
@@ -440,12 +433,6 @@ export function UsuariosPage() {
       {!isFormRoute ? (
       <section className="space-y-4 rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <h3 className="text-lg font-semibold text-white">Lista</h3>
-            <p className="text-sm text-slate-300">
-              Pesquisa por nome e e-mail; o tenant autenticado já isola o resultado.
-            </p>
-          </div>
 
           <form className="flex gap-3" onSubmit={handleFilterSubmit}>
             <label className="min-w-56 space-y-2">

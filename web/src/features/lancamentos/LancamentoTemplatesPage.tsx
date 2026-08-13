@@ -89,10 +89,6 @@ export function LancamentoTemplatesPage() {
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Sessões</p>
             <h2 className="mt-2 text-3xl font-semibold text-white">Templates de impressão</h2>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
-              Edite o HTML usado para imprimir o Registro de Sessões e confira o preview com
-              placeholders preenchidos.
-            </p>
           </div>
           <button
             type="button"

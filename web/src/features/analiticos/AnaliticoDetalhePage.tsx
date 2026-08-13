@@ -89,10 +89,6 @@ export function AnaliticoDetalhePage() {
             <h2 className="mt-2 text-3xl font-semibold text-white">
               Lote #{data?.lote.id ?? '—'}
             </h2>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
-              Visualização detalhada do lote importado, com o analítico, as glosas e a conciliação
-              normalizada.
-            </p>
           </div>
         </div>
 

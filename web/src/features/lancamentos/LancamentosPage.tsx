@@ -249,10 +249,6 @@ export function LancamentosPage() {
             <div>
               <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Sessões</p>
               <h2 className="mt-2 text-3xl font-semibold text-white">Registro de sessões</h2>
-              <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
-                O sistema registra sessões manualmente ou por importação da transcrição do
-                formulário da Unimed, mantendo a antecipação como base de consumo.
-              </p>
             </div>
 
             <div className="flex flex-wrap gap-2">
@@ -300,10 +296,6 @@ export function LancamentosPage() {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h3 className="text-lg font-semibold text-white">Importar transcrição</h3>
-                <p className="text-sm text-slate-300">
-                  Primeiro o sistema analisa o texto. Depois o operador revisa datas e horários e
-                  confirma o envio.
-                </p>
               </div>
             </div>
 
@@ -532,9 +524,6 @@ Terapia aplicada: ABA - AV. Neuropsicológica
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <h3 className="text-lg font-semibold text-white">Novo lançamento manual</h3>
-                  <p className="text-sm text-slate-300">
-                    Selecione uma antecipação e preencha a sessão quando houver ajuste fino.
-                  </p>
                 </div>
               <button
                 type="button"
@@ -694,12 +683,6 @@ Terapia aplicada: ABA - AV. Neuropsicológica
         {!isCreateRoute ? (
         <section className="space-y-4 rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <h3 className="text-lg font-semibold text-white">Filtros e lista</h3>
-              <p className="text-sm text-slate-300">
-                Cada linha já nasce como uma sessão contabilizável da antecipação.
-              </p>
-            </div>
 
             <form className="grid gap-3 md:grid-cols-3 xl:grid-cols-3" onSubmit={handleFilterSubmit}>
               <label className="space-y-2">

@@ -145,9 +145,6 @@ export function AutomacoesPage() {
       <section>
         <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Automações</p>
         <h2 className="mt-2 text-3xl font-semibold text-white">Execuções Unimed</h2>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
-          Acompanhe fila, resultado, avisos operacionais e histórico de eventos.
-        </p>
       </section>
 
       <section className="grid gap-4 md:grid-cols-3">

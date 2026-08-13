@@ -286,10 +286,6 @@ export function SolicitacoesPage() {
             <h2 className="mt-2 text-3xl font-semibold text-white">
               Primeiro contato do fluxo de convênios
             </h2>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
-              Crie, filtre e aprove solicitações usando os endpoints reais da API. O status sempre
-              passa por translateStatus().
-            </p>
           </div>
 
           <div className="flex flex-wrap gap-3">
@@ -329,7 +325,6 @@ export function SolicitacoesPage() {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h3 className="text-lg font-semibold text-white">Nova solicitação</h3>
-                <p className="text-sm text-slate-300">Todos os campos vêm da API real de referência.</p>
               </div>
               <button
                 type="button"
@@ -512,10 +507,6 @@ export function SolicitacoesPage() {
       {!isCreateRoute ? (
       <section className="space-y-4 rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <h3 className="text-lg font-semibold text-white">Filtros e lista</h3>
-            <p className="text-sm text-slate-300">A busca por status e convênio vem direto da API.</p>
-          </div>
 
           <form className="flex flex-wrap gap-3" onSubmit={handleFilterSubmit}>
             <label className="min-w-40 flex-1 space-y-2">

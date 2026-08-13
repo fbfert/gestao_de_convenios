@@ -90,10 +90,6 @@ function ListaDePapeis() {
         <div>
           <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Perfis e Permissões</p>
           <h2 className="mt-2 text-3xl font-semibold text-white">Papéis da clínica</h2>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
-            O papel define o que a pessoa enxerga no menu e o que pode alterar. O catálogo de
-            permissões é fixo; o que a clínica monta é a combinação delas em cada papel.
-          </p>
         </div>
 
         <button
@@ -173,10 +169,6 @@ function NovoPapel() {
       <div>
         <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Perfis e Permissões</p>
         <h2 className="mt-2 text-3xl font-semibold text-white">Novo perfil</h2>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
-          Copiar de um perfil existente costuma ser mais rápido do que marcar tudo de novo: você
-          ajusta as diferenças na tela seguinte.
-        </p>
       </div>
 
       <section className={card}>

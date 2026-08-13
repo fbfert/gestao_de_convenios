@@ -161,9 +161,6 @@ export function EmailTemplatesPage() {
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Configurações</p>
             <h2 className="mt-2 text-3xl font-semibold text-white">Templates de E-mails</h2>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
-              Cadastre assuntos e corpos dos emails operacionais usados pelo tenant.
-            </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
@@ -201,9 +198,6 @@ export function EmailTemplatesPage() {
                 <h3 className="text-lg font-semibold text-white">
                   {editingId ? 'Editar template' : 'Novo template'}
                 </h3>
-                <p className="text-sm text-slate-300">
-                  A chave precisa ser estável e única por tenant.
-                </p>
               </div>
               {editingId ? (
                 <span className="rounded-full border border-cyan-300/20 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-100">
@@ -325,12 +319,6 @@ export function EmailTemplatesPage() {
       ) : null}
 
       <section className="space-y-4 rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
-        <div>
-          <h3 className="text-lg font-semibold text-white">Lista</h3>
-          <p className="text-sm text-slate-300">
-            Mostra os templates disponíveis para os fluxos de email do tenant.
-          </p>
-        </div>
 
         {templatesQuery.isLoading ? (
           <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">

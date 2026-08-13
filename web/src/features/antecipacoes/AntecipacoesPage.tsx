@@ -64,9 +64,6 @@ export function AntecipacoesPage() {
       <section>
         <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Antecipações</p>
         <h2 className="mt-2 text-3xl font-semibold text-white">Painel de agendamento</h2>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
-          Aqui a equipe acompanha quanto já foi utilizado versus o limite autorizado.
-        </p>
       </section>
 
       <section className="space-y-4 rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">

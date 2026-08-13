@@ -424,9 +424,6 @@ export function LerPedidoMedicoPage() {
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Solicitações</p>
             <h2 className="mt-2 text-3xl font-semibold text-white">Ler pedido médico</h2>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
-              Anexe o pedido, revise as sugestões e confirme os campos antes de criar a solicitação.
-            </p>
           </div>
           <button
             type="button"

@@ -170,10 +170,6 @@ export function EspecialidadesPage() {
             <h2 className="mt-2 text-3xl font-semibold text-white">
               Cadastro e gestão das especialidades da clínica
             </h2>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
-              Use esta tela para manter as especialidades usadas nos fluxos operacionais, com
-              pesquisa, filtro de status e inativação lógica sem perder histórico.
-            </p>
           </div>
 
           <div className="flex items-center gap-3">
@@ -206,9 +202,6 @@ export function EspecialidadesPage() {
                 <h3 className="text-lg font-semibold text-white">
                   {editingId ? 'Editar especialidade' : 'Nova especialidade'}
                 </h3>
-                <p className="text-sm text-slate-300">
-                  O nome precisa ser único por tenant. Inativar preserva vínculos antigos.
-                </p>
               </div>
               {editingId ? (
                 <span className="rounded-full border border-cyan-300/20 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-100">
@@ -312,12 +305,6 @@ export function EspecialidadesPage() {
       {!isFormRoute ? (
       <section className="space-y-4 rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <h3 className="text-lg font-semibold text-white">Lista</h3>
-            <p className="text-sm text-slate-300">
-              Mostra especialidades do tenant com busca por nome e filtro de status.
-            </p>
-          </div>
 
           <form className="flex flex-wrap gap-3" onSubmit={handleFilterSubmit}>
             <label className="min-w-56 space-y-2">

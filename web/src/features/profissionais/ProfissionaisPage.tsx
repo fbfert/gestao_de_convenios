@@ -193,10 +193,6 @@ export function ProfissionaisPage() {
             <h2 className="mt-2 text-3xl font-semibold text-white">
               Cadastro e referência de profissionais executantes
             </h2>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
-              Use esta tela para manter os profissionais da clínica que executam os atendimentos e
-              alimentam os fluxos de guias, sessões, lançamentos e conciliação.
-            </p>
           </div>
 
           <div className="flex items-center gap-3">
@@ -229,10 +225,6 @@ export function ProfissionaisPage() {
                 <h3 className="text-lg font-semibold text-white">
                   {editingId ? 'Editar profissional' : 'Novo profissional'}
                 </h3>
-                <p className="text-sm text-slate-300">
-                  O profissional é o executante do atendimento e pode ter percentual de repasse
-                  próprio.
-                </p>
               </div>
               {editingId ? (
                 <span className="rounded-full border border-cyan-300/20 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-100">
@@ -429,13 +421,6 @@ export function ProfissionaisPage() {
       {!isFormRoute ? (
       <section className="space-y-4 rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <h3 className="text-lg font-semibold text-white">Lista</h3>
-            <p className="text-sm text-slate-300">
-              Mostra todos os profissionais da clínica, com pesquisa por nome, conselho e
-              especialidade.
-            </p>
-          </div>
 
           <form className="flex flex-wrap gap-3" onSubmit={handleFilterSubmit}>
             <label className="min-w-56 space-y-2">

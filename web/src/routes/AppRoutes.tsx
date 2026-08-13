@@ -52,6 +52,7 @@ export function AppRoutes() {
           <Route path="/solicitacoes/nova" element={<SolicitacoesPage />} />
           <Route path="/pacientes" element={<PacientesPage />} />
           <Route path="/pacientes/novo" element={<PacientesPage />} />
+          <Route path="/pacientes/:id/editar" element={<PacientesPage />} />
           <Route path="/guias" element={<GuiasPage />} />
           <Route path="/guias/nova" element={<GuiasPage />} />
           <Route path="/guias/:id" element={<GuiaDetalhePage />} />
@@ -77,6 +78,7 @@ export function AppRoutes() {
           <Route path="/especialidades/:id/editar" element={<EspecialidadesPage />} />
           <Route path="/medicos" element={<MedicosPage />} />
           <Route path="/medicos/novo" element={<MedicosPage />} />
+          <Route path="/medicos/:id/editar" element={<MedicosPage />} />
           <Route path="/permissoes" element={<PermissoesPage />} />
           <Route path="/permissoes/novo" element={<PermissoesPage />} />
           <Route path="/permissoes/:name/editar" element={<PermissoesPage />} />
@@ -88,8 +90,12 @@ export function AppRoutes() {
           <Route path="/configuracoes/emails" element={<ConfiguracoesPage aba="emails" />} />
           <Route path="/configuracoes/ia" element={<ConfiguracoesIaPage />} />
           <Route path="/configuracoes/ia/prompts" element={<PromptsOperacionaisPage />} />
+          <Route path="/configuracoes/ia/prompts/novo" element={<PromptsOperacionaisPage />} />
+          <Route path="/configuracoes/ia/prompts/:id/editar" element={<PromptsOperacionaisPage />} />
           <Route path="/configuracoes/unimed" element={<ConfiguracoesPage aba="unimed" />} />
           <Route path="/configuracoes/templates-emails" element={<EmailTemplatesPage />} />
+          <Route path="/configuracoes/templates-emails/novo" element={<EmailTemplatesPage />} />
+          <Route path="/configuracoes/templates-emails/:id/editar" element={<EmailTemplatesPage />} />
           <Route path="/manual" element={<ManualPage />} />
           <Route path="/clinicas" element={<TenantsPage />} />
         </Route>

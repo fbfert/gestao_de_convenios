@@ -1,5 +1,5 @@
-import { useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { Link, useMatch, useNavigate } from 'react-router-dom'
 import { useAiModels } from './useAiSettings'
 import {
   getHttpErrorMessage,
@@ -38,6 +38,18 @@ export function PromptsOperacionaisPage() {
   const excluir = useExcluirAiPrompt()
 
   const [edicao, setEdicao] = useState<Edicao>(null)
+  /*
+    A rota manda no que aparece: criar e editar acontecem em tela propria, como
+    no resto do sistema. O estado `edicao` continua guardando qual prompt esta
+    sendo editado, mas quem decide renderizar o formulario e a URL.
+  */
+  const navigate = useNavigate()
+  const isCreateRoute = useMatch('/configuracoes/ia/prompts/novo') !== null
+  const editRouteMatch = useMatch('/configuracoes/ia/prompts/:id/editar')
+  const routeEditingId = editRouteMatch ? Number(editRouteMatch.params.id) : null
+  const isEditRoute = routeEditingId !== null && Number.isInteger(routeEditingId)
+  const isFormRoute = isCreateRoute || isEditRoute
+  const carregadoRef = useRef<number | 'novo' | null>(null)
   const [form, setForm] = useState<AiPromptForm>(promptVazio)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -51,7 +63,7 @@ export function PromptsOperacionaisPage() {
   */
   const modelosQuery = useAiModels(edicao !== null)
 
-  const prompts = promptsQuery.data ?? []
+  const prompts = useMemo(() => promptsQuery.data ?? [], [promptsQuery.data])
   const editandoSistema =
     typeof edicao === 'number' && (prompts.find((p) => p.id === edicao)?.sistema ?? false)
 
@@ -60,18 +72,55 @@ export function PromptsOperacionaisPage() {
     setForm(promptVazio)
     setMessage(null)
     setError(null)
+    navigate('/configuracoes/ia/prompts/novo')
   }
+
+  /*
+    Hidrata quando a tela e aberta direto pela URL ou recarregada: nesses casos
+    abrirNovo/abrirEdicao nunca rodaram, e o formulario apareceria vazio.
+  */
+  useEffect(() => {
+    if (!isFormRoute) {
+      carregadoRef.current = null
+      setEdicao(null)
+
+      return
+    }
+
+    if (isCreateRoute) {
+      if (carregadoRef.current !== 'novo') {
+        carregadoRef.current = 'novo'
+        setEdicao('novo')
+        setForm(promptVazio)
+      }
+
+      return
+    }
+
+    const prompt = prompts.find((item) => item.id === routeEditingId)
+
+    if (!prompt || carregadoRef.current === prompt.id) {
+      return
+    }
+
+    carregadoRef.current = prompt.id
+    setEdicao(prompt.id)
+    setForm(paraFormulario(prompt))
+  }, [isFormRoute, isCreateRoute, routeEditingId, prompts])
 
   const abrirEdicao = (prompt: AiPrompt) => {
     setEdicao(prompt.id)
     setForm(paraFormulario(prompt))
     setMessage(null)
     setError(null)
+    navigate(`/configuracoes/ia/prompts/${prompt.id}/editar`)
   }
 
   const fechar = () => {
     setEdicao(null)
     setForm(promptVazio)
+    carregadoRef.current = null
+    navigate('/configuracoes/ia/prompts')
   }
 
   const alterar = <C extends keyof AiPromptForm>(campo: C, valor: AiPromptForm[C]) => {
@@ -158,7 +207,7 @@ export function PromptsOperacionaisPage() {
         </p>
       ) : null}
 
-      {edicao !== null ? (
+      {isFormRoute ? (
         <form
           onSubmit={handleSubmit}
           className="rounded-[1.75rem] border border-cyan-300/30 bg-slate-950/60 p-6"

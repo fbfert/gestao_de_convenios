@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { useMatch, useNavigate } from 'react-router-dom'
 import { useConvenios } from '../../lib/queries/useReferenceData'
 import { Select } from '../../components/ui/Select'
@@ -89,15 +89,20 @@ function carteirinhaVencida(validade: string): boolean {
 export function PacientesPage() {
   const navigate = useNavigate()
   const isCreateRoute = useMatch('/pacientes/novo') !== null
+  // Editar tambem em rota propria, pelo mesmo motivo da criacao.
+  const editRouteMatch = useMatch('/pacientes/:id/editar')
+  const routeEditingId = editRouteMatch ? Number(editRouteMatch.params.id) : null
+  const isEditRoute = routeEditingId !== null && Number.isInteger(routeEditingId)
+  const isFormRoute = isCreateRoute || isEditRoute
   const [filtros, setFiltros] = useState<PacientesConsulta>(filtrosVazios)
   const [rascunho, setRascunho] = useState<PacientesConsulta>(filtrosVazios)
   const [editingId, setEditingId] = useState<number | null>(null)
-  const [isFormOpen, setIsFormOpen] = useState(false)
   const [form, setForm] = useState<PacienteForm>(emptyForm)
   // Os blocos vivem em estado próprio: derivá-los de form.carteirinha fazia os dígitos
   // migrarem de bloco assim que um bloco anterior ficava incompleto.
   const [blocosDigitados, setBlocosDigitados] = useState<string[]>([])
   const [formError, setFormError] = useState<string | null>(null)
+  const carregadoPacienteRef = useRef<number | null>(null)
 
   const pacientesQuery = usePacientesCrud(filtros)
   const conveniosQuery = useConvenios()
@@ -105,6 +110,33 @@ export function PacientesPage() {
   const atualizarPaciente = useAtualizarPaciente()
 
   const pacientes = useMemo(() => pacientesQuery.data ?? [], [pacientesQuery.data])
+  const pacienteEmEdicao = useMemo(
+    () => (isEditRoute ? pacientes.find((paciente) => paciente.id === routeEditingId) ?? null : null),
+    [isEditRoute, routeEditingId, pacientes],
+  )
+
+  // Hidrata quando a edicao e aberta direto pela URL ou recarregada.
+  useEffect(() => {
+    if (!isEditRoute) {
+      carregadoPacienteRef.current = null
+
+      return
+    }
+
+    if (!pacienteEmEdicao || carregadoPacienteRef.current === pacienteEmEdicao.id) {
+      return
+    }
+
+    carregadoPacienteRef.current = pacienteEmEdicao.id
+    setEditingId(pacienteEmEdicao.id)
+    setForm(toForm(pacienteEmEdicao))
+    setBlocosDigitados(
+      pacienteEmEdicao.convenio?.carteirinha_blocos
+        ? splitCarteirinha(pacienteEmEdicao.carteirinha, pacienteEmEdicao.convenio.carteirinha_blocos)
+        : [],
+    )
+    setFormError(null)
+  }, [isEditRoute, pacienteEmEdicao])
   const convenios = useMemo(() => conveniosQuery.data ?? [], [conveniosQuery.data])
   const selectedConvenio = useMemo(
     () => convenios.find((convenio) => String(convenio.id) === form.convenio_id),
@@ -184,7 +216,7 @@ export function PacientesPage() {
         : [],
     )
     setFormError(null)
-    setIsFormOpen(true)
+    navigate(`/pacientes/${paciente.id}/editar`)
   }
 
   /*
@@ -193,7 +225,7 @@ export function PacientesPage() {
     automatico no foco, entao aqui e explicito, e so enquanto o formulario
     esta aberto.
   */
-  const formAberto = isCreateRoute || isFormOpen
+  const formAberto = isFormRoute
 
   useEffect(() => {
     if (!formAberto) {
@@ -253,12 +285,8 @@ export function PacientesPage() {
     setForm(emptyForm)
     setBlocosDigitados([])
     setFormError(null)
-    if (isCreateRoute) {
-      navigate('/pacientes')
-      return
-    }
-
-    setIsFormOpen(false)
+    carregadoPacienteRef.current = null
+    navigate('/pacientes')
   }
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -296,11 +324,8 @@ export function PacientesPage() {
 
       setEditingId(null)
       setForm(emptyForm)
-      if (isCreateRoute) {
-        navigate('/pacientes')
-      } else {
-        setIsFormOpen(false)
-      }
+      carregadoPacienteRef.current = null
+      navigate('/pacientes')
     } catch (error) {
       setFormError(getHttpErrorMessage(error, 'Não foi possível salvar o paciente.'))
     }
@@ -308,7 +333,7 @@ export function PacientesPage() {
 
   return (
     <div className="space-y-8" data-testid="pacientes-page">
-      {!isCreateRoute ? (
+      {!isFormRoute ? (
       <section className="space-y-4">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -336,7 +361,7 @@ export function PacientesPage() {
       </section>
       ) : null}
 
-      {isFormOpen || isCreateRoute ? (
+      {isFormRoute ? (
         <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
           <form onSubmit={handleSubmit} className="space-y-4" data-testid="paciente-form">
             <div className="flex items-start justify-between gap-4">
@@ -537,7 +562,7 @@ export function PacientesPage() {
         </section>
       ) : null}
 
-      {!isCreateRoute ? (
+      {!isFormRoute ? (
       <section className="space-y-4 rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
 

@@ -30,10 +30,14 @@ class AntecipacoesApiTest extends TestCase
         $aberta = $this->criarAntecipacaoAberta('SC Saúde', 'Fonoaudiologia', 'convencional');
         $fechada = $this->criarAntecipacaoFechada('Unimed', 'Fisioterapia', 'especializada');
 
-        $this->getJson('/api/antecipacoes?status=open&paciente_id='.$aberta->paciente_id.'&convenio_id='.$aberta->convenio_id)
+        $listadas = $this->getJson('/api/antecipacoes?status=open&paciente_id='.$aberta->paciente_id.'&convenio_id='.$aberta->convenio_id)
             ->assertOk()
             ->assertJsonPath('data.0.id', $aberta->id)
-            ->assertJsonMissing(['id' => $fechada->id]);
+            ->json('data');
+
+        // Compara a lista de ids em vez de procurar o fragmento {"id": N}: o
+        // recurso agora aninha convenio e especialidade, que tambem tem id.
+        $this->assertNotContains($fechada->id, array_column($listadas, 'id'));
 
         $this->getJson('/api/antecipacoes?status=closed&paciente_id='.$fechada->paciente_id.'&convenio_id='.$fechada->convenio_id)
             ->assertOk()

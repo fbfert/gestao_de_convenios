@@ -1,6 +1,6 @@
-import { useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { Indicadores } from '../../components/ui/Indicadores'
-import { Link } from 'react-router-dom'
+import { Link, useMatch, useNavigate } from 'react-router-dom'
 import {
   getHttpErrorMessage,
   useAtualizarEmailTemplate,
@@ -45,7 +45,14 @@ export function EmailTemplatesPage() {
   const atualizarTemplate = useAtualizarEmailTemplate()
   const excluirTemplate = useExcluirEmailTemplate()
   const [editingId, setEditingId] = useState<number | null>(null)
-  const [isFormOpen, setIsFormOpen] = useState(false)
+  // Criar e editar em rota propria, como no resto do sistema.
+  const isCreateRoute = useMatch('/configuracoes/templates-emails/novo') !== null
+  const editRouteMatch = useMatch('/configuracoes/templates-emails/:id/editar')
+  const routeEditingId = editRouteMatch ? Number(editRouteMatch.params.id) : null
+  const isEditRoute = routeEditingId !== null && Number.isInteger(routeEditingId)
+  const isFormRoute = isCreateRoute || isEditRoute
+  const navigate = useNavigate()
+  const carregadoRef = useRef<number | null>(null)
   const [form, setForm] = useState<EmailTemplateForm>(emptyForm)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -57,12 +64,33 @@ export function EmailTemplatesPage() {
   )
   const totalInativos = templates.length - totalAtivos
 
+  const templateEmEdicao = useMemo(
+    () => (isEditRoute ? templates.find((template) => template.id === routeEditingId) ?? null : null),
+    [isEditRoute, routeEditingId, templates],
+  )
+
+  useEffect(() => {
+    if (!isEditRoute) {
+      carregadoRef.current = null
+
+      return
+    }
+
+    if (!templateEmEdicao?.id || carregadoRef.current === templateEmEdicao.id) {
+      return
+    }
+
+    carregadoRef.current = templateEmEdicao.id
+    setEditingId(templateEmEdicao.id)
+    setForm(toForm(templateEmEdicao))
+  }, [isEditRoute, templateEmEdicao])
+
   const handleNew = () => {
     setEditingId(null)
     setForm(emptyForm)
     setMessage(null)
     setError(null)
-    setIsFormOpen(true)
+    navigate('/configuracoes/templates-emails/novo')
   }
 
   const handleEdit = (template: EmailTemplateSettings) => {
@@ -74,14 +102,15 @@ export function EmailTemplatesPage() {
     setForm(toForm(template))
     setMessage(null)
     setError(null)
-    setIsFormOpen(true)
+    navigate(`/configuracoes/templates-emails/${template.id}/editar`)
   }
 
   const handleCancel = () => {
     setEditingId(null)
     setForm(emptyForm)
     setError(null)
-    setIsFormOpen(false)
+    carregadoRef.current = null
+    navigate('/configuracoes/templates-emails')
   }
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -107,7 +136,8 @@ export function EmailTemplatesPage() {
 
       setEditingId(null)
       setForm(emptyForm)
-      setIsFormOpen(false)
+      carregadoRef.current = null
+      navigate('/configuracoes/templates-emails')
     } catch (submitError) {
       setError(getHttpErrorMessage(submitError, 'Não foi possível salvar o template.'))
     }
@@ -190,7 +220,7 @@ export function EmailTemplatesPage() {
         />
       </section>
 
-      {isFormOpen ? (
+      {isFormRoute ? (
         <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
           <form onSubmit={handleSubmit} className="space-y-4" data-testid="email-template-form">
             <div className="flex items-start justify-between gap-4">
@@ -312,7 +342,7 @@ export function EmailTemplatesPage() {
         </p>
       ) : null}
 
-      {!isFormOpen && error ? (
+      {!isFormRoute && error ? (
         <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
           {error}
         </p>

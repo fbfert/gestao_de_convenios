@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { useMatch, useNavigate } from 'react-router-dom'
 import { getHttpErrorMessage, useAtualizarMedico, useCriarMedico, useMedicos } from './useMedicos'
 import type { Medico, MedicoForm } from './types'
@@ -37,18 +37,50 @@ function toForm(medico: Medico): MedicoForm {
 export function MedicosPage() {
   const navigate = useNavigate()
   const isCreateRoute = useMatch('/medicos/novo') !== null
+  // Editar tambem tem rota propria: com a lista junto, o formulario ficava
+  // espremido e a pagina rolava de volta ao topo a cada acao.
+  const editRouteMatch = useMatch('/medicos/:id/editar')
+  const routeEditingId = editRouteMatch ? Number(editRouteMatch.params.id) : null
+  const isEditRoute = routeEditingId !== null && Number.isInteger(routeEditingId)
+  const isFormRoute = isCreateRoute || isEditRoute
   const [busca, setBusca] = useState('')
   const [draftBusca, setDraftBusca] = useState('')
   const [editingId, setEditingId] = useState<number | null>(null)
-  const [isFormOpen, setIsFormOpen] = useState(false)
   const [form, setForm] = useState<MedicoForm>(emptyForm)
   const [formError, setFormError] = useState<string | null>(null)
+  const carregadoRef = useRef<number | null>(null)
 
   const medicosQuery = useMedicos(busca)
   const criarMedico = useCriarMedico()
   const atualizarMedico = useAtualizarMedico()
 
   const medicos = useMemo(() => medicosQuery.data ?? [], [medicosQuery.data])
+  const medicoEmEdicao = useMemo(
+    () => (isEditRoute ? medicos.find((medico) => medico.id === routeEditingId) ?? null : null),
+    [isEditRoute, routeEditingId, medicos],
+  )
+
+  /*
+    Preenche o formulario quando a edicao e aberta direto pela URL ou
+    recarregada — nesses casos handleEdit nunca rodou. O ref evita que um
+    refetch em background sobrescreva o que ja foi digitado.
+  */
+  useEffect(() => {
+    if (!isEditRoute) {
+      carregadoRef.current = null
+
+      return
+    }
+
+    if (!medicoEmEdicao || carregadoRef.current === medicoEmEdicao.id) {
+      return
+    }
+
+    carregadoRef.current = medicoEmEdicao.id
+    setEditingId(medicoEmEdicao.id)
+    setForm(toForm(medicoEmEdicao))
+    setFormError(null)
+  }, [isEditRoute, medicoEmEdicao])
   const totalAtivos = useMemo(() => medicos.filter((medico) => medico.ativo).length, [medicos])
   const totalInativos = medicos.length - totalAtivos
 
@@ -80,11 +112,9 @@ export function MedicosPage() {
 
       setEditingId(null)
       setForm(emptyForm)
-      if (isCreateRoute) {
-        navigate('/medicos')
-      } else {
-        setIsFormOpen(false)
-      }
+      setEditingId(null)
+      carregadoRef.current = null
+      navigate('/medicos')
     } catch (error) {
       setFormError(getHttpErrorMessage(error, 'Não foi possível salvar o médico.'))
     }
@@ -94,7 +124,7 @@ export function MedicosPage() {
     setEditingId(medico.id)
     setForm(toForm(medico))
     setFormError(null)
-    setIsFormOpen(true)
+    navigate(`/medicos/${medico.id}/editar`)
   }
 
   const handleToggleAtivo = async (medico: Medico) => {
@@ -114,17 +144,13 @@ export function MedicosPage() {
     setEditingId(null)
     setForm(emptyForm)
     setFormError(null)
-    if (isCreateRoute) {
-      navigate('/medicos')
-      return
-    }
-
-    setIsFormOpen(false)
+    carregadoRef.current = null
+    navigate('/medicos')
   }
 
   return (
     <div className="space-y-8" data-testid="medicos-page">
-      {!isCreateRoute ? (
+      {!isFormRoute ? (
       <section className="space-y-4">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -156,7 +182,7 @@ export function MedicosPage() {
       </section>
       ) : null}
 
-      {isFormOpen || isCreateRoute ? (
+      {isFormRoute ? (
         <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
           <form onSubmit={handleSubmit} className="space-y-4" data-testid="medico-form">
             <div className="flex items-start justify-between gap-4">
@@ -286,7 +312,7 @@ export function MedicosPage() {
         </section>
       ) : null}
 
-      {!isCreateRoute ? (
+      {!isFormRoute ? (
       <section className="space-y-4 rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
 

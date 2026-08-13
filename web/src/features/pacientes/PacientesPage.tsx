@@ -10,16 +10,21 @@ import {
   splitCarteirinha,
 } from '../../lib/carteirinha'
 import { CarteirinhaBlocosInput } from '../../components/ui/CarteirinhaBlocosInput'
-import type { Paciente, PacienteForm } from './types'
+import { cpfValido, formatarCpf, somenteDigitos } from '../../lib/documentos'
+import { LerCarteirinha } from './LerCarteirinha'
+import { TelefonesInput } from './TelefonesInput'
+import type { LeituraCarteirinha, Paciente, PacienteForm } from './types'
 
 const emptyForm: PacienteForm = {
   nome: '',
   cpf: '',
+  data_nascimento: '',
   carteirinha: '',
+  validade_carteirinha: '',
   convenio_id: '',
-  telefone: '',
-  clinica_agil_id: '',
+  telefones: [],
   ativo: true,
+  carteirinha_documento_id: null,
 }
 
 function selectClasses() {
@@ -36,12 +41,26 @@ function toForm(paciente: Paciente): PacienteForm {
   return {
     nome: paciente.nome,
     cpf: paciente.cpf ?? '',
+    data_nascimento: paciente.data_nascimento ?? '',
     carteirinha: paciente.carteirinha,
+    validade_carteirinha: paciente.validade_carteirinha ?? '',
     convenio_id: String(paciente.convenio_id),
-    telefone: paciente.telefone ?? '',
-    clinica_agil_id: paciente.clinica_agil_id ?? '',
+    telefones: (paciente.telefones ?? []).map((telefone) => ({
+      ...telefone,
+      contato_nome: telefone.contato_nome ?? '',
+    })),
     ativo: paciente.ativo,
+    carteirinha_documento_id: null,
   }
+}
+
+/** Vencida quando a validade cadastrada já passou. */
+function carteirinhaVencida(validade: string): boolean {
+  if (!validade) {
+    return false
+  }
+
+  return new Date(`${validade}T23:59:59`) < new Date()
 }
 
 export function PacientesPage() {
@@ -74,15 +93,13 @@ export function PacientesPage() {
   const totalAtivos = pacientes.filter((paciente) => paciente.ativo).length
   const totalInativos = pacientes.length - totalAtivos
 
-  useEffect(() => {
-    if (convenios.length === 0) {
-      return
-    }
-
-    setForm((current) =>
-      current.convenio_id ? current : { ...current, convenio_id: String(convenios[0].id) },
-    )
-  }, [convenios])
+  /*
+    O convenio NAO e pre-selecionado. Ele passou a ser a primeira pergunta do
+    cadastro justamente porque manda no formato da carteirinha, nas regras de
+    autorizacao e no valor pago — escolher tem de ser ato consciente. Antes o
+    formulario marcava o primeiro da lista, e bastava nao olhar para cadastrar
+    o paciente na operadora errada, em silencio.
+  */
 
   // Trocar para um convenio com formato reaproveita o que ja estava digitado
   // no campo unico.
@@ -114,10 +131,7 @@ export function PacientesPage() {
   const handleNew = () => {
     navigate('/pacientes/novo')
     setEditingId(null)
-    setForm((current) => ({
-      ...emptyForm,
-      convenio_id: current.convenio_id,
-    }))
+    setForm(emptyForm)
     setBlocosDigitados([])
     setFormError(null)
   }
@@ -132,6 +146,32 @@ export function PacientesPage() {
     )
     setFormError(null)
     setIsFormOpen(true)
+  }
+
+  /**
+   * Traz para o formulário o que a IA leu.
+   *
+   * Só sobrescreve campo que a leitura trouxe: o que o modelo não reconheceu
+   * volta como null, e apagar o que o operador já digitou seria pior que não
+   * ler nada. Os blocos da carteirinha se reorganizam sozinhos pelo efeito que
+   * observa `form.carteirinha`.
+   */
+  const aplicarLeitura = (leitura: LeituraCarteirinha) => {
+    const { dados, convenio } = leitura
+
+    setFormError(null)
+    setForm((current) => ({
+      ...current,
+      nome: dados.nome ?? current.nome,
+      cpf: dados.cpf ?? current.cpf,
+      data_nascimento: dados.data_nascimento ?? current.data_nascimento,
+      validade_carteirinha: dados.validade_carteirinha ?? current.validade_carteirinha,
+      carteirinha: dados.carteirinha ?? current.carteirinha,
+      // Convênio só entra quando o casamento foi certeiro; senão o campo fica
+      // como está e o aviso explica o que foi lido.
+      convenio_id: convenio.id ? String(convenio.id) : current.convenio_id,
+      carteirinha_documento_id: leitura.documento_id,
+    }))
   }
 
   const handleToggleAtivo = async (paciente: Paciente) => {
@@ -164,16 +204,25 @@ export function PacientesPage() {
     event.preventDefault()
     setFormError(null)
 
+    // Mesma conferencia da API, feita antes de gastar a viagem.
+    if (!cpfValido(form.cpf)) {
+      setFormError('O CPF informado não é válido.')
+
+      return
+    }
+
     try {
       if (editingId) {
         const payload: Partial<PacienteForm> = {
           nome: form.nome,
           cpf: form.cpf,
+          data_nascimento: form.data_nascimento,
           carteirinha: form.carteirinha,
+          validade_carteirinha: form.validade_carteirinha,
           convenio_id: form.convenio_id,
-          telefone: form.telefone,
-          clinica_agil_id: form.clinica_agil_id,
+          telefones: form.telefones,
           ativo: form.ativo,
+          carteirinha_documento_id: form.carteirinha_documento_id,
         }
 
         await atualizarPaciente.mutateAsync({
@@ -185,10 +234,7 @@ export function PacientesPage() {
       }
 
       setEditingId(null)
-      setForm((current) => ({
-        ...emptyForm,
-        convenio_id: current.convenio_id,
-      }))
+      setForm(emptyForm)
       if (isCreateRoute) {
         navigate('/pacientes')
       } else {
@@ -268,25 +314,7 @@ export function PacientesPage() {
               </div>
             ) : null}
 
-            <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Nome</span>
-              <input
-                value={form.nome}
-                onChange={(event) => setForm((current) => ({ ...current, nome: event.target.value }))}
-                className={selectClasses()}
-                data-testid="paciente-nome"
-              />
-            </label>
-
-            <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">CPF</span>
-              <input
-                value={form.cpf}
-                onChange={(event) => setForm((current) => ({ ...current, cpf: event.target.value }))}
-                className={selectClasses()}
-                data-testid="paciente-cpf"
-              />
-            </label>
+            <LerCarteirinha onLeitura={aplicarLeitura} />
 
             <label className="block space-y-2">
               <span className="text-sm font-medium text-slate-200">Convênio</span>
@@ -299,15 +327,26 @@ export function PacientesPage() {
                 data-testid="paciente-convenio"
                 disabled={conveniosQuery.isLoading || convenios.length === 0}
               >
-                <option value="" disabled>
-                  Selecione
-                </option>
+                <option value="">Selecione o convênio</option>
                 {convenios.map((convenio) => (
                   <option key={convenio.id} value={convenio.id}>
                     {convenio.nome}
                   </option>
                 ))}
               </Select>
+              <span className="block text-xs text-slate-400">
+                O convênio define o formato da carteirinha e as regras de autorização.
+              </span>
+            </label>
+
+            <label className="block space-y-2">
+              <span className="text-sm font-medium text-slate-200">Nome Completo</span>
+              <input
+                value={form.nome}
+                onChange={(event) => setForm((current) => ({ ...current, nome: event.target.value }))}
+                className={selectClasses()}
+                data-testid="paciente-nome"
+              />
             </label>
 
             {blocos ? (
@@ -337,29 +376,59 @@ export function PacientesPage() {
               </label>
             )}
 
-            <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Telefone</span>
-              <input
-                value={form.telefone}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, telefone: event.target.value }))
-                }
-                className={selectClasses()}
-                data-testid="paciente-telefone"
-              />
-            </label>
+            <div className="grid gap-4 md:grid-cols-2">
+              <label className="block space-y-2">
+                <span className="text-sm font-medium text-slate-200">Validade da carteirinha</span>
+                <input
+                  type="date"
+                  value={form.validade_carteirinha}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, validade_carteirinha: event.target.value }))
+                  }
+                  className={selectClasses()}
+                  data-testid="paciente-validade-carteirinha"
+                />
+                {carteirinhaVencida(form.validade_carteirinha) ? (
+                  <span className="block rounded-2xl border border-amber-300/20 bg-amber-400/10 px-3 py-2 text-xs text-amber-100">
+                    Carteirinha vencida. O cadastro continua permitido — confira o cartão atual com
+                    o paciente.
+                  </span>
+                ) : null}
+              </label>
+
+              <label className="block space-y-2">
+                <span className="text-sm font-medium text-slate-200">Data de nascimento</span>
+                <input
+                  type="date"
+                  value={form.data_nascimento}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, data_nascimento: event.target.value }))
+                  }
+                  className={selectClasses()}
+                  data-testid="paciente-data-nascimento"
+                />
+              </label>
+            </div>
 
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">ID Clínica Ágil</span>
+              <span className="text-sm font-medium text-slate-200">CPF</span>
               <input
-                value={form.clinica_agil_id}
+                value={formatarCpf(form.cpf)}
                 onChange={(event) =>
-                  setForm((current) => ({ ...current, clinica_agil_id: event.target.value }))
+                  setForm((current) => ({ ...current, cpf: somenteDigitos(event.target.value) }))
                 }
+                placeholder="000.000.000-00"
+                inputMode="numeric"
                 className={selectClasses()}
-                data-testid="paciente-clinica-agil-id"
+                data-testid="paciente-cpf"
               />
+              <span className="block text-xs text-slate-400">Opcional.</span>
             </label>
+
+            <TelefonesInput
+              telefones={form.telefones}
+              onChange={(telefones) => setForm((current) => ({ ...current, telefones }))}
+            />
 
             <label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
               <input

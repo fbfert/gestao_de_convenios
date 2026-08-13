@@ -109,6 +109,10 @@ export function SolicitacoesPage() {
     [especialidadesQuery.data],
   )
   const pacientes = useMemo(() => pacientesQuery.data ?? emptyArray, [pacientesQuery.data])
+  const pacienteSelecionado = useMemo(
+    () => pacientes.find((item) => String(item.id) === form.paciente_id),
+    [pacientes, form.paciente_id],
+  )
   const profissionais = useMemo(
     () => profissionaisQuery.data ?? emptyArray,
     [profissionaisQuery.data],
@@ -376,6 +380,17 @@ export function SolicitacoesPage() {
                   </option>
                 ))}
               </Select>
+
+              {pacienteSelecionado?.carteirinha_vencida ? (
+                <span className="block rounded-2xl border border-amber-300/20 bg-amber-400/10 px-3 py-2 text-xs text-amber-100">
+                  A carteirinha deste paciente está vencida
+                  {pacienteSelecionado.validade_carteirinha
+                    ? ` desde ${new Date(`${pacienteSelecionado.validade_carteirinha}T12:00:00`).toLocaleDateString('pt-BR')}`
+                    : ''}
+                  . Confirme o cartão atual antes de solicitar — a operadora costuma recusar guia
+                  com carteirinha vencida.
+                </span>
+              ) : null}
             </label>
 
             <label className="block space-y-2">

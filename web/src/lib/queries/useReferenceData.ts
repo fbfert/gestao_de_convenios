@@ -36,6 +36,9 @@ export type PacienteRef = {
   id: number
   nome: string
   carteirinha: string
+  /** Vem calculado da API: a validade cadastrada já passou. */
+  carteirinha_vencida?: boolean
+  validade_carteirinha?: string | null
   convenio_id: number
   convenio?: {
     id: number

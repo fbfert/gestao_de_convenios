@@ -2,13 +2,14 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\DadosDePaciente;
 use App\Http\Requests\Concerns\ValidaCarteirinhaPorConvenio;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class UpdatePacienteRequest extends FormRequest
 {
-    use ValidaCarteirinhaPorConvenio;
+    use DadosDePaciente, ValidaCarteirinhaPorConvenio;
 
     public function authorize(): bool
     {
@@ -21,7 +22,6 @@ class UpdatePacienteRequest extends FormRequest
 
         return [
             'nome' => ['sometimes', 'required', 'string', 'max:255'],
-            'cpf' => ['sometimes', 'nullable', 'string', 'max:255'],
             'carteirinha' => ['sometimes', 'required', 'string', 'max:255'],
             'convenio_id' => [
                 'sometimes',
@@ -29,9 +29,14 @@ class UpdatePacienteRequest extends FormRequest
                 'integer',
                 Rule::exists('convenios', 'id')->where(fn ($query) => $query->where('tenant_id', $tenantId)),
             ],
-            'telefone' => ['sometimes', 'nullable', 'string', 'max:255'],
-            'clinica_agil_id' => ['sometimes', 'nullable', 'string', 'max:255'],
             'ativo' => ['sometimes', 'boolean'],
+            ...$this->regrasDeContato(),
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $this->prepararCarteirinha();
+        $this->limparContato();
     }
 }

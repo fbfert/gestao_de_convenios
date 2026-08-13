@@ -85,6 +85,9 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EncerrarSessaoExpirada::
     Route::patch('/configuracoes/unimed/mapeamentos/profissionais/{profissionalMapeamento}', [ConvenioProfissionalMapeamentoController::class, 'update'])->middleware('permission:configuracoes.unimed.manage');
 
     Route::get('/pacientes', [PacienteController::class, 'index']);
+    // Antes da rota com {paciente}: sem isso "ler-carteirinha" seria lido
+    // como id de paciente.
+    Route::post('/pacientes/ler-carteirinha', [PacienteController::class, 'lerCarteirinha']);
     Route::get('/pacientes/{paciente}', [PacienteController::class, 'show']);
     Route::post('/pacientes', [PacienteController::class, 'store']);
     Route::patch('/pacientes/{paciente}', [PacienteController::class, 'update']);

@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '../../api/client'
 import { getHttpErrorMessage } from '../../lib/httpError'
-import type { Paciente, PacienteForm } from './types'
+import type { LeituraCarteirinha, Paciente, PacienteForm } from './types'
 
 type ListResponse<T> = {
   data: T[]
@@ -59,6 +59,29 @@ export function useAtualizarPaciente() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['pacientes'] })
+    },
+  })
+}
+
+/**
+ * Envia a imagem da carteirinha para leitura por IA.
+ *
+ * Nada é gravado no cadastro aqui: a resposta preenche o formulário e o
+ * operador confere antes de salvar.
+ */
+export function useLerCarteirinha() {
+  return useMutation({
+    mutationFn: async (arquivo: File) => {
+      const body = new FormData()
+      body.append('arquivo', arquivo)
+
+      const { data } = await apiClient.post<{ data: LeituraCarteirinha }>(
+        '/pacientes/ler-carteirinha',
+        body,
+        { headers: { 'Content-Type': 'multipart/form-data' } },
+      )
+
+      return data.data
     },
   })
 }

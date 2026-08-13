@@ -18,6 +18,7 @@ const formVazio: ConfiguracoesGlobaisForm = {
   sessoes_padrao: '10',
   itens_por_pagina: '15',
   auditoria_retencao_meses: '12',
+  carteirinha_retencao_dias: '30',
 }
 
 /** Atalhos de tempo de sessão, para não ter que calcular minutos na mão. */
@@ -203,6 +204,24 @@ export function ConfiguracoesGlobaisPage() {
             <span className="block text-xs text-slate-400">
               Todo dia, o que passa deste prazo é exportado em CSV no servidor e depois removido da
               trilha. Mínimo de 3 meses.
+            </span>
+          </label>
+
+          <label className="space-y-2">
+            <span className="text-sm font-medium text-slate-200">Imagem da carteirinha (dias)</span>
+            <input
+              type="number"
+              min={1}
+              max={365}
+              value={form.carteirinha_retencao_dias}
+              onChange={(event) => alterar('carteirinha_retencao_dias', event.target.value)}
+              className={inputClasses()}
+              required
+              data-testid="globais-carteirinha-retencao"
+            />
+            <span className="block text-xs text-slate-400">
+              Quanto tempo a foto da carteirinha lida pela IA fica guardada. Passado o prazo, a
+              imagem é apagada — o cadastro do paciente não muda.
             </span>
           </label>
         </div>

@@ -26,6 +26,10 @@ class UpdateConfiguracaoGlobalRequest extends FormRequest
             // porque acima disso a decisao e "guardar sempre", e ai o caminho
             // e desligar o expurgo, nao esticar o prazo.
             'auditoria_retencao_meses' => ['required', 'integer', 'min:3', 'max:120'],
+
+            // Imagem de documento pessoal: o teto e baixo de proposito. Quem
+            // precisa guardar por mais tempo deveria arquivar fora do sistema.
+            'carteirinha_retencao_dias' => ['required', 'integer', 'min:1', 'max:365'],
         ];
     }
 
@@ -35,6 +39,7 @@ class UpdateConfiguracaoGlobalRequest extends FormRequest
             'sessao_minutos.max' => 'O tempo de sessão não pode passar de 43200 minutos (30 dias).',
             'itens_por_pagina.min' => 'A listagem precisa mostrar ao menos 5 itens por página.',
             'auditoria_retencao_meses.min' => 'A auditoria precisa ser mantida por ao menos 3 meses.',
+            'carteirinha_retencao_dias.max' => 'A imagem da carteirinha não pode ser guardada por mais de 365 dias.',
         ];
     }
 }

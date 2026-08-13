@@ -42,7 +42,12 @@ trait ValidaCarteirinhaPorConvenio
         });
     }
 
-    protected function prepareForValidation(): void
+    /**
+     * Chamado pelo `prepareForValidation` de cada request, e não sendo ele
+     * próprio: o paciente também precisa limpar CPF e telefones antes de
+     * validar, e dois traits não podem declarar o mesmo método.
+     */
+    protected function prepararCarteirinha(): void
     {
         // A tela envia um bloco por campo; o banco guarda a string corrida.
         if (is_array($this->input('carteirinha_blocos'))) {

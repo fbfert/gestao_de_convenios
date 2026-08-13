@@ -38,27 +38,38 @@ class PacientesApiTest extends TestCase
 
         $this->postJson('/api/pacientes', [
             'nome' => 'Paciente CRUD Local',
-            'cpf' => '99988877766',
+            'cpf' => '99988877714',
             'carteirinha' => 'PAC-CRUD-0001',
             'convenio_id' => $convenio->id,
-            'telefone' => '(11) 90000-0001',
-            'clinica_agil_id' => 'CA-CRUD-0001',
+            'telefones' => [
+                ['numero' => '(11) 90000-0001', 'rotulo' => 'celular', 'contato_nome' => 'Maria'],
+                ['numero' => '1133330002', 'rotulo' => 'fixo', 'principal' => true],
+            ],
         ])
             ->assertCreated()
             ->assertJsonPath('data.nome', 'Paciente CRUD Local')
             ->assertJsonPath('data.convenio.id', $convenio->id)
+            // Guardado so com digitos, como o CPF: mascara e assunto de tela.
+            ->assertJsonPath('data.telefones.0.numero', '11900000001')
+            ->assertJsonPath('data.telefones.0.contato_nome', 'Maria')
+            ->assertJsonPath('data.telefones.1.principal', true)
             ->assertJsonPath('data.ativo', true);
 
         $paciente = Paciente::query()->where('carteirinha', 'PAC-CRUD-0001')->firstOrFail();
 
         $this->patchJson("/api/pacientes/{$paciente->id}", [
             'nome' => 'Paciente CRUD Atualizado',
-            'telefone' => '(11) 90000-0099',
+            'telefones' => [
+                ['numero' => '(11) 90000-0099', 'rotulo' => 'whatsapp'],
+            ],
             'ativo' => false,
         ])
             ->assertOk()
             ->assertJsonPath('data.nome', 'Paciente CRUD Atualizado')
-            ->assertJsonPath('data.telefone', '(11) 90000-0099')
+            // A lista e regravada inteira: o que sumiu da tela some do banco.
+            ->assertJsonCount(1, 'data.telefones')
+            ->assertJsonPath('data.telefones.0.numero', '11900000099')
+            ->assertJsonPath('data.telefones.0.principal', true)
             ->assertJsonPath('data.ativo', false);
     }
 
@@ -70,7 +81,7 @@ class PacientesApiTest extends TestCase
 
         $this->postJson('/api/pacientes', [
             'nome' => 'Paciente Inválido',
-            'cpf' => '11122233344',
+            'cpf' => '11122233396',
             'carteirinha' => 'PAC-INV-0001',
             'convenio_id' => $convenioExterno->id,
             'telefone' => '(11) 90000-0002',
@@ -118,7 +129,7 @@ class PacientesApiTest extends TestCase
         return Paciente::query()->create([
             'tenant_id' => $convenio->tenant_id,
             'nome' => 'Paciente Externo CRUD',
-            'cpf' => '22233344455',
+            'cpf' => '22233344405',
             'carteirinha' => 'PAC-EXT-0001',
             'convenio_id' => $convenio->id,
             'telefone' => '(11) 90000-0003',

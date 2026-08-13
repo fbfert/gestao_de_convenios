@@ -10,6 +10,8 @@ export type ConfiguracoesGlobais = {
   itens_por_pagina: number
   /** Meses que a trilha de auditoria e mantida antes do expurgo diario. */
   auditoria_retencao_meses: number
+  /** Dias que a imagem da carteirinha fica no servidor antes do expurgo. */
+  carteirinha_retencao_dias: number
 }
 
 export type ConfiguracoesGlobaisForm = {
@@ -18,6 +20,7 @@ export type ConfiguracoesGlobaisForm = {
   sessoes_padrao: string
   itens_por_pagina: string
   auditoria_retencao_meses: string
+  carteirinha_retencao_dias: string
 }
 
 const chaveQuery = ['configuracoes', 'globais']
@@ -29,6 +32,7 @@ export function paraFormulario(dados: ConfiguracoesGlobais): ConfiguracoesGlobai
     sessoes_padrao: String(dados.sessoes_padrao),
     itens_por_pagina: String(dados.itens_por_pagina),
     auditoria_retencao_meses: String(dados.auditoria_retencao_meses),
+    carteirinha_retencao_dias: String(dados.carteirinha_retencao_dias),
   }
 }
 
@@ -69,6 +73,7 @@ export function useSalvarConfiguracoesGlobais() {
         sessoes_padrao: Number(form.sessoes_padrao),
         itens_por_pagina: Number(form.itens_por_pagina),
         auditoria_retencao_meses: Number(form.auditoria_retencao_meses),
+        carteirinha_retencao_dias: Number(form.carteirinha_retencao_dias),
       })
       return data.data
     },

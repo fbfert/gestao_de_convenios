@@ -24,7 +24,8 @@ class ConfiguracoesGlobaisApiTest extends TestCase
             ->assertJsonPath('data.senha_alerta_dias', 7)
             ->assertJsonPath('data.sessoes_padrao', 10)
             ->assertJsonPath('data.itens_por_pagina', 15)
-            ->assertJsonPath('data.auditoria_retencao_meses', 12);
+            ->assertJsonPath('data.auditoria_retencao_meses', 12)
+            ->assertJsonPath('data.carteirinha_retencao_dias', 30);
     }
 
     public function test_salva_e_valida_os_limites(): void
@@ -37,6 +38,7 @@ class ConfiguracoesGlobaisApiTest extends TestCase
             'sessoes_padrao' => 20,
             'itens_por_pagina' => 50,
             'auditoria_retencao_meses' => 24,
+            'carteirinha_retencao_dias' => 45,
         ])->assertOk()
             ->assertJsonPath('data.sessao_minutos', 120)
             ->assertJsonPath('data.auditoria_retencao_meses', 24);
@@ -47,6 +49,7 @@ class ConfiguracoesGlobaisApiTest extends TestCase
             'sessoes_padrao' => 20,
             'itens_por_pagina' => 50,
             'auditoria_retencao_meses' => 12,
+            'carteirinha_retencao_dias' => 30,
         ])->assertJsonValidationErrors('sessao_minutos');
 
         $this->putJson('/api/configuracoes/globais', [
@@ -55,6 +58,7 @@ class ConfiguracoesGlobaisApiTest extends TestCase
             'sessoes_padrao' => 20,
             'itens_por_pagina' => 1,
             'auditoria_retencao_meses' => 12,
+            'carteirinha_retencao_dias' => 30,
         ])->assertJsonValidationErrors('itens_por_pagina');
 
         // Piso de 3 meses: prazo menor esvaziaria a trilha antes de qualquer
@@ -65,6 +69,7 @@ class ConfiguracoesGlobaisApiTest extends TestCase
             'sessoes_padrao' => 20,
             'itens_por_pagina' => 50,
             'auditoria_retencao_meses' => 1,
+            'carteirinha_retencao_dias' => 30,
         ])->assertJsonValidationErrors('auditoria_retencao_meses');
     }
 

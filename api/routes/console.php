@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
 use App\Jobs\EnfileirarConsultasUnimedDueJob;
 use App\Jobs\ExpurgarAuditoriaJob;
+use App\Jobs\ExpurgarCarteirinhasJob;
 use App\Jobs\VerificarGuiasDiarioJob;
 use App\Models\AutomacaoEvento;
 use Illuminate\Support\Facades\Storage;
@@ -55,3 +56,6 @@ Schedule::job(new EnfileirarConsultasUnimedDueJob)->everyThirtyMinutes()->withou
 // Depois da verificacao de guias e antes do movimento do dia: o expurgo varre a
 // trilha inteira do tenant e nao deve concorrer com o pico de uso.
 Schedule::job(new ExpurgarAuditoriaJob)->dailyAt('03:30')->withoutOverlapping();
+
+// Imagem de documento pessoal nao fica no servidor alem do prazo da clinica.
+Schedule::job(new ExpurgarCarteirinhasJob)->dailyAt('03:45')->withoutOverlapping();

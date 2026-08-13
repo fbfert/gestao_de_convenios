@@ -28,8 +28,9 @@ class AiSettingsApiTest extends TestCase
             ->assertJsonPath('data.openai.base_url', 'https://api.openai.com/v1')
             ->assertJsonPath('data.openai.api_key_configurada', true)
             ->assertJsonMissingPath('data.openai.api_key')
-            ->assertJsonPath('data.prompts.0.chave', 'ler_sessoes_escaneadas')
-            ->assertJsonPath('data.prompts.1.chave', 'ler_solicitacao_medica');
+            ->assertJsonPath('data.prompts.0.chave', 'ler_carteirinha')
+            ->assertJsonPath('data.prompts.1.chave', 'ler_sessoes_escaneadas')
+            ->assertJsonPath('data.prompts.2.chave', 'ler_solicitacao_medica');
 
         $setting = AiOpenaiSetting::query()->firstOrFail();
         $this->assertSame('sk-teste-inicial', $setting->api_key);
@@ -111,7 +112,7 @@ class AiSettingsApiTest extends TestCase
         $this->getJson('/api/configuracoes/ia')
             ->assertOk()
             ->assertJsonPath('data.openai', null)
-            ->assertJsonCount(2, 'data.prompts');
+            ->assertJsonCount(3, 'data.prompts');
     }
 
     private function autenticar(): void

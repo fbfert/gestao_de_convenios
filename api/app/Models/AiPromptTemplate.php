@@ -21,6 +21,7 @@ class AiPromptTemplate extends Model
      */
     public const CHAVES_SISTEMA = [
         'ler_solicitacao_medica',
+        'ler_carteirinha',
         'ler_sessoes_escaneadas',
     ];
 
@@ -46,6 +47,15 @@ class AiPromptTemplate extends Model
                 'model_id' => null,
                 'system_prompt' => 'Você extrai dados de documentos médicos para um sistema de convênios. Responda somente em JSON válido.',
                 'user_prompt' => 'Leia a solicitação médica escaneada e retorne paciente, médico, convênio, especialidade, data solicitada e observações relevantes.',
+                'ativo' => true,
+            ],
+            [
+                'chave' => 'ler_carteirinha',
+                'nome' => 'Ler carteirinha',
+                'descricao' => 'Extrai os dados do cartão do beneficiário para preencher o cadastro do paciente.',
+                'model_id' => null,
+                'system_prompt' => 'Você lê carteirinhas de plano de saúde brasileiras e extrai os dados impressos. Responda somente em JSON válido. Nunca invente um valor que não esteja no cartão.',
+                'user_prompt' => 'Leia a imagem da carteirinha e retorne o número do beneficiário, o nome completo, a operadora, o CPF, a data de nascimento e a validade do cartão.',
                 'ativo' => true,
             ],
             [

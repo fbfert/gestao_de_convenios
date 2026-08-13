@@ -15,6 +15,9 @@ export function useEspecialidadesCrud(busca: string) {
         params: {
           busca: busca || undefined,
           incluir_inativos: true,
+          // A tela de cadastro edita o codigo de cada convenio, entao precisa
+          // de todos eles junto da listagem.
+          com_codigos: 1,
         },
       })
 

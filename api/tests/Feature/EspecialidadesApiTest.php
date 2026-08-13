@@ -155,4 +155,67 @@ class EspecialidadesApiTest extends TestCase
             'ativo' => false,
         ]);
     }
+
+    public function test_grava_codigo_da_especialidade_por_convenio(): void
+    {
+        $this->autenticar();
+        $unimed = \App\Models\Convenio::query()->where('nome', 'Unimed')->firstOrFail();
+
+        $criada = $this->postJson('/api/especialidades', [
+            'nome' => 'Musicoterapia',
+            'ativo' => true,
+            'codigos' => [
+                ['convenio_id' => $unimed->id, 'codigo' => '2250009999'],
+            ],
+        ])->assertCreated()->json('data');
+
+        $this->assertDatabaseHas('convenio_especialidade_mapeamentos', [
+            'convenio_id' => $unimed->id,
+            'especialidade_id' => $criada['id'],
+            'codigo_procedimento' => '2250009999',
+        ]);
+
+        // A listagem do cadastro traz todos os codigos de uma vez.
+        $this->getJson('/api/especialidades?com_codigos=1&incluir_inativos=1')
+            ->assertOk()
+            ->assertJsonFragment(['convenio_id' => $unimed->id, 'codigo' => '2250009999']);
+
+        // Codigo em branco significa "nao existe neste convenio": o mapeamento
+        // sai, porque a coluna nao aceita nulo.
+        $this->patchJson("/api/especialidades/{$criada['id']}", [
+            'codigos' => [['convenio_id' => $unimed->id, 'codigo' => '']],
+        ])->assertOk();
+
+        $this->assertDatabaseMissing('convenio_especialidade_mapeamentos', [
+            'especialidade_id' => $criada['id'],
+        ]);
+    }
+
+    public function test_edicao_do_codigo_preserva_o_ajuste_da_tela_da_unimed(): void
+    {
+        $this->autenticar();
+        $unimed = \App\Models\Convenio::query()->where('nome', 'Unimed')->firstOrFail();
+        $especialidade = \App\Models\Especialidade::query()->first();
+
+        \App\Models\ConvenioEspecialidadeMapeamento::query()->create([
+            'tenant_id' => $especialidade->tenant_id,
+            'convenio_id' => $unimed->id,
+            'especialidade_id' => $especialidade->id,
+            'codigo_procedimento' => 'ANTIGO',
+            'descricao_operadora' => 'DESCRICAO DA OPERADORA',
+            'quantidade_padrao' => 24,
+            'ativo' => true,
+        ]);
+
+        $this->patchJson("/api/especialidades/{$especialidade->id}", [
+            'codigos' => [['convenio_id' => $unimed->id, 'codigo' => 'NOVO']],
+        ])->assertOk();
+
+        $this->assertDatabaseHas('convenio_especialidade_mapeamentos', [
+            'especialidade_id' => $especialidade->id,
+            'codigo_procedimento' => 'NOVO',
+            'descricao_operadora' => 'DESCRICAO DA OPERADORA',
+            'quantidade_padrao' => 24,
+        ]);
+    }
 }

@@ -6,12 +6,14 @@ import {
   useCriarEspecialidade,
   useEspecialidadesCrud,
 } from './useEspecialidades'
+import { useConvenios } from '../../lib/queries/useReferenceData'
 import type { Especialidade, EspecialidadeForm, EspecialidadePayload } from './types'
 import { Indicadores } from '../../components/ui/Indicadores'
 
 const emptyForm: EspecialidadeForm = {
   nome: '',
   ativo: true,
+  codigos: {},
 }
 
 type StatusFiltro = 'todas' | 'ativas' | 'inativas'
@@ -30,13 +32,24 @@ function toForm(especialidade: Especialidade): EspecialidadeForm {
   return {
     nome: especialidade.nome,
     ativo: especialidade.ativo,
+    codigos: Object.fromEntries(
+      (especialidade.codigos ?? []).map((item) => [item.convenio_id, item.codigo]),
+    ),
   }
 }
 
-function toPayload(form: EspecialidadeForm): EspecialidadePayload {
+/**
+ * A lista vai inteira, inclusive os convênios deixados em branco: é assim que a
+ * API sabe que o código foi apagado, e não apenas omitido.
+ */
+function toPayload(form: EspecialidadeForm, convenioIds: number[]): EspecialidadePayload {
   return {
     nome: form.nome.trim(),
     ativo: form.ativo,
+    codigos: convenioIds.map((convenio_id) => ({
+      convenio_id,
+      codigo: (form.codigos[convenio_id] ?? '').trim(),
+    })),
   }
 }
 
@@ -56,6 +69,8 @@ export function EspecialidadesPage() {
   const carregadoRef = useRef<number | null>(null)
 
   const especialidadesQuery = useEspecialidadesCrud(busca)
+  const conveniosQuery = useConvenios()
+  const convenios = useMemo(() => conveniosQuery.data ?? [], [conveniosQuery.data])
   const criarEspecialidade = useCriarEspecialidade()
   const atualizarEspecialidade = useAtualizarEspecialidade()
 
@@ -116,7 +131,7 @@ export function EspecialidadesPage() {
     setFormError(null)
 
     try {
-      const payload = toPayload(form)
+      const payload = toPayload(form, convenios.map((convenio) => convenio.id))
 
       if (isEditRoute && editingId) {
         await atualizarEspecialidade.mutateAsync({
@@ -220,6 +235,49 @@ export function EspecialidadesPage() {
                 data-testid="especialidade-nome"
               />
             </label>
+
+            {/*
+              Um campo por convênio cadastrado. Convênio novo aparece aqui
+              sozinho, em todas as especialidades, porque a lista sai do próprio
+              cadastro de convênios — não há nada a migrar quando surge um.
+            */}
+            <div className="space-y-2" data-testid="especialidade-codigos">
+              <span className="text-sm font-medium text-slate-200">Código por convênio</span>
+
+              {conveniosQuery.isLoading ? (
+                <p className="text-sm text-slate-300">Carregando convênios...</p>
+              ) : convenios.length === 0 ? (
+                <p className="rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-3 text-sm text-slate-400">
+                  Nenhum convênio cadastrado ainda.
+                </p>
+              ) : (
+                <div className="grid gap-3 md:grid-cols-2">
+                  {convenios.map((convenio) => (
+                    <label key={convenio.id} className="block space-y-1">
+                      <span className="text-xs uppercase tracking-[0.25em] text-slate-400">
+                        {convenio.nome}
+                      </span>
+                      <input
+                        value={form.codigos[convenio.id] ?? ''}
+                        onChange={(event) =>
+                          setForm((current) => ({
+                            ...current,
+                            codigos: { ...current.codigos, [convenio.id]: event.target.value },
+                          }))
+                        }
+                        placeholder="Sem código neste convênio"
+                        className={fieldClasses()}
+                        data-testid={`especialidade-codigo-${convenio.id}`}
+                      />
+                    </label>
+                  ))}
+                </div>
+              )}
+
+              <span className="block text-xs text-slate-400">
+                Em branco significa que a especialidade não é atendida por aquele convênio.
+              </span>
+            </div>
 
             <label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
               <input
@@ -363,7 +421,21 @@ export function EspecialidadesPage() {
                   <tr key={especialidade.id} data-testid={`especialidade-row-${especialidade.id}`}>
                     <td className="px-4 py-4 text-slate-100">
                       <div className="font-medium">{especialidade.nome}</div>
-                      <div className="text-xs text-slate-400">#{especialidade.id}</div>
+                      {/* Os codigos aparecem na listagem para conferir de
+                          relance qual convenio ainda esta sem. */}
+                      <div className="text-xs text-slate-400">
+                        {(especialidade.codigos ?? []).length === 0
+                          ? 'sem código de convênio'
+                          : (especialidade.codigos ?? [])
+                              .map(
+                                (codigo) =>
+                                  `${
+                                    convenios.find((convenio) => convenio.id === codigo.convenio_id)
+                                      ?.nome ?? `#${codigo.convenio_id}`
+                                  } ${codigo.codigo}`,
+                              )
+                              .join(' · ')}
+                      </div>
                     </td>
                     <td className="px-4 py-4">
                       <span

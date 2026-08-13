@@ -4,9 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\UpdateUnimedSettingsRequest;
 use App\Http\Resources\UnimedSettingsResource;
-use App\Models\AuditLog;
 use App\Models\Convenio;
 use App\Models\UnimedRdaCredential;
+use App\Support\Auditoria;
 use App\Services\Automation\UnimedWorkerClient;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Arr;
@@ -55,22 +55,27 @@ class UnimedSettingsController extends Controller
                 $credential->password = $password;
             }
 
-            $credential->save();
+            // O evento explicito abaixo diz mais do que o diff cru do model
+            // (ele amarra o convenio escolhido), entao o automatico e
+            // suspenso para a mesma acao nao virar dois registros.
+            Auditoria::semRegistroAutomatico(fn () => $credential->save());
 
-            AuditLog::query()->create([
-                'tenant_id' => $tenantId,
-                'user_id' => $request->user()?->id,
-                'acao' => 'unimed_rda_settings.updated',
-                'entidade' => 'unimed_rda_credentials',
-                'entidade_id' => $credential->id,
-                'payload' => [
+            Auditoria::registrar(
+                acao: 'unimed_rda_settings.updated',
+                entidade: 'unimed_rda_credentials',
+                entidadeId: (int) $credential->id,
+                payload: array_filter([
                     'convenio_id' => $convenioId,
                     'login' => $credential->login,
                     'base_url' => $credential->base_url,
                     'ativo' => $credential->ativo,
-                    'senha_atualizada' => filled($password),
-                ],
-            ]);
+                    // A senha nunca entra, nem a antiga nem a nova: fica
+                    // registrado que mudou, e quem mudou vem do autor.
+                    'campos_ocultos' => filled($password) ? ['password'] : null,
+                ], fn ($valor) => $valor !== null),
+                tenantId: $tenantId,
+                userId: $request->user()?->id,
+            );
         });
 
         return $this->resource($tenantId);
@@ -100,20 +105,22 @@ class UnimedSettingsController extends Controller
         $tenantId = (int) request()->user()->tenant_id;
         $credential = UnimedRdaCredential::query()->where('tenant_id', $tenantId)->firstOrFail();
 
-        $credential->forceFill([
+        // Mesma razao do update: o evento explicito diz "automacao reativada",
+        // que e o que o operador procura na trilha; o diff diria apenas
+        // `ativo: false -> true`.
+        Auditoria::semRegistroAutomatico(fn () => $credential->forceFill([
             'ativo' => true,
             'automation_paused_at' => null,
             'automation_paused_reason' => null,
-        ])->save();
+        ])->save());
 
-        AuditLog::query()->create([
-            'tenant_id' => $tenantId,
-            'user_id' => request()->user()?->id,
-            'acao' => 'unimed_rda.automation_reactivated',
-            'entidade' => 'unimed_rda_credentials',
-            'entidade_id' => $credential->id,
-            'payload' => ['reativado' => true],
-        ]);
+        Auditoria::registrar(
+            acao: 'unimed_rda.automation_reactivated',
+            entidade: 'unimed_rda_credentials',
+            entidadeId: (int) $credential->id,
+            payload: ['reativado' => true],
+            tenantId: $tenantId,
+        );
 
         return $this->resource($tenantId);
     }

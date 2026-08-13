@@ -2,12 +2,16 @@
 
 namespace App\Models;
 
+use App\Concerns\Auditable;
 use App\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 
 class AiOpenaiSetting extends Model
 {
-    use BelongsToTenant;
+    use Auditable, BelongsToTenant;
+
+    /** Nunca entra na auditoria: fica registrado que mudou, nunca o valor. */
+    protected array $auditOcultos = ['api_key'];
 
     protected $fillable = [
         'tenant_id',

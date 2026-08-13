@@ -15,7 +15,11 @@ class AuditLogResource extends JsonResource
             'entidade' => $this->entidade,
             'entidade_id' => $this->entidade_id,
             'usuario' => $this->user?->name,
+            'usuario_id' => $this->user_id,
             'payload' => $this->payload,
+            // Só os eventos de acesso preenchem estes dois.
+            'ip' => $this->ip,
+            'user_agent' => $this->user_agent,
             'created_at' => $this->created_at?->toISOString(),
         ];
     }

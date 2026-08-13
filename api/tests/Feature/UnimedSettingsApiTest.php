@@ -45,8 +45,11 @@ class UnimedSettingsApiTest extends TestCase
 
         $audit = AuditLog::query()->where('acao', 'unimed_rda_settings.updated')->firstOrFail();
         $this->assertSame($convenio->id, $audit->payload['convenio_id']);
-        $this->assertTrue($audit->payload['senha_atualizada']);
+        // A senha aparece so como campo oculto: nem o valor antigo nem o novo
+        // entram na trilha.
+        $this->assertSame(['password'], $audit->payload['campos_ocultos']);
         $this->assertArrayNotHasKey('password', $audit->payload);
+        $this->assertStringNotContainsString('senha-inicial', json_encode($audit->payload));
     }
 
     public function test_preserva_senha_existente_quando_update_vem_sem_senha(): void

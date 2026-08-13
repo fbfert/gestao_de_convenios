@@ -4,6 +4,7 @@ use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
 use App\Jobs\EnfileirarConsultasUnimedDueJob;
+use App\Jobs\ExpurgarAuditoriaJob;
 use App\Jobs\VerificarGuiasDiarioJob;
 use App\Models\AutomacaoEvento;
 use Illuminate\Support\Facades\Storage;
@@ -50,3 +51,7 @@ Artisan::command('automacao:limpar-evidencias {--dry-run} {--days=30}', function
 
 Schedule::job(new VerificarGuiasDiarioJob)->dailyAt('02:00');
 Schedule::job(new EnfileirarConsultasUnimedDueJob)->everyThirtyMinutes()->withoutOverlapping();
+
+// Depois da verificacao de guias e antes do movimento do dia: o expurgo varre a
+// trilha inteira do tenant e nao deve concorrer com o pico de uso.
+Schedule::job(new ExpurgarAuditoriaJob)->dailyAt('03:30')->withoutOverlapping();

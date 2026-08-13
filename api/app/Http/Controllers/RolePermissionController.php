@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\UpdateRolePermissionsRequest;
 use App\Http\Resources\PermissionResource;
 use App\Http\Resources\RoleResource;
+use App\Support\Auditoria;
 use App\Support\GuardaAdministracao;
 use App\Support\PermissionCatalog;
 use Illuminate\Http\JsonResponse;
@@ -35,7 +36,19 @@ class RolePermissionController extends Controller
             ->whereIn('name', $nomes)
             ->get();
 
+        $antes = $role->permissions()->orderBy('name')->pluck('name')->all();
+
         $role->syncPermissions($permissions);
+
+        $depois = $role->permissions()->orderBy('name')->pluck('name')->all();
+
+        // Guarda o delta, e nao as duas listas inteiras: com 35 permissoes, o
+        // que interessa e o que mudou.
+        Auditoria::registrar('papel.permissoes_alteradas', 'roles', (int) $role->getKey(), [
+            'nome' => $role->name,
+            'concedidas' => array_values(array_diff($depois, $antes)),
+            'revogadas' => array_values(array_diff($antes, $depois)),
+        ]);
 
         return response()->json([
             'data' => [

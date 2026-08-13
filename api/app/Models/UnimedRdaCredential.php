@@ -2,14 +2,18 @@
 
 namespace App\Models;
 
+use App\Concerns\Auditable;
 use App\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 
 class UnimedRdaCredential extends Model
 {
-    use BelongsToTenant;
+    use Auditable, BelongsToTenant;
 
     protected $table = 'unimed_rda_credentials';
+
+    /** Nunca entra na auditoria: fica registrado que mudou, nunca o valor. */
+    protected array $auditOcultos = ['password'];
 
     protected $fillable = [
         'tenant_id',

@@ -2,7 +2,7 @@
 
 namespace App\Services\Automation;
 
-use App\Models\AuditLog;
+use App\Support\Auditoria;
 use App\Models\UnimedRdaCredential;
 
 class UnimedCircuitBreakerService
@@ -25,22 +25,26 @@ class UnimedCircuitBreakerService
             return;
         }
 
-        $credential->forceFill([
+        // O automatico e suspenso porque o evento explicito diz o motivo da
+        // pausa, e `ativo: true -> false` sozinho nao diria.
+        Auditoria::semRegistroAutomatico(fn () => $credential->forceFill([
             'ativo' => false,
             'automation_paused_at' => now(),
             'automation_paused_reason' => $code,
-        ])->save();
+        ])->save());
 
-        AuditLog::query()->create([
-            'tenant_id' => $tenantId,
-            'user_id' => null,
-            'acao' => 'unimed_rda.automation_paused',
-            'entidade' => 'unimed_rda_credentials',
-            'entidade_id' => $credential->id,
-            'payload' => [
+        Auditoria::registrar(
+            acao: 'unimed_rda.automation_paused',
+            entidade: 'unimed_rda_credentials',
+            entidadeId: (int) $credential->id,
+            payload: [
                 'reason' => $code,
                 'label' => $this->catalog->label($code),
             ],
-        ]);
+            tenantId: $tenantId,
+            // Pausa vem do circuit breaker, nunca de uma pessoa: fica como
+            // evento do sistema mesmo dentro de uma requisicao autenticada.
+            doSistema: true,
+        );
     }
 }

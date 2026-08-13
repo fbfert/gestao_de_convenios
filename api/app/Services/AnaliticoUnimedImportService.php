@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\AnaliticoUnimedLinha;
 use App\Models\AnaliticoUnimedLote;
+use App\Support\Auditoria;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -729,6 +730,25 @@ class AnaliticoUnimedImportService
                     'dados_json' => $linha,
                 ]);
             }
+
+            // Um evento pelo lote, e nao um por linha: uma importacao sozinha
+            // geraria milhares de registros e dominaria a trilha inteira. A
+            // alteracao manual de uma linha depois registra o evento dela.
+            Auditoria::registrar(
+                acao: 'analitico.importado',
+                entidade: 'analitico_unimed_lotes',
+                entidadeId: (int) $lote->id,
+                payload: [
+                    'arquivo' => $lote->arquivo_nome_original,
+                    'linhas_analitico' => $lote->total_linhas_analitico,
+                    'linhas_glosa' => $lote->total_linhas_glosa,
+                    'linhas_conciliacao' => $lote->total_linhas_conciliacao,
+                    'total_pago' => $lote->total_pago,
+                    'total_glosado' => $lote->total_glosado,
+                    'saldo_total' => $lote->saldo_total,
+                ],
+                tenantId: $lote->tenant_id,
+            );
 
             return [
                 'id' => $lote->id,

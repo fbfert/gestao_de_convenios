@@ -17,6 +17,7 @@ const formVazio: ConfiguracoesGlobaisForm = {
   senha_alerta_dias: '7',
   sessoes_padrao: '10',
   itens_por_pagina: '15',
+  auditoria_retencao_meses: '12',
 }
 
 /** Atalhos de tempo de sessão, para não ter que calcular minutos na mão. */
@@ -184,6 +185,24 @@ export function ConfiguracoesGlobaisPage() {
             />
             <span className="block text-xs text-slate-400">
               Tamanho padrão das listagens paginadas.
+            </span>
+          </label>
+
+          <label className="space-y-2">
+            <span className="text-sm font-medium text-slate-200">Retenção da auditoria (meses)</span>
+            <input
+              type="number"
+              min={3}
+              max={120}
+              value={form.auditoria_retencao_meses}
+              onChange={(event) => alterar('auditoria_retencao_meses', event.target.value)}
+              className={inputClasses()}
+              required
+              data-testid="globais-auditoria-retencao"
+            />
+            <span className="block text-xs text-slate-400">
+              Todo dia, o que passa deste prazo é exportado em CSV no servidor e depois removido da
+              trilha. Mínimo de 3 meses.
             </span>
           </label>
         </div>

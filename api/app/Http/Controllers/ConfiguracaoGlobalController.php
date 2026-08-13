@@ -34,6 +34,7 @@ class ConfiguracaoGlobalController extends Controller
             'senha_alerta_dias' => $configuracao->senha_alerta_dias,
             'sessoes_padrao' => $configuracao->sessoes_padrao,
             'itens_por_pagina' => $configuracao->itens_por_pagina,
+            'auditoria_retencao_meses' => $configuracao->auditoria_retencao_meses,
         ];
     }
 }

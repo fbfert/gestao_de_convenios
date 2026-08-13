@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreRoleRequest;
 use App\Http\Requests\UpdateRoleRequest;
 use App\Http\Resources\RoleResource;
+use App\Support\Auditoria;
 use App\Support\GuardaAdministracao;
 use App\Support\RoleCatalog;
 use Illuminate\Http\JsonResponse;
@@ -66,6 +67,13 @@ class RoleController extends Controller
             return $papel;
         });
 
+        // Evento explicito: Role e model do Spatie e nao carrega o trait
+        // Auditable, entao papel fora da trilha passaria despercebido.
+        Auditoria::registrar('papel.criado', 'roles', (int) $papel->getKey(), [
+            'nome' => $papel->name,
+            'copiado_de' => $dados['copiar_de'] ?? null,
+        ]);
+
         return response()->json([
             'data' => (new RoleResource($this->comContagens($papel)))->toArray($request),
         ], 201);
@@ -75,7 +83,13 @@ class RoleController extends Controller
     {
         $this->recusarPapelDeSistema($role, 'renomeado');
 
+        $anterior = $role->name;
         $role->update(['name' => $request->validated()['name']]);
+
+        Auditoria::registrar('papel.renomeado', 'roles', (int) $role->getKey(), [
+            'antes' => ['nome' => $anterior],
+            'depois' => ['nome' => $role->name],
+        ]);
 
         return response()->json([
             'data' => (new RoleResource($this->comContagens($role)))->toArray($request),
@@ -99,6 +113,10 @@ class RoleController extends Controller
         GuardaAdministracao::aoExcluirPapel($role);
 
         $role->delete();
+
+        Auditoria::registrar('papel.excluido', 'roles', (int) $role->getKey(), [
+            'nome' => $role->name,
+        ]);
 
         return response()->json(['data' => ['name' => $role->name]]);
     }

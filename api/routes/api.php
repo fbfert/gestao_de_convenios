@@ -49,6 +49,8 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EncerrarSessaoExpirada::
 
     Route::get('/dashboard', [DashboardController::class, 'index']);
     Route::get('/auditoria', [AuditController::class, 'index'])->middleware('permission:dashboard.auditoria');
+    Route::get('/auditoria/opcoes', [AuditController::class, 'opcoes'])->middleware('permission:dashboard.auditoria');
+    Route::get('/auditoria/exportar', [AuditController::class, 'exportar'])->middleware('permission:dashboard.auditoria');
     Route::get('/automacoes', [AutomacaoController::class, 'index']);
     Route::get('/automacoes/{automacaoExecucao}', [AutomacaoController::class, 'show']);
     Route::post('/automacoes/{automacaoExecucao}/reprocessar', [AutomacaoController::class, 'reprocessar']);

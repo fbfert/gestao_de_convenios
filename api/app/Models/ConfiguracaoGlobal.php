@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Concerns\Auditable;
 use App\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 
 class ConfiguracaoGlobal extends Model
 {
-    use BelongsToTenant;
+    use Auditable, BelongsToTenant;
 
     protected $table = 'configuracoes_globais';
 
@@ -17,6 +18,7 @@ class ConfiguracaoGlobal extends Model
         'senha_alerta_dias',
         'sessoes_padrao',
         'itens_por_pagina',
+        'auditoria_retencao_meses',
     ];
 
     protected $casts = [
@@ -24,6 +26,7 @@ class ConfiguracaoGlobal extends Model
         'senha_alerta_dias' => 'integer',
         'sessoes_padrao' => 'integer',
         'itens_por_pagina' => 'integer',
+        'auditoria_retencao_meses' => 'integer',
     ];
 
     /**

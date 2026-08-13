@@ -8,6 +8,8 @@ export type ConfiguracoesGlobais = {
   senha_alerta_dias: number
   sessoes_padrao: number
   itens_por_pagina: number
+  /** Meses que a trilha de auditoria e mantida antes do expurgo diario. */
+  auditoria_retencao_meses: number
 }
 
 export type ConfiguracoesGlobaisForm = {
@@ -15,6 +17,7 @@ export type ConfiguracoesGlobaisForm = {
   senha_alerta_dias: string
   sessoes_padrao: string
   itens_por_pagina: string
+  auditoria_retencao_meses: string
 }
 
 const chaveQuery = ['configuracoes', 'globais']
@@ -25,6 +28,7 @@ export function paraFormulario(dados: ConfiguracoesGlobais): ConfiguracoesGlobai
     senha_alerta_dias: String(dados.senha_alerta_dias),
     sessoes_padrao: String(dados.sessoes_padrao),
     itens_por_pagina: String(dados.itens_por_pagina),
+    auditoria_retencao_meses: String(dados.auditoria_retencao_meses),
   }
 }
 
@@ -64,6 +68,7 @@ export function useSalvarConfiguracoesGlobais() {
         senha_alerta_dias: Number(form.senha_alerta_dias),
         sessoes_padrao: Number(form.sessoes_padrao),
         itens_por_pagina: Number(form.itens_por_pagina),
+        auditoria_retencao_meses: Number(form.auditoria_retencao_meses),
       })
       return data.data
     },

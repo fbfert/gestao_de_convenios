@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Concerns\Auditable;
 use App\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class SolicitacaoDocumento extends Model
 {
-    use BelongsToTenant, HasFactory;
+    use Auditable, BelongsToTenant, HasFactory;
 
     /** Anexos que valem para a Solicitação inteira. */
     public const TIPOS_DA_SOLICITACAO = ['pedido_medico', 'laudo_medico'];

@@ -20,6 +20,12 @@ class UpdateConfiguracaoGlobalRequest extends FormRequest
             'senha_alerta_dias' => ['required', 'integer', 'min:1', 'max:180'],
             'sessoes_padrao' => ['required', 'integer', 'min:1', 'max:999'],
             'itens_por_pagina' => ['required', 'integer', 'min:5', 'max:200'],
+
+            // Piso de 3 meses: prazo menor que isso esvazia a trilha antes de
+            // qualquer conferencia de fechamento. Teto de 120 meses (10 anos)
+            // porque acima disso a decisao e "guardar sempre", e ai o caminho
+            // e desligar o expurgo, nao esticar o prazo.
+            'auditoria_retencao_meses' => ['required', 'integer', 'min:3', 'max:120'],
         ];
     }
 
@@ -28,6 +34,7 @@ class UpdateConfiguracaoGlobalRequest extends FormRequest
         return [
             'sessao_minutos.max' => 'O tempo de sessão não pode passar de 43200 minutos (30 dias).',
             'itens_por_pagina.min' => 'A listagem precisa mostrar ao menos 5 itens por página.',
+            'auditoria_retencao_meses.min' => 'A auditoria precisa ser mantida por ao menos 3 meses.',
         ];
     }
 }

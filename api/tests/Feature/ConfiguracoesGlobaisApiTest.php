@@ -23,7 +23,8 @@ class ConfiguracoesGlobaisApiTest extends TestCase
             ->assertJsonPath('data.sessao_minutos', 480)
             ->assertJsonPath('data.senha_alerta_dias', 7)
             ->assertJsonPath('data.sessoes_padrao', 10)
-            ->assertJsonPath('data.itens_por_pagina', 15);
+            ->assertJsonPath('data.itens_por_pagina', 15)
+            ->assertJsonPath('data.auditoria_retencao_meses', 12);
     }
 
     public function test_salva_e_valida_os_limites(): void
@@ -35,13 +36,17 @@ class ConfiguracoesGlobaisApiTest extends TestCase
             'senha_alerta_dias' => 15,
             'sessoes_padrao' => 20,
             'itens_por_pagina' => 50,
-        ])->assertOk()->assertJsonPath('data.sessao_minutos', 120);
+            'auditoria_retencao_meses' => 24,
+        ])->assertOk()
+            ->assertJsonPath('data.sessao_minutos', 120)
+            ->assertJsonPath('data.auditoria_retencao_meses', 24);
 
         $this->putJson('/api/configuracoes/globais', [
             'sessao_minutos' => 999999,
             'senha_alerta_dias' => 15,
             'sessoes_padrao' => 20,
             'itens_por_pagina' => 50,
+            'auditoria_retencao_meses' => 12,
         ])->assertJsonValidationErrors('sessao_minutos');
 
         $this->putJson('/api/configuracoes/globais', [
@@ -49,7 +54,18 @@ class ConfiguracoesGlobaisApiTest extends TestCase
             'senha_alerta_dias' => 15,
             'sessoes_padrao' => 20,
             'itens_por_pagina' => 1,
+            'auditoria_retencao_meses' => 12,
         ])->assertJsonValidationErrors('itens_por_pagina');
+
+        // Piso de 3 meses: prazo menor esvaziaria a trilha antes de qualquer
+        // conferencia de fechamento.
+        $this->putJson('/api/configuracoes/globais', [
+            'sessao_minutos' => 120,
+            'senha_alerta_dias' => 15,
+            'sessoes_padrao' => 20,
+            'itens_por_pagina' => 50,
+            'auditoria_retencao_meses' => 1,
+        ])->assertJsonValidationErrors('auditoria_retencao_meses');
     }
 
     public function test_token_expira_depois_do_tempo_configurado(): void

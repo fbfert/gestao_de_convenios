@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -10,7 +11,7 @@ use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable, HasRoles;
+    use Auditable, HasApiTokens, HasFactory, Notifiable, HasRoles;
 
     /**
      * IMPORTANTE: User não usa o trait BelongsToTenant/TenantScope.
@@ -21,6 +22,9 @@ class User extends Authenticatable
      * contrário. Se e-mail duplicado entre clínicas virar requisito, esse
      * desenho precisa ser revisto (ex: login por slug+e-mail).
      */
+    /** Nunca entra na auditoria: fica registrado que mudou, nunca o valor. */
+    protected array $auditOcultos = ['password'];
+
     protected $fillable = [
         'tenant_id', 'name', 'email', 'password', 'profissional_id', 'ativo',
     ];

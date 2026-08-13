@@ -15,7 +15,7 @@ class AuditLog extends Model
     public $timestamps = false; // só created_at, ver migration
 
     protected $fillable = [
-        'tenant_id', 'user_id', 'acao', 'entidade', 'entidade_id', 'payload',
+        'tenant_id', 'user_id', 'acao', 'entidade', 'entidade_id', 'payload', 'ip', 'user_agent',
     ];
 
     protected $casts = [

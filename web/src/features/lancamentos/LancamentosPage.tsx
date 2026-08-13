@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { Indicadores } from '../../components/ui/Indicadores'
 import { Link, useMatch, useNavigate, useSearchParams } from 'react-router-dom'
 import { translateStatus } from '../../lib/statusLabels'
 import { Select } from '../../components/ui/Select'
@@ -282,24 +283,13 @@ export function LancamentosPage() {
             </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-3">
-            <article className="rounded-3xl border border-white/10 bg-slate-950/40 p-4">
-              <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Total na página</p>
-              <p className="mt-2 text-2xl font-semibold text-white">{lancamentos.length}</p>
-            </article>
-            <article className="rounded-3xl border border-white/10 bg-slate-950/40 p-4">
-              <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Antecipação</p>
-              <p className="mt-2 text-2xl font-semibold text-white">
-                {importAntecipacaoSelecionada?.id ?? antecipaSelecionada?.id ?? '—'}
-              </p>
-            </article>
-            <article className="rounded-3xl border border-white/10 bg-slate-950/40 p-4">
-              <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Importação</p>
-              <p className="mt-2 text-2xl font-semibold text-white">
-                {importProfissionalSelecionado?.nome ?? 'Pendente'}
-              </p>
-            </article>
-          </div>
+          <Indicadores
+            itens={[
+              { rotulo: 'Total na página', valor: lancamentos.length },
+              { rotulo: 'Antecipação', valor: importAntecipacaoSelecionada?.id ?? antecipaSelecionada?.id ?? '—' },
+              { rotulo: 'Importação', valor: importProfissionalSelecionado?.nome ?? 'Pendente' },
+            ]}
+          />
         </section>
         ) : null}
 

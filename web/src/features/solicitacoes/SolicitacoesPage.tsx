@@ -21,6 +21,7 @@ import { formatCarteirinha } from '../../lib/carteirinha'
 import { SolicitacaoGuiaModal } from './SolicitacaoGuiaModal'
 import { SolicitacaoItensFields } from './SolicitacaoItensFields'
 import { emptyItem, itensEstaoCompletos } from './solicitacaoItens'
+import { Indicadores } from '../../components/ui/Indicadores'
 
 const emptyArray: never[] = []
 
@@ -311,24 +312,14 @@ export function SolicitacoesPage() {
           </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <article className="rounded-3xl border border-white/10 bg-slate-950/40 p-4">
-            <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Total na página</p>
-            <p className="mt-2 text-2xl font-semibold text-white">{solicitacoesQuery.data?.meta?.total ?? 0}</p>
-          </article>
-          <article className="rounded-3xl border border-white/10 bg-slate-950/40 p-4">
-            <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Página atual</p>
-            <p className="mt-2 text-2xl font-semibold text-white">{page}</p>
-          </article>
-          <article className="rounded-3xl border border-white/10 bg-slate-950/40 p-4">
-            <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Status ativo</p>
-            <p className="mt-2 text-2xl font-semibold text-white">{filters.status || 'Todos'}</p>
-          </article>
-          <article className="rounded-3xl border border-white/10 bg-slate-950/40 p-4">
-            <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Convênio</p>
-            <p className="mt-2 text-2xl font-semibold text-white">{currentConvenio?.nome ?? 'Todos'}</p>
-          </article>
-        </div>
+        <Indicadores
+          itens={[
+            { rotulo: 'Total na página', valor: solicitacoesQuery.data?.meta?.total ?? 0 },
+            { rotulo: 'Página atual', valor: page },
+            { rotulo: 'Status ativo', valor: filters.status || 'Todos' },
+            { rotulo: 'Convênio', valor: currentConvenio?.nome ?? 'Todos' },
+          ]}
+        />
       </section>
       ) : null}
 

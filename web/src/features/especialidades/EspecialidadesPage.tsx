@@ -7,6 +7,7 @@ import {
   useEspecialidadesCrud,
 } from './useEspecialidades'
 import type { Especialidade, EspecialidadeForm, EspecialidadePayload } from './types'
+import { Indicadores } from '../../components/ui/Indicadores'
 
 const emptyForm: EspecialidadeForm = {
   nome: '',
@@ -187,20 +188,13 @@ export function EspecialidadesPage() {
           </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-3">
-          <article className="rounded-3xl border border-white/10 bg-slate-950/40 p-4">
-            <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Total</p>
-            <p className="mt-2 text-2xl font-semibold text-white">{especialidades.length}</p>
-          </article>
-          <article className="rounded-3xl border border-white/10 bg-slate-950/40 p-4">
-            <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Ativas</p>
-            <p className="mt-2 text-2xl font-semibold text-white">{totalAtivas}</p>
-          </article>
-          <article className="rounded-3xl border border-white/10 bg-slate-950/40 p-4">
-            <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Inativas</p>
-            <p className="mt-2 text-2xl font-semibold text-white">{totalInativas}</p>
-          </article>
-        </div>
+        <Indicadores
+          itens={[
+            { rotulo: 'Total', valor: especialidades.length },
+            { rotulo: 'Ativas', valor: totalAtivas },
+            { rotulo: 'Inativas', valor: totalInativas },
+          ]}
+        />
       </section>
       ) : null}
 

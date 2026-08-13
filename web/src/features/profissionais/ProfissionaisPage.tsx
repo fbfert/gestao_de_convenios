@@ -3,6 +3,7 @@ import { useMatch, useNavigate, useSearchParams } from 'react-router-dom'
 import { useEspecialidades } from '../../lib/queries/useReferenceData'
 import { getHttpErrorMessage, useAtualizarProfissional, useCriarProfissional, useProfissionaisCrud } from './useProfissionais'
 import type { Profissional, ProfissionalForm, ProfissionalPayload } from './types'
+import { Indicadores } from '../../components/ui/Indicadores'
 
 const emptyForm: ProfissionalForm = {
   nome: '',
@@ -210,20 +211,13 @@ export function ProfissionaisPage() {
           </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-3">
-          <article className="rounded-3xl border border-white/10 bg-slate-950/40 p-4">
-            <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Total</p>
-            <p className="mt-2 text-2xl font-semibold text-white">{profissionais.length}</p>
-          </article>
-          <article className="rounded-3xl border border-white/10 bg-slate-950/40 p-4">
-            <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Ativos</p>
-            <p className="mt-2 text-2xl font-semibold text-white">{totalAtivos}</p>
-          </article>
-          <article className="rounded-3xl border border-white/10 bg-slate-950/40 p-4">
-            <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Inativos</p>
-            <p className="mt-2 text-2xl font-semibold text-white">{totalInativos}</p>
-          </article>
-        </div>
+        <Indicadores
+          itens={[
+            { rotulo: 'Total', valor: profissionais.length },
+            { rotulo: 'Ativos', valor: totalAtivos },
+            { rotulo: 'Inativos', valor: totalInativos },
+          ]}
+        />
       </section>
       ) : null}
 

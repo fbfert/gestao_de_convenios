@@ -15,6 +15,7 @@ import { LerCarteirinha } from './LerCarteirinha'
 import type { PacientesConsulta } from './usePacientes'
 import { TelefonesInput } from './TelefonesInput'
 import type { LeituraCarteirinha, Paciente, PacienteForm } from './types'
+import { Indicadores } from '../../components/ui/Indicadores'
 
 const emptyForm: PacienteForm = {
   nome: '',
@@ -328,20 +329,13 @@ export function PacientesPage() {
           </button>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-3">
-          <article className="rounded-3xl border border-white/10 bg-slate-950/40 p-4">
-            <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Total</p>
-            <p className="mt-2 text-2xl font-semibold text-white">{pacientes.length}</p>
-          </article>
-          <article className="rounded-3xl border border-white/10 bg-slate-950/40 p-4">
-            <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Ativos</p>
-            <p className="mt-2 text-2xl font-semibold text-white">{totalAtivos}</p>
-          </article>
-          <article className="rounded-3xl border border-white/10 bg-slate-950/40 p-4">
-            <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Inativos</p>
-            <p className="mt-2 text-2xl font-semibold text-white">{totalInativos}</p>
-          </article>
-        </div>
+        <Indicadores
+          itens={[
+            { rotulo: 'Total', valor: pacientes.length },
+            { rotulo: 'Ativos', valor: totalAtivos },
+            { rotulo: 'Inativos', valor: totalInativos },
+          ]}
+        />
       </section>
       ) : null}
 

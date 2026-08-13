@@ -9,6 +9,7 @@ import {
   useMarcarPagoConciliacao,
 } from './useConciliacoes'
 import type { ConciliacaoFilters } from './types'
+import { Indicadores } from '../../components/ui/Indicadores'
 
 const defaultFilters: ConciliacaoFilters = {
   convenio_id: '',
@@ -122,31 +123,26 @@ export function ConciliacaoPage() {
           </p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <article className="rounded-3xl border border-white/10 bg-slate-950/40 p-4">
-            <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Total na página</p>
-            <p className="mt-2 text-2xl font-semibold text-white">{conciliacoes.length}</p>
-          </article>
-          <article className="rounded-3xl border border-white/10 bg-slate-950/40 p-4">
-            <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Status ativo</p>
-            <p className="mt-2 text-2xl font-semibold text-white">
-              {filters.status ? translateStatus('conciliacoes', filters.status) : 'Todos'}
-            </p>
-          </article>
-          <article className="rounded-3xl border border-white/10 bg-slate-950/40 p-4">
-            <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Convênio</p>
-            <p className="mt-2 text-2xl font-semibold text-white">
-              {convenios.find((item) => String(item.id) === filters.convenio_id)?.nome ?? 'Todos'}
-            </p>
-          </article>
-          <article className="rounded-3xl border border-white/10 bg-slate-950/40 p-4">
-            <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Especialidade</p>
-            <p className="mt-2 text-2xl font-semibold text-white">
-              {especialidades.find((item) => String(item.id) === filters.especialidade_id)?.nome ??
-                'Todas'}
-            </p>
-          </article>
-        </div>
+        <Indicadores
+          itens={[
+            { rotulo: 'Total na página', valor: conciliacoes.length },
+            {
+              rotulo: 'Status ativo',
+              valor: filters.status ? translateStatus('conciliacoes', filters.status) : 'Todos',
+            },
+            {
+              rotulo: 'Convênio',
+              valor:
+                convenios.find((item) => String(item.id) === filters.convenio_id)?.nome ?? 'Todos',
+            },
+            {
+              rotulo: 'Especialidade',
+              valor:
+                especialidades.find((item) => String(item.id) === filters.especialidade_id)?.nome ??
+                'Todas',
+            },
+          ]}
+        />
       </section>
 
       <section className="space-y-4 rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">

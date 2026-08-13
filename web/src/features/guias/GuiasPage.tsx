@@ -13,6 +13,7 @@ import {
 import type { GuiaFilters, GuiaForm } from './types'
 import { GuiaStatusActions } from './GuiaStatusActions'
 import { SENHA_VENCENDO_EM_DIAS } from './senhaValidade'
+import { Indicadores } from '../../components/ui/Indicadores'
 
 const defaultFilters: GuiaFilters = {
   status: '',
@@ -212,28 +213,27 @@ export function GuiasPage() {
           </button>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <article className="rounded-3xl border border-white/10 bg-slate-950/40 p-4">
-            <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Total na página</p>
-            <p className="mt-2 text-2xl font-semibold text-white">{guias.length}</p>
-          </article>
-          <article className="rounded-3xl border border-white/10 bg-slate-950/40 p-4">
-            <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Status ativo</p>
-            <p className="mt-2 text-2xl font-semibold text-white">{filters.status || 'Todos'}</p>
-          </article>
-          <article className="rounded-3xl border border-white/10 bg-slate-950/40 p-4">
-            <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Convênio</p>
-            <p className="mt-2 text-2xl font-semibold text-white">
-              {convenios.find((item) => String(item.id) === filters.convenio_id)?.nome ?? 'Todos'}
-            </p>
-          </article>
-          <article className="rounded-3xl border border-cyan-300/30 bg-cyan-400/10 p-4">
-            <p className="text-xs uppercase tracking-[0.25em] text-cyan-100/80">Validade vencendo</p>
+        {/* O contador vira linha compacta; o filtro de validade continua sendo
+            um botao, porque ele age, nao so informa. */}
+        <div className="flex flex-wrap items-center gap-2">
+          <Indicadores
+            itens={[
+              { rotulo: 'Total na página', valor: guias.length },
+              { rotulo: 'Status ativo', valor: filters.status || 'Todos' },
+              {
+                rotulo: 'Convênio',
+                valor:
+                  convenios.find((item) => String(item.id) === filters.convenio_id)?.nome ?? 'Todos',
+              },
+            ]}
+          />
+
+          <span className="inline-flex items-center gap-2">
             <button
               type="button"
               onClick={toggleVencendoBadge}
               className={[
-                'mt-2 inline-flex rounded-full border px-3 py-1 text-sm font-semibold transition',
+                'inline-flex rounded-full border px-3 py-1.5 text-sm font-semibold transition',
                 filters.validade_senha_vencendo_em_dias === String(SENHA_VENCENDO_EM_DIAS)
                   ? 'border-cyan-200/50 bg-cyan-300/20 text-white'
                   : 'border-cyan-200/20 bg-white/5 text-cyan-50 hover:bg-white/10',
@@ -243,7 +243,7 @@ export function GuiasPage() {
                 ? `Vencendo em ${SENHA_VENCENDO_EM_DIAS} dias`
                 : `Mostrar vencendo em ${SENHA_VENCENDO_EM_DIAS} dias`}
             </button>
-          </article>
+          </span>
         </div>
       </section>
       ) : null}

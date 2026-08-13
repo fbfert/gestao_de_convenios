@@ -2,6 +2,7 @@ import { useMemo, useState, type FormEvent } from 'react'
 import { useMatch, useNavigate } from 'react-router-dom'
 import { getHttpErrorMessage, useAtualizarMedico, useCriarMedico, useMedicos } from './useMedicos'
 import type { Medico, MedicoForm } from './types'
+import { Indicadores } from '../../components/ui/Indicadores'
 
 const emptyForm: MedicoForm = {
   nome: '',
@@ -149,20 +150,13 @@ export function MedicosPage() {
           </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-3">
-          <article className="rounded-3xl border border-white/10 bg-slate-950/40 p-4">
-            <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Total</p>
-            <p className="mt-2 text-2xl font-semibold text-white">{medicos.length}</p>
-          </article>
-          <article className="rounded-3xl border border-white/10 bg-slate-950/40 p-4">
-            <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Ativos</p>
-            <p className="mt-2 text-2xl font-semibold text-white">{totalAtivos}</p>
-          </article>
-          <article className="rounded-3xl border border-white/10 bg-slate-950/40 p-4">
-            <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Inativos</p>
-            <p className="mt-2 text-2xl font-semibold text-white">{totalInativos}</p>
-          </article>
-        </div>
+        <Indicadores
+          itens={[
+            { rotulo: 'Total', valor: medicos.length },
+            { rotulo: 'Ativos', valor: totalAtivos },
+            { rotulo: 'Inativos', valor: totalInativos },
+          ]}
+        />
       </section>
       ) : null}
 

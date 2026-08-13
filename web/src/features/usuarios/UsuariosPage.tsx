@@ -530,7 +530,7 @@ export function UsuariosPage() {
                         <button
                           type="button"
                           onClick={() =>
-                            navigate(`/permissoes?role=${encodeURIComponent(usuario.role)}`)
+                            navigate(`/permissoes/${encodeURIComponent(usuario.role)}/editar`)
                           }
                           className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/10"
                           data-testid={`usuario-permissoes-${usuario.id}`}

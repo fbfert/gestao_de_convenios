@@ -111,4 +111,16 @@ class RoleCatalog
     {
         return self::PADRAO[$papel] ?? [];
     }
+
+    /**
+     * Papel de sistema: não pode ser renomeado nem excluído, mas as permissões
+     * dele seguem editáveis. `profissional` carrega significado no código — é
+     * o papel que amarra o usuário ao cadastro de profissional — e `admin` é a
+     * rede de segurança de acesso. Renomear qualquer um dos dois quebraria
+     * comportamento que não aparece na tela.
+     */
+    public static function ehDeSistema(string $papel): bool
+    {
+        return array_key_exists($papel, self::PADRAO);
+    }
 }

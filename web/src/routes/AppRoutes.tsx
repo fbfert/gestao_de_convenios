@@ -76,6 +76,8 @@ export function AppRoutes() {
           <Route path="/medicos" element={<MedicosPage />} />
           <Route path="/medicos/novo" element={<MedicosPage />} />
           <Route path="/permissoes" element={<PermissoesPage />} />
+          <Route path="/permissoes/novo" element={<PermissoesPage />} />
+          <Route path="/permissoes/:name/editar" element={<PermissoesPage />} />
           <Route path="/usuarios" element={<UsuariosPage />} />
           <Route path="/usuarios/novo" element={<UsuariosPage />} />
           <Route path="/usuarios/:id/editar" element={<UsuariosPage />} />

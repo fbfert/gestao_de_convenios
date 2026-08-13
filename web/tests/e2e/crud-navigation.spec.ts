@@ -66,6 +66,12 @@ test('formularios de criacao abrem em rotas proprias sem lista inline', async ({
       listButtonTestId: 'lancamento-novo',
       closeButtonTestId: 'lancamento-fechar',
     },
+    {
+      path: '/permissoes/novo',
+      formHeading: 'Novo perfil',
+      listButtonTestId: 'papel-novo',
+      closeButtonTestId: 'papel-fechar',
+    },
   ] as const
 
   for (const caso of casos) {

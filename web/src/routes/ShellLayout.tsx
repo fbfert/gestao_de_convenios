@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { useLogout } from '../features/auth'
+import { useLogout, useSessaoAtual } from '../features/auth'
+import { usePode } from '../lib/permissoes'
 import { useAuthStore } from '../stores/authStore'
 import { isGroup, montarMenu, type NavGroup } from './navigation'
 
@@ -117,7 +118,11 @@ export function ShellLayout() {
   const user = useAuthStore((state) => state.user)
   const tenant = useAuthStore((state) => state.tenant)
   const logout = useLogout()
-  const entradas = montarMenu(Boolean(user?.super_admin))
+  const pode = usePode()
+  // Reconsulta papel e permissoes: e o que faz uma mudanca de permissao valer
+  // sem exigir que a pessoa saia e entre de novo.
+  useSessaoAtual()
+  const entradas = montarMenu(Boolean(user?.super_admin), pode)
   const [grupoAberto, setGrupoAberto] = useState<string | null>(null)
   const navRef = useRef<HTMLElement | null>(null)
   const timerFechar = useRef<number | null>(null)

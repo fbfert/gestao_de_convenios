@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
-import { configuracoesItems } from '../../routes/navigation'
+import { usePode } from '../../lib/permissoes'
+import { configuracoesItems, filtrarItens } from '../../routes/navigation'
 import { themeOptions, useThemeStore } from '../../stores/themeStore'
 
 /**
@@ -10,6 +11,9 @@ import { themeOptions, useThemeStore } from '../../stores/themeStore'
 export function ConfiguracoesGeralPage() {
   const theme = useThemeStore((state) => state.theme)
   const setTheme = useThemeStore((state) => state.setTheme)
+  const pode = usePode()
+  // Mesma regra do submenu: cartao so aparece para quem pode abrir a tela.
+  const itens = filtrarItens(configuracoesItems, pode)
 
   return (
     <div className="space-y-6" data-testid="configuracoes-geral">
@@ -90,7 +94,7 @@ export function ConfiguracoesGeralPage() {
         <h3 className="text-lg font-semibold text-white">O que há em cada configuração</h3>
 
         <div className="grid gap-4 md:grid-cols-2">
-          {configuracoesItems.map((item) => (
+          {itens.map((item) => (
             <Link
               key={item.to}
               to={item.to}

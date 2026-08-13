@@ -1,241 +1,411 @@
-import { useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { Link, useMatch, useNavigate } from 'react-router-dom'
 import { Select } from '../../components/ui/Select'
 import {
   getHttpErrorMessage,
+  useCriarPapel,
+  useExcluirPapel,
   usePermissions,
+  useRenomearPapel,
   useRolePermissions,
   useRoles,
   useUpdateRolePermissions,
 } from './usePermissoes'
-import type { PermissionRef } from './types'
+import type { PermissionRef, RoleRef } from './types'
 
-function selectClasses() {
-  return 'w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20'
-}
-
-function groupPermissions(permissions: PermissionRef[]) {
-  return permissions.reduce<Record<string, PermissionRef[]>>((acc, permission) => {
-    const group = permission.domain
-    acc[group] ??= []
-    acc[group].push(permission)
-    return acc
-  }, {})
-}
+const card = 'rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6'
+const campo =
+  'w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20'
+const botaoPrimario =
+  'inline-flex items-center justify-center rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:opacity-60'
 
 const domainLabels: Record<string, string> = {
-  dashboard: 'Dashboard',
+  dashboard: 'Acesso às telas',
   solicitacoes: 'Solicitações',
   guias: 'Guias',
   antecipacoes: 'Antecipações',
   lancamentos: 'Sessões',
   conciliacoes: 'Conciliações',
+  profissionais: 'Profissionais',
   especialidades: 'Especialidades',
   medicos: 'Médicos',
   usuarios: 'Usuários',
   convenios: 'Convênios',
   permissoes: 'Permissões',
   manual: 'Manual',
+  configuracoes: 'Configurações',
 }
 
-export function PermissoesPage() {
-  const [searchParams] = useSearchParams()
-  const [selectedRole, setSelectedRole] = useState('')
-  const [selectedPermissions, setSelectedPermissions] = useState<string[]>([])
-  const [formError, setFormError] = useState<string | null>(null)
+function agrupar(permissions: PermissionRef[]) {
+  return permissions.reduce<Record<string, PermissionRef[]>>((acc, permission) => {
+    acc[permission.domain] ??= []
+    acc[permission.domain].push(permission)
+    return acc
+  }, {})
+}
 
-  const rolesQuery = useRoles()
-  const permissionsQuery = usePermissions()
-  const rolePermissionsQuery = useRolePermissions(selectedRole)
-  const updateRolePermissions = useUpdateRolePermissions()
-
-  const roles = useMemo(() => rolesQuery.data ?? [], [rolesQuery.data])
-  const permissions = useMemo(() => permissionsQuery.data ?? [], [permissionsQuery.data])
-  const groupedPermissions = useMemo(() => groupPermissions(permissions), [permissions])
-
-  useEffect(() => {
-    if (roles.length === 0) {
-      return
-    }
-
-    const roleFromQuery = searchParams.get('role')
-    const hasRoleFromQuery = roleFromQuery ? roles.some((role) => role.name === roleFromQuery) : false
-
-    setSelectedRole((current) => current || (hasRoleFromQuery ? roleFromQuery ?? '' : roles[0].name))
-  }, [roles, searchParams])
-
-  useEffect(() => {
-    if (!rolePermissionsQuery.data) {
-      return
-    }
-
-    setSelectedPermissions(rolePermissionsQuery.data.permissions.map((permission) => permission.name))
-  }, [rolePermissionsQuery.data])
-
-  const togglePermission = (permissionName: string) => {
-    setSelectedPermissions((current) =>
-      current.includes(permissionName)
-        ? current.filter((item) => item !== permissionName)
-        : [...current, permissionName],
-    )
+function Erro({ mensagem }: { mensagem: string | null }) {
+  if (!mensagem) {
+    return null
   }
 
-  const handleSave = async () => {
-    setFormError(null)
+  return (
+    <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+      {mensagem}
+    </p>
+  )
+}
+
+/**
+ * Perfis e permissões.
+ *
+ * Listagem, criação e edição em telas separadas, como manda a spec
+ * `crud-lista-formulario-separados`. A edição é a tela mais densa do sistema —
+ * são 35 permissões — e não cabia dividir espaço com a lista de papéis.
+ */
+export function PermissoesPage() {
+  const isCreateRoute = useMatch('/permissoes/novo') !== null
+  const editRouteMatch = useMatch('/permissoes/:name/editar')
+  const papelEditado = editRouteMatch?.params.name ?? null
+
+  if (isCreateRoute) {
+    return <NovoPapel />
+  }
+
+  if (papelEditado) {
+    return <EditarPapel nome={decodeURIComponent(papelEditado)} />
+  }
+
+  return <ListaDePapeis />
+}
+
+function ListaDePapeis() {
+  const navigate = useNavigate()
+  const rolesQuery = useRoles()
+  const papeis = useMemo(() => rolesQuery.data ?? [], [rolesQuery.data])
+
+  return (
+    <div className="space-y-8" data-testid="permissoes-page">
+      <section className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Perfis e Permissões</p>
+          <h2 className="mt-2 text-3xl font-semibold text-white">Papéis da clínica</h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
+            O papel define o que a pessoa enxerga no menu e o que pode alterar. O catálogo de
+            permissões é fixo; o que a clínica monta é a combinação delas em cada papel.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => navigate('/permissoes/novo')}
+          className={botaoPrimario}
+          data-testid="papel-novo"
+        >
+          Novo perfil
+        </button>
+      </section>
+
+      {rolesQuery.isLoading ? (
+        <div className={card}>Carregando papéis...</div>
+      ) : rolesQuery.isError ? (
+        <Erro mensagem="Não foi possível carregar os papéis." />
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2">
+          {papeis.map((papel) => (
+            <Link
+              key={papel.id}
+              to={`/permissoes/${encodeURIComponent(papel.name)}/editar`}
+              className="group block rounded-[1.75rem] border border-white/10 bg-white/5 p-5 transition hover:border-cyan-300/40 hover:bg-white/10"
+              data-testid={`papel-${papel.name}`}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-base font-semibold text-white group-hover:text-cyan-50">
+                  {papel.name}
+                </p>
+                {papel.sistema ? (
+                  <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs text-slate-300">
+                    Do sistema
+                  </span>
+                ) : null}
+              </div>
+              <p className="mt-2 text-sm text-slate-300">
+                {papel.permissions_count ?? 0} permissões · {papel.users_count ?? 0} usuários
+              </p>
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function NovoPapel() {
+  const navigate = useNavigate()
+  const [nome, setNome] = useState('')
+  const [copiarDe, setCopiarDe] = useState('')
+  const [erro, setErro] = useState<string | null>(null)
+
+  const rolesQuery = useRoles()
+  const criar = useCriarPapel()
+  const papeis = useMemo(() => rolesQuery.data ?? [], [rolesQuery.data])
+
+  const salvar = async (event: FormEvent) => {
+    event.preventDefault()
+    setErro(null)
 
     try {
-      await updateRolePermissions.mutateAsync({
-        roleName: selectedRole,
-        permissions: selectedPermissions,
+      const papel = await criar.mutateAsync({
+        name: nome.trim(),
+        copiar_de: copiarDe || undefined,
       })
+
+      // Vai direto para a edição: papel sem permissão nenhuma não serve para
+      // nada, e é aqui que a pessoa espera continuar.
+      navigate(`/permissoes/${encodeURIComponent(papel.name)}/editar`)
     } catch (error) {
-      setFormError(getHttpErrorMessage(error, 'Não foi possível salvar as permissões do papel.'))
+      setErro(getHttpErrorMessage(error, 'Não foi possível criar o perfil.'))
     }
   }
 
   return (
-    <div className="space-y-8" data-testid="permissoes-page">
-      <section className="space-y-4">
+    <div className="space-y-6" data-testid="permissoes-page">
+      <div>
+        <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Perfis e Permissões</p>
+        <h2 className="mt-2 text-3xl font-semibold text-white">Novo perfil</h2>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
+          Copiar de um perfil existente costuma ser mais rápido do que marcar tudo de novo: você
+          ajusta as diferenças na tela seguinte.
+        </p>
+      </div>
+
+      <section className={card}>
+        <form onSubmit={salvar} className="space-y-4" data-testid="papel-form">
+          <label className="block space-y-2">
+            <span className="text-sm font-medium text-slate-200">Nome do perfil</span>
+            <input
+              required
+              value={nome}
+              onChange={(event) => setNome(event.target.value)}
+              placeholder="recepcao"
+              className={campo}
+              data-testid="papel-nome"
+            />
+            <span className="block text-xs text-slate-400">
+              Letras minúsculas, números e hífen. O nome aparece no cadastro de usuários.
+            </span>
+          </label>
+
+          <label className="block space-y-2">
+            <span className="text-sm font-medium text-slate-200">Copiar permissões de</span>
+            <Select value={copiarDe} onChange={(event) => setCopiarDe(event.target.value)}>
+              <option value="">Começar sem nenhuma permissão</option>
+              {papeis.map((papel) => (
+                <option key={papel.id} value={papel.name}>
+                  {papel.name}
+                </option>
+              ))}
+            </Select>
+          </label>
+
+          <Erro mensagem={erro} />
+
+          <div className="flex gap-3">
+            <button className={botaoPrimario} disabled={criar.isPending}>
+              {criar.isPending ? 'Criando...' : 'Criar perfil'}
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/permissoes')}
+              className="text-sm text-slate-300"
+              data-testid="papel-fechar"
+            >
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
+  )
+}
+
+function EditarPapel({ nome }: { nome: string }) {
+  const navigate = useNavigate()
+  const [selecionadas, setSelecionadas] = useState<string[]>([])
+  const [novoNome, setNovoNome] = useState(nome)
+  const [erro, setErro] = useState<string | null>(null)
+  const carregadoRef = useRef<string | null>(null)
+
+  const permissionsQuery = usePermissions()
+  const rolePermissionsQuery = useRolePermissions(nome)
+  const rolesQuery = useRoles()
+  const atualizar = useUpdateRolePermissions()
+  const renomear = useRenomearPapel()
+  const excluir = useExcluirPapel()
+
+  const permissions = useMemo(() => permissionsQuery.data ?? [], [permissionsQuery.data])
+  const agrupadas = useMemo(() => agrupar(permissions), [permissions])
+  const papel: RoleRef | undefined = useMemo(
+    () => (rolesQuery.data ?? []).find((item) => item.name === nome),
+    [rolesQuery.data, nome],
+  )
+
+  // Carrega uma vez por papel: um refetch em background não pode desmarcar o
+  // que o administrador acabou de mexer e ainda não salvou.
+  useEffect(() => {
+    if (!rolePermissionsQuery.data || carregadoRef.current === nome) {
+      return
+    }
+
+    carregadoRef.current = nome
+    setSelecionadas(rolePermissionsQuery.data.permissions.map((permission) => permission.name))
+    setNovoNome(nome)
+  }, [rolePermissionsQuery.data, nome])
+
+  const alternar = (permissao: string) => {
+    setSelecionadas((atual) =>
+      atual.includes(permissao)
+        ? atual.filter((item) => item !== permissao)
+        : [...atual, permissao],
+    )
+  }
+
+  const salvar = async () => {
+    setErro(null)
+
+    try {
+      if (papel && !papel.sistema && novoNome.trim() !== nome) {
+        const renomeado = await renomear.mutateAsync({ roleName: nome, name: novoNome.trim() })
+        await atualizar.mutateAsync({ roleName: renomeado.name, permissions: selecionadas })
+        carregadoRef.current = null
+        navigate(`/permissoes/${encodeURIComponent(renomeado.name)}/editar`, { replace: true })
+        return
+      }
+
+      await atualizar.mutateAsync({ roleName: nome, permissions: selecionadas })
+      navigate('/permissoes')
+    } catch (error) {
+      setErro(getHttpErrorMessage(error, 'Não foi possível salvar o perfil.'))
+    }
+  }
+
+  const remover = async () => {
+    setErro(null)
+
+    if (!window.confirm(`Excluir o perfil "${nome}"? Isso não pode ser desfeito.`)) {
+      return
+    }
+
+    try {
+      await excluir.mutateAsync(nome)
+      navigate('/permissoes')
+    } catch (error) {
+      setErro(getHttpErrorMessage(error, 'Não foi possível excluir o perfil.'))
+    }
+  }
+
+  const salvando = atualizar.isPending || renomear.isPending
+
+  return (
+    <div className="space-y-6" data-testid="permissoes-page">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Permissões</p>
-          <h2 className="mt-2 text-3xl font-semibold text-white">Atribuição de permissões por papel</h2>
+          <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Perfis e Permissões</p>
+          <h2 className="mt-2 text-3xl font-semibold text-white">Editar perfil</h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
-            O catálogo é fixo e o admin só liga ou desliga permissões para cada papel do tenant.
+            {papel?.sistema
+              ? 'Este é um perfil do sistema: as permissões são editáveis, mas o nome não muda e ele não pode ser excluído.'
+              : 'Marque o que este perfil pode fazer. As permissões de acesso definem também o que aparece no menu.'}
           </p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-3">
-          <article className="rounded-3xl border border-white/10 bg-slate-950/40 p-4">
-            <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Papéis</p>
-            <p className="mt-2 text-2xl font-semibold text-white">{roles.length}</p>
-          </article>
-          <article className="rounded-3xl border border-white/10 bg-slate-950/40 p-4">
-            <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Permissões</p>
-            <p className="mt-2 text-2xl font-semibold text-white">{permissions.length}</p>
-          </article>
-          <article className="rounded-3xl border border-white/10 bg-slate-950/40 p-4">
-            <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Papel ativo</p>
-            <p className="mt-2 text-2xl font-semibold text-white">{selectedRole || 'Nenhum'}</p>
-          </article>
-        </div>
+        <Link to="/permissoes" className="text-sm text-cyan-200" data-testid="papel-fechar">
+          ← Voltar aos perfis
+        </Link>
+      </div>
+
+      <section className={card}>
+        <label className="block max-w-md space-y-2">
+          <span className="text-sm font-medium text-slate-200">Nome do perfil</span>
+          <input
+            value={novoNome}
+            onChange={(event) => setNovoNome(event.target.value)}
+            disabled={papel?.sistema ?? true}
+            className={`${campo} disabled:opacity-60`}
+            data-testid="papel-nome"
+          />
+        </label>
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[280px_1fr]">
-        <aside className="space-y-4 rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
-          <div>
-            <h3 className="text-lg font-semibold text-white">Papéis</h3>
-            <p className="text-sm text-slate-300">Selecione um papel para editar as permissões.</p>
-          </div>
+      {rolePermissionsQuery.isError ? (
+        <Erro mensagem="Não foi possível carregar as permissões do perfil." />
+      ) : null}
 
-          {rolesQuery.isLoading ? (
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
-              Carregando papéis...
-            </div>
-          ) : rolesQuery.isError ? (
-            <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-100">
-              Não foi possível carregar os papéis.
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {roles.map((role) => (
-                <button
-                  key={role.id}
-                  type="button"
-                  onClick={() => setSelectedRole(role.name)}
-                  className={[
-                    'w-full rounded-2xl border px-4 py-3 text-left text-sm font-medium transition',
-                    selectedRole === role.name
-                      ? 'border-cyan-300/40 bg-cyan-400/15 text-cyan-50'
-                      : 'border-white/10 bg-white/5 text-slate-200 hover:bg-white/10',
-                  ].join(' ')}
-                  data-testid={`papel-${role.name}`}
-                >
-                  {role.name}
-                </button>
-              ))}
-            </div>
-          )}
-        </aside>
+      <section className={`${card} space-y-4`}>
+        <div>
+          <h3 className="text-lg font-semibold text-white">Permissões</h3>
+          <p className="text-sm text-slate-300">
+            {rolePermissionsQuery.isLoading
+              ? 'Carregando permissões do perfil...'
+              : `${selecionadas.length} de ${permissions.length} marcadas.`}
+          </p>
+        </div>
 
-        <section className="space-y-4 rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <h3 className="text-lg font-semibold text-white">Checklist de permissões</h3>
-              <p className="text-sm text-slate-300">
-                {rolePermissionsQuery.isLoading
-                  ? 'Carregando permissões do papel...'
-                  : 'As permissões abaixo vêm do catálogo fixo do sistema.'}
-              </p>
-            </div>
-
-            <div className="min-w-72">
-              <label className="block space-y-2">
-                <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Papel</span>
-                <Select
-                  value={selectedRole}
-                  onChange={(event) => setSelectedRole(event.target.value)}
-                  className={selectClasses()}
-                  data-testid="papel-selecionado"
-                >
-                  {roles.map((role) => (
-                    <option key={role.id} value={role.name}>
-                      {role.name}
-                    </option>
-                  ))}
-                </Select>
-              </label>
-            </div>
-          </div>
-
-          {rolePermissionsQuery.isError ? (
-            <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-100">
-              Não foi possível carregar as permissões do papel.
-            </div>
-          ) : null}
-
-          <div className="grid gap-4 lg:grid-cols-2">
-            {Object.entries(groupedPermissions).map(([domain, items]) => (
-              <div key={domain} className="rounded-3xl border border-white/10 bg-slate-950/40 p-4">
-                <h4 className="text-sm font-semibold uppercase tracking-[0.25em] text-cyan-100">
-                  {domainLabels[domain] ?? domain}
-                </h4>
-                <div className="mt-4 space-y-2">
-                  {items.map((permission) => (
-                    <label
-                      key={permission.name}
-                      className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3"
-                    >
-                      <span className="text-sm text-white">{permission.name}</span>
-                      <input
-                        type="checkbox"
-                        checked={selectedPermissions.includes(permission.name)}
-                        onChange={() => togglePermission(permission.name)}
-                        className="h-4 w-4 rounded border-white/20 bg-white/10 text-cyan-300 focus:ring-cyan-300/20"
-                        data-testid={`permissao-${permission.name}`}
-                      />
-                    </label>
-                  ))}
-                </div>
+        <div className="grid gap-4 lg:grid-cols-2">
+          {Object.entries(agrupadas).map(([domain, items]) => (
+            <div key={domain} className="rounded-3xl border border-white/10 bg-slate-950/40 p-4">
+              <h4 className="text-sm font-semibold uppercase tracking-[0.25em] text-cyan-100">
+                {domainLabels[domain] ?? domain}
+              </h4>
+              <div className="mt-4 space-y-2">
+                {items.map((permission) => (
+                  <label
+                    key={permission.name}
+                    className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3"
+                  >
+                    <span>
+                      <span className="block text-sm text-white">{permission.label}</span>
+                      <span className="block text-xs text-slate-400">{permission.name}</span>
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={selecionadas.includes(permission.name)}
+                      onChange={() => alternar(permission.name)}
+                      className="h-4 w-4 rounded border-white/20 bg-white/10 text-cyan-300 focus:ring-cyan-300/20"
+                      data-testid={`permissao-${permission.name}`}
+                    />
+                  </label>
+                ))}
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
+        </div>
 
-          {formError ? (
-            <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
-              {formError}
-            </p>
-          ) : null}
+        <Erro mensagem={erro} />
 
+        <div className="flex flex-wrap items-center gap-3">
           <button
             type="button"
-            onClick={handleSave}
-            className="inline-flex items-center justify-center rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:opacity-60"
-            disabled={updateRolePermissions.isPending || !selectedRole}
+            onClick={salvar}
+            className={botaoPrimario}
+            disabled={salvando}
             data-testid="permissoes-salvar"
           >
-            {updateRolePermissions.isPending ? 'Salvando...' : 'Salvar permissões'}
+            {salvando ? 'Salvando...' : 'Salvar perfil'}
           </button>
-        </section>
+
+          {papel && !papel.sistema ? (
+            <button
+              type="button"
+              onClick={remover}
+              className="rounded-2xl border border-rose-400/30 px-4 py-3 text-sm font-semibold text-rose-100 transition hover:bg-rose-500/10 disabled:opacity-60"
+              disabled={excluir.isPending}
+              data-testid="papel-excluir"
+            >
+              {excluir.isPending ? 'Excluindo...' : 'Excluir perfil'}
+            </button>
+          ) : null}
+        </div>
       </section>
     </div>
   )

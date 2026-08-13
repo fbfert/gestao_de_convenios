@@ -12,6 +12,11 @@ export type AuthUser = {
   name: string
   email: string
   role: string
+  /**
+   * Permissões efetivas do papel. Opcional só por causa de sessão antiga
+   * gravada no localStorage antes de a API passar a mandar o campo: quem lê
+   * trata `undefined` como "ainda não sei", nunca como "não pode".
+   */
   permissions?: string[]
   /**
    * Administra clínicas. Controla apenas a exibição do item de menu; quem
@@ -31,6 +36,8 @@ type AuthState = {
   user: AuthUser | null
   tenant: AuthTenant | null
   login: (payload: LoginPayload) => void
+  /** Reaplica o usuário vindo de GET /user, para mudança de papel valer sem novo login. */
+  sincronizarUsuario: (user: AuthUser) => void
   logout: () => void
   isAuthenticated: () => boolean
 }
@@ -46,6 +53,11 @@ export const useAuthStore = create<AuthState>()(
       login: ({ token, user }) =>
         set({
           token,
+          user,
+          tenant: user.tenant,
+        }),
+      sincronizarUsuario: (user) =>
+        set({
           user,
           tenant: user.tenant,
         }),

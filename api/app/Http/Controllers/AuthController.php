@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\LoginRequest;
 use App\Models\User;
+use App\Support\AuthPayload;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 use Illuminate\Http\Request;
@@ -32,21 +33,7 @@ class AuthController extends Controller
 
         return response()->json([
             'token' => $token,
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'role' => $user->roles()->first()?->name ?? $user->getRoleNames()->first(),
-                // Só para o menu decidir se mostra a gestão de tenants. A
-                // restrição de verdade é o middleware `super-admin` — este
-                // campo apenas evita exibir um item que responderia 403.
-                'super_admin' => $user->ehSuperAdmin(),
-                'tenant' => [
-                    'id' => $user->tenant->id,
-                    'nome' => $user->tenant->nome,
-                    'slug' => $user->tenant->slug,
-                ],
-            ],
+            'user' => AuthPayload::paraUsuario($user),
         ]);
     }
 

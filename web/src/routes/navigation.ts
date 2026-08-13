@@ -16,6 +16,11 @@ export type NavLeaf = {
   descricao: string
   /** chave do bloco em GET /dashboard, quando existe metrica */
   metricKey?: string
+  /**
+   * Permissao que habilita o item. Sem ela, o item vale para todo mundo —
+   * caso do Dashboard e do Manual, que nao tem permissao propria na API.
+   */
+  permissao?: string
 }
 
 export type NavGroup = {
@@ -38,6 +43,7 @@ export const cadastrosItems: NavLeaf[] = [
     descricao:
       'Quem recebe o atendimento. Guarda nome, CPF, carteirinha e o convênio a que o paciente pertence.',
     metricKey: 'pacientes',
+    permissao: 'dashboard.pacientes',
   },
   {
     to: '/profissionais',
@@ -45,6 +51,7 @@ export const cadastrosItems: NavLeaf[] = [
     descricao:
       'Quem executa as sessões na clínica. Cada profissional tem uma especialidade e um percentual de repasse.',
     metricKey: 'profissionais',
+    permissao: 'dashboard.profissionais',
   },
   {
     to: '/especialidades',
@@ -52,6 +59,7 @@ export const cadastrosItems: NavLeaf[] = [
     descricao:
       'As terapias oferecidas (fisioterapia, fonoaudiologia, ...). Classificam profissionais, solicitações e guias.',
     metricKey: 'especialidades',
+    permissao: 'dashboard.especialidades',
   },
   {
     to: '/medicos',
@@ -59,6 +67,7 @@ export const cadastrosItems: NavLeaf[] = [
     descricao:
       'Os médicos externos que assinam o pedido. É o solicitante que aparece na guia enviada ao convênio.',
     metricKey: 'medicos',
+    permissao: 'dashboard.medicos',
   },
   {
     to: '/convenios',
@@ -66,6 +75,7 @@ export const cadastrosItems: NavLeaf[] = [
     descricao:
       'As operadoras atendidas e as regras de cada uma: validade de senha, limites e o conector de automação.',
     metricKey: 'convenios',
+    permissao: 'dashboard.convenios',
   },
   {
     to: '/usuarios',
@@ -73,6 +83,7 @@ export const cadastrosItems: NavLeaf[] = [
     descricao:
       'Quem entra no sistema e com qual papel. O papel define as telas visíveis e o que cada um pode alterar.',
     metricKey: 'usuarios',
+    permissao: 'dashboard.usuarios',
   },
 ]
 
@@ -83,6 +94,7 @@ export const operacaoItems: NavLeaf[] = [
     descricao:
       'Ponto de partida: confirme que o paciente existe e que a carteirinha está correta antes de abrir o pedido.',
     metricKey: 'pacientes',
+    permissao: 'dashboard.pacientes',
   },
   {
     to: '/solicitacoes',
@@ -90,6 +102,7 @@ export const operacaoItems: NavLeaf[] = [
     descricao:
       'Registre o pedido médico, com uma ou mais especialidades e os anexos. É o documento que origina as guias.',
     metricKey: 'solicitacoes',
+    permissao: 'dashboard.solicitacoes',
   },
   {
     to: '/guias',
@@ -97,6 +110,7 @@ export const operacaoItems: NavLeaf[] = [
     descricao:
       'A autorização por especialidade. É aqui que a senha do convênio e a validade ficam registradas.',
     metricKey: 'guias',
+    permissao: 'dashboard.guias',
   },
   {
     to: '/lancamentos',
@@ -104,6 +118,7 @@ export const operacaoItems: NavLeaf[] = [
     descricao:
       'O atendimento de fato realizado, baixado contra a guia. Alimenta o repasse do profissional.',
     metricKey: 'lancamentos',
+    permissao: 'dashboard.lancamentos',
   },
   {
     to: '/antecipacoes',
@@ -111,6 +126,7 @@ export const operacaoItems: NavLeaf[] = [
     descricao:
       'Agrupa sessões já executadas em um lote de pagamento adiantado ao profissional, antes do convênio pagar.',
     metricKey: 'antecipacoes',
+    permissao: 'dashboard.antecipacoes',
   },
   {
     to: '/analiticos',
@@ -118,6 +134,7 @@ export const operacaoItems: NavLeaf[] = [
     descricao:
       'Importa o demonstrativo de pagamento do convênio, com os valores pagos e as glosas de cada linha.',
     metricKey: 'analiticos',
+    permissao: 'dashboard.analiticos',
   },
   {
     to: '/conciliacao',
@@ -125,6 +142,7 @@ export const operacaoItems: NavLeaf[] = [
     descricao:
       'Fecha o ciclo: confronta o que foi executado com o que o convênio pagou e aponta as divergências.',
     metricKey: 'conciliacoes',
+    permissao: 'dashboard.conciliacoes',
   },
 ]
 
@@ -134,36 +152,56 @@ export const configuracoesItems: NavLeaf[] = [
     label: 'Globais',
     descricao:
       'Parâmetros de comportamento do sistema: tempo de sessão, antecedência do aviso de senha vencendo, sessões sugeridas por especialidade e itens por página.',
+    permissao: 'configuracoes.manage',
   },
   {
     to: '/configuracoes/emails',
     label: 'Envio de E-mails',
     descricao:
       'Servidor SMTP que dispara os e-mails do sistema: host, porta, credenciais e remetente. Enquanto estiver vazio, nenhum e-mail sai.',
+    permissao: 'configuracoes.manage',
   },
   {
     to: '/configuracoes/ia',
     label: 'Configurações de IA',
     descricao:
       'Credenciais da OpenAI usadas na leitura automática de documentos: chave, base URL, organização e projeto.',
+    permissao: 'configuracoes.manage',
   },
   {
     to: '/configuracoes/ia/prompts',
     label: 'Prompts Operacionais',
     descricao:
       'As instruções que a IA recebe para transformar cada tipo de documento em dados. Permite criar, editar e excluir prompts.',
+    permissao: 'configuracoes.manage',
   },
   {
     to: '/configuracoes/templates-emails',
     label: 'Templates de E-mails',
     descricao:
       'O texto de cada mensagem que o sistema envia. Define assunto, corpo e as variáveis substituídas no disparo.',
+    permissao: 'configuracoes.manage',
   },
   {
     to: '/configuracoes/unimed',
     label: 'Unimed RDA',
     descricao:
       'Credenciais do portal da Unimed e o de-para de especialidades e profissionais que a automação usa para gerar guias.',
+    permissao: 'configuracoes.unimed.manage',
+  },
+  {
+    to: '/permissoes',
+    label: 'Perfis e Permissões',
+    descricao:
+      'Os papéis da clínica e o que cada um enxerga e altera. Definir papel é configuração do sistema; cadastrar a pessoa continua em Cadastros → Usuários.',
+    permissao: 'permissoes.manage',
+  },
+  {
+    to: '/auditoria',
+    label: 'Logs de Auditoria',
+    descricao:
+      'Linha do tempo de quem alterou o quê, para revisar mudanças críticas depois que elas acontecem.',
+    permissao: 'dashboard.auditoria',
   },
 ]
 
@@ -211,11 +249,31 @@ export const clinicasEntry: NavLeaf = {
   descricao: 'Cadastro das clínicas atendidas pelo sistema.',
 }
 
+/** Mantém só os itens que o usuário pode acessar. */
+export function filtrarItens(itens: NavLeaf[], pode: (permissao?: string) => boolean): NavLeaf[] {
+  return itens.filter((item) => pode(item.permissao))
+}
+
 /**
- * Menu final. `Clínicas` entra só para super admin — é a única entrada
- * condicional do menu, e a decisão fica aqui para o ShellLayout não precisar
- * conhecer a regra.
+ * Menu final: entradas do papel do usuário, mais `Clínicas` para super admin.
+ *
+ * Esconder item é conveniência, não segurança — quem barra de fato é o
+ * middleware `permission:` da API. Grupo que fica sem nenhum filho sai do menu
+ * inteiro: um grupo que abre um painel vazio é pior do que grupo nenhum.
  */
-export function montarMenu(superAdmin: boolean): NavEntry[] {
-  return superAdmin ? [...navEntries, clinicasEntry] : navEntries
+export function montarMenu(
+  superAdmin: boolean,
+  pode: (permissao?: string) => boolean,
+): NavEntry[] {
+  const entradas = superAdmin ? [...navEntries, clinicasEntry] : navEntries
+
+  return entradas.flatMap((entrada) => {
+    if (!isGroup(entrada)) {
+      return pode(entrada.permissao) ? [entrada] : []
+    }
+
+    const children = filtrarItens(entrada.children, pode)
+
+    return children.length > 0 ? [{ ...entrada, children }] : []
+  })
 }

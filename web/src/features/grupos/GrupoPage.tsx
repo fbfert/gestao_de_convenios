@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { apiClient } from '../../api/client'
-import type { NavLeaf } from '../../routes/navigation'
+import { usePode } from '../../lib/permissoes'
+import { filtrarItens, type NavLeaf } from '../../routes/navigation'
 
 type DashboardBlock = {
   key: string
@@ -32,7 +33,12 @@ export type GrupoPageProps = {
   testId: string
 }
 
-export function GrupoPage({ titulo, chapeu, resumo, itens, ordenado = false, testId }: GrupoPageProps) {
+export function GrupoPage({ titulo, chapeu, resumo, itens: todos, ordenado = false, testId }: GrupoPageProps) {
+  const pode = usePode()
+  // Mesma regra do menu: cartao para uma tela que o papel nao abre so leva a
+  // pessoa ate um 403.
+  const itens = filtrarItens(todos, pode)
+
   const dashboardQuery = useQuery({
     queryKey: ['dashboard'],
     queryFn: async () => (await apiClient.get<{ data: DashboardResponse }>('/dashboard')).data.data,

@@ -31,6 +31,7 @@ use App\Http\Controllers\TenantController;
 use App\Http\Controllers\ProfissionalController;
 use App\Http\Controllers\SolicitacaoDocumentoController;
 use App\Http\Controllers\UnimedSettingsController;
+use App\Support\AuthPayload;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -39,8 +40,11 @@ Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,
 // EncerrarSessaoExpirada vem logo apos o auth: precisa do usuario resolvido
 // para saber o prazo do tenant, e tem que barrar antes de qualquer rota.
 Route::middleware(['auth:sanctum', \App\Http\Middleware\EncerrarSessaoExpirada::class])->group(function () {
+    // Mesmo formato do bloco `user` do login, e nao o model cru: e por aqui
+    // que o frontend redescobre, a cada abertura, que as permissoes do papel
+    // mudaram desde o login.
     Route::get('/user', function (Request $request) {
-        return $request->user();
+        return response()->json(AuthPayload::paraUsuario($request->user()->load('tenant')));
     });
 
     Route::get('/dashboard', [DashboardController::class, 'index']);
@@ -102,6 +106,9 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EncerrarSessaoExpirada::
     Route::patch('/medicos/{medico}', [MedicoController::class, 'update'])->middleware('permission:medicos.manage');
 
     Route::get('/roles', [RoleController::class, 'index'])->middleware('permission:permissoes.manage');
+    Route::post('/roles', [RoleController::class, 'store'])->middleware('permission:permissoes.manage');
+    Route::patch('/roles/{role}', [RoleController::class, 'update'])->middleware('permission:permissoes.manage');
+    Route::delete('/roles/{role}', [RoleController::class, 'destroy'])->middleware('permission:permissoes.manage');
     Route::get('/permissions', [PermissionController::class, 'index'])->middleware('permission:permissoes.manage');
     Route::get('/roles/{role}/permissions', [RolePermissionController::class, 'show'])->middleware('permission:permissoes.manage');
     Route::put('/roles/{role}/permissions', [RolePermissionController::class, 'update'])->middleware('permission:permissoes.manage');

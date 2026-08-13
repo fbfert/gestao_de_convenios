@@ -55,4 +55,48 @@ export function useUpdateRolePermissions() {
   })
 }
 
+export function useCriarPapel() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (payload: { name: string; copiar_de?: string }) => {
+      const { data } = await apiClient.post<{ data: RoleRef }>('/roles', payload)
+      return data.data
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['roles'] })
+    },
+  })
+}
+
+export function useRenomearPapel() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ roleName, name }: { roleName: string; name: string }) => {
+      const { data } = await apiClient.patch<{ data: RoleRef }>(`/roles/${roleName}`, { name })
+      return data.data
+    },
+    onSuccess: async () => {
+      // O nome e a chave de rota do papel: renomear invalida toda a arvore de
+      // role-permissions, porque a entrada antiga deixou de existir.
+      await queryClient.invalidateQueries({ queryKey: ['roles'] })
+      await queryClient.invalidateQueries({ queryKey: ['role-permissions'] })
+    },
+  })
+}
+
+export function useExcluirPapel() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (roleName: string) => {
+      await apiClient.delete(`/roles/${roleName}`)
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['roles'] })
+    },
+  })
+}
+
 export { getHttpErrorMessage }

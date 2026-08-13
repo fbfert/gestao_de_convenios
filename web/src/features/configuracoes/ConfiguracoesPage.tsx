@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useEspecialidades, useProfissionais } from '../../lib/queries/useReferenceData'
-import { useAuthStore } from '../../stores/authStore'
+import { usePode } from '../../lib/permissoes'
 import {
   getHttpErrorMessage,
   useEmailSettings,
@@ -88,8 +88,11 @@ const cabecalhoPorAba: Record<ConfiguracoesAba, { titulo: string; descricao: str
 
 export function ConfiguracoesPage({ aba }: { aba: ConfiguracoesAba }) {
   const activeTab = aba
-  const user = useAuthStore((state) => state.user)
-  const canManageUnimed = user?.permissions?.includes('configuracoes.unimed.manage') ?? user?.role === 'admin'
+  const pode = usePode()
+  // Antes isto caia em `role === 'admin'`, porque a API nunca mandava
+  // `permissions`. Com papel proprio o nome do papel nao diz mais nada sobre o
+  // que a pessoa pode; quem responde e a permissao.
+  const canManageUnimed = pode('configuracoes.unimed.manage')
   const emailSettingsQuery = useEmailSettings()
   const salvarEmailSettings = useSalvarEmailSettings()
   const enviarEmailTeste = useEnviarEmailTeste()

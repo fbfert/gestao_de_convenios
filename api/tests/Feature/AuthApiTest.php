@@ -44,10 +44,31 @@ class AuthApiTest extends TestCase
 
         $this->assertNotEmpty($token);
 
+        $this->assertContains('permissoes.manage', $response->json('user.permissions'));
+
+        // GET /user devolve o mesmo formato do bloco `user`: e por ele que o
+        // frontend redescobre, a cada abertura, que as permissoes mudaram.
         $this->withToken($token)
             ->getJson('/api/user')
             ->assertOk()
-            ->assertJsonPath('email', 'admin@clinica-exemplo.test');
+            ->assertJsonPath('email', 'admin@clinica-exemplo.test')
+            ->assertJsonPath('role', 'admin')
+            ->assertJsonPath('tenant.slug', 'clinica-exemplo')
+            ->assertJsonPath('permissions', $response->json('user.permissions'));
+    }
+
+    public function test_permissoes_do_payload_seguem_o_papel_do_usuario(): void
+    {
+        $response = $this->postJson('/api/login', [
+            'email' => 'profissional@clinica-exemplo.test',
+            'password' => 'password',
+        ]);
+
+        $permissoes = $response->assertOk()->json('user.permissions');
+
+        $this->assertContains('lancamentos.viewOwn', $permissoes);
+        $this->assertNotContains('permissoes.manage', $permissoes);
+        $this->assertNotContains('usuarios.manage', $permissoes);
     }
 
     public function test_login_com_senha_errada_retorna_401_sem_token(): void

@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { ColunaOrdenavel } from '../../components/ui/ColunaOrdenavel'
+import { useOrdenacao } from '../../lib/useOrdenacao'
 import { useMatch, useNavigate } from 'react-router-dom'
 import { translateStatus } from '../../lib/statusLabels'
 import { Select } from '../../components/ui/Select'
@@ -92,6 +94,11 @@ export function SolicitacoesPage() {
   const [form, setForm] = useState<SolicitacaoForm>(emptyForm)
   const [formError, setFormError] = useState<string | null>(null)
 
+  const { ordenacao, ordenarPor } = useOrdenacao({
+    ordenar_por: 'id',
+    direcao: 'desc',
+  })
+
   const conveniosQuery = useConvenios()
   // O código do procedimento é por convênio, então a listagem acompanha o convênio do form.
   const especialidadesQuery = useEspecialidades({ convenio_id: form.convenio_id })
@@ -99,7 +106,7 @@ export function SolicitacoesPage() {
   const pacientesQuery = usePacientes({ convenio_id: form.convenio_id })
   // Todos os profissionais: cada linha de item filtra pela sua própria especialidade.
   const profissionaisQuery = useProfissionais()
-  const solicitacoesQuery = useSolicitacoes(filters, page)
+  const solicitacoesQuery = useSolicitacoes({ ...filters, ...ordenacao }, page)
   const criarSolicitacao = useCriarSolicitacao()
   const atualizarStatusSolicitacao = useAtualizarStatusSolicitacao()
   const enviarItemUnimed = useEnviarItemUnimed()
@@ -576,13 +583,38 @@ export function SolicitacoesPage() {
             <table className="w-full border-collapse text-left text-sm">
               <thead className="bg-white/5 text-xs uppercase tracking-[0.25em] text-slate-400">
                 <tr>
-                  <th className="px-4 py-3">ID</th>
-                  <th className="px-4 py-3">Paciente</th>
-                  <th className="px-4 py-3">Convênio</th>
-                  <th className="px-4 py-3">Itens</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Médico solicitante</th>
-                  <th className="px-4 py-3">Ações</th>
+                  <ColunaOrdenavel
+                    titulo="ID"
+                    coluna="id"
+                    ordenacao={ordenacao}
+                    onOrdenar={ordenarPor}
+                  />
+                  <ColunaOrdenavel
+                    titulo="Paciente"
+                    coluna="paciente"
+                    ordenacao={ordenacao}
+                    onOrdenar={ordenarPor}
+                  />
+                  <ColunaOrdenavel
+                    titulo="Convênio"
+                    coluna="convenio"
+                    ordenacao={ordenacao}
+                    onOrdenar={ordenarPor}
+                  />
+                  <ColunaOrdenavel titulo="Itens" />
+                  <ColunaOrdenavel
+                    titulo="Status"
+                    coluna="status"
+                    ordenacao={ordenacao}
+                    onOrdenar={ordenarPor}
+                  />
+                  <ColunaOrdenavel
+                    titulo="Médico solicitante"
+                    coluna="medico"
+                    ordenacao={ordenacao}
+                    onOrdenar={ordenarPor}
+                  />
+                  <ColunaOrdenavel titulo="Ações" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/10 bg-slate-950/30">

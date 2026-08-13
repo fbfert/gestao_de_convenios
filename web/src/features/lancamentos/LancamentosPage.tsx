@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { ColunaOrdenavel } from '../../components/ui/ColunaOrdenavel'
+import { useOrdenacao } from '../../lib/useOrdenacao'
 import { Indicadores } from '../../components/ui/Indicadores'
 import { Link, useMatch, useNavigate, useSearchParams } from 'react-router-dom'
 import { translateStatus } from '../../lib/statusLabels'
@@ -60,9 +62,14 @@ export function LancamentosPage() {
   })
   const [formError, setFormError] = useState<string | null>(null)
 
+  const { ordenacao, ordenarPor } = useOrdenacao({
+    ordenar_por: 'id',
+    direcao: 'desc',
+  })
+
   const profissionaisQuery = useProfissionais()
   const antecipacoesQuery = useAntecipacoes({ status: '', paciente_id: '', convenio_id: '' }, 1)
-  const lancamentosQuery = useLancamentos(filters, page)
+  const lancamentosQuery = useLancamentos({ ...filters, ...ordenacao }, page)
   const printTemplateQuery = useLancamentoPrintTemplate()
   const criarLancamento = useCriarLancamento()
 
@@ -427,13 +434,43 @@ export function LancamentosPage() {
               <table className="w-full border-collapse text-left text-sm">
                 <thead className="bg-white/5 text-xs uppercase tracking-[0.25em] text-slate-400">
                   <tr>
-                    <th className="px-4 py-3">ID</th>
-                    <th className="px-4 py-3">Antecipação</th>
-                    <th className="px-4 py-3">Profissional executante</th>
-                    <th className="px-4 py-3">Data / Hora</th>
-                    <th className="px-4 py-3">Acompanhante</th>
-                    <th className="px-4 py-3">Resumo</th>
-                    <th className="px-4 py-3">Status</th>
+                    <ColunaOrdenavel
+                    titulo="ID"
+                    coluna="id"
+                    ordenacao={ordenacao}
+                    onOrdenar={ordenarPor}
+                  />
+                    <ColunaOrdenavel
+                    titulo="Antecipação"
+                    coluna="antecipacao"
+                    ordenacao={ordenacao}
+                    onOrdenar={ordenarPor}
+                  />
+                    <ColunaOrdenavel
+                    titulo="Profissional executante"
+                    coluna="profissional"
+                    ordenacao={ordenacao}
+                    onOrdenar={ordenarPor}
+                  />
+                    <ColunaOrdenavel
+                    titulo="Data / Hora"
+                    coluna="data"
+                    ordenacao={ordenacao}
+                    onOrdenar={ordenarPor}
+                  />
+                    <ColunaOrdenavel
+                    titulo="Acompanhante"
+                    coluna="acompanhante"
+                    ordenacao={ordenacao}
+                    onOrdenar={ordenarPor}
+                  />
+                    <ColunaOrdenavel titulo="Resumo" />
+                    <ColunaOrdenavel
+                    titulo="Status"
+                    coluna="status"
+                    ordenacao={ordenacao}
+                    onOrdenar={ordenarPor}
+                  />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/10 bg-slate-950/30">

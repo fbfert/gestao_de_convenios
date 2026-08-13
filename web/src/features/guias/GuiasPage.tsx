@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { ColunaOrdenavel } from '../../components/ui/ColunaOrdenavel'
+import { useOrdenacao } from '../../lib/useOrdenacao'
 import { Link, useMatch, useNavigate } from 'react-router-dom'
 import { Select } from '../../components/ui/Select'
 import { translateStatus } from '../../lib/statusLabels'
@@ -67,11 +69,16 @@ export function GuiasPage() {
   const [formError, setFormError] = useState<string | null>(null)
   const [conciliacaoError, setConciliacaoError] = useState<string | null>(null)
 
+  const { ordenacao, ordenarPor } = useOrdenacao({
+    ordenar_por: 'numero_guia',
+    direcao: 'desc',
+  })
+
   const conveniosQuery = useConvenios()
   const especialidadesQuery = useEspecialidades()
   const pacientesQuery = usePacientes({ convenio_id: form.convenio_id })
   const profissionaisQuery = useProfissionais({ especialidade_id: form.especialidade_id })
-  const guiasQuery = useGuias(filters, page)
+  const guiasQuery = useGuias({ ...filters, ...ordenacao }, page)
   const criarGuia = useCriarGuia()
   const gerarConciliacao = useGerarConciliacao()
 
@@ -504,18 +511,63 @@ export function GuiasPage() {
               <table className="w-full border-collapse text-left text-sm">
                 <thead className="bg-white/5 text-xs uppercase tracking-[0.25em] text-slate-400">
                   <tr>
-                    <th className="px-4 py-3">Nº Guia</th>
-                    <th className="px-4 py-3">Paciente</th>
-                    <th className="px-4 py-3">Carteirinha</th>
-                    <th className="px-4 py-3">Especialidade</th>
-                    <th className="px-4 py-3">Profissional</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3">Nº de Sessões</th>
-                    <th className="px-4 py-3">Sessões Autorizadas</th>
-                    <th className="px-4 py-3">Senha</th>
-                    <th className="px-4 py-3">Validade</th>
-                    <th className="px-4 py-3">Última consulta</th>
-                    <th className="px-4 py-3">Ações</th>
+                    <ColunaOrdenavel
+                    titulo="Nº Guia"
+                    coluna="numero_guia"
+                    ordenacao={ordenacao}
+                    onOrdenar={ordenarPor}
+                  />
+                    <ColunaOrdenavel
+                    titulo="Paciente"
+                    coluna="paciente"
+                    ordenacao={ordenacao}
+                    onOrdenar={ordenarPor}
+                  />
+                    <ColunaOrdenavel titulo="Carteirinha" />
+                    <ColunaOrdenavel
+                    titulo="Especialidade"
+                    coluna="especialidade"
+                    ordenacao={ordenacao}
+                    onOrdenar={ordenarPor}
+                  />
+                    <ColunaOrdenavel
+                    titulo="Profissional"
+                    coluna="profissional"
+                    ordenacao={ordenacao}
+                    onOrdenar={ordenarPor}
+                  />
+                    <ColunaOrdenavel
+                    titulo="Status"
+                    coluna="status"
+                    ordenacao={ordenacao}
+                    onOrdenar={ordenarPor}
+                  />
+                    <ColunaOrdenavel
+                    titulo="Nº de Sessões"
+                    coluna="sessoes_solicitadas"
+                    ordenacao={ordenacao}
+                    onOrdenar={ordenarPor}
+                  />
+                    <ColunaOrdenavel
+                    titulo="Sessões Autorizadas"
+                    coluna="sessoes_autorizadas"
+                    ordenacao={ordenacao}
+                    onOrdenar={ordenarPor}
+                  />
+                    <ColunaOrdenavel
+                    titulo="Senha"
+                    coluna="senha"
+                    ordenacao={ordenacao}
+                    onOrdenar={ordenarPor}
+                  />
+                    <ColunaOrdenavel
+                    titulo="Validade"
+                    coluna="validade"
+                    ordenacao={ordenacao}
+                    onOrdenar={ordenarPor}
+                  />
+                    <ColunaOrdenavel titulo="Última consulta" />
+                    <ColunaOrdenavel titulo="Ações" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/10 bg-slate-950/30">

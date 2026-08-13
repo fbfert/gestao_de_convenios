@@ -6,6 +6,7 @@ use App\Http\Requests\StoreProfissionalRequest;
 use App\Http\Requests\UpdateProfissionalRequest;
 use App\Http\Resources\ProfissionalResource;
 use App\Models\Profissional;
+use App\Support\OrdenaListagem;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -38,7 +39,19 @@ class ProfissionalController extends Controller
                             });
                     });
                 })
-                ->orderBy('nome')
+                ->tap(fn ($query) => OrdenaListagem::aplicar(
+                    $query,
+                    $request->only(['ordenar_por', 'direcao']),
+                    [
+                        'nome' => 'nome',
+                        'conselho' => 'conselho_registro',
+                        'repasse' => 'percentual_repasse',
+                        'status' => 'ativo',
+                    ],
+                    padrao: 'nome',
+                    direcaoPadrao: 'asc',
+                    desempate: 'nome',
+                ))
                 ->get()
         );
     }

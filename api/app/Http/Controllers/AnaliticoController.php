@@ -6,6 +6,7 @@ use App\Http\Resources\AnaliticoUnimedLoteDetalheResource;
 use App\Http\Resources\AnaliticoUnimedLoteResource;
 use App\Models\AnaliticoUnimedLote;
 use Illuminate\Http\Request;
+use App\Support\OrdenaListagem;
 use Illuminate\Http\JsonResponse;
 
 class AnaliticoController extends Controller
@@ -27,8 +28,19 @@ class AnaliticoController extends Controller
             ->when($request->string('importado_ate')->trim()->toString() !== '', function ($query) use ($request) {
                 $query->whereDate('importado_em', '<=', $request->string('importado_ate')->trim()->toString());
             })
-            ->orderByDesc('importado_em')
-            ->orderByDesc('id')
+            ->tap(fn ($query) => OrdenaListagem::aplicar(
+                $query,
+                $request->only(['ordenar_por', 'direcao']),
+                [
+                    'arquivo' => 'arquivo_nome_original',
+                    'importado_em' => 'importado_em',
+                    'linhas' => 'total_linhas_analitico',
+                    'status' => 'status',
+                ],
+                padrao: 'importado_em',
+                direcaoPadrao: 'desc',
+                desempate: 'id',
+            ))
             ->limit(20)
             ->get();
 

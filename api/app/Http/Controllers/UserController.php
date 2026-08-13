@@ -6,6 +6,7 @@ use App\Http\Requests\StoreUsuarioRequest;
 use App\Http\Requests\UpdateUsuarioRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use App\Support\OrdenaListagem;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -27,7 +28,17 @@ class UserController extends Controller
                             ->orWhere('email', 'like', "%{$busca}%");
                     });
                 })
-                ->orderBy('name')
+                ->tap(fn ($query) => OrdenaListagem::aplicar(
+                    $query,
+                    $request->only(['ordenar_por', 'direcao']),
+                    [
+                        'nome' => 'name',
+                        'email' => 'email',
+                        'status' => 'ativo',
+                    ],
+                    padrao: 'name',
+                    desempate: 'name',
+                ))
                 ->paginate((int) $request->integer('per_page', 15))
         );
     }

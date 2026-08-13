@@ -2,18 +2,21 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '../../api/client'
 import { getHttpErrorMessage } from '../../lib/httpError'
 import type { Medico, MedicoForm } from './types'
+import type { Ordenacao } from '../../lib/useOrdenacao'
 
 type ListResponse<T> = {
   data: T[]
 }
 
-export function useMedicos(busca: string) {
+export function useMedicos(busca: string, ordenacao?: Ordenacao) {
   return useQuery({
-    queryKey: ['medicos', busca],
+    queryKey: ['medicos', busca, ordenacao],
     queryFn: async () => {
       const { data } = await apiClient.get<ListResponse<Medico>>('/medicos', {
         params: {
           busca: busca || undefined,
+          ordenar_por: ordenacao?.ordenar_por,
+          direcao: ordenacao?.direcao,
         },
       })
 

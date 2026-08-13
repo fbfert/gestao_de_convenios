@@ -12,6 +12,7 @@ use App\Models\Profissional;
 use App\Services\Concerns\AppliesOwnScope;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use App\Support\OrdenaListagem;
 use Illuminate\Support\Arr;
 
 class ConciliacaoService
@@ -44,7 +45,23 @@ class ConciliacaoService
             ->when(Arr::get($filtros, 'especialidade_id'), fn ($query, $especialidadeId) => $query->whereHas('guia', fn ($guiaQuery) => $guiaQuery->where('especialidade_id', $especialidadeId)))
             ->when(Arr::get($filtros, 'profissional_id'), fn ($query, $profissionalId) => $query->where('profissional_id', $profissionalId))
             ->when(Arr::get($filtros, 'status'), fn ($query, $status) => $query->where('status', $status))
-            ->orderByDesc('id')
+            ->tap(fn ($query) => OrdenaListagem::aplicar(
+                $query->select('conciliacoes_financeiras.*'),
+                $filtros,
+                [
+                    'id' => 'conciliacoes_financeiras.id',
+                    'qtd' => 'conciliacoes_financeiras.quantidade',
+                    'valor_unitario' => 'conciliacoes_financeiras.valor_unitario',
+                    'valor_total' => 'conciliacoes_financeiras.valor_total',
+                    'status' => 'conciliacoes_financeiras.status',
+                    'profissional' => fn ($query, $direcao) => $query
+                        ->leftJoin('profissionais', 'profissionais.id', '=', 'conciliacoes_financeiras.profissional_id')
+                        ->orderBy('profissionais.nome', $direcao),
+                ],
+                padrao: 'conciliacoes_financeiras.id',
+                direcaoPadrao: 'desc',
+                desempate: 'conciliacoes_financeiras.id',
+            ))
             ->paginate($perPage);
     }
 

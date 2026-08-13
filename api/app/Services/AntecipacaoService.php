@@ -10,6 +10,7 @@ use App\Models\Guia;
 use App\Services\Concerns\AppliesOwnScope;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use App\Support\OrdenaListagem;
 use Illuminate\Support\Arr;
 
 class AntecipacaoService
@@ -29,7 +30,24 @@ class AntecipacaoService
             ->when(Arr::get($filtros, 'status'), fn ($query, $status) => $query->where('status', $status))
             ->when(Arr::get($filtros, 'paciente_id'), fn ($query, $pacienteId) => $query->where('paciente_id', $pacienteId))
             ->when(Arr::get($filtros, 'convenio_id'), fn ($query, $convenioId) => $query->where('convenio_id', $convenioId))
-            ->orderByDesc('id')
+            ->tap(fn ($query) => OrdenaListagem::aplicar(
+                $query->select('antecipacoes.*'),
+                $filtros,
+                [
+                    'id' => 'antecipacoes.id',
+                    'cota' => 'antecipacoes.qtd_utilizada',
+                    'status' => 'antecipacoes.status',
+                    'paciente' => fn ($query, $direcao) => $query
+                        ->leftJoin('pacientes', 'pacientes.id', '=', 'antecipacoes.paciente_id')
+                        ->orderBy('pacientes.nome', $direcao),
+                    'convenio' => fn ($query, $direcao) => $query
+                        ->leftJoin('convenios', 'convenios.id', '=', 'antecipacoes.convenio_id')
+                        ->orderBy('convenios.nome', $direcao),
+                ],
+                padrao: 'antecipacoes.id',
+                direcaoPadrao: 'desc',
+                desempate: 'antecipacoes.id',
+            ))
             ->paginate($perPage);
     }
 

@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { ColunaOrdenavel } from '../../components/ui/ColunaOrdenavel'
+import { useOrdenacao } from '../../lib/useOrdenacao'
 import { useMatch, useNavigate } from 'react-router-dom'
 import { getHttpErrorMessage, useAtualizarMedico, useCriarMedico, useMedicos } from './useMedicos'
 import type { Medico, MedicoForm } from './types'
@@ -50,7 +52,12 @@ export function MedicosPage() {
   const [formError, setFormError] = useState<string | null>(null)
   const carregadoRef = useRef<number | null>(null)
 
-  const medicosQuery = useMedicos(busca)
+  const { ordenacao, ordenarPor } = useOrdenacao({
+    ordenar_por: 'nome',
+    direcao: 'asc',
+  })
+
+  const medicosQuery = useMedicos(busca, ordenacao)
   const criarMedico = useCriarMedico()
   const atualizarMedico = useAtualizarMedico()
 
@@ -350,12 +357,32 @@ export function MedicosPage() {
             <table className="w-full border-collapse text-left text-sm">
               <thead className="bg-white/5 text-xs uppercase tracking-[0.25em] text-slate-400">
                 <tr>
-                  <th className="px-4 py-3">Nome</th>
-                  <th className="px-4 py-3">CRM</th>
-                  <th className="px-4 py-3">Especialidade</th>
-                  <th className="px-4 py-3">Contato</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Ações</th>
+                  <ColunaOrdenavel
+                    titulo="Nome"
+                    coluna="nome"
+                    ordenacao={ordenacao}
+                    onOrdenar={ordenarPor}
+                  />
+                  <ColunaOrdenavel
+                    titulo="CRM"
+                    coluna="crm"
+                    ordenacao={ordenacao}
+                    onOrdenar={ordenarPor}
+                  />
+                  <ColunaOrdenavel
+                    titulo="Especialidade"
+                    coluna="especialidade"
+                    ordenacao={ordenacao}
+                    onOrdenar={ordenarPor}
+                  />
+                  <ColunaOrdenavel titulo="Contato" />
+                  <ColunaOrdenavel
+                    titulo="Status"
+                    coluna="status"
+                    ordenacao={ordenacao}
+                    onOrdenar={ordenarPor}
+                  />
+                  <ColunaOrdenavel titulo="Ações" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/10 bg-slate-950/30">

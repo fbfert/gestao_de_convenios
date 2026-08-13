@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateEspecialidadeRequest;
 use App\Http\Resources\EspecialidadeResource;
 use App\Models\ConvenioEspecialidadeMapeamento;
 use App\Models\Especialidade;
+use App\Support\OrdenaListagem;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -35,7 +36,17 @@ class EspecialidadeController extends Controller
                 // Sem convenio_id, a tela de cadastro pede todos os códigos de
                 // uma vez para montar um campo por convênio.
                 ->when($convenioId === 0 && $request->boolean('com_codigos'), fn ($query) => $query->with('convenioMapeamentos'))
-                ->orderBy('nome')
+                ->tap(fn ($query) => OrdenaListagem::aplicar(
+                    $query,
+                    $request->only(['ordenar_por', 'direcao']),
+                    [
+                        'nome' => 'nome',
+                        'status' => 'ativo',
+                    ],
+                    padrao: 'nome',
+                    direcaoPadrao: 'asc',
+                    desempate: 'nome',
+                ))
                 ->get()
         );
     }

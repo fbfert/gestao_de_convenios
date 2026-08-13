@@ -15,6 +15,8 @@ export function useUsuarios(filters: UsuarioFilters, page: number) {
       const { data } = await apiClient.get<PaginatedResponse<Usuario>>('/usuarios', {
         params: {
           busca: filters.busca || undefined,
+          ordenar_por: filters.ordenar_por,
+          direcao: filters.direcao,
           page,
           per_page: 10,
         },

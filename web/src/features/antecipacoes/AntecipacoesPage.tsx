@@ -1,4 +1,6 @@
 import { useMemo, useState, type FormEvent } from 'react'
+import { ColunaOrdenavel } from '../../components/ui/ColunaOrdenavel'
+import { useOrdenacao } from '../../lib/useOrdenacao'
 import { Link } from 'react-router-dom'
 import { Select } from '../../components/ui/Select'
 import { translateStatus } from '../../lib/statusLabels'
@@ -41,9 +43,14 @@ export function AntecipacoesPage() {
   const [draftFilters, setDraftFilters] = useState(defaultFilters)
   const [page, setPage] = useState(1)
 
+  const { ordenacao, ordenarPor } = useOrdenacao({
+    ordenar_por: 'id',
+    direcao: 'desc',
+  })
+
   const conveniosQuery = useConvenios()
   const pacientesQuery = usePacientes()
-  const antecipacoesQuery = useAntecipacoes(filters, page)
+  const antecipacoesQuery = useAntecipacoes({ ...filters, ...ordenacao }, page)
 
   const convenios = useMemo(() => conveniosQuery.data ?? [], [conveniosQuery.data])
   const pacientes = useMemo(() => pacientesQuery.data ?? [], [pacientesQuery.data])
@@ -160,12 +167,37 @@ export function AntecipacoesPage() {
             <table className="w-full border-collapse text-left text-sm">
               <thead className="bg-white/5 text-xs uppercase tracking-[0.25em] text-slate-400">
                 <tr>
-                  <th className="px-4 py-3">ID</th>
-                  <th className="px-4 py-3">Paciente</th>
-                  <th className="px-4 py-3">Convênio</th>
-                  <th className="px-4 py-3">Cota</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Ações</th>
+                  <ColunaOrdenavel
+                    titulo="ID"
+                    coluna="id"
+                    ordenacao={ordenacao}
+                    onOrdenar={ordenarPor}
+                  />
+                  <ColunaOrdenavel
+                    titulo="Paciente"
+                    coluna="paciente"
+                    ordenacao={ordenacao}
+                    onOrdenar={ordenarPor}
+                  />
+                  <ColunaOrdenavel
+                    titulo="Convênio"
+                    coluna="convenio"
+                    ordenacao={ordenacao}
+                    onOrdenar={ordenarPor}
+                  />
+                  <ColunaOrdenavel
+                    titulo="Cota"
+                    coluna="cota"
+                    ordenacao={ordenacao}
+                    onOrdenar={ordenarPor}
+                  />
+                  <ColunaOrdenavel
+                    titulo="Status"
+                    coluna="status"
+                    ordenacao={ordenacao}
+                    onOrdenar={ordenarPor}
+                  />
+                  <ColunaOrdenavel titulo="Ações" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/10 bg-slate-950/30">

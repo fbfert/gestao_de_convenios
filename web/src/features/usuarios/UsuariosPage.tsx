@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { ColunaOrdenavel } from '../../components/ui/ColunaOrdenavel'
+import { useOrdenacao } from '../../lib/useOrdenacao'
 import { useMatch, useNavigate } from 'react-router-dom'
 import { Select } from '../../components/ui/Select'
 import {
@@ -60,7 +62,12 @@ export function UsuariosPage() {
 
   const carregadoRef = useRef<number | null>(null)
 
-  const usuariosQuery = useUsuarios(filters, page)
+  const { ordenacao, ordenarPor } = useOrdenacao({
+    ordenar_por: 'nome',
+    direcao: 'asc',
+  })
+
+  const usuariosQuery = useUsuarios({ ...filters, ...ordenacao }, page)
   const rolesQuery = useRolesDoTenant()
   const profissionaisQuery = useProfissionaisDoTenant()
   const criarUsuario = useCriarUsuario()
@@ -470,12 +477,27 @@ export function UsuariosPage() {
             <table className="w-full border-collapse text-left text-sm">
               <thead className="bg-white/5 text-xs uppercase tracking-[0.25em] text-slate-400">
                 <tr>
-                  <th className="px-4 py-3">Nome</th>
-                  <th className="px-4 py-3">E-mail</th>
-                  <th className="px-4 py-3">Papel</th>
-                  <th className="px-4 py-3">Profissional</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Ações</th>
+                  <ColunaOrdenavel
+                    titulo="Nome"
+                    coluna="nome"
+                    ordenacao={ordenacao}
+                    onOrdenar={ordenarPor}
+                  />
+                  <ColunaOrdenavel
+                    titulo="E-mail"
+                    coluna="email"
+                    ordenacao={ordenacao}
+                    onOrdenar={ordenarPor}
+                  />
+                  <ColunaOrdenavel titulo="Papel" />
+                  <ColunaOrdenavel titulo="Profissional" />
+                  <ColunaOrdenavel
+                    titulo="Status"
+                    coluna="status"
+                    ordenacao={ordenacao}
+                    onOrdenar={ordenarPor}
+                  />
+                  <ColunaOrdenavel titulo="Ações" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/10 bg-slate-950/30">

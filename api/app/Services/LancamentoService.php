@@ -9,6 +9,7 @@ use App\Services\Concerns\AppliesOwnScope;
 use App\Services\LancamentoTranscricaoService;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use App\Support\OrdenaListagem;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -35,7 +36,23 @@ class LancamentoService
         return $query
             ->when(Arr::get($filtros, 'profissional_id'), fn ($query, $profissionalId) => $query->where('profissional_id', $profissionalId))
             ->when(Arr::get($filtros, 'data_sessao'), fn ($query, $dataSessao) => $query->whereDate('data_sessao', $dataSessao))
-            ->orderByDesc('id')
+            ->tap(fn ($query) => OrdenaListagem::aplicar(
+                $query->select('lancamentos.*'),
+                $filtros,
+                [
+                    'id' => 'lancamentos.id',
+                    'antecipacao' => 'lancamentos.antecipacao_id',
+                    'data' => 'lancamentos.data_sessao',
+                    'acompanhante' => 'lancamentos.acompanhante',
+                    'status' => 'lancamentos.status',
+                    'profissional' => fn ($query, $direcao) => $query
+                        ->leftJoin('profissionais', 'profissionais.id', '=', 'lancamentos.profissional_id')
+                        ->orderBy('profissionais.nome', $direcao),
+                ],
+                padrao: 'lancamentos.id',
+                direcaoPadrao: 'desc',
+                desempate: 'lancamentos.id',
+            ))
             ->paginate($perPage);
     }
 

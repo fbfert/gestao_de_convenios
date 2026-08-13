@@ -11,6 +11,7 @@ use App\Models\ConvenioRegra;
 use App\Services\Concerns\AppliesOwnScope;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use App\Support\OrdenaListagem;
 use Illuminate\Support\Arr;
 use RuntimeException;
 
@@ -53,7 +54,30 @@ class GuiaService
                     ->whereDate('validade_senha', '>=', today())
                     ->whereDate('validade_senha', '<=', today()->copy()->addDays($dias));
             })
-            ->orderByDesc('id')
+            ->tap(fn ($query) => OrdenaListagem::aplicar(
+                $query->select('guias.*'),
+                $filtros,
+                [
+                    'numero_guia' => 'guias.numero_guia',
+                    'status' => 'guias.status',
+                    'senha' => 'guias.senha',
+                    'validade' => 'guias.validade_senha',
+                    'sessoes_solicitadas' => 'guias.sessoes_solicitadas',
+                    'sessoes_autorizadas' => 'guias.sessoes_autorizadas',
+                    'paciente' => fn ($query, $direcao) => $query
+                        ->leftJoin('pacientes', 'pacientes.id', '=', 'guias.paciente_id')
+                        ->orderBy('pacientes.nome', $direcao),
+                    'especialidade' => fn ($query, $direcao) => $query
+                        ->leftJoin('especialidades', 'especialidades.id', '=', 'guias.especialidade_id')
+                        ->orderBy('especialidades.nome', $direcao),
+                    'profissional' => fn ($query, $direcao) => $query
+                        ->leftJoin('profissionais', 'profissionais.id', '=', 'guias.profissional_id')
+                        ->orderBy('profissionais.nome', $direcao),
+                ],
+                padrao: 'guias.id',
+                direcaoPadrao: 'desc',
+                desempate: 'guias.id',
+            ))
             ->paginate($perPage);
     }
 

@@ -2,14 +2,15 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '../../api/client'
 import { getHttpErrorMessage } from '../../lib/httpError'
 import type { Especialidade, EspecialidadePayload } from './types'
+import type { Ordenacao } from '../../lib/useOrdenacao'
 
 type ListResponse<T> = {
   data: T[]
 }
 
-export function useEspecialidadesCrud(busca: string) {
+export function useEspecialidadesCrud(busca: string, ordenacao?: Ordenacao) {
   return useQuery({
-    queryKey: ['especialidades-crud', busca],
+    queryKey: ['especialidades-crud', busca, ordenacao],
     queryFn: async () => {
       const { data } = await apiClient.get<ListResponse<Especialidade>>('/especialidades', {
         params: {
@@ -18,6 +19,8 @@ export function useEspecialidadesCrud(busca: string) {
           // A tela de cadastro edita o codigo de cada convenio, entao precisa
           // de todos eles junto da listagem.
           com_codigos: 1,
+          ordenar_por: ordenacao?.ordenar_por,
+          direcao: ordenacao?.direcao,
         },
       })
 

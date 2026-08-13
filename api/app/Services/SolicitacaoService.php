@@ -7,6 +7,7 @@ use App\Models\Guia;
 use App\Models\Solicitacao;
 use App\Support\TenantContext;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use App\Support\OrdenaListagem;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -43,7 +44,26 @@ class SolicitacaoService
             ->when(Arr::get($filtros, 'status'), fn ($query, $status) => $query->where('status', $status))
             ->when(Arr::get($filtros, 'convenio_id'), fn ($query, $convenioId) => $query->where('convenio_id', $convenioId))
             ->when(Arr::get($filtros, 'medico_id'), fn ($query, $medicoId) => $query->where('medico_id', $medicoId))
-            ->orderByDesc('id')
+            ->tap(fn ($query) => OrdenaListagem::aplicar(
+                $query->select('solicitacoes.*'),
+                $filtros,
+                [
+                    'id' => 'solicitacoes.id',
+                    'status' => 'solicitacoes.status',
+                    'paciente' => fn ($query, $direcao) => $query
+                        ->leftJoin('pacientes', 'pacientes.id', '=', 'solicitacoes.paciente_id')
+                        ->orderBy('pacientes.nome', $direcao),
+                    'convenio' => fn ($query, $direcao) => $query
+                        ->leftJoin('convenios', 'convenios.id', '=', 'solicitacoes.convenio_id')
+                        ->orderBy('convenios.nome', $direcao),
+                    'medico' => fn ($query, $direcao) => $query
+                        ->leftJoin('medicos', 'medicos.id', '=', 'solicitacoes.medico_id')
+                        ->orderBy('medicos.nome', $direcao),
+                ],
+                padrao: 'solicitacoes.id',
+                direcaoPadrao: 'desc',
+                desempate: 'solicitacoes.id',
+            ))
             ->paginate($perPage);
     }
 

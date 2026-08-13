@@ -1,4 +1,6 @@
 import { useMemo, useState, type FormEvent } from 'react'
+import { ColunaOrdenavel } from '../../components/ui/ColunaOrdenavel'
+import { useOrdenacao } from '../../lib/useOrdenacao'
 import { translateStatus } from '../../lib/statusLabels'
 import { Select } from '../../components/ui/Select'
 import { useConvenios, useEspecialidades, useProfissionais } from '../../lib/queries/useReferenceData'
@@ -69,10 +71,15 @@ export function ConciliacaoPage() {
   const [page, setPage] = useState(1)
   const [actionError, setActionError] = useState<string | null>(null)
 
+  const { ordenacao, ordenarPor } = useOrdenacao({
+    ordenar_por: 'id',
+    direcao: 'desc',
+  })
+
   const conveniosQuery = useConvenios()
   const especialidadesQuery = useEspecialidades()
   const profissionaisQuery = useProfissionais()
-  const conciliacoesQuery = useConciliacoes(filters, page)
+  const conciliacoesQuery = useConciliacoes({ ...filters, ...ordenacao }, page)
   const marcarConferido = useMarcarConferidoConciliacao()
   const marcarPago = useMarcarPagoConciliacao()
 
@@ -245,20 +252,50 @@ export function ConciliacaoPage() {
             <table className="w-full border-collapse text-left text-sm">
               <thead className="bg-white/5 text-xs uppercase tracking-[0.25em] text-slate-400">
                 <tr>
-                  <th className="px-4 py-3">ID</th>
-                  <th className="px-4 py-3">Guia</th>
-                  <th className="px-4 py-3">Convênio</th>
-                  <th className="px-4 py-3">Especialidade</th>
-                  <th className="px-4 py-3">Profissional</th>
-                  <th className="px-4 py-3">Qtd.</th>
-                  <th className="px-4 py-3">Valor unit.</th>
-                  <th className="px-4 py-3">Valor total</th>
-                  <th className="px-4 py-3">Repasse %</th>
-                  <th className="px-4 py-3">Repasse total</th>
-                  <th className="px-4 py-3">Entrada</th>
-                  <th className="px-4 py-3">Saída</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Ações</th>
+                  <ColunaOrdenavel
+                    titulo="ID"
+                    coluna="id"
+                    ordenacao={ordenacao}
+                    onOrdenar={ordenarPor}
+                  />
+                  <ColunaOrdenavel titulo="Guia" />
+                  <ColunaOrdenavel titulo="Convênio" />
+                  <ColunaOrdenavel titulo="Especialidade" />
+                  <ColunaOrdenavel
+                    titulo="Profissional"
+                    coluna="profissional"
+                    ordenacao={ordenacao}
+                    onOrdenar={ordenarPor}
+                  />
+                  <ColunaOrdenavel
+                    titulo="Qtd."
+                    coluna="qtd"
+                    ordenacao={ordenacao}
+                    onOrdenar={ordenarPor}
+                  />
+                  <ColunaOrdenavel
+                    titulo="Valor unit."
+                    coluna="valor_unitario"
+                    ordenacao={ordenacao}
+                    onOrdenar={ordenarPor}
+                  />
+                  <ColunaOrdenavel
+                    titulo="Valor total"
+                    coluna="valor_total"
+                    ordenacao={ordenacao}
+                    onOrdenar={ordenarPor}
+                  />
+                  <ColunaOrdenavel titulo="Repasse %" />
+                  <ColunaOrdenavel titulo="Repasse total" />
+                  <ColunaOrdenavel titulo="Entrada" />
+                  <ColunaOrdenavel titulo="Saída" />
+                  <ColunaOrdenavel
+                    titulo="Status"
+                    coluna="status"
+                    ordenacao={ordenacao}
+                    onOrdenar={ordenarPor}
+                  />
+                  <ColunaOrdenavel titulo="Ações" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/10 bg-slate-950/30">

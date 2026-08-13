@@ -23,6 +23,8 @@ export type UsuarioForm = {
 
 export type UsuarioFilters = {
   busca: string
+  ordenar_por?: string
+  direcao?: 'asc' | 'desc'
 }
 
 export type PaginatedResponse<T> = {

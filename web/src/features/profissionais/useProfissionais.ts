@@ -11,6 +11,8 @@ export function useProfissionaisCrud(filtros?: {
   busca?: string
   especialidade_id?: string | number
   incluir_inativos?: boolean
+  ordenar_por?: string
+  direcao?: 'asc' | 'desc'
 }) {
   return useQuery({
     queryKey: [
@@ -18,6 +20,8 @@ export function useProfissionaisCrud(filtros?: {
       filtros?.busca ?? '',
       filtros?.especialidade_id ?? '',
       filtros?.incluir_inativos ? '1' : '0',
+      filtros?.ordenar_por ?? '',
+      filtros?.direcao ?? '',
     ],
     queryFn: async () => {
       const { data } = await apiClient.get<ListResponse<Profissional>>('/profissionais', {
@@ -25,6 +29,8 @@ export function useProfissionaisCrud(filtros?: {
           busca: filtros?.busca || undefined,
           especialidade_id: filtros?.especialidade_id || undefined,
           incluir_inativos: filtros?.incluir_inativos || undefined,
+          ordenar_por: filtros?.ordenar_por,
+          direcao: filtros?.direcao,
         },
       })
 

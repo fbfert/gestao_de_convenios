@@ -6,6 +6,7 @@ use App\Http\Requests\StoreMedicoRequest;
 use App\Http\Requests\UpdateMedicoRequest;
 use App\Http\Resources\MedicoResource;
 use App\Models\Medico;
+use App\Support\OrdenaListagem;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -25,7 +26,19 @@ class MedicoController extends Controller
                             ->orWhere('especialidade_medica', 'like', "%{$busca}%");
                     });
                 })
-                ->orderBy('nome')
+                ->tap(fn ($query) => OrdenaListagem::aplicar(
+                    $query,
+                    $request->only(['ordenar_por', 'direcao']),
+                    [
+                        'nome' => 'nome',
+                        'crm' => 'crm',
+                        'especialidade' => 'especialidade_medica',
+                        'status' => 'ativo',
+                    ],
+                    padrao: 'nome',
+                    direcaoPadrao: 'asc',
+                    desempate: 'nome',
+                ))
                 ->get()
         );
     }

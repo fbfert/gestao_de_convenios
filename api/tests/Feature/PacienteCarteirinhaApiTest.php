@@ -336,6 +336,49 @@ class PacienteCarteirinhaApiTest extends TestCase
         Storage::disk('local')->assertExists('carteirinhas/vigente.jpg');
     }
 
+    public function test_listagem_ordena_e_filtra(): void
+    {
+        $this->autenticar();
+        $convenio = $this->convenio();
+        $tenantId = (int) $this->usuario()->tenant_id;
+
+        Paciente::query()->create([
+            'tenant_id' => $tenantId,
+            'nome' => 'Zulmira Ordenacao',
+            'carteirinha' => 'ORD-1',
+            'convenio_id' => $convenio->id,
+            'validade_carteirinha' => now()->subDay(),
+            'ativo' => true,
+        ]);
+
+        Paciente::query()->create([
+            'tenant_id' => $tenantId,
+            'nome' => 'Abel Ordenacao',
+            'carteirinha' => 'ORD-2',
+            'convenio_id' => $convenio->id,
+            'ativo' => false,
+        ]);
+
+        $this->getJson('/api/pacientes?ordenar_por=nome&direcao=desc')
+            ->assertOk()
+            ->assertJsonPath('data.0.nome', 'Zulmira Ordenacao');
+
+        $this->getJson('/api/pacientes?status=inativos')
+            ->assertOk()
+            ->assertJsonFragment(['nome' => 'Abel Ordenacao'])
+            ->assertJsonMissing(['nome' => 'Zulmira Ordenacao']);
+
+        $this->getJson('/api/pacientes?carteirinha=vencidas')
+            ->assertOk()
+            ->assertJsonFragment(['nome' => 'Zulmira Ordenacao'])
+            ->assertJsonMissing(['nome' => 'Abel Ordenacao']);
+
+        // Coluna fora da lista fechada cai no padrao, e nao vira ORDER BY cru.
+        $this->getJson('/api/pacientes?ordenar_por=(select 1)&direcao=asc')
+            ->assertOk()
+            ->assertJsonPath('data.0.nome', 'Abel Ordenacao');
+    }
+
     private function configurarIa(): void
     {
         $tenantId = (int) $this->usuario()->tenant_id;

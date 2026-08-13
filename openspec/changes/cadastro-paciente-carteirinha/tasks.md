@@ -49,7 +49,14 @@ conferidos. `clinica_agil_id` some da tela, mas fica no banco.
 - [x] 5.7 Campos de validade e nascimento, com aviso de carteirinha vencida no paciente e na solicitação.
 - [x] 5.8 Prazo de guarda da imagem em Configurações → Globais.
 
-## 6. Validação
+## 6. Ajustes pedidos com a tela funcionando (2026-08-13)
+
+- [x] 6.a Atalho `Adicionar profissional` quando a especialidade escolhida na solicitação não tem executante, abrindo em outra aba com a especialidade já marcada.
+- [x] 6.b Exclusão de anexo com confirmação em duas etapas: diálogo e a palavra `EXCLUIR` digitada.
+- [x] 6.c Listagem de pacientes ordenável pelos cabeçalhos e com filtros de convênio, status e situação da carteirinha.
+- [x] 6.d Coluna de contato passa a mostrar o telefone principal da lista nova, com recuo para a coluna antiga.
+
+## 7. Validação
 
 - [x] 6.1 Testes de API: CPF, telefones, datas, leitura da carteirinha e expurgo.
 - [x] 6.2 `openspec validate cadastro-paciente-carteirinha --type change --no-interactive`.
@@ -57,7 +64,7 @@ conferidos. `clinica_agil_id` some da tela, mas fica no banco.
 - [ ] 6.4 Rodar a suíte e2e do Playwright — o servidor não tem Node e PHP fora dos containers.
 - [ ] 6.5 Conferir no navegador: câmera do celular, máscara de CPF e leitura real de uma carteirinha com a chave OpenAI de produção.
 
-## 7. Achados durante a implementação
+## 8. Achados durante a implementação
 
 - O `telefone` antigo (coluna única) deixou de ser aceito pelo formulário. A coluna e os dados ficam, e o recurso continua devolvendo o valor, mas a fonte agora é a lista `telefones`.
 - Os testes de paciente usavam CPFs de dígito verificador inválido (`99988877766`). Foram trocados por CPFs válidos — a falha era a validação nova funcionando.

@@ -1,4 +1,5 @@
 import { useRef, useState, type ChangeEvent } from 'react'
+import { ConfirmarExclusao } from '../../components/ui/ConfirmarExclusao'
 import {
   abrirDocumento,
   getHttpErrorMessage,
@@ -39,6 +40,7 @@ function DocumentoSlot({
   const inputRef = useRef<HTMLInputElement>(null)
   const anexar = useAnexarDocumento()
   const remover = useRemoverDocumento()
+  const [aExcluir, setAExcluir] = useState<SolicitacaoDocumento | null>(null)
   const doTipo = documentos.filter((documento) => documento.tipo === tipo)
   const ocupado = anexar.isPending || remover.isPending
 
@@ -60,8 +62,17 @@ function DocumentoSlot({
     }
   }
 
-  const handleRemove = async (documento: SolicitacaoDocumento) => {
-    if (!window.confirm(`Remover "${documento.nome_original}"?`)) {
+  /**
+   * Confirmação em duas etapas: o diálogo, e depois a palavra digitada.
+   *
+   * Anexo apagado não volta — é documento do paciente, e em parte dos casos a
+   * evidência do que foi enviado à operadora. O `window.confirm` que havia
+   * aqui era um clique reflexo.
+   */
+  const handleRemove = async () => {
+    const documento = aExcluir
+
+    if (!documento) {
       return
     }
 
@@ -69,8 +80,10 @@ function DocumentoSlot({
 
     try {
       await remover.mutateAsync({ solicitacaoId, documentoId: documento.id })
+      setAExcluir(null)
     } catch (error) {
       onError(getHttpErrorMessage(error, 'Não foi possível remover o anexo.'))
+      setAExcluir(null)
     }
   }
 
@@ -140,7 +153,7 @@ function DocumentoSlot({
                 ) : (
                   <button
                     type="button"
-                    onClick={() => void handleRemove(documento)}
+                    onClick={() => setAExcluir(documento)}
                     disabled={ocupado}
                     className="rounded-full border border-rose-400/30 bg-rose-400/10 px-3 py-1 text-xs font-semibold text-rose-100 transition hover:bg-rose-400/20 disabled:opacity-50"
                   >
@@ -152,6 +165,17 @@ function DocumentoSlot({
           ))}
         </ul>
       )}
+
+      {aExcluir ? (
+        <ConfirmarExclusao
+          titulo="Excluir anexo"
+          descricao="O arquivo será apagado do servidor e não poderá ser recuperado. Se a guia já tiver sido enviada à operadora, este anexo é a evidência do envio."
+          alvo={aExcluir.nome_original}
+          confirmando={remover.isPending}
+          onConfirmar={() => void handleRemove()}
+          onCancelar={() => setAExcluir(null)}
+        />
+      ) : null}
     </div>
   )
 }

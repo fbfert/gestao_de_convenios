@@ -10,8 +10,9 @@ import {
   splitCarteirinha,
 } from '../../lib/carteirinha'
 import { CarteirinhaBlocosInput } from '../../components/ui/CarteirinhaBlocosInput'
-import { cpfValido, formatarCpf, somenteDigitos } from '../../lib/documentos'
+import { cpfValido, formatarCpf, formatarTelefone, somenteDigitos } from '../../lib/documentos'
 import { LerCarteirinha } from './LerCarteirinha'
+import type { PacientesConsulta } from './usePacientes'
 import { TelefonesInput } from './TelefonesInput'
 import type { LeituraCarteirinha, Paciente, PacienteForm } from './types'
 
@@ -25,6 +26,15 @@ const emptyForm: PacienteForm = {
   telefones: [],
   ativo: true,
   carteirinha_documento_id: null,
+}
+
+const filtrosVazios: PacientesConsulta = {
+  busca: '',
+  convenio_id: '',
+  status: '',
+  carteirinha: '',
+  ordenar_por: 'nome',
+  direcao: 'asc',
 }
 
 function selectClasses() {
@@ -54,6 +64,18 @@ function toForm(paciente: Paciente): PacienteForm {
   }
 }
 
+/** Telefone que a listagem mostra: o principal, com recuo para a coluna antiga. */
+function telefonePrincipal(paciente: Paciente): string {
+  const lista = paciente.telefones ?? []
+  const escolhido = lista.find((telefone) => telefone.principal) ?? lista[0]
+
+  if (escolhido) {
+    return formatarTelefone(escolhido.numero)
+  }
+
+  return paciente.telefone ?? '-'
+}
+
 /** Vencida quando a validade cadastrada já passou. */
 function carteirinhaVencida(validade: string): boolean {
   if (!validade) {
@@ -66,8 +88,8 @@ function carteirinhaVencida(validade: string): boolean {
 export function PacientesPage() {
   const navigate = useNavigate()
   const isCreateRoute = useMatch('/pacientes/novo') !== null
-  const [busca, setBusca] = useState('')
-  const [draftBusca, setDraftBusca] = useState('')
+  const [filtros, setFiltros] = useState<PacientesConsulta>(filtrosVazios)
+  const [rascunho, setRascunho] = useState<PacientesConsulta>(filtrosVazios)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [form, setForm] = useState<PacienteForm>(emptyForm)
@@ -76,7 +98,7 @@ export function PacientesPage() {
   const [blocosDigitados, setBlocosDigitados] = useState<string[]>([])
   const [formError, setFormError] = useState<string | null>(null)
 
-  const pacientesQuery = usePacientesCrud(busca)
+  const pacientesQuery = usePacientesCrud(filtros)
   const conveniosQuery = useConvenios()
   const criarPaciente = useCriarPaciente()
   const atualizarPaciente = useAtualizarPaciente()
@@ -125,7 +147,23 @@ export function PacientesPage() {
 
   const handleFilterSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    setBusca(draftBusca.trim())
+    setFiltros({ ...rascunho, busca: rascunho.busca.trim() })
+  }
+
+  /**
+   * Clique no cabeçalho: a mesma coluna inverte o sentido, coluna nova começa
+   * crescente. Ordenar é no servidor — a lista não é paginada hoje, mas passará
+   * a ser, e ordenar só a página visível confundiria mais do que ajudaria.
+   */
+  const ordenarPor = (coluna: string) => {
+    const proxima: PacientesConsulta = {
+      ...filtros,
+      ordenar_por: coluna,
+      direcao: filtros.ordenar_por === coluna && filtros.direcao === 'asc' ? 'desc' : 'asc',
+    }
+
+    setFiltros(proxima)
+    setRascunho((atual) => ({ ...atual, ordenar_por: proxima.ordenar_por, direcao: proxima.direcao }))
   }
 
   const handleNew = () => {
@@ -519,24 +557,89 @@ export function PacientesPage() {
             </p>
           </div>
 
-          <form className="flex gap-3" onSubmit={handleFilterSubmit}>
-            <label className="min-w-56 space-y-2">
+          <form className="grid w-full gap-3 md:grid-cols-2 xl:grid-cols-4" onSubmit={handleFilterSubmit}>
+            <label className="space-y-2">
               <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Busca</span>
               <input
-                value={draftBusca}
-                onChange={(event) => setDraftBusca(event.target.value)}
+                value={rascunho.busca}
+                onChange={(event) => setRascunho((atual) => ({ ...atual, busca: event.target.value }))}
                 className={selectClasses()}
-                placeholder="Nome ou carteirinha"
+                placeholder="Nome, carteirinha, CPF ou telefone"
                 data-testid="paciente-busca"
               />
             </label>
-            <button
-              type="submit"
-              className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
-              data-testid="paciente-busca-submit"
-            >
-              Filtrar
-            </button>
+
+            <label className="space-y-2">
+              <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Convênio</span>
+              <Select
+                value={rascunho.convenio_id}
+                onChange={(event) =>
+                  setRascunho((atual) => ({ ...atual, convenio_id: event.target.value }))
+                }
+                className={selectClasses()}
+                data-testid="paciente-filtro-convenio"
+              >
+                <option value="">Todos</option>
+                {convenios.map((convenio) => (
+                  <option key={convenio.id} value={convenio.id}>
+                    {convenio.nome}
+                  </option>
+                ))}
+              </Select>
+            </label>
+
+            <label className="space-y-2">
+              <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Status</span>
+              <Select
+                value={rascunho.status}
+                onChange={(event) => setRascunho((atual) => ({ ...atual, status: event.target.value }))}
+                className={selectClasses()}
+                data-testid="paciente-filtro-status"
+              >
+                <option value="">Todos</option>
+                <option value="ativos">Ativos</option>
+                <option value="inativos">Inativos</option>
+              </Select>
+            </label>
+
+            <label className="space-y-2">
+              <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Carteirinha</span>
+              <Select
+                value={rascunho.carteirinha}
+                onChange={(event) =>
+                  setRascunho((atual) => ({ ...atual, carteirinha: event.target.value }))
+                }
+                className={selectClasses()}
+                data-testid="paciente-filtro-carteirinha"
+              >
+                <option value="">Todas</option>
+                <option value="vencidas">Vencidas</option>
+                <option value="sem_validade">Sem validade cadastrada</option>
+              </Select>
+            </label>
+
+            <div className="flex gap-3 md:col-span-2 xl:col-span-4">
+              <button
+                type="submit"
+                className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+                data-testid="paciente-busca-submit"
+              >
+                Filtrar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setRascunho(filtrosVazios)
+                  setFiltros(filtrosVazios)
+                }}
+                className="text-sm text-slate-300"
+              >
+                Limpar
+              </button>
+              <span className="self-center text-xs text-slate-400">
+                {pacientesQuery.isLoading ? 'Carregando...' : `${pacientes.length} paciente(s)`}
+              </span>
+            </div>
           </form>
         </div>
 
@@ -553,11 +656,37 @@ export function PacientesPage() {
             <table className="w-full border-collapse text-left text-sm">
               <thead className="bg-white/5 text-xs uppercase tracking-[0.25em] text-slate-400">
                 <tr>
-                  <th className="px-4 py-3">Nome</th>
-                  <th className="px-4 py-3">Carteirinha</th>
-                  <th className="px-4 py-3">Convênio</th>
-                  <th className="px-4 py-3">Contato</th>
-                  <th className="px-4 py-3">Status</th>
+                  {[
+                    { coluna: 'nome', texto: 'Nome' },
+                    { coluna: 'carteirinha', texto: 'Carteirinha' },
+                    { coluna: 'convenio', texto: 'Convênio' },
+                    { coluna: 'cpf', texto: 'Contato' },
+                    { coluna: 'validade_carteirinha', texto: 'Validade' },
+                    { coluna: 'ativo', texto: 'Status' },
+                  ].map(({ coluna, texto }) => (
+                    <th key={coluna} className="px-4 py-3">
+                      <button
+                        type="button"
+                        onClick={() => ordenarPor(coluna)}
+                        className="flex items-center gap-1 uppercase tracking-[0.25em] transition hover:text-cyan-100"
+                        data-testid={`paciente-ordenar-${coluna}`}
+                      >
+                        {texto}
+                        <span
+                          className={
+                            filtros.ordenar_por === coluna ? 'text-cyan-200' : 'text-slate-600'
+                          }
+                          aria-hidden="true"
+                        >
+                          {filtros.ordenar_por === coluna
+                            ? filtros.direcao === 'asc'
+                              ? '▲'
+                              : '▼'
+                            : '↕'}
+                        </span>
+                      </button>
+                    </th>
+                  ))}
                   <th className="px-4 py-3">Ações</th>
                 </tr>
               </thead>
@@ -575,8 +704,22 @@ export function PacientesPage() {
                       {paciente.convenio?.nome ?? paciente.convenio_id}
                     </td>
                     <td className="px-4 py-4 text-slate-200">
-                      <div>{paciente.telefone ?? '-'}</div>
-                      <div className="text-xs text-slate-400">{paciente.cpf ?? '-'}</div>
+                      {/* Principal da lista nova; a coluna antiga cobre quem foi
+                          cadastrado antes dos telefones multiplos. */}
+                      <div>{telefonePrincipal(paciente)}</div>
+                      <div className="text-xs text-slate-400">
+                        {paciente.cpf ? formatarCpf(paciente.cpf) : '-'}
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 text-slate-200">
+                      {paciente.validade_carteirinha ? (
+                        <span className={paciente.carteirinha_vencida ? 'text-amber-200' : undefined}>
+                          {new Date(`${paciente.validade_carteirinha}T12:00:00`).toLocaleDateString('pt-BR')}
+                          {paciente.carteirinha_vencida ? ' · vencida' : ''}
+                        </span>
+                      ) : (
+                        <span className="text-slate-500">-</span>
+                      )}
                     </td>
                     <td className="px-4 py-4">
                       <span
@@ -613,7 +756,7 @@ export function PacientesPage() {
                 ))}
                 {pacientes.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-slate-300">
+                    <td colSpan={7} className="px-4 py-8 text-center text-slate-300">
                       Nenhum paciente encontrado.
                     </td>
                   </tr>

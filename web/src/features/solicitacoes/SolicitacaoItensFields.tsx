@@ -1,4 +1,6 @@
-import { useMemo } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
+import { useEffect, useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import { Select } from '../../components/ui/Select'
 import type { EspecialidadeRef, ProfissionalRef } from '../../lib/queries/useReferenceData'
 import { especialidadesRepetidas, rotuloEspecialidade } from './solicitacaoItens'
@@ -47,6 +49,24 @@ export function SolicitacaoItensFields({
 
     return mapa
   }, [profissionais])
+
+  /*
+    O cadastro de profissional abre em outra aba, senao o pedido meio
+    preenchido — e a leitura do documento, no fluxo da IA — iria embora. Ao
+    voltar o foco para esta aba, a lista e recarregada para o profissional novo
+    aparecer no seletor.
+  */
+  const queryClient = useQueryClient()
+
+  useEffect(() => {
+    const aoFocar = () => {
+      void queryClient.invalidateQueries({ queryKey: ['profissionais'] })
+    }
+
+    window.addEventListener('focus', aoFocar)
+
+    return () => window.removeEventListener('focus', aoFocar)
+  }, [queryClient])
 
   const atualizarItem = (index: number, patch: Partial<SolicitacaoFormItem>) => {
     onChange(itens.map((item, posicao) => (posicao === index ? { ...item, ...patch } : item)))
@@ -123,6 +143,30 @@ export function SolicitacaoItensFields({
                   </option>
                 ))}
               </Select>
+
+              {item.especialidade_id !== '' && disponiveis.length === 0 ? (
+                <span className="block space-y-2 rounded-2xl border border-amber-300/20 bg-amber-400/10 p-3">
+                  <span className="block text-xs leading-5 text-amber-100">
+                    Nenhum profissional atende{' '}
+                    {rotuloEspecialidade(
+                      especialidades.find(
+                        (especialidade) => String(especialidade.id) === item.especialidade_id,
+                      ) ?? { id: 0, nome: 'esta especialidade' },
+                    )}
+                    . Sem executante, a solicitação não pode ser aberta.
+                  </span>
+
+                  <Link
+                    to={`/profissionais/novo?especialidade_id=${item.especialidade_id}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-block rounded-full border border-cyan-300/30 bg-cyan-400/10 px-3 py-1.5 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-400/20"
+                    data-testid={`solicitacao-item-adicionar-profissional-${index}`}
+                  >
+                    Adicionar profissional
+                  </Link>
+                </span>
+              ) : null}
             </label>
 
             <label className="block space-y-2">

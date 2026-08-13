@@ -19,15 +19,41 @@ use Illuminate\Support\Str;
 
 class PacienteController extends Controller
 {
+    /**
+     * Colunas que a listagem aceita ordenar.
+     *
+     * Lista fechada de proposito: o nome vem da query string e vai direto para
+     * o ORDER BY. `convenio` e caso especial — ordena pelo nome da operadora,
+     * e nao pelo id, que nao diz nada para quem le a tabela.
+     */
+    private const ORDENAVEIS = [
+        'nome' => 'pacientes.nome',
+        'carteirinha' => 'pacientes.carteirinha',
+        'cpf' => 'pacientes.cpf',
+        'data_nascimento' => 'pacientes.data_nascimento',
+        'validade_carteirinha' => 'pacientes.validade_carteirinha',
+        'ativo' => 'pacientes.ativo',
+        'criado_em' => 'pacientes.created_at',
+    ];
+
     public function index(Request $request): AnonymousResourceCollection
     {
         $busca = trim((string) $request->string('busca'));
         $convenioId = $request->integer('convenio_id');
+        $status = $request->string('status')->toString();
+        $vencidas = $request->string('carteirinha')->toString();
 
         return PacienteResource::collection(
             Paciente::query()
+                ->select('pacientes.*')
                 ->with(['convenio', 'telefones'])
                 ->when($convenioId, fn ($query) => $query->where('convenio_id', $convenioId))
+                ->when($status === 'ativos', fn ($query) => $query->where('ativo', true))
+                ->when($status === 'inativos', fn ($query) => $query->where('ativo', false))
+                ->when($vencidas === 'vencidas', fn ($query) => $query
+                    ->whereNotNull('validade_carteirinha')
+                    ->whereDate('validade_carteirinha', '<', now()))
+                ->when($vencidas === 'sem_validade', fn ($query) => $query->whereNull('validade_carteirinha'))
                 ->when($busca !== '', function ($query) use ($busca) {
                     $digitos = preg_replace('/\D+/', '', $busca);
 
@@ -43,9 +69,31 @@ class PacienteController extends Controller
                         }
                     });
                 })
-                ->orderBy('nome')
+                ->tap(fn ($query) => $this->ordenar($query, $request))
                 ->get()
         );
+    }
+
+    private function ordenar($query, Request $request): void
+    {
+        $direcao = $request->string('direcao')->toString() === 'desc' ? 'desc' : 'asc';
+        $coluna = $request->string('ordenar_por')->toString();
+
+        if ($coluna === 'convenio') {
+            $query->leftJoin('convenios', 'convenios.id', '=', 'pacientes.convenio_id')
+                ->orderBy('convenios.nome', $direcao)
+                ->orderBy('pacientes.nome');
+
+            return;
+        }
+
+        $query->orderBy(self::ORDENAVEIS[$coluna] ?? 'pacientes.nome', $direcao);
+
+        if ($coluna !== '' && $coluna !== 'nome') {
+            // Desempate estavel: sem isso, duas paginas seguidas podem trocar a
+            // ordem de registros com o mesmo valor na coluna escolhida.
+            $query->orderBy('pacientes.nome');
+        }
     }
 
     public function show(Paciente $paciente): PacienteResource

@@ -7,13 +7,27 @@ type ListResponse<T> = {
   data: T[]
 }
 
-export function usePacientesCrud(busca: string) {
+export type PacientesConsulta = {
+  busca: string
+  convenio_id: string
+  status: string
+  carteirinha: string
+  ordenar_por: string
+  direcao: 'asc' | 'desc'
+}
+
+export function usePacientesCrud(consulta: PacientesConsulta) {
   return useQuery({
-    queryKey: ['pacientes', 'crud', busca],
+    queryKey: ['pacientes', 'crud', consulta],
     queryFn: async () => {
       const { data } = await apiClient.get<ListResponse<Paciente>>('/pacientes', {
         params: {
-          busca: busca || undefined,
+          busca: consulta.busca || undefined,
+          convenio_id: consulta.convenio_id || undefined,
+          status: consulta.status || undefined,
+          carteirinha: consulta.carteirinha || undefined,
+          ordenar_por: consulta.ordenar_por || undefined,
+          direcao: consulta.direcao,
         },
       })
 

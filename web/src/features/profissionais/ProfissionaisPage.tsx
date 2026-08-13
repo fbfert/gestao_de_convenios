@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
-import { useMatch, useNavigate } from 'react-router-dom'
+import { useMatch, useNavigate, useSearchParams } from 'react-router-dom'
 import { useEspecialidades } from '../../lib/queries/useReferenceData'
 import { getHttpErrorMessage, useAtualizarProfissional, useCriarProfissional, useProfissionaisCrud } from './useProfissionais'
 import type { Profissional, ProfissionalForm, ProfissionalPayload } from './types'
@@ -59,6 +59,28 @@ export function ProfissionaisPage() {
   const [form, setForm] = useState<ProfissionalForm>(emptyForm)
   const [formError, setFormError] = useState<string | null>(null)
   const carregadoRef = useRef<number | null>(null)
+  const [searchParams] = useSearchParams()
+  const especialidadeSugerida = searchParams.get('especialidade_id') ?? ''
+  const sugestaoAplicadaRef = useRef(false)
+
+  /*
+    Chega assim quando o cadastro e aberto pelo atalho de "Adicionar
+    profissional" da solicitacao, que ja sabe qual especialidade ficou sem
+    executante. Aplica uma vez so, para nao desfazer a escolha de quem trocar a
+    especialidade na tela.
+  */
+  useEffect(() => {
+    if (!isCreateRoute || !especialidadeSugerida || sugestaoAplicadaRef.current) {
+      return
+    }
+
+    sugestaoAplicadaRef.current = true
+    setForm((atual) => ({
+      ...atual,
+      especialidade_id: especialidadeSugerida,
+      especialidade_ids: [Number(especialidadeSugerida)],
+    }))
+  }, [isCreateRoute, especialidadeSugerida])
 
   const especialidadesQuery = useEspecialidades()
   const profissionaisQuery = useProfissionaisCrud({

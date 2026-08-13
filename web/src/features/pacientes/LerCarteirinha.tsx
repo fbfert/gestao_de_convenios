@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { getHttpErrorMessage, useLerCarteirinha } from './usePacientes'
 import type { LeituraCarteirinha } from './types'
 
@@ -22,8 +23,10 @@ function webcamDisponivel() {
  */
 export function LerCarteirinha({
   onLeitura,
+  onEscolherConvenio,
 }: {
   onLeitura: (leitura: LeituraCarteirinha) => void
+  onEscolherConvenio: (convenioId: number) => void
 }) {
   const inputRef = useRef<HTMLInputElement | null>(null)
   const videoRef = useRef<HTMLVideoElement | null>(null)
@@ -31,6 +34,7 @@ export function LerCarteirinha({
   const [camera, setCamera] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
+  const [convenioLido, setConvenioLido] = useState<LeituraCarteirinha['convenio'] | null>(null)
   const ler = useLerCarteirinha()
 
   const fecharCamera = () => {
@@ -108,6 +112,7 @@ export function LerCarteirinha({
 
     setErro(null)
     setAviso(null)
+    setConvenioLido(null)
 
     try {
       const leitura = await ler.mutateAsync(arquivo)
@@ -119,12 +124,13 @@ export function LerCarteirinha({
         setAviso(
           'Não consegui reconhecer nada nesta imagem. Tente uma foto mais nítida, com o cartão preenchendo o quadro.',
         )
-      } else if (convenio.lido && !convenio.id) {
-        // O convênio manda no formato da carteirinha e no valor pago:
-        // preencher por semelhança seria pior que deixar em branco.
-        setAviso(
-          `Li a operadora "${convenio.lido}", mas ela não corresponde a nenhum convênio cadastrado. Escolha o convênio à mão.`,
-        )
+      }
+
+      // O painel abaixo mostra a nota de cada convênio próximo. Preencher por
+      // semelhança seria pior que deixar em branco: o convênio manda no
+      // formato da carteirinha, nas regras e no valor pago.
+      if (convenio.lido) {
+        setConvenioLido(convenio)
       }
 
       onLeitura(leitura)
@@ -224,6 +230,98 @@ export function LerCarteirinha({
             </button>
             <span className="text-xs text-slate-400">
               Encoste o cartão no quadro, sem reflexo, e mantenha o número legível.
+            </span>
+          </div>
+        </div>
+      ) : null}
+
+      {/*
+        Aviso de progresso destacado. Sem ele, uma leitura que demora parece
+        travada e o operador clica de novo — o que so faz comecar outra leitura
+        e gastar outra chamada.
+      */}
+      {ler.isPending ? (
+        <div
+          className="flex items-center gap-3 rounded-2xl border border-cyan-300/30 bg-cyan-400/10 px-4 py-3 text-sm text-cyan-50"
+          role="status"
+          aria-live="polite"
+          data-testid="paciente-carteirinha-lendo"
+        >
+          <span className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-cyan-200/40 border-t-cyan-100" />
+          <span>
+            <strong className="font-semibold">Lendo a carteirinha…</strong> costuma levar de 5 a 20
+            segundos. Não feche a tela nem clique de novo — os campos serão preenchidos sozinhos.
+          </span>
+        </div>
+      ) : null}
+
+      {convenioLido ? (
+        <div
+          className="space-y-3 rounded-2xl border border-white/10 bg-slate-950/60 p-4"
+          data-testid="paciente-convenio-lido"
+        >
+          <p className="text-sm text-slate-200">
+            Operadora lida no cartão: <strong className="text-white">{convenioLido.lido}</strong>
+            {convenioLido.id ? (
+              <span className="text-emerald-200"> · convênio preenchido automaticamente</span>
+            ) : (
+              <span className="text-amber-100"> · nenhum convênio bateu com segurança</span>
+            )}
+          </p>
+
+          {convenioLido.candidatos.length > 0 ? (
+            <div className="space-y-2">
+              <p className="text-xs uppercase tracking-[0.25em] text-slate-400">
+                Proximidade com os convênios cadastrados
+              </p>
+
+              {convenioLido.candidatos.map((candidato) => (
+                <div
+                  key={candidato.id}
+                  className="flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2"
+                >
+                  <span className="min-w-32 text-sm text-white">{candidato.nome}</span>
+
+                  <span className="h-2 w-24 overflow-hidden rounded-full bg-white/10">
+                    <span
+                      className={candidato.similaridade >= 85 ? 'block h-full bg-emerald-300' : 'block h-full bg-amber-300'}
+                      style={{ width: `${Math.min(100, candidato.similaridade)}%` }}
+                    />
+                  </span>
+
+                  <span className="text-xs font-semibold text-slate-200">
+                    {candidato.similaridade.toFixed(0)}%
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() => onEscolherConvenio(candidato.id)}
+                    className="ml-auto rounded-full border border-cyan-300/30 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-400/20"
+                    data-testid={`paciente-convenio-usar-${candidato.id}`}
+                  >
+                    Usar este
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : null}
+
+          <div className="flex flex-wrap items-center gap-3">
+            {/*
+              Aba nova de proposito: navegar aqui dentro descartaria o
+              formulario meio preenchido e a leitura recem-feita.
+            */}
+            <Link
+              to="/convenios/novo"
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-2xl border border-cyan-300/30 bg-cyan-400/10 px-4 py-2 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-400/20"
+              data-testid="paciente-convenio-cadastrar"
+            >
+              Cadastrar novo convênio
+            </Link>
+            <span className="text-xs text-slate-400">
+              Abre em outra aba. Ao voltar, a lista de convênios se atualiza sozinha.
             </span>
           </div>
         </div>

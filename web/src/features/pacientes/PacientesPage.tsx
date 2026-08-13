@@ -148,6 +148,28 @@ export function PacientesPage() {
     setIsFormOpen(true)
   }
 
+  /*
+    O cadastro de convenio abre em outra aba (ver LerCarteirinha). Ao voltar
+    para esta, a lista precisa ter o convenio novo — o app desliga o refetch
+    automatico no foco, entao aqui e explicito, e so enquanto o formulario
+    esta aberto.
+  */
+  const formAberto = isCreateRoute || isFormOpen
+
+  useEffect(() => {
+    if (!formAberto) {
+      return
+    }
+
+    const aoFocar = () => {
+      void conveniosQuery.refetch()
+    }
+
+    window.addEventListener('focus', aoFocar)
+
+    return () => window.removeEventListener('focus', aoFocar)
+  }, [formAberto, conveniosQuery])
+
   /**
    * Traz para o formulário o que a IA leu.
    *
@@ -314,7 +336,12 @@ export function PacientesPage() {
               </div>
             ) : null}
 
-            <LerCarteirinha onLeitura={aplicarLeitura} />
+            <LerCarteirinha
+              onLeitura={aplicarLeitura}
+              onEscolherConvenio={(convenioId) =>
+                setForm((current) => ({ ...current, convenio_id: String(convenioId) }))
+              }
+            />
 
             <label className="block space-y-2">
               <span className="text-sm font-medium text-slate-200">Convênio</span>

@@ -58,5 +58,9 @@ export type LeituraCarteirinha = {
     lido: string | null
     id: number | null
     nome: string | null
+    /** Nota do casamento aceito, em porcento. */
+    similaridade: number | null
+    /** Os mais próximos, com a nota de cada um. */
+    candidatos: { id: number; nome: string; similaridade: number }[]
   }
 }

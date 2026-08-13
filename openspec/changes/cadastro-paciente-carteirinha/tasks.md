@@ -42,6 +42,9 @@ conferidos. `clinica_agil_id` some da tela, mas fica no banco.
 - [x] 5.4 Lista de telefones: acrescentar, remover, rotular, nomear o contato e marcar o principal.
 - [x] 5.5 Remover o campo ID Clínica Ágil.
 - [x] 5.6 Botão `Ler Carteirinha` no topo, com câmera no celular e arquivo no computador.
+- [x] 5.10 Painel do convênio lido: nota de proximidade de cada convênio cadastrado, botão para usar um deles e link para cadastrar um novo em outra aba.
+- [x] 5.11 Aviso destacado de "lendo a carteirinha", para leitura demorada não parecer travada e virar clique duplicado.
+- [x] 5.12 `+ 1 telefone` abaixo da última linha, no lugar do botão no cabeçalho.
 - [x] 5.9 Webcam no computador: `capture` é ignorado fora do celular, então o PC ganhou captura na própria página, com prévia, foto e desligamento da câmera ao fechar.
 - [x] 5.7 Campos de validade e nascimento, com aviso de carteirinha vencida no paciente e na solicitação.
 - [x] 5.8 Prazo de guarda da imagem em Configurações → Globais.

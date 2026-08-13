@@ -205,12 +205,46 @@ class PacienteCarteirinhaApiTest extends TestCase
             ]),
         ]);
 
-        $this->postJson('/api/pacientes/ler-carteirinha', [
+        $resposta = $this->postJson('/api/pacientes/ler-carteirinha', [
             'arquivo' => UploadedFile::fake()->image('carteirinha.jpg'),
         ])
             ->assertOk()
             ->assertJsonPath('data.convenio.id', null)
             ->assertJsonPath('data.convenio.lido', 'Operadora Que Nao Existe Aqui');
+
+        // Mesmo sem casamento certeiro, os mais proximos voltam com nota: a
+        // tela mostra o quanto o palpite e forte em vez de so dizer "nao achei".
+        $candidatos = $resposta->json('data.convenio.candidatos');
+
+        $this->assertNotEmpty($candidatos);
+        $this->assertArrayHasKey('similaridade', $candidatos[0]);
+        $this->assertLessThan(85, $candidatos[0]['similaridade']);
+    }
+
+    public function test_convenio_reconhecido_traz_a_nota_de_semelhanca(): void
+    {
+        $this->autenticar();
+        $convenio = $this->convenio();
+        $this->configurarIa();
+        Storage::fake('local');
+
+        Http::fake([
+            '*/responses' => Http::response([
+                'output_text' => json_encode([
+                    'carteirinha' => '123456',
+                    'nome' => 'Paciente Com Convênio',
+                    'convenio' => $convenio->nome,
+                ]),
+            ]),
+        ]);
+
+        $this->postJson('/api/pacientes/ler-carteirinha', [
+            'arquivo' => UploadedFile::fake()->image('carteirinha.jpg'),
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.convenio.id', $convenio->id)
+            ->assertJsonPath('data.convenio.similaridade', 100)
+            ->assertJsonPath('data.convenio.candidatos.0.nome', $convenio->nome);
     }
 
     public function test_leitura_exige_ia_configurada(): void

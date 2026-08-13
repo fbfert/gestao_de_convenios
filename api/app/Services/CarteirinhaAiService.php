@@ -125,7 +125,9 @@ class CarteirinhaAiService
 
         $texto = $this->extrairTexto($response->json());
         $dados = $this->parseJson($texto);
-        $convenio = $this->casarConvenio($tenantId, (string) ($dados['convenio'] ?? ''));
+        $ranking = $this->ranquearConvenios($tenantId, (string) ($dados['convenio'] ?? ''));
+        $melhor = $ranking[0] ?? null;
+        $certeiro = $melhor && $melhor['similaridade'] >= self::CONFIANCA_MINIMA ? $melhor : null;
 
         return [
             'model' => $model,
@@ -142,22 +144,31 @@ class CarteirinhaAiService
                 'lido' => $this->texto($dados['convenio'] ?? null),
                 // Só preenche o campo quando tem certeza. Convênio errado
                 // contamina formato de carteirinha, regra e valor.
-                'id' => $convenio?->id,
-                'nome' => $convenio?->nome,
+                'id' => $certeiro['id'] ?? null,
+                'nome' => $certeiro['nome'] ?? null,
+                'similaridade' => $certeiro['similaridade'] ?? null,
+                // Os mais próximos, com a nota de cada um: quem decide com o
+                // cartão na mão merece ver o quanto o palpite é forte, em vez
+                // de receber só um "não encontrei".
+                'candidatos' => array_slice($ranking, 0, 3),
             ],
         ];
     }
 
-    private function casarConvenio(int $tenantId, string $lido): ?Convenio
+    /**
+     * Convênios da clínica ordenados pela semelhança com o nome lido.
+     *
+     * @return array<int, array{id: int, nome: string, similaridade: float}>
+     */
+    private function ranquearConvenios(int $tenantId, string $lido): array
     {
         $lido = trim($lido);
 
         if ($lido === '') {
-            return null;
+            return [];
         }
 
-        $melhor = null;
-        $melhorNota = 0.0;
+        $ranking = [];
 
         foreach (Convenio::query()->where('tenant_id', $tenantId)->where('ativo', true)->get() as $convenio) {
             similar_text(
@@ -166,13 +177,16 @@ class CarteirinhaAiService
                 $nota,
             );
 
-            if ($nota > $melhorNota) {
-                $melhorNota = $nota;
-                $melhor = $convenio;
-            }
+            $ranking[] = [
+                'id' => $convenio->id,
+                'nome' => $convenio->nome,
+                'similaridade' => round($nota, 1),
+            ];
         }
 
-        return $melhorNota >= self::CONFIANCA_MINIMA ? $melhor : null;
+        usort($ranking, fn ($a, $b) => $b['similaridade'] <=> $a['similaridade']);
+
+        return $ranking;
     }
 
     private function semAcento(string $valor): string

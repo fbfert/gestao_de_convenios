@@ -223,6 +223,30 @@ class PacienteCarteirinhaApiTest extends TestCase
         ])->assertStatus(422)->assertJsonValidationErrors('openai');
     }
 
+    public function test_prompt_de_sistema_nasce_na_primeira_leitura(): void
+    {
+        $this->autenticar();
+        $tenantId = (int) $this->usuario()->tenant_id;
+        Storage::fake('local');
+
+        $this->assertDatabaseMissing('ai_prompt_templates', [
+            'tenant_id' => $tenantId,
+            'chave' => 'ler_carteirinha',
+        ]);
+
+        // Falha por falta de conexao, e nao por falta de prompt: quem nunca
+        // abriu a tela de IA nao pode ser mandado configurar o que o sistema
+        // deveria ter criado sozinho.
+        $this->postJson('/api/pacientes/ler-carteirinha', [
+            'arquivo' => UploadedFile::fake()->image('carteirinha.jpg'),
+        ])->assertStatus(422);
+
+        $this->assertDatabaseHas('ai_prompt_templates', [
+            'tenant_id' => $tenantId,
+            'chave' => 'ler_carteirinha',
+        ]);
+    }
+
     public function test_gravar_paciente_adota_a_imagem_lida(): void
     {
         $this->autenticar();

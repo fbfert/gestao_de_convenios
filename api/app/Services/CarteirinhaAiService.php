@@ -33,6 +33,12 @@ class CarteirinhaAiService
 
     public function analisar(int $tenantId, UploadedFile $arquivo, string $path): array
     {
+        // Os prompts de sistema nascem na leitura, e nao por seeder — o
+        // entrypoint de producao so roda `migrate`. Sem esta chamada, a clinica
+        // que nunca abriu a tela de IA veria o botao falhar no primeiro clique,
+        // pedindo um prompt que o proprio sistema deveria ter criado.
+        AiPromptTemplate::garantirPadroes($tenantId);
+
         $prompt = AiPromptTemplate::query()
             ->where('tenant_id', $tenantId)
             ->where('chave', 'ler_carteirinha')

@@ -9,7 +9,11 @@ export type AuditPayload = {
 export type AuditItem = {
   id: number
   acao: string
+  /** Rótulo legível, vindo da API. */
+  acao_label: string
+  tipo: string
   entidade: string
+  entidade_label: string
   entidade_id: number
   usuario: string | null
   usuario_id: number | null
@@ -29,17 +33,23 @@ export type AuditPagina = {
   }
 }
 
+export type AuditOpcao = { valor: string; rotulo: string }
+
 export type AuditOpcoes = {
-  entidades: string[]
-  acoes: string[]
-  /** Autores que aparecem na trilha, vindos dela mesma. */
-  usuarios: { id: number; nome: string }[]
+  entidades: AuditOpcao[]
+  /** Ação carrega o tipo, para o seletor de ação seguir o de tipo. */
+  acoes: (AuditOpcao & { tipo: string })[]
+  tipos: AuditOpcao[]
 }
 
 export type AuditFiltros = {
   de: string
   ate: string
-  usuario_id: string
+  /** Nome da pessoa, busca parcial. */
+  usuario: string
+  /** '' todos, 'pessoas' ou 'sistema'. */
+  autor: string
+  tipo: string
   entidade: string
   acao: string
 }

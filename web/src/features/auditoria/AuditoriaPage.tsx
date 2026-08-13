@@ -12,7 +12,15 @@ const card = 'rounded-[1.75rem] border border-white/10 bg-white/5 p-5 shadow-xl 
 const campo =
   'w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20'
 
-const filtrosVazios: AuditFiltros = { de: '', ate: '', usuario_id: '', entidade: '', acao: '' }
+const filtrosVazios: AuditFiltros = {
+  de: '',
+  ate: '',
+  usuario: '',
+  autor: '',
+  tipo: '',
+  entidade: '',
+  acao: '',
+}
 
 function formatarData(valor: string | null) {
   if (!valor) {
@@ -111,10 +119,10 @@ function Evento({ item }: { item: AuditItem }) {
       <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <div>
           <p className="text-sm font-medium text-white">
-            {item.usuario ?? 'Sistema'} · {item.acao}
+            {item.usuario ?? 'Sistema'} · {item.acao_label}
           </p>
           <p className="mt-1 text-sm text-slate-300">
-            {item.entidade} #{item.entidade_id}
+            {item.entidade_label} #{item.entidade_id}
             {item.ip ? <span className="text-slate-400"> · {item.ip}</span> : null}
           </p>
         </div>
@@ -152,6 +160,12 @@ export function AuditoriaPage() {
   const opcoes = useAuditoriaOpcoes()
 
   const eventos = useMemo(() => auditoria.data?.data ?? [], [auditoria.data])
+  // O seletor de acao mostra so o que pertence ao tipo escolhido.
+  const acoesDisponiveis = useMemo(() => {
+    const todas = opcoes.data?.acoes ?? []
+
+    return rascunho.tipo ? todas.filter((acao) => acao.tipo === rascunho.tipo) : todas
+  }, [opcoes.data, rascunho.tipo])
   const totalPaginas = auditoria.data?.meta?.last_page ?? 1
   const total = auditoria.data?.meta?.total ?? 0
 
@@ -204,7 +218,7 @@ export function AuditoriaPage() {
       </div>
 
       <form onSubmit={aplicar} className={`${card} space-y-4`} data-testid="auditoria-filtros">
-        <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-5">
+        <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-4">
           <label className="space-y-1">
             <span className="text-xs text-slate-300">De</span>
             <input
@@ -228,17 +242,45 @@ export function AuditoriaPage() {
 
           <label className="space-y-1">
             <span className="text-xs text-slate-300">Usuário</span>
-            <Select
-              value={rascunho.usuario_id}
+            <input
+              type="search"
+              value={rascunho.usuario}
               onChange={(event) =>
-                setRascunho((atual) => ({ ...atual, usuario_id: event.target.value }))
+                setRascunho((atual) => ({ ...atual, usuario: event.target.value }))
               }
+              placeholder="Nome da pessoa"
+              className={campo}
+              data-testid="auditoria-usuario"
+            />
+          </label>
+
+          <label className="space-y-1">
+            <span className="text-xs text-slate-300">Autor</span>
+            <Select
+              value={rascunho.autor}
+              onChange={(event) => setRascunho((atual) => ({ ...atual, autor: event.target.value }))}
             >
               <option value="">Todos</option>
-              <option value="sistema">Sistema</option>
-              {(opcoes.data?.usuarios ?? []).map((usuario) => (
-                <option key={usuario.id} value={String(usuario.id)}>
-                  {usuario.nome}
+              <option value="pessoas">Somente pessoas</option>
+              <option value="sistema">Somente o sistema</option>
+            </Select>
+          </label>
+
+          <label className="space-y-1">
+            <span className="text-xs text-slate-300">Tipo de ação</span>
+            <Select
+              value={rascunho.tipo}
+              onChange={(event) =>
+                // Trocar de tipo limpa a acao: manter uma acao de outro tipo
+                // deixaria o filtro pedindo um recorte impossivel.
+                setRascunho((atual) => ({ ...atual, tipo: event.target.value, acao: '' }))
+              }
+              data-testid="auditoria-tipo"
+            >
+              <option value="">Todos</option>
+              {(opcoes.data?.tipos ?? []).map((tipo) => (
+                <option key={tipo.valor} value={tipo.valor}>
+                  {tipo.rotulo}
                 </option>
               ))}
             </Select>
@@ -254,8 +296,8 @@ export function AuditoriaPage() {
             >
               <option value="">Todas</option>
               {(opcoes.data?.entidades ?? []).map((entidade) => (
-                <option key={entidade} value={entidade}>
-                  {entidade}
+                <option key={entidade.valor} value={entidade.valor}>
+                  {entidade.rotulo}
                 </option>
               ))}
             </Select>
@@ -268,9 +310,9 @@ export function AuditoriaPage() {
               onChange={(event) => setRascunho((atual) => ({ ...atual, acao: event.target.value }))}
             >
               <option value="">Todas</option>
-              {(opcoes.data?.acoes ?? []).map((acao) => (
-                <option key={acao} value={acao}>
-                  {acao}
+              {acoesDisponiveis.map((acao) => (
+                <option key={acao.valor} value={acao.valor}>
+                  {acao.rotulo}
                 </option>
               ))}
             </Select>

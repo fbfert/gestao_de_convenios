@@ -53,7 +53,14 @@ trilha continua sendo quem tem `dashboard.auditoria`.
 - [x] 6.3 `tsc -b`, `oxlint`, `vite build` e `php artisan test` (213 testes, 1027 asserções).
 - [ ] 6.4 Rodar a suíte e2e do Playwright — o servidor não tem Node e PHP fora dos containers.
 
-## 7. Achados durante a implementação
+## 7. Ajustes pedidos depois de ver a tela (2026-08-13)
+
+- [x] 7.1 Busca por nome da pessoa no lugar do seletor de usuário (LIKE sobre `users`, tabela pequena, e não sobre a trilha).
+- [x] 7.2 Seletor `Autor`: todos, somente pessoas ou somente o sistema — preserva o recorte do que job, worker e expurgo fizeram sozinhos.
+- [x] 7.3 Seletor `Tipo de ação` (Acesso, Criação, Alteração, Exclusão, Importação, Manutenção), com o seletor de `Ação` mostrando só o que pertence ao tipo escolhido.
+- [x] 7.4 `AuditoriaCatalogo` com rótulo legível de ação e de entidade, usado pela tela, pelos filtros e pelo CSV — a mesma fonte para o que o seletor promete e o que a consulta filtra.
+
+## 8. Achados durante a implementação
 
 - `audit_logs` não tinha `ip` nem `user_agent` no `$fillable`, então o mass assignment descartava os dois em silêncio. Só apareceu porque o teste de acesso conferiu o IP gravado.
 - O filtro de usuário da tela ia consumir `GET /usuarios`, que exige `usuarios.manage`. Quem audita pode não ter essa permissão, e o 403 viraria evento na trilha só por abrir a tela. Os autores passaram a sair da própria trilha, via `/auditoria/opcoes`.

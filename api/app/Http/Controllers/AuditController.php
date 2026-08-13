@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Resources\AuditLogResource;
 use App\Models\AuditLog;
 use App\Models\ConfiguracaoGlobal;
+use App\Support\AuditoriaCatalogo;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -34,20 +35,33 @@ class AuditController extends Controller
      */
     public function opcoes(): JsonResponse
     {
+        $acoes = AuditLog::query()->distinct()->orderBy('acao')->pluck('acao');
+
         return response()->json([
             'data' => [
-                'entidades' => AuditLog::query()->distinct()->orderBy('entidade')->pluck('entidade'),
-                'acoes' => AuditLog::query()->distinct()->orderBy('acao')->pluck('acao'),
-                // Os autores saem da própria trilha, e não de GET /usuarios:
-                // aquela rota exige `usuarios.manage`, que quem audita pode não
-                // ter — e o 403 viraria evento só por abrir a tela. De quebra,
-                // a lista só oferece quem de fato aparece na trilha.
-                'usuarios' => AuditLog::query()
-                    ->join('users', 'users.id', '=', 'audit_logs.user_id')
+                // Só entidades e ações que de fato ocorreram nesta clínica: o
+                // filtro não oferece recorte que devolveria vazio.
+                'entidades' => AuditLog::query()
                     ->distinct()
-                    ->orderBy('users.name')
-                    ->get(['users.id', 'users.name'])
-                    ->map(fn ($linha) => ['id' => $linha->id, 'nome' => $linha->name]),
+                    ->orderBy('entidade')
+                    ->pluck('entidade')
+                    ->map(fn ($entidade) => [
+                        'valor' => $entidade,
+                        'rotulo' => AuditoriaCatalogo::rotuloEntidade($entidade),
+                    ])
+                    ->sortBy('rotulo')
+                    ->values(),
+                'acoes' => $acoes
+                    ->map(fn ($acao) => [
+                        'valor' => $acao,
+                        'rotulo' => AuditoriaCatalogo::rotuloAcao($acao),
+                        'tipo' => AuditoriaCatalogo::tipoDe($acao),
+                    ])
+                    ->sortBy('rotulo')
+                    ->values(),
+                'tipos' => collect(AuditoriaCatalogo::TIPOS)
+                    ->map(fn ($rotulo, $valor) => ['valor' => $valor, 'rotulo' => $rotulo])
+                    ->values(),
             ],
         ]);
     }
@@ -68,15 +82,16 @@ class AuditController extends Controller
 
             // BOM para o Excel em pt-BR abrir os acentos corretamente.
             fwrite($saida, "\xEF\xBB\xBF");
-            fputcsv($saida, ['Data', 'Usuário', 'Ação', 'Entidade', 'Registro', 'Detalhes', 'IP']);
+            fputcsv($saida, ['Data', 'Usuário', 'Tipo', 'Ação', 'Entidade', 'Registro', 'Detalhes', 'IP']);
 
             $consulta->chunk(500, function ($registros) use ($saida) {
                 foreach ($registros as $registro) {
                     fputcsv($saida, [
                         $registro->created_at?->format('d/m/Y H:i:s'),
                         $registro->user?->name ?? 'Sistema',
-                        $registro->acao,
-                        $registro->entidade,
+                        AuditoriaCatalogo::TIPOS[AuditoriaCatalogo::tipoDe($registro->acao)] ?? '',
+                        AuditoriaCatalogo::rotuloAcao($registro->acao),
+                        AuditoriaCatalogo::rotuloEntidade($registro->entidade),
                         $registro->entidade_id,
                         // O payload já vem sem valor de campo sensível: a
                         // censura acontece na escrita, não aqui.
@@ -97,11 +112,34 @@ class AuditController extends Controller
         return AuditLog::query()
             ->when($request->filled('de'), fn ($q) => $q->whereDate('created_at', '>=', $request->date('de')))
             ->when($request->filled('ate'), fn ($q) => $q->whereDate('created_at', '<=', $request->date('ate')))
-            ->when($request->filled('usuario_id'), function ($q) use ($request) {
-                // "sistema" não é um usuário: é a ausência de um.
-                $request->string('usuario_id')->toString() === 'sistema'
+            ->when($request->filled('usuario'), function ($q) use ($request) {
+                // Busca pelo nome da pessoa. O LIKE cai sobre `users`, que é
+                // uma tabela pequena, e não sobre a trilha inteira.
+                $termo = $request->string('usuario')->trim()->toString();
+
+                $q->whereHas('user', fn ($u) => $u->where('name', 'like', "%{$termo}%"));
+            })
+            ->when($request->filled('autor'), function ($q) use ($request) {
+                // "sistema" não é um usuário: é a ausência de um. É assim que
+                // se isola o que job, worker e expurgo fizeram sozinhos.
+                $request->string('autor')->toString() === 'sistema'
                     ? $q->whereNull('user_id')
-                    : $q->where('user_id', $request->integer('usuario_id'));
+                    : $q->whereNotNull('user_id');
+            })
+            ->when($request->filled('tipo'), function ($q) use ($request) {
+                // O tipo vira lista de ações em PHP, em vez de padrões
+                // repetidos em SQL: assim o que o seletor mostra e o que a
+                // consulta filtra saem da mesma regra.
+                $tipo = $request->string('tipo')->toString();
+
+                $acoes = AuditLog::query()
+                    ->distinct()
+                    ->pluck('acao')
+                    ->filter(fn ($acao) => AuditoriaCatalogo::tipoDe($acao) === $tipo)
+                    ->values()
+                    ->all();
+
+                $q->whereIn('acao', $acoes ?: ['']);
             })
             ->when($request->filled('entidade'), fn ($q) => $q->where('entidade', $request->string('entidade')->toString()))
             ->when($request->filled('acao'), fn ($q) => $q->where('acao', $request->string('acao')->toString()));

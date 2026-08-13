@@ -179,7 +179,7 @@ class AuditoriaApiTest extends TestCase
             ->assertJsonPath('data.0.acao', 'teste.filtro')
             ->assertJsonPath('meta.total', 1);
 
-        $this->getJson('/api/auditoria?usuario_id=sistema&acao=teste.sistema')
+        $this->getJson('/api/auditoria?autor=sistema&acao=teste.sistema')
             ->assertOk()
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.usuario', null);
@@ -187,6 +187,88 @@ class AuditoriaApiTest extends TestCase
         $this->getJson('/api/auditoria?de='.now()->addDay()->toDateString())
             ->assertOk()
             ->assertJsonCount(0, 'data');
+    }
+
+    public function test_busca_por_nome_do_usuario(): void
+    {
+        $this->autenticar();
+        $usuario = $this->usuario();
+
+        AuditLog::query()->create([
+            'tenant_id' => $usuario->tenant_id,
+            'user_id' => $usuario->id,
+            'acao' => 'teste.pessoa',
+            'entidade' => 'convenios',
+            'entidade_id' => 1,
+        ]);
+
+        AuditLog::query()->create([
+            'tenant_id' => $usuario->tenant_id,
+            'user_id' => null,
+            'acao' => 'teste.pessoa',
+            'entidade' => 'convenios',
+            'entidade_id' => 1,
+        ]);
+
+        // Parcial e sem diferenciar caixa, como a busca da tela.
+        $this->getJson('/api/auditoria?acao=teste.pessoa&usuario=admin')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.usuario', $usuario->name);
+
+        $this->getJson('/api/auditoria?acao=teste.pessoa&usuario=ninguem')
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
+
+        $this->getJson('/api/auditoria?acao=teste.pessoa&autor=pessoas')
+            ->assertOk()
+            ->assertJsonCount(1, 'data');
+    }
+
+    public function test_filtra_por_tipo_de_acao_e_traz_rotulo_legivel(): void
+    {
+        $this->autenticar();
+        $convenio = Convenio::query()->firstOrFail();
+
+        $this->patchJson("/api/convenios/{$convenio->id}", [
+            'nome' => 'Convênio Tipado',
+            'connector_type' => $convenio->connector_type,
+            'ativo' => true,
+        ])->assertOk();
+
+        $this->getJson('/api/auditoria?tipo=alteracao')
+            ->assertOk()
+            ->assertJsonPath('data.0.acao', 'updated')
+            ->assertJsonPath('data.0.acao_label', 'Alteração')
+            ->assertJsonPath('data.0.tipo', 'alteracao')
+            ->assertJsonPath('data.0.entidade_label', 'Convênios');
+
+        // Nenhuma exclusão aconteceu: o recorte tem de vir vazio, e não cair
+        // para "sem filtro".
+        $this->getJson('/api/auditoria?tipo=exclusao')
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
+    }
+
+    public function test_opcoes_trazem_tipos_e_rotulos(): void
+    {
+        $this->autenticar();
+        $convenio = Convenio::query()->firstOrFail();
+
+        $this->patchJson("/api/convenios/{$convenio->id}", [
+            'nome' => 'Convênio Opções',
+            'connector_type' => $convenio->connector_type,
+            'ativo' => true,
+        ])->assertOk();
+
+        $opcoes = $this->getJson('/api/auditoria/opcoes')->assertOk()->json('data');
+
+        $this->assertContains(['valor' => 'convenios', 'rotulo' => 'Convênios'], $opcoes['entidades']);
+        $this->assertContains(
+            ['valor' => 'updated', 'rotulo' => 'Alteração', 'tipo' => 'alteracao'],
+            $opcoes['acoes'],
+        );
+        $this->assertContains(['valor' => 'acesso', 'rotulo' => 'Acesso'], $opcoes['tipos']);
     }
 
     public function test_exportacao_devolve_csv_do_recorte_filtrado(): void

@@ -11,6 +11,7 @@ import { AntecipacoesPage } from '../features/antecipacoes/AntecipacoesPage'
 import { AnaliticosPage, AnaliticoDetalhePage } from '../features/analiticos'
 import { LancamentosPage } from '../features/lancamentos'
 import { LancamentoTemplatesPage } from '../features/lancamentos/LancamentoTemplatesPage'
+import { ImportarSessoesPage } from '../features/lancamentos/ImportarSessoesPage'
 import { ConciliacaoPage } from '../features/conciliacao'
 import { MedicosPage } from '../features/medicos'
 import { EspecialidadesPage } from '../features/especialidades'
@@ -64,6 +65,7 @@ export function AppRoutes() {
           <Route path="/lancamentos/templates/" element={<LancamentoTemplatesPage />} />
           <Route path="/lancamentos" element={<LancamentosPage />} />
           <Route path="/lancamentos/novo" element={<LancamentosPage />} />
+          <Route path="/lancamentos/importar" element={<ImportarSessoesPage />} />
           <Route path="/analiticos" element={<AnaliticosPage />} />
           <Route path="/analiticos/:id" element={<AnaliticoDetalhePage />} />
           <Route path="/conciliacao" element={<ConciliacaoPage />} />

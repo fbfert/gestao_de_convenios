@@ -80,6 +80,29 @@ export function useImportarLancamentosTranscritos() {
   })
 }
 
+/**
+ * Lê o registro de sessões escaneado por IA.
+ *
+ * Devolve o mesmo formato da transcrição colada, então a tela de revisão e a
+ * confirmação seguem iguais — muda só de onde o dado veio.
+ */
+export function useLerRegistroSessoes() {
+  return useMutation({
+    mutationFn: async ({ antecipacaoId, arquivo }: { antecipacaoId: string; arquivo: File }) => {
+      const body = new FormData()
+      body.append('arquivo', arquivo)
+
+      const { data } = await apiClient.post<{ data: LancamentoTranscricaoImportResult }>(
+        `/antecipacoes/${Number(antecipacaoId)}/lancamentos/ler-registro`,
+        body,
+        { headers: { 'Content-Type': 'multipart/form-data' } },
+      )
+
+      return data.data
+    },
+  })
+}
+
 export function useConfirmarLancamentosTranscritos() {
   const queryClient = useQueryClient()
 

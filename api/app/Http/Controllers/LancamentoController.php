@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ImportAnaliticoUnimedRequest;
 use App\Http\Requests\ImportLancamentosTranscricaoRequest;
+use App\Http\Requests\LerRegistroSessoesRequest;
 use App\Http\Requests\StoreLancamentoRequest;
 use App\Http\Requests\UpdateLancamentoRequest;
 use App\Http\Resources\LancamentoResource;
@@ -12,6 +13,8 @@ use App\Models\Lancamento;
 use App\Models\Profissional;
 use App\Services\AnaliticoUnimedImportService;
 use App\Services\LancamentoService;
+use App\Services\RegistroSessoesAiService;
+use Illuminate\Support\Str;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -60,6 +63,35 @@ class LancamentoController extends Controller
         $this->service->remover($lancamento);
 
         return response()->json(null, 204);
+    }
+
+    /**
+     * Lê o registro de sessões escaneado e devolve a mesma pré-visualização da
+     * transcrição colada — cabeçalho e sessões —, sem gravar nada.
+     *
+     * A confirmação continua sendo a rota de sempre: o operador revisa datas e
+     * horários na tabela antes de qualquer lançamento existir.
+     */
+    public function lerRegistroSessoes(
+        LerRegistroSessoesRequest $request,
+        Antecipacao $antecipacao,
+        RegistroSessoesAiService $registroAi,
+    ): JsonResponse {
+        $tenantId = (int) $request->user()->tenant_id;
+        $arquivo = $request->file('arquivo');
+        $nome = Str::uuid()->toString().'.'.$arquivo->getClientOriginalExtension();
+        $path = $arquivo->storeAs("registros-sessoes/{$tenantId}", $nome, 'local');
+
+        $resultado = $registroAi->analisar($tenantId, $arquivo, $path);
+
+        return response()->json([
+            'data' => [
+                'confirmacao_pendente' => true,
+                'cabecalho' => $resultado['cabecalho'],
+                'sessoes' => $resultado['sessoes'],
+                'registros' => [],
+            ],
+        ]);
     }
 
     public function importarTranscricao(ImportLancamentosTranscricaoRequest $request, Antecipacao $antecipacao): JsonResponse

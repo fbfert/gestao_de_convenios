@@ -8,6 +8,11 @@ export type Antecipacao = {
   qtd_autorizada: number
   qtd_utilizada: number
   status: string
+  /** Nomes, para o seletor não mostrar id cru. */
+  paciente?: { id: number; nome: string } | null
+  convenio?: { id: number; nome: string } | null
+  /** Vem da guia: é ela que amarra a antecipação a uma terapia. */
+  especialidade?: { id: number; nome: string } | null
   lancamentos?: Array<{
     id: number
     data_sessao: string | null

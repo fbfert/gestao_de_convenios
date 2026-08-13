@@ -14,6 +14,21 @@ class AntecipacaoResource extends JsonResource
             'guia_id' => $this->guia_id,
             'paciente_id' => $this->paciente_id,
             'convenio_id' => $this->convenio_id,
+            // Nome, e nao so id: o seletor de antecipacao da importacao
+            // mostrava "Paciente 42", numero que ninguem reconhece.
+            'paciente' => $this->whenLoaded('paciente', fn () => [
+                'id' => $this->paciente->id,
+                'nome' => $this->paciente->nome,
+            ]),
+            'convenio' => $this->whenLoaded('convenio', fn () => [
+                'id' => $this->convenio->id,
+                'nome' => $this->convenio->nome,
+            ]),
+            // A especialidade vem da guia: e ela que amarra a antecipacao a uma
+            // terapia, e e por ela que a tela filtra o profissional executante.
+            'especialidade' => $this->whenLoaded('guia', fn () => $this->guia?->relationLoaded('especialidade') && $this->guia->especialidade
+                ? ['id' => $this->guia->especialidade->id, 'nome' => $this->guia->especialidade->nome]
+                : null),
             'ciclo_inicio' => $this->ciclo_inicio?->toDateString(),
             'ciclo_fim' => $this->ciclo_fim?->toDateString(),
             'qtd_autorizada' => $this->qtd_autorizada,

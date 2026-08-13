@@ -6,19 +6,13 @@ import { Select } from '../../components/ui/Select'
 import { useProfissionais } from '../../lib/queries/useReferenceData'
 import { useAntecipacoes } from '../antecipacoes/useAntecipacoes'
 import {
-  useConfirmarLancamentosTranscritos,
   useCriarLancamento,
   useLancamentoPrintTemplate,
-  useImportarLancamentosTranscritos,
   useLancamentos,
 } from './useLancamentos'
 import type {
-  LancamentoConfirmImportForm,
   LancamentoFilters,
   LancamentoForm,
-  LancamentoImportForm,
-  LancamentoTranscricaoPreview,
-  LancamentoTranscricaoSessao,
 } from './types'
 import { getHttpErrorMessage } from './useLancamentos'
 import {
@@ -40,12 +34,6 @@ const emptyForm: LancamentoForm = {
   acompanhante: '',
   resumo_atividades: '',
   observacoes: '',
-}
-
-const emptyImportForm: LancamentoImportForm = {
-  antecipacao_id: '',
-  profissional_id: '',
-  transcricao: '',
 }
 
 function selectClasses() {
@@ -70,23 +58,13 @@ export function LancamentosPage() {
     ...emptyForm,
     antecipacao_id: initialAntecipacaoId,
   })
-  const [importForm, setImportForm] = useState<LancamentoImportForm>({
-    ...emptyImportForm,
-    antecipacao_id: initialAntecipacaoId,
-  })
-  const [importPreview, setImportPreview] = useState<LancamentoTranscricaoPreview | null>(null)
-  const [importDraftSessoes, setImportDraftSessoes] = useState<LancamentoTranscricaoSessao[]>([])
-  const [importPdfFile, setImportPdfFile] = useState<File | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
-  const [importError, setImportError] = useState<string | null>(null)
 
   const profissionaisQuery = useProfissionais()
   const antecipacoesQuery = useAntecipacoes({ status: '', paciente_id: '', convenio_id: '' }, 1)
   const lancamentosQuery = useLancamentos(filters, page)
   const printTemplateQuery = useLancamentoPrintTemplate()
   const criarLancamento = useCriarLancamento()
-  const importarLancamentos = useImportarLancamentosTranscritos()
-  const confirmarLancamentos = useConfirmarLancamentosTranscritos()
 
   const profissionais = useMemo(() => profissionaisQuery.data ?? [], [profissionaisQuery.data])
   const antecipacoes = useMemo(() => antecipacoesQuery.data?.data ?? [], [antecipacoesQuery.data])
@@ -102,10 +80,6 @@ export function LancamentosPage() {
       ...current,
       antecipacao_id: current.antecipacao_id || initialAntecipacaoId || String(antecipacoes[0].id),
     }))
-    setImportForm((current) => ({
-      ...current,
-      antecipacao_id: current.antecipacao_id || initialAntecipacaoId || String(antecipacoes[0].id),
-    }))
   }, [antecipacoes, initialAntecipacaoId])
 
   useEffect(() => {
@@ -114,10 +88,6 @@ export function LancamentosPage() {
     }
 
     setForm((current) => ({
-      ...current,
-      profissional_id: current.profissional_id || String(profissionais[0].id),
-    }))
-    setImportForm((current) => ({
       ...current,
       profissional_id: current.profissional_id || String(profissionais[0].id),
     }))
@@ -159,78 +129,9 @@ export function LancamentosPage() {
     }
   }
 
-  const handleImportSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setImportError(null)
-
-    try {
-      const result = await importarLancamentos.mutateAsync(importForm)
-      setImportPreview({
-        confirmacao_pendente: result.confirmacao_pendente,
-        cabecalho: result.cabecalho,
-        sessoes: result.sessoes,
-      })
-      setImportDraftSessoes(result.sessoes)
-      setImportPdfFile(null)
-    } catch (error) {
-      setImportError(
-        getHttpErrorMessage(error, 'Não foi possível importar a transcrição do registro.'),
-      )
-    }
-  }
-
-  const handleConfirmImport = async () => {
-    if (!importPreview) {
-      return
-    }
-
-    setImportError(null)
-
-    try {
-      const payload: LancamentoConfirmImportForm = {
-        ...importForm,
-        sessoes: importDraftSessoes,
-        pdf_registro_sessoes: importPdfFile,
-      }
-
-      if (exigePdf && !importPdfFile) {
-        setImportError('O PDF do registro de sessões é obrigatório para a regional 0220.')
-        return
-      }
-
-      await confirmarLancamentos.mutateAsync(payload)
-      setImportPreview(null)
-      setImportDraftSessoes([])
-      setImportPdfFile(null)
-      setImportForm((current) => ({ ...current, transcricao: '' }))
-    } catch (error) {
-      setImportError(getHttpErrorMessage(error, 'Não foi possível confirmar o envio do registro.'))
-    }
-  }
-
-  const atualizarSessaoImportada = (
-    index: number,
-    campo: keyof LancamentoTranscricaoSessao,
-    valor: string,
-  ) => {
-    setImportDraftSessoes((current) =>
-      current.map((sessao, sessaoIndex) =>
-        sessaoIndex === index ? { ...sessao, [campo]: valor } : sessao,
-      ),
-    )
-  }
-
   const antecipaSelecionada = antecipacoes.find(
     (antecipacao) => String(antecipacao.id) === form.antecipacao_id,
   )
-  const importAntecipacaoSelecionada = antecipacoes.find(
-    (antecipacao) => String(antecipacao.id) === importForm.antecipacao_id,
-  )
-  const importProfissionalSelecionado = profissionais.find(
-    (profissional) => String(profissional.id) === importForm.profissional_id,
-  )
-  const exigePdf =
-    importPreview?.cabecalho.numero_cartao?.replace(/\D+/g, '').startsWith('0220') ?? false
   const printHtml = useMemo(
     () =>
       renderLancamentoPrintTemplate(
@@ -259,6 +160,13 @@ export function LancamentosPage() {
               >
                 Templates
               </Link>
+              <Link
+                to="/lancamentos/importar"
+                className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+                data-testid="lancamento-importar-transcricao"
+              >
+                Importar transcrição
+              </Link>
               <button
                 type="button"
                 onClick={() => window.print()}
@@ -282,8 +190,7 @@ export function LancamentosPage() {
           <Indicadores
             itens={[
               { rotulo: 'Total na página', valor: lancamentos.length },
-              { rotulo: 'Antecipação', valor: importAntecipacaoSelecionada?.id ?? antecipaSelecionada?.id ?? '—' },
-              { rotulo: 'Importação', valor: importProfissionalSelecionado?.nome ?? 'Pendente' },
+              { rotulo: 'Página', valor: `${page} de ${totalPages}` },
             ]}
           />
         </section>
@@ -291,229 +198,6 @@ export function LancamentosPage() {
 
         {!isCreateRoute ? (
         <>
-        <section className="grid gap-6 xl:grid-cols-2">
-          <article className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h3 className="text-lg font-semibold text-white">Importar transcrição</h3>
-              </div>
-            </div>
-
-            <form onSubmit={handleImportSubmit} className="mt-4 space-y-4">
-              <label className="block space-y-2">
-                <span className="text-sm font-medium text-slate-200">Antecipação</span>
-                <Select
-                  value={importForm.antecipacao_id}
-                  onChange={(event) =>
-                    setImportForm((current) => ({
-                      ...current,
-                      antecipacao_id: event.target.value,
-                    }))
-                  }
-                  className={selectClasses()}
-                  data-testid="lancamento-import-antecipacao"
-                >
-                  {antecipacoes.map((antecipacao) => (
-                    <option key={antecipacao.id} value={antecipacao.id}>
-                      #{antecipacao.id} · Paciente {antecipacao.paciente_id} · {antecipacao.status}
-                    </option>
-                  ))}
-                </Select>
-              </label>
-
-              <label className="block space-y-2">
-                <span className="text-sm font-medium text-slate-200">Profissional executante</span>
-                <Select
-                  value={importForm.profissional_id}
-                  onChange={(event) =>
-                    setImportForm((current) => ({
-                      ...current,
-                      profissional_id: event.target.value,
-                    }))
-                  }
-                  className={selectClasses()}
-                  data-testid="lancamento-import-profissional"
-                >
-                  {profissionais.map((profissional) => (
-                    <option key={profissional.id} value={profissional.id}>
-                      {profissional.nome}
-                    </option>
-                  ))}
-                </Select>
-              </label>
-
-              <label className="block space-y-2">
-                <span className="text-sm font-medium text-slate-200">Transcrição OCR</span>
-                <textarea
-                  value={importForm.transcricao}
-                  onChange={(event) =>
-                    setImportForm((current) => ({ ...current, transcricao: event.target.value }))
-                  }
-                  className={`${selectClasses()} min-h-72 font-mono text-sm leading-6`}
-                  placeholder={`GUIA Nº: 521381566206
-Clínica: Centro Neuro Kids Ltda
-Paciente: ...
-Número Cartão: 0220 090000 551.330-8
-Profissional Executante: Mariana
-Terapia aplicada: ABA - AV. Neuropsicológica
-
-08/04/26 14:50 15:40 Bruno Marinho Aplicação testes Neuropsicológicos`}
-                  data-testid="lancamento-import-transcricao"
-                />
-              </label>
-
-              {importError ? (
-                <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
-                  {importError}
-                </p>
-              ) : null}
-
-              <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-300">
-                {importAntecipacaoSelecionada
-                  ? `Antecipação selecionada: #${importAntecipacaoSelecionada.id} · ${importAntecipacaoSelecionada.status}`
-                  : 'Selecione uma antecipação para analisar o registro.'}
-              </div>
-
-              <button
-                type="submit"
-                disabled={importarLancamentos.isPending || importForm.transcricao.trim() === ''}
-                className="inline-flex w-full items-center justify-center rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:opacity-60"
-                data-testid="lancamento-importar"
-              >
-                {importarLancamentos.isPending ? 'Analisando...' : 'Analisar transcrição'}
-              </button>
-            </form>
-
-            {importPreview ? (
-              <div className="mt-6 space-y-4">
-                <div className="rounded-2xl border border-cyan-400/20 bg-cyan-500/10 px-4 py-3 text-sm text-cyan-50">
-                  Nenhuma sessão foi salva ainda. Ajuste datas e horários, depois confirme o envio.
-                </div>
-                {exigePdf ? (
-                  <div className="rounded-2xl border border-amber-400/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-50">
-                    Regional 0220 detectada pela carteirinha. O PDF do registro de sessões é
-                    obrigatório para confirmar o envio.
-                  </div>
-                ) : null}
-
-                <label className="block space-y-2">
-                  <span className="text-sm font-medium text-slate-200">PDF do registro de sessões</span>
-                  <input
-                    type="file"
-                    accept="application/pdf,.pdf"
-                    onChange={(event) => setImportPdfFile(event.target.files?.[0] ?? null)}
-                    className="block w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200 file:mr-4 file:rounded-full file:border-0 file:bg-cyan-400 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-slate-950"
-                    data-testid="lancamento-import-pdf"
-                  />
-                </label>
-
-                <div className="grid gap-3 md:grid-cols-2">
-                  {Object.entries(importPreview.cabecalho).map(([key, value]) => (
-                    <div key={key} className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                      <p className="text-xs uppercase tracking-[0.25em] text-slate-400">{key}</p>
-                      <p className="mt-2 text-sm font-medium text-white">{formatEmpty(value)}</p>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="overflow-hidden rounded-3xl border border-white/10">
-                  <table className="w-full border-collapse text-left text-sm">
-                    <thead className="bg-white/5 text-xs uppercase tracking-[0.25em] text-slate-400">
-                      <tr>
-                        <th className="px-4 py-3">Data</th>
-                        <th className="px-4 py-3">Início</th>
-                        <th className="px-4 py-3">Fim</th>
-                        <th className="px-4 py-3">Acompanhante</th>
-                        <th className="px-4 py-3">Resumo</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/10 bg-slate-950/30">
-                      {importDraftSessoes.map((sessao, index) => (
-                        <tr key={`${sessao.data_sessao ?? index}-${index}`}>
-                          <td className="px-4 py-4">
-                            <input
-                              type="date"
-                              value={sessao.data_sessao ?? ''}
-                              onChange={(event) =>
-                                atualizarSessaoImportada(index, 'data_sessao', event.target.value)
-                              }
-                              className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-white outline-none focus:border-cyan-300/70"
-                            />
-                          </td>
-                          <td className="px-4 py-4">
-                            <input
-                              type="time"
-                              value={sessao.hora_inicio ?? ''}
-                              onChange={(event) =>
-                                atualizarSessaoImportada(index, 'hora_inicio', event.target.value)
-                              }
-                              className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-white outline-none focus:border-cyan-300/70"
-                            />
-                          </td>
-                          <td className="px-4 py-4">
-                            <input
-                              type="time"
-                              value={sessao.hora_fim ?? ''}
-                              onChange={(event) =>
-                                atualizarSessaoImportada(index, 'hora_fim', event.target.value)
-                              }
-                              className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-white outline-none focus:border-cyan-300/70"
-                            />
-                          </td>
-                          <td className="px-4 py-4">
-                            <input
-                              value={sessao.acompanhante ?? ''}
-                              onChange={(event) =>
-                                atualizarSessaoImportada(index, 'acompanhante', event.target.value)
-                              }
-                              className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-white outline-none focus:border-cyan-300/70"
-                            />
-                          </td>
-                          <td className="px-4 py-4">
-                            <textarea
-                              value={sessao.resumo_atividades ?? ''}
-                              onChange={(event) =>
-                                atualizarSessaoImportada(
-                                  index,
-                                  'resumo_atividades',
-                                  event.target.value,
-                                )
-                              }
-                              className="min-h-20 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-white outline-none focus:border-cyan-300/70"
-                            />
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <p className="text-sm text-slate-300">
-                    {importDraftSessoes.length} sessão(ões) pronta(s) para confirmação.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={handleConfirmImport}
-                    disabled={
-                      confirmarLancamentos.isPending ||
-                      importDraftSessoes.length === 0 ||
-                      (exigePdf && !importPdfFile)
-                    }
-                    className="inline-flex items-center justify-center rounded-2xl bg-emerald-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-emerald-300 disabled:opacity-60"
-                    data-testid="lancamento-confirmar-envio"
-                  >
-                    {confirmarLancamentos.isPending ? 'Confirmando...' : 'Confirmar envio'}
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
-                A pré-visualização aparece depois da análise da transcrição.
-              </div>
-            )}
-          </article>
-        </section>
 
         </>
         ) : null}

@@ -642,4 +642,66 @@ XML;
             'status' => 'open',
         ]);
     }
+
+    public function test_le_registro_de_sessoes_escaneado_por_ia(): void
+    {
+        $antecipacao = $this->criarAntecipacaoAberta('SC Saúde', 'Fonoaudiologia', 'convencional');
+        $this->autenticar();
+        $tenantId = (int) $antecipacao->tenant_id;
+
+        \App\Models\AiPromptTemplate::garantirPadroes($tenantId);
+        \App\Models\AiOpenaiSetting::query()->updateOrCreate(
+            ['tenant_id' => $tenantId],
+            ['api_key' => 'sk-teste', 'base_url' => 'https://api.openai.com/v1', 'ativo' => true],
+        );
+
+        \Illuminate\Support\Facades\Storage::fake('local');
+        \Illuminate\Support\Facades\Http::fake([
+            '*/responses' => \Illuminate\Support\Facades\Http::response([
+                'output_text' => json_encode([
+                    'cabecalho' => [
+                        'paciente' => 'Ana Ribeiro',
+                        'numero_cartao' => '0220 090000 551.330-8',
+                        'profissional_executante' => 'Mariana',
+                    ],
+                    'sessoes' => [
+                        [
+                            'data_sessao' => '2026-04-08',
+                            'hora_inicio' => '14:50',
+                            'hora_fim' => '15:40',
+                            'acompanhante' => 'Bruno Marinho',
+                            'resumo_atividades' => 'Aplicação de testes',
+                        ],
+                        // Linha sem data nem horario e ruido de leitura.
+                        ['data_sessao' => null, 'hora_inicio' => null, 'resumo_atividades' => 'rodapé'],
+                    ],
+                ]),
+            ]),
+        ]);
+
+        $this->postJson("/api/antecipacoes/{$antecipacao->id}/lancamentos/ler-registro", [
+            'arquivo' => \Illuminate\Http\UploadedFile::fake()->image('registro.jpg'),
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.confirmacao_pendente', true)
+            ->assertJsonCount(1, 'data.sessoes')
+            ->assertJsonPath('data.sessoes.0.data_sessao', '2026-04-08')
+            ->assertJsonPath('data.sessoes.0.hora_inicio', '14:50')
+            ->assertJsonPath('data.cabecalho.paciente', 'Ana Ribeiro');
+
+        // A leitura nao grava nada: a confirmacao continua sendo outro passo.
+        $this->assertSame(0, $antecipacao->lancamentos()->count());
+    }
+
+    public function test_antecipacao_expoe_nome_do_paciente_e_especialidade(): void
+    {
+        $this->criarAntecipacaoAberta('SC Saúde', 'Fonoaudiologia', 'convencional');
+        $this->autenticar();
+
+        $dados = $this->getJson('/api/antecipacoes')->assertOk()->json('data.0');
+
+        $this->assertArrayHasKey('paciente', $dados);
+        $this->assertNotEmpty($dados['paciente']['nome']);
+        $this->assertArrayHasKey('especialidade', $dados);
+    }
 }

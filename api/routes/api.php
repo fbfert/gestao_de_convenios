@@ -157,6 +157,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EncerrarSessaoExpirada::
     Route::get('/antecipacoes/{antecipacao}', [AntecipacaoController::class, 'show']);
     Route::post('/antecipacoes/{antecipacao}/lancamentos', [LancamentoController::class, 'store']);
     Route::post('/antecipacoes/{antecipacao}/lancamentos/importar-transcricao', [LancamentoController::class, 'importarTranscricao']);
+    Route::post('/antecipacoes/{antecipacao}/lancamentos/ler-registro', [LancamentoController::class, 'lerRegistroSessoes']);
     Route::post('/lancamentos/importar-analitico', [LancamentoController::class, 'importarAnalitico']);
     Route::get('/lancamentos/templates/registro-sessoes', [LancamentoPrintTemplateController::class, 'show']);
     Route::put('/lancamentos/templates/registro-sessoes', [LancamentoPrintTemplateController::class, 'update']);

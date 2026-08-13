@@ -57,8 +57,8 @@ test('formularios de criacao abrem em rotas proprias sem lista inline', async ({
     {
       path: '/convenios/novo',
       formHeading: 'Novo convênio',
-      listButtonText: 'Novo convênio',
-      closeButtonText: 'Cancelar',
+      listButtonTestId: 'convenio-novo',
+      closeButtonTestId: 'convenio-fechar',
     },
     {
       path: '/lancamentos/novo',
@@ -82,4 +82,29 @@ test('formularios de criacao abrem em rotas proprias sem lista inline', async ({
       await expect(page.getByRole('button', { name: caso.closeButtonText })).toBeVisible()
     }
   }
+})
+
+test('editar convenio abre em tela propria e volta para a listagem', async ({ page }) => {
+  await login(page)
+
+  await page.goto('/convenios', { waitUntil: 'domcontentloaded' })
+  await expect(page.getByTestId('convenio-novo')).toBeVisible()
+
+  const editar = page.locator('[data-testid^="convenio-editar-"]').first()
+  await expect(editar).toBeVisible()
+  await editar.click()
+
+  // A listagem sai de cena: so o formulario fica na tela.
+  await expect(page).toHaveURL(/\/convenios\/\d+\/editar$/)
+  await expect(page.getByText('Editar convênio', { exact: true })).toBeVisible()
+  await expect(page.getByTestId('convenio-novo')).toHaveCount(0)
+  await expect(page.locator('[data-testid^="convenio-editar-"]')).toHaveCount(0)
+
+  // Recarregar a rota direto pela URL tem de hidratar o formulario do mesmo jeito.
+  await page.reload({ waitUntil: 'domcontentloaded' })
+  await expect(page.getByTestId('convenio-nome')).not.toHaveValue('')
+
+  await page.getByTestId('convenio-fechar').click()
+  await expect(page).toHaveURL(/\/convenios$/)
+  await expect(page.getByTestId('convenio-novo')).toBeVisible()
 })

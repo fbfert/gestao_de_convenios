@@ -58,6 +58,7 @@ export function AppRoutes() {
           <Route path="/convenios/novo" element={<ConveniosPage />} />
           <Route path="/convenios/ajuda" element={<ConvenioAjudaPage />} />
           <Route path="/convenios/:id" element={<ConvenioDetalhePage />} />
+          <Route path="/convenios/:id/editar" element={<ConveniosPage />} />
           <Route path="/antecipacoes" element={<AntecipacoesPage />} />
           <Route path="/lancamentos/templates" element={<LancamentoTemplatesPage />} />
           <Route path="/lancamentos/templates/" element={<LancamentoTemplatesPage />} />

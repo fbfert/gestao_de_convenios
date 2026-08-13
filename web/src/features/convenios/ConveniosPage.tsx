@@ -1,8 +1,10 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { Link, useMatch, useNavigate, useParams } from 'react-router-dom'
 import { apiClient } from '../../api/client'
 import { Select } from '../../components/ui/Select'
+import { Tooltip } from '../../components/ui/Tooltip'
+import { getHttpErrorMessage } from '../../lib/httpError'
 import { useEspecialidades, useProfissionais } from '../../lib/queries/useReferenceData'
 import { UNIMED_BLOCK_SIZES, formatBlocos, parseBlocos } from '../../lib/carteirinha'
 
@@ -16,11 +18,71 @@ type Convenio = {
   ativo: boolean
 }
 
+type ConvenioForm = {
+  nome: string
+  descricao: string
+  connector_type: string
+  /** Blocos como o operador digita: "4-4-6-2-1". Vazio = texto livre. */
+  carteirinha: string
+  ativo: boolean
+}
+
+const emptyForm: ConvenioForm = {
+  nome: '',
+  descricao: '',
+  connector_type: 'manual',
+  carteirinha: '',
+  ativo: true,
+}
+
+function toForm(convenio: Convenio): ConvenioForm {
+  return {
+    nome: convenio.nome,
+    descricao: convenio.descricao ?? '',
+    connector_type: convenio.connector_type,
+    carteirinha: formatBlocos(convenio.carteirinha_blocos),
+    ativo: convenio.ativo,
+  }
+}
+
 /**
- * Formato da carteirinha do convenio. Fica separado porque o formulario de
- * convenio aparece duas vezes nesta tela — na rota /convenios/novo e na edicao
- * em linha — e o atalho da Unimed nao deve divergir entre os dois.
+ * Texto da dica do campo Conector. O aviso sobre API/Scraping nao e detalhe de
+ * roadmap: o ConnectorResolver so implementa `manual`, entao um convenio nas
+ * outras opcoes derruba a verificacao diaria de guias.
  */
+function ExplicacaoConector() {
+  return (
+    <>
+      <p className="font-semibold text-white">Como o sistema fala com a operadora</p>
+      <dl className="mt-2 space-y-2">
+        <div>
+          <dt className="font-semibold text-cyan-100">Manual</dt>
+          <dd>
+            Sem integração. A verificação diária só registra que a guia precisa de conferência no
+            portal da operadora. É o padrão e atende a maioria dos convênios.
+          </dd>
+        </div>
+        <div>
+          <dt className="font-semibold text-cyan-100">API</dt>
+          <dd>
+            Reservado para operadora com API oficial. Ainda não implementado — deixar um convênio
+            nesta opção faz a verificação diária de guias falhar.
+          </dd>
+        </div>
+        <div>
+          <dt className="font-semibold text-cyan-100">Scraping</dt>
+          <dd>
+            Robô que navega no portal da operadora. Hoje existe só para a Unimed, e quem liga é a
+            tela Configurações → Unimed, não este campo. Marcar aqui, sozinho, tem o mesmo efeito
+            da opção API.
+          </dd>
+        </div>
+      </dl>
+    </>
+  )
+}
+
+/** Formato da carteirinha do convenio, com o atalho da Unimed ao lado. */
 function CampoCarteirinha({
   valor,
   onChange,
@@ -80,53 +142,196 @@ const card = 'rounded-2xl border border-white/10 bg-white/5 p-5'
 export function ConveniosPage() {
   const navigate = useNavigate()
   const isCreateRoute = useMatch('/convenios/novo') !== null
+  const editRouteMatch = useMatch('/convenios/:id/editar')
+  const editingId = editRouteMatch ? Number(editRouteMatch.params.id) : null
+  const isEditRoute = editingId !== null && Number.isInteger(editingId)
+  // Criar e editar acontecem em tela propria: a lista junto do formulario
+  // deixava o cadastro espremido e o contexto ambiguo entre os dois.
+  const isFormRoute = isCreateRoute || isEditRoute
   const q = useQuery({
     queryKey: ['convenios'],
     queryFn: async () => (await apiClient.get<{ data: Convenio[] }>('/convenios')).data.data,
   })
   const qc = useQueryClient()
-  const [form, setForm] = useState<Convenio | null>(null)
-  const [nome, setNome] = useState('')
-  const [descricao, setDescricao] = useState('')
-  const [tipo, setTipo] = useState('manual')
-  const [blocosTexto, setBlocosTexto] = useState('')
-  const [ativo, setAtivo] = useState(true)
+  const [form, setForm] = useState<ConvenioForm>(emptyForm)
+  const [formError, setFormError] = useState<string | null>(null)
+  const [salvando, setSalvando] = useState(false)
+  const carregadoRef = useRef<number | null>(null)
+
+  const convenios = useMemo(() => q.data ?? [], [q.data])
+  const convenioEmEdicao = useMemo(
+    () => (isEditRoute ? convenios.find((convenio) => convenio.id === editingId) ?? null : null),
+    [isEditRoute, editingId, convenios],
+  )
+
+  // Preenche o formulario quando a tela de edicao e aberta direto pela URL ou
+  // recarregada — nesses casos o clique em Editar nunca aconteceu. O ref evita
+  // que um refetch em background sobrescreva o que o operador ja digitou.
+  useEffect(() => {
+    if (!isEditRoute) {
+      carregadoRef.current = null
+      return
+    }
+
+    if (!convenioEmEdicao || carregadoRef.current === convenioEmEdicao.id) {
+      return
+    }
+
+    carregadoRef.current = convenioEmEdicao.id
+    setForm(toForm(convenioEmEdicao))
+    setFormError(null)
+  }, [isEditRoute, convenioEmEdicao])
 
   const abrirNovo = () => {
+    setForm(emptyForm)
+    setFormError(null)
+    carregadoRef.current = null
     navigate('/convenios/novo')
-    setForm({ id: 0, nome: '', descricao: '', connector_type: 'manual', ativo: true })
-    setNome('')
-    setDescricao('')
-    setTipo('manual')
-    setBlocosTexto('')
-    setAtivo(true)
   }
 
-  const salvar = (event: FormEvent) => {
-    event.preventDefault()
+  const fechar = () => {
+    setForm(emptyForm)
+    setFormError(null)
+    carregadoRef.current = null
+    navigate('/convenios')
+  }
 
-    const blocos = parseBlocos(blocosTexto)
+  const salvar = async (event: FormEvent) => {
+    event.preventDefault()
+    setFormError(null)
+    setSalvando(true)
+
+    const blocos = parseBlocos(form.carteirinha)
     const payload = {
-      nome,
-      descricao,
-      connector_type: tipo,
+      nome: form.nome.trim(),
+      descricao: form.descricao,
+      connector_type: form.connector_type,
       // Lista vazia e o mesmo que "sem formato": o backend normaliza, mas
       // mandar null deixa a intencao explicita no payload.
       carteirinha_blocos: blocos.length > 0 ? blocos : null,
-      ativo,
+      ativo: form.ativo,
     }
-    const request = form?.id
-      ? apiClient.patch(`/convenios/${form.id}`, payload)
-      : apiClient.post('/convenios', payload)
 
-    request.then(() => {
-      qc.invalidateQueries({ queryKey: ['convenios'] })
-      setForm(null)
-      setNome('')
-      if (isCreateRoute) {
-        navigate('/convenios')
+    try {
+      if (isEditRoute && editingId) {
+        await apiClient.patch(`/convenios/${editingId}`, payload)
+      } else {
+        await apiClient.post('/convenios', payload)
       }
-    })
+
+      qc.invalidateQueries({ queryKey: ['convenios'] })
+      fechar()
+    } catch (error) {
+      setFormError(getHttpErrorMessage(error, 'Não foi possível salvar o convênio.'))
+    } finally {
+      setSalvando(false)
+    }
+  }
+
+  if (isFormRoute) {
+    // Edicao de um convenio que nao esta na lista carregada (id inexistente ou
+    // inativo): sem isso a tela abriria um formulario vazio que salvaria por cima.
+    if (isEditRoute && !convenioEmEdicao) {
+      return (
+        <div className="space-y-5">
+          <h2 className="text-3xl font-semibold">Editar convênio</h2>
+          <section className={card}>
+            {q.isLoading ? (
+              <p className="text-sm text-slate-300">Carregando convênio…</p>
+            ) : (
+              <>
+                <p className="text-sm text-slate-300">
+                  Convênio não encontrado entre os convênios ativos desta clínica.
+                </p>
+                <Link to="/convenios" className="mt-3 inline-block text-cyan-200">
+                  ← Voltar para a lista
+                </Link>
+              </>
+            )}
+          </section>
+        </div>
+      )
+    }
+
+    return (
+      <div className="space-y-5">
+        <div>
+          <p className="text-xs uppercase tracking-[.3em] text-cyan-300">Convênios</p>
+          <h2 className="mt-2 text-3xl font-semibold">
+            {isEditRoute ? 'Editar convênio' : 'Novo convênio'}
+          </h2>
+          <p className="mt-2 text-sm text-slate-300">
+            {isEditRoute
+              ? 'Alterações valem para toda a operação deste convênio. Regras e valores continuam na tela de configuração.'
+              : 'Depois de salvar, abra o convênio para configurar regras de autorização e valores.'}
+          </p>
+        </div>
+
+        <section className={card}>
+          <form onSubmit={salvar} data-testid="convenio-form">
+            <div className="grid gap-3 md:grid-cols-3">
+              <input
+                required
+                value={form.nome}
+                onChange={(event) => setForm((atual) => ({ ...atual, nome: event.target.value }))}
+                placeholder="Nome"
+                className={field}
+                data-testid="convenio-nome"
+              />
+              <textarea
+                value={form.descricao}
+                onChange={(event) =>
+                  setForm((atual) => ({ ...atual, descricao: event.target.value }))
+                }
+                placeholder="Descrição"
+                className={field}
+              />
+              <div className="space-y-1">
+                <span className="flex items-center gap-2 text-xs text-slate-300">
+                  Conector
+                  <Tooltip rotulo="O que são Manual, API e Scraping?">
+                    <ExplicacaoConector />
+                  </Tooltip>
+                </span>
+                <Select
+                  value={form.connector_type}
+                  onChange={(event) =>
+                    setForm((atual) => ({ ...atual, connector_type: event.target.value }))
+                  }
+                >
+                  <option value="manual">Manual</option>
+                  <option value="api">API</option>
+                  <option value="scraping">Scraping</option>
+                </Select>
+              </div>
+              <CampoCarteirinha
+                valor={form.carteirinha}
+                onChange={(carteirinha) => setForm((atual) => ({ ...atual, carteirinha }))}
+              />
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={form.ativo}
+                  onChange={(event) => setForm((atual) => ({ ...atual, ativo: event.target.checked }))}
+                />
+                Ativo
+              </label>
+              <button
+                disabled={salvando}
+                className="rounded-xl bg-cyan-400 p-2 font-semibold text-slate-950 disabled:opacity-60"
+              >
+                {salvando ? 'Salvando…' : 'Salvar'}
+              </button>
+              <button type="button" onClick={fechar} data-testid="convenio-fechar">
+                Cancelar
+              </button>
+            </div>
+
+            {formError ? <p className="mt-3 text-sm text-rose-200">{formError}</p> : null}
+          </form>
+        </section>
+      </div>
+    )
   }
 
   return (
@@ -139,128 +344,33 @@ export function ConveniosPage() {
             Abra um convênio para configurar regras de autorização e valores de pagamento.
           </p>
         </div>
-        {!isCreateRoute ? (
-          <button
-            onClick={abrirNovo}
-            className="rounded-xl bg-cyan-400 px-4 py-2 font-semibold text-slate-950"
-          >
-            Novo convênio
-          </button>
-        ) : null}
+        <button
+          onClick={abrirNovo}
+          className="rounded-xl bg-cyan-400 px-4 py-2 font-semibold text-slate-950"
+          data-testid="convenio-novo"
+        >
+          Novo convênio
+        </button>
       </div>
 
-      {isCreateRoute ? (
-        <section className={card}>
-          <form onSubmit={salvar}>
-            <h3 className="font-semibold">{form?.id ? 'Editar convênio' : 'Novo convênio'}</h3>
-            <div className="mt-3 grid gap-3 md:grid-cols-3">
-              <input
-                required
-                value={nome}
-                onChange={(event) => setNome(event.target.value)}
-                placeholder="Nome"
-                className={field}
-              />
-              <textarea
-                value={descricao}
-                onChange={(event) => setDescricao(event.target.value)}
-                placeholder="Descrição"
-                className={field}
-              />
-              <Select value={tipo} onChange={(event) => setTipo(event.target.value)}>
-                <option value="manual">Manual</option>
-                <option value="api">API</option>
-                <option value="scraping">Scraping</option>
-              </Select>
-              <CampoCarteirinha valor={blocosTexto} onChange={setBlocosTexto} />
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={ativo}
-                  onChange={(event) => setAtivo(event.target.checked)}
-                />
-                Ativo
-              </label>
-              <button className="rounded-xl bg-cyan-400 p-2 font-semibold text-slate-950">
-                Salvar
-              </button>
-              <button type="button" onClick={() => navigate('/convenios')}>
-                Cancelar
-              </button>
-            </div>
-          </form>
-        </section>
-      ) : null}
-
-      {!isCreateRoute ? (
-        <>
-          {form ? (
-            <form onSubmit={salvar} className={card}>
-              <h3 className="font-semibold">{form.id ? 'Editar convênio' : 'Novo convênio'}</h3>
-              <div className="mt-3 grid gap-3 md:grid-cols-3">
-                <input
-                  required
-                  value={nome}
-                  onChange={(event) => setNome(event.target.value)}
-                  placeholder="Nome"
-                  className={field}
-                />
-                <textarea
-                  value={descricao}
-                  onChange={(event) => setDescricao(event.target.value)}
-                  placeholder="Descrição"
-                  className={field}
-                />
-                <Select value={tipo} onChange={(event) => setTipo(event.target.value)}>
-                  <option value="manual">Manual</option>
-                  <option value="api">API</option>
-                  <option value="scraping">Scraping</option>
-                </Select>
-                <CampoCarteirinha valor={blocosTexto} onChange={setBlocosTexto} />
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={ativo}
-                    onChange={(event) => setAtivo(event.target.checked)}
-                  />
-                  Ativo
-                </label>
-                <button className="rounded-xl bg-cyan-400 p-2 font-semibold text-slate-950">
-                  Salvar
-                </button>
-                <button type="button" onClick={() => setForm(null)}>
-                  Cancelar
-                </button>
-              </div>
-            </form>
-          ) : null}
-
-          {q.data?.map((c) => (
-            <div key={c.id} className={`${card} flex items-center justify-between`}>
-              <Link to={`/convenios/${c.id}`}>
-                {c.nome}
-                {c.descricao ? <p className="text-xs text-slate-400">{c.descricao}</p> : null}
-              </Link>
-              <div className="flex gap-3">
-                <span>{c.ativo ? 'Ativo' : 'Inativo'}</span>
-                <button
-                  onClick={() => {
-                    setForm(c)
-                    setNome(c.nome)
-                    setDescricao(c.descricao ?? '')
-                    setTipo(c.connector_type)
-                    setBlocosTexto(formatBlocos(c.carteirinha_blocos))
-                    setAtivo(c.ativo)
-                  }}
-                  className="text-cyan-200"
-                >
-                  Editar
-                </button>
-              </div>
-            </div>
-          ))}
-        </>
-      ) : null}
+      {convenios.map((c) => (
+        <div key={c.id} className={`${card} flex items-center justify-between`}>
+          <Link to={`/convenios/${c.id}`}>
+            {c.nome}
+            {c.descricao ? <p className="text-xs text-slate-400">{c.descricao}</p> : null}
+          </Link>
+          <div className="flex gap-3">
+            <span>{c.ativo ? 'Ativo' : 'Inativo'}</span>
+            <Link
+              to={`/convenios/${c.id}/editar`}
+              className="text-cyan-200"
+              data-testid={`convenio-editar-${c.id}`}
+            >
+              Editar
+            </Link>
+          </div>
+        </div>
+      ))}
     </div>
   )
 }

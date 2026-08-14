@@ -142,11 +142,11 @@
       <div class="stub"></div>
       <div class="ramo-titulo">Cadastros</div>
       <ul class="folhas">
-        <li><b>Pacientes</b><small>quem é atendido · carteirinha no formato do convênio</small></li>
+        <li><b>Pacientes</b><small>quem é atendido · carteirinha lida por IA · vários telefones</small></li>
         <li><b>Profissionais</b><small>quem executa · atua em uma ou mais especialidades</small></li>
-        <li><b>Especialidades</b><small>ex.: fisioterapia, fono</small></li>
+        <li><b>Especialidades</b><small>ex.: fisioterapia, fono · código por convênio</small></li>
         <li><b>Médicos</b><small>quem solicita a terapia</small></li>
-        <li><b>Convênios</b><small>regras, valores e formato da carteirinha</small></li>
+        <li><b>Convênios</b><small>conector, regras, valores e formato da carteirinha</small></li>
         <li><b>Usuários</b><small>quem entra no sistema</small></li>
       </ul>
     </div>
@@ -158,7 +158,7 @@
         <li><b>1. Pacientes</b><small>confira antes de abrir o pedido</small></li>
         <li><b>2. Solicitações</b><small>pedido médico · várias especialidades · leitura por IA</small></li>
         <li><b>3. Guias</b><small>senha + validade, uma por especialidade</small></li>
-        <li><b>4. Sessões</b><small>atendimento realizado, baixado na guia</small></li>
+        <li><b>4. Sessões</b><small>atendimento realizado · registro lido por IA</small></li>
         <li><b>5. Antecipações</b><small>lote de pagamento ao profissional</small></li>
         <li><b>6. Analíticos</b><small>extrato de pagamento do convênio</small></li>
         <li><b>7. Conciliações</b><small>pendente → conferida → paga</small></li>
@@ -170,12 +170,14 @@
       <div class="ramo-titulo">Configurações</div>
       <ul class="folhas">
         <li><b>Aparência</b><small>tema claro/escuro, por navegador</small></li>
-        <li><b>Globais</b><small>tempo de sessão e padrões das telas</small></li>
+        <li><b>Globais</b><small>tempo de sessão, padrões e prazos de retenção</small></li>
         <li><b>Envio de E-mails</b><small>SMTP + envio de teste</small></li>
         <li><b>Configurações de IA</b><small>chave OpenAI e modelo padrão</small></li>
         <li><b>Prompts Operacionais</b><small>instruções da leitura automática</small></li>
         <li><b>Templates de E-mails</b><small>texto das mensagens</small></li>
         <li><b>Unimed RDA</b><small>credencial e de-para da automação</small></li>
+        <li><b>Perfis e Permissões</b><small>papéis próprios da clínica</small></li>
+        <li><b>Logs de Auditoria</b><small>quem alterou o quê e quando</small></li>
       </ul>
     </div>
 
@@ -184,8 +186,6 @@
       <div class="ramo-titulo">Administração</div>
       <ul class="folhas">
         <li><b>Clínicas</b><small>tenants · só administrador do sistema</small></li>
-        <li><b>Permissões</b><small>o que cada papel pode fazer</small></li>
-        <li><b>Auditoria</b><small>histórico de ações</small></li>
         <li><b>Automações</b><small>execuções no portal do convênio</small></li>
         <li><b>Manual</b><small>esta documentação</small></li>
       </ul>
@@ -195,9 +195,10 @@
       <div class="stub"></div>
       <div class="ramo-titulo">Papéis de Acesso</div>
       <ul class="folhas">
-        <li><b>admin</b><small>administração completa da clínica</small></li>
-        <li><b>funcionario</b><small>operação do dia a dia</small></li>
-        <li><b>profissional</b><small>só enxerga o que é seu</small></li>
+        <li><b>admin</b><small>administração completa · papel do sistema</small></li>
+        <li><b>funcionario</b><small>operação do dia a dia · papel do sistema</small></li>
+        <li><b>profissional</b><small>só enxerga o que é seu · papel do sistema</small></li>
+        <li><b>papéis próprios</b><small>criados pela clínica · menu segue a permissão</small></li>
         <li><b>administrador do sistema</b><small>marca fora do catálogo · abre Clínicas</small></li>
       </ul>
     </div>
@@ -209,7 +210,8 @@
     antes. Âmbar e roxo são telas de apoio, sem ordem entre si. A coluna rosa mostra quem enxerga o quê: os três
     primeiros são papéis, editáveis na tela de <em>Permissões</em>; o último é uma marca separada, concedida fora do
     sistema. <strong>Pacientes aparece em duas colunas</strong> — é a mesma tela, listada em Operação por ser o
-    primeiro passo do fluxo.
+    primeiro passo do fluxo. <strong>Perfis e Permissões e Logs de Auditoria</strong> migraram de Administração
+    para dentro de Configurações.
   </div>
 </div>
 

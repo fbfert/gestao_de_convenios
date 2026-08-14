@@ -168,8 +168,8 @@
     <li><a href="#especialidades">15. Especialidades</a></li>
     <li><a href="#usuarios">16. Usuários</a></li>
     <li><a href="#clinicas">17. Clínicas</a></li>
-    <li><a href="#permissoes">18. Permissões</a></li>
-    <li><a href="#auditoria">19. Auditoria</a></li>
+    <li><a href="#permissoes">18. Perfis e Permissões</a></li>
+    <li><a href="#auditoria">19. Logs de Auditoria</a></li>
     <li><a href="#configuracoes">20. Configurações</a></li>
     <li><a href="#manual">21. Manual (esta tela)</a></li>
     <li><a href="#glossario">22. Glossário de status</a></li>
@@ -197,6 +197,12 @@
   permissões, uma permissão de "gerenciar clínicas" permitiria que o administrador de uma clínica se autoconcedesse
   acesso às outras. Conceder essa marca é operação de banco, feita pela equipe técnica.
 </p>
+<p>
+  O <strong>menu mostra apenas o que o papel pode acessar</strong>, e um grupo sem nenhum item visível some inteiro.
+  Duas pessoas com papéis diferentes veem menus diferentes. Esconder o item é conveniência, não segurança: quem
+  digitar a URL direto continua sendo barrado pela API.
+</p>
+
 <h3>Como o menu está organizado</h3>
 <p>O menu superior tem seis entradas. Três delas são grupos: o rótulo abre uma tela de visão geral e a seta ao lado abre a lista de telas do grupo.</p>
 <table>
@@ -205,6 +211,7 @@
   <tr><td><strong>Cadastros</strong> <span class="rota">/cadastros</span></td><td>Pacientes, Profissionais, Especialidades, Médicos, Convênios e Usuários — as bases que mudam pouco.</td></tr>
   <tr><td><strong>Operação</strong> <span class="rota">/operacao-convenios</span></td><td>Pacientes, Solicitações, Guias, Sessões, Antecipações, Analíticos e Conciliações, nessa ordem — é a sequência de uso.</td></tr>
   <tr><td><strong>Automações</strong></td><td>Execuções automáticas no portal do convênio.</td></tr>
+  <tr><td><strong>Configurações</strong> <span class="rota">/configuracoes</span></td><td>Parâmetros e integrações, mais <strong>Perfis e Permissões</strong> e <strong>Logs de Auditoria</strong>.</td></tr>
   <tr><td><strong>Configurações</strong></td><td>Globais, Envio de E-mails, Configurações de IA, Prompts Operacionais, Templates de E-mails e Unimed RDA.</td></tr>
   <tr><td><strong>Manual</strong></td><td>Esta documentação.</td></tr>
 </table>
@@ -222,6 +229,27 @@
   ação aparecer na tela mas devolver erro de permissão — quem decide isso é o administrador, na tela de
   <a href="#permissoes">Permissões</a>.
 </div>
+<h3>O que vale para todas as listagens</h3>
+<ul>
+  <li>
+    <strong>Ordenar pelos cabeçalhos.</strong> Clicar no título de uma coluna ordena por ela; clicar de novo
+    inverte o sentido. A seta ao lado do título mostra qual coluna está ativa. Coluna sem seta é coluna que o
+    sistema não sabe ordenar.
+  </li>
+  <li>
+    <strong>A ordenação vale para a lista inteira</strong>, não só para a página exibida — a ordem é resolvida no
+    servidor, então paginar continua coerente.
+  </li>
+  <li>
+    <strong>Criar e editar abrem em tela própria.</strong> A listagem sai de cena enquanto o formulário está
+    aberto, e o endereço muda: dá para recarregar a página, voltar pelo botão do navegador ou guardar o link da
+    edição.
+  </li>
+  <li>
+    <strong>Os contadores</strong> (Total, Ativos, Inativos) ficam em uma linha compacta no topo.
+  </li>
+</ul>
+
 <h3>Vigências: por que nada é "excluído"</h3>
 <p>
   Em <a href="#convenios">Convênios</a> (regras de autorização e valores) o sistema nunca apaga um registro
@@ -290,17 +318,49 @@
 <div class="objetivo">Objetivo: cadastro central dos pacientes atendidos. É a referência usada por Solicitações, Guias e Antecipações — cadastre o paciente aqui antes de abrir uma solicitação para ele.</div>
 <table>
   <tr><th>Botão</th><th>O que faz</th></tr>
-  <tr><td><span class="btn">Novo</span></td><td>Abre o formulário de cadastro em branco.</td></tr>
-  <tr><td><span class="btn">Editar</span> (por linha)</td><td>Abre o formulário preenchido com os dados daquele paciente para alteração.</td></tr>
+  <tr><td><span class="btn">Novo</span></td><td>Abre o cadastro em tela própria, em <code>/pacientes/novo</code>.</td></tr>
+  <tr><td><span class="btn">Editar</span> (por linha)</td><td>Abre a edição em tela própria, em <code>/pacientes/{id}/editar</code>. A listagem sai da tela enquanto o formulário está aberto.</td></tr>
+  <tr><td><span class="btn">Ler Carteirinha</span></td><td>Lê a carteirinha por IA e preenche os campos. Ver abaixo.</td></tr>
+  <tr><td><span class="btn">Usar webcam</span></td><td>No computador, captura a foto na própria página. No celular, o botão Ler Carteirinha já abre a câmera.</td></tr>
   <tr><td><span class="btn">Ativar</span> / <span class="btn">Desativar</span></td><td>Alterna o status do paciente imediatamente, sem pedir confirmação.</td></tr>
-  <tr><td><span class="btn">Criar paciente</span> / <span class="btn">Salvar alterações</span></td><td>Grava o cadastro. Só habilita quando Nome, Carteirinha e Convênio estão preenchidos.</td></tr>
+  <tr><td><span class="btn">Criar paciente</span> / <span class="btn">Salvar alterações</span></td><td>Grava o cadastro. Só habilita quando Nome Completo, Carteirinha e Convênio estão preenchidos.</td></tr>
   <tr><td><span class="btn">Cancelar</span></td><td>Fecha o formulário sem salvar.</td></tr>
-  <tr><td><span class="btn">Filtrar</span></td><td>Busca por nome ou número da carteirinha.</td></tr>
+  <tr><td><span class="btn">Filtrar</span></td><td>Busca por nome, carteirinha, CPF ou telefone, com ou sem máscara, e filtra por convênio, status e situação da carteirinha.</td></tr>
 </table>
 <h3>Campos do cadastro</h3>
+<p>
+  A ordem começa pelo <strong>Convênio</strong>, e ele <strong>não vem pré-selecionado</strong>. É ele que define o
+  formato da carteirinha, as regras de autorização e o valor pago — escolher precisa ser um ato consciente. Antes o
+  formulário marcava o primeiro da lista, e bastava não olhar para cadastrar o paciente na operadora errada.
+</p>
 <ul>
-  <li><strong>Nome</strong>, <strong>CPF</strong>, <strong>Carteirinha</strong> (obrigatória), <strong>Convênio</strong> (obrigatório), <strong>Telefone</strong>, <strong>ID Clínica Ágil</strong> (integração externa, opcional), <strong>Ativo</strong> (caixa de seleção).</li>
+  <li><strong>Convênio</strong> (obrigatório) e <strong>Nome Completo</strong> (obrigatório).</li>
+  <li><strong>Carteirinha</strong> (obrigatória) e <strong>Validade da carteirinha</strong>. Validade vencida gera aviso no cadastro e ao abrir solicitação para o paciente, mas <strong>não bloqueia</strong> nada.</li>
+  <li><strong>Data de nascimento</strong> e <strong>CPF</strong>, ambos opcionais. O CPF aceita só números, aparece como <code>000.000.000-00</code> e tem os dígitos verificadores conferidos: CPF errado é recusado, CPF em branco é aceito.</li>
+  <li><strong>Telefones</strong>: quantos forem necessários, cada um com rótulo (celular, WhatsApp, fixo, recado), nome de quem atende e marcação de principal. O principal é o número que aparece na listagem; marcar um desmarca o anterior.</li>
+  <li><strong>Ativo</strong> (caixa de seleção).</li>
 </ul>
+<div class="nota">
+  O campo <strong>ID Clínica Ágil</strong> saiu da tela. O dado continua guardado e é preservado na edição — só
+  deixou de ser digitado à mão.
+</div>
+<h3>Ler Carteirinha</h3>
+<p>
+  O botão no topo do formulário aceita foto pela câmera do celular, captura pela webcam do computador, ou um arquivo
+  JPG, PNG ou PDF. A imagem é lida por IA e os campos vêm preenchidos para <strong>conferência</strong>: nada é
+  gravado sem você confirmar.
+</p>
+<ul>
+  <li>São extraídos número da carteirinha, nome, convênio, CPF, validade e data de nascimento.</li>
+  <li>Campo que a IA não reconhecer volta vazio e <strong>não apaga</strong> o que você já tinha digitado.</li>
+  <li>O convênio só é preenchido quando o casamento é certeiro. Abaixo disso, aparece a <strong>proximidade de cada convênio cadastrado</strong>, em porcentagem, com um botão para usar qualquer um deles e outro para cadastrar um convênio novo — que abre em outra aba, para não perder o cadastro em andamento.</li>
+  <li>Enquanto a IA lê, um aviso indica o andamento. A leitura costuma levar de 5 a 20 segundos.</li>
+  <li>A imagem fica guardada por <strong>30 dias</strong> (prazo ajustável em Configurações → Globais) e é apagada por rotina diária. Se você ler uma carteirinha e desistir do cadastro, a imagem desaparece sozinha.</li>
+</ul>
+<div class="nota">
+  A leitura depende da conexão com a OpenAI configurada em <a href="#configuracoes">Configurações → IA</a>. O texto
+  do prompt é editável em Prompts Operacionais, na chave <code>ler_carteirinha</code>.
+</div>
 <h3>Carteirinha com formato do convênio</h3>
 <p>
   O campo Carteirinha muda de acordo com o convênio escolhido. Se o convênio tem um <strong>formato declarado</strong>
@@ -314,7 +374,11 @@
   <li>Trocar para um convênio com formato aproveita o que já estava digitado no campo único.</li>
   <li>Convênio <strong>sem</strong> formato declarado continua com campo de texto livre, e as carteirinhas já cadastradas não são alteradas.</li>
 </ul>
-<p>Os cartões no topo mostram Total, Ativos e Inativos calculados na hora a partir da lista carregada.</p>
+<p>
+  Os contadores no topo mostram Total, Ativos e Inativos calculados na hora a partir da lista carregada. A tabela
+  <strong>ordena pelos cabeçalhos</strong>: clique em Nome, Carteirinha, Convênio, Contato, Validade ou Status, e
+  clique de novo para inverter o sentido.
+</p>
 
 <h2 class="secao" id="solicitacoes">6. Solicitações <span class="rota">/solicitacoes</span></h2>
 <div class="objetivo">Objetivo: registrar o pedido de autorização de terapia enviado ao convênio — o primeiro passo do atendimento, antes de existir uma guia.</div>
@@ -353,6 +417,12 @@
   <strong>CRM, especialidade médica e telefone preenchidos com "Pendente"</strong> — complete depois em
   <a href="#medicos">Médicos</a>.
 </p>
+<div class="nota">
+  Se a especialidade escolhida não tiver <strong>nenhum profissional que a atenda</strong>, aparece um aviso com o
+  botão <span class="btn">Adicionar profissional</span>. Ele abre o cadastro em outra aba, com a especialidade já
+  marcada — em outra aba de propósito, para não descartar o pedido meio preenchido nem a leitura recém-feita. Ao
+  voltar, a lista de profissionais já traz o novo.
+</div>
 
 <h3>Mudança de status</h3>
 <p>Cada linha da tabela tem botões de status (<span class="badge azul">Em análise</span>, <span class="badge verde">Aprovado</span>, <span class="badge vermelho">Negado</span>). Clicar em um deles pede confirmação ("Confirmar alteração da solicitação #X para..."). O botão do status atual fica desabilitado.</p>
@@ -362,6 +432,17 @@
   <tr><td><span class="btn">Aplicar</span> (filtros)</td><td>Filtra por Status e Convênio.</td></tr>
   <tr><td><span class="btn">Anterior</span> / <span class="btn">Próxima</span></td><td>Navega entre páginas (10 solicitações por página).</td></tr>
 </table>
+
+<h3>Anexos da solicitação</h3>
+<p>
+  Cada solicitação guarda os documentos do processo — pedido médico, guia gerada, comprovantes. Para
+  <strong>excluir</strong> um anexo, o sistema pede duas confirmações: um diálogo mostrando o nome do arquivo e,
+  depois, a digitação da palavra <code>EXCLUIR</code>.
+</p>
+<div class="aviso">
+  A confirmação dupla existe porque anexo apagado não volta: é documento do paciente e, quando a guia já foi
+  enviada à operadora, a evidência do envio. Anexo de guia já gerada não pode ser removido.
+</div>
 
 <h2 class="secao" id="guias">7. Guias <span class="rota">/guias</span></h2>
 <div class="objetivo">Objetivo: controlar o documento de autorização do convênio — número da guia, senha e prazo de validade da senha.</div>
@@ -392,9 +473,9 @@
 <div class="objetivo">Objetivo: cadastrar os planos de saúde parceiros e configurar as regras de autorização e a tabela de valores usados nos cálculos financeiros.</div>
 <table>
   <tr><th>Botão</th><th>O que faz</th></tr>
-  <tr><td><span class="btn">Novo convênio</span></td><td>Abre o formulário (Nome — obrigatório —, Descrição, Tipo de conexão, Ativo).</td></tr>
+  <tr><td><span class="btn">Novo convênio</span></td><td>Abre o cadastro em tela própria, em <code>/convenios/novo</code> (Nome — obrigatório —, Descrição, Conector, formato da carteirinha, Ativo).</td></tr>
   <tr><td><span class="btn">Salvar</span></td><td>Cria ou atualiza o convênio.</td></tr>
-  <tr><td><span class="btn">Editar</span></td><td>Preenche o formulário com os dados do convênio clicado.</td></tr>
+  <tr><td><span class="btn">Editar</span></td><td>Abre a edição em tela própria, em <code>/convenios/{id}/editar</code>.</td></tr>
   <tr><td>Nome do convênio (link)</td><td>Abre a tela de detalhe, onde ficam as regras e valores.</td></tr>
 </table>
 <p><strong>Tipo de conexão:</strong> <code>Manual</code> (conferência feita pela equipe — use este na dúvida), <code>API</code> e <code>Scraping</code> (reservados a integrações já configuradas).</p>
@@ -453,23 +534,49 @@
 <div class="objetivo">Objetivo: registrar cada sessão de terapia realizada, seja digitando manualmente, seja importando a transcrição de um formulário em papel preenchido durante o atendimento.</div>
 <table>
   <tr><th>Botão</th><th>O que faz</th></tr>
+  <tr><td><span class="btn">Importar transcrição</span></td><td>Abre a importação do registro de sessões em tela própria, em <code>/lancamentos/importar</code>. Fica ao lado de Templates.</td></tr>
   <tr><td><span class="btn">Imprimir modelo em branco</span></td><td>Imprime uma tabela em branco (8 linhas) para o profissional preencher à mão durante o atendimento, antes de ser digitada ou transcrita no sistema.</td></tr>
   <tr><td><span class="btn">Novo</span></td><td>Abre o formulário manual de lançamento (Antecipação e Profissional executante são obrigatórios; data/hora, acompanhante, resumo e observações completam o registro).</td></tr>
   <tr><td><span class="btn">Registrar sessão</span></td><td>Grava a sessão manualmente digitada.</td></tr>
 </table>
-<h3>Importação por transcrição (fluxo em 2 passos)</h3>
+<h3>Importar registro de sessões</h3>
+<p>
+  Abre em tela própria. São três passos, e nada é gravado antes do último.
+</p>
 <ol>
-  <li><strong>Analisar transcrição:</strong> cole o texto do formulário preenchido; o sistema identifica o cabeçalho (guia, clínica, paciente, cartão, profissional, terapia) e extrai as sessões em uma tabela de pré-visualização, editável antes de confirmar.</li>
-  <li><strong>Confirmar envio:</strong> depois de revisar/corrigir datas, horários, acompanhante e resumo na pré-visualização, confirma o envio definitivo.</li>
+  <li>
+    <strong>Escolher a antecipação e o executante.</strong> A antecipação aparece com o nome do paciente, a
+    especialidade e quanto do ciclo já foi usado — por exemplo <em>#12 · Ana Ribeiro · Fonoaudiologia ABA · 6/10
+    usadas</em>. O executante lista apenas quem atende aquela especialidade e, havendo um só, já vem escolhido:
+    lançar sessão no nome de quem não faz a terapia gera glosa na conciliação.
+  </li>
+  <li>
+    <strong>Ler o documento.</strong> O botão <span class="btn">Ler foto ou PDF do registro</span> envia a imagem
+    para a IA, que devolve o cabeçalho e as sessões. No celular abre a câmera. Quem já tem a transcrição digitada
+    pode usar <strong>Colar a transcrição em texto</strong>, logo abaixo — os dois caminhos terminam na mesma
+    tabela de conferência. Um aviso indica enquanto a leitura acontece; ela costuma levar de 5 a 30 segundos.
+  </li>
+  <li>
+    <strong>Revisar e confirmar.</strong> A tabela é editável: ajuste data, horários, acompanhante e resumo, e
+    remova a linha que não for sessão. Só o botão <span class="btn">Confirmar envio</span> grava.
+  </li>
 </ol>
-<div class="aviso">
-  Se o número do cartão do convênio começar com <code>0220</code>, o sistema <strong>exige o anexo do PDF</strong> do
-  registro de sessões antes de liberar a confirmação — o botão fica bloqueado até o arquivo ser anexado.
+<div class="nota">
+  Se o número do cartão do convênio começar com <code>0220</code>, o sistema exige o anexo do PDF do registro de
+  sessões antes de liberar a confirmação — o botão fica bloqueado até o arquivo ser anexado.
+</div>
+<div class="nota">
+  A leitura por IA usa o prompt <code>ler_sessoes_escaneadas</code>, editável em Configurações → IA → Prompts
+  Operacionais.
 </div>
 <table>
   <tr><th>Botão</th><th>O que faz</th></tr>
   <tr><td><span class="btn">Aplicar</span> (filtros)</td><td>Filtra por Profissional executante e Data da sessão.</td></tr>
 </table>
+<p>
+  A listagem <strong>ordena pelos cabeçalhos</strong>: ID, Antecipação, Profissional executante, Data/Hora,
+  Acompanhante e Status.
+</p>
 
 <h2 class="secao" id="analiticos">11. Analíticos <span class="rota">/analiticos</span></h2>
 <div class="objetivo">Objetivo: importar o relatório (Excel) que o convênio envia com o que foi pago e o que foi glosado (recusado) por guia, antes de gerar a conciliação financeira.</div>
@@ -542,10 +649,25 @@
 <div class="nota">Esta tela não tem link no menu nem em nenhuma outra página — acesse digitando <code>/especialidades</code> diretamente na barra de endereço do navegador.</div>
 <table>
   <tr><th>Botão</th><th>O que faz</th></tr>
-  <tr><td><span class="btn">Nova especialidade</span></td><td>Abre o formulário (Nome obrigatório e único por clínica, Ativa).</td></tr>
-  <tr><td><span class="btn">Editar</span></td><td>Preenche o formulário com os dados da especialidade clicada.</td></tr>
+  <tr><td><span class="btn">Nova especialidade</span></td><td>Abre o cadastro em tela própria (Nome obrigatório e único por clínica, Ativa).</td></tr>
+  <tr><td><span class="btn">Editar</span></td><td>Abre a edição em tela própria, com o nome e os códigos por convênio.</td></tr>
   <tr><td><span class="btn">Inativar</span> / <span class="btn">Reativar</span></td><td>Alterna o status. Inativar preserva os vínculos já existentes (profissionais, regras) — não apaga nada.</td></tr>
 </table>
+<h3>Código por convênio</h3>
+<p>
+  Cada operadora usa um código próprio para o mesmo procedimento — a Psicologia ABA é <code>2250005286</code> na
+  Unimed e <code>13107208</code> na SC Saúde. Sem esse código, a guia não é aceita.
+</p>
+<ul>
+  <li>O cadastro da especialidade mostra <strong>um campo por convênio cadastrado</strong>.</li>
+  <li>Convênio novo aparece sozinho como campo em todas as especialidades: não há passo manual quando surge uma operadora.</li>
+  <li>Código em branco significa que aquele convênio não atende a especialidade.</li>
+  <li>A listagem mostra os códigos já preenchidos, para conferir de relance qual convênio ainda está sem.</li>
+</ul>
+<div class="nota">
+  É o mesmo código que a automação da Unimed usa. Alterá-lo aqui preserva a quantidade padrão e a descrição da
+  operadora configuradas em Configurações → Unimed RDA.
+</div>
 
 <h2 class="secao" id="usuarios">16. Usuários <span class="rota">/usuarios</span></h2>
 <div class="objetivo">Objetivo: cadastrar quem pode logar no sistema, definir o papel (role) de cada pessoa e, quando o papel for "profissional", vincular ao cadastro correspondente em Profissionais.</div>
@@ -585,28 +707,89 @@
   executou a ação para fora do sistema.
 </p>
 
-<h2 class="secao" id="permissoes">18. Permissões <span class="rota">/permissoes</span></h2>
-<div class="objetivo">Objetivo: definir exatamente o que cada papel (admin, funcionario, profissional) pode ver e fazer no sistema — é a matriz que liga papel a permissão.</div>
-<div class="nota">Acesse pelo botão <span class="btn">Permissões</span> na tela de Usuários, ou digitando <code>/permissoes</code> diretamente.</div>
-<ol>
-  <li>Escolha um <strong>Papel</strong> na lista lateral (ou no seletor).</li>
-  <li>O sistema carrega as permissões já concedidas àquele papel, marcadas como checkbox, agrupadas por área (Dashboard, Solicitações, Guias, Antecipações, Sessões, Conciliações, Especialidades, Médicos, Usuários, Convênios, Permissões, Manual).</li>
-  <li>Marque ou desmarque as permissões desejadas.</li>
-  <li>Clique em <span class="btn">Salvar permissões</span> para gravar — nada é salvo antes disso.</li>
-</ol>
-<div class="aviso">Não há confirmação antes de salvar: revise a seleção com atenção, principalmente ao remover permissões do papel <code>admin</code>.</div>
+<h2 class="secao" id="permissoes">18. Perfis e Permissões <span class="rota">/permissoes</span></h2>
+<div class="objetivo">Objetivo: definir os papéis da clínica e exatamente o que cada um vê e faz. O catálogo de permissões é fixo; o que a clínica monta é a combinação delas em cada papel.</div>
+<p>
+  Acesse por <strong>Configurações → Perfis e Permissões</strong>, ou pelo botão Permissões na tela de Usuários.
+  Exige a permissão <code>permissoes.manage</code>.
+</p>
+<table>
+  <tr><th>Botão</th><th>O que faz</th></tr>
+  <tr><td><span class="btn">Novo perfil</span></td><td>Cria um papel em tela própria. Pode copiar as permissões de um papel existente — costuma ser mais rápido que marcar tudo de novo.</td></tr>
+  <tr><td>Cartão do perfil</td><td>Abre a edição, com o nome e a lista de permissões.</td></tr>
+  <tr><td><span class="btn">Salvar perfil</span></td><td>Grava nome e permissões.</td></tr>
+  <tr><td><span class="btn">Excluir perfil</span></td><td>Só aparece em perfil que não é do sistema.</td></tr>
+</table>
+<h3>Perfis próprios</h3>
+<p>
+  A clínica pode criar quantos perfis quiser — "recepção", "financeiro" — usando letras minúsculas, números e hífen.
+  A listagem mostra quantas permissões e quantos usuários cada perfil tem.
+</p>
+<h3>Perfis do sistema</h3>
+<p>
+  <code>admin</code>, <code>funcionario</code> e <code>profissional</code> aparecem marcados como
+  <strong>Do sistema</strong>: as permissões deles são editáveis, mas o nome não muda e eles não podem ser
+  excluídos. <code>profissional</code> carrega significado no código — é o papel que amarra o usuário ao cadastro de
+  profissional — e <code>admin</code> é a rede de segurança de acesso.
+</p>
+<h3>O que o sistema não deixa fazer</h3>
+<ul>
+  <li>Remover <code>permissoes.manage</code> do <strong>último</strong> papel que a tem: a clínica ficaria sem ninguém capaz de administrar permissões, e a saída seria acesso ao banco.</li>
+  <li>Remover essa permissão do <strong>seu próprio</strong> papel.</li>
+  <li>Excluir um papel que ainda tem usuários — a mensagem diz quantos são.</li>
+</ul>
+<h3>Efeito no menu</h3>
+<p>
+  O menu mostra apenas o que o papel pode acessar, e um grupo sem nenhum item visível some inteiro. Esconder o item
+  é conveniência, não segurança: quem digitar a URL direto continua sendo barrado pela API. Uma alteração de
+  permissão passa a valer na próxima vez que a pessoa abrir ou recarregar o sistema, sem precisar sair e entrar.
+</p>
 <div class="nota">
-  A permissão <code>manual.manage</code> (adicionada junto com esta tela de <a href="#manual">Manual</a>) controla quem pode
-  clicar em "Editar manual". Por padrão, só o papel <strong>admin</strong> recebe essa permissão.
+  Cada permissão aparece com um rótulo legível — "Abrir apenas as próprias sessões" em vez de
+  <code>lancamentos.viewOwn</code> —, com o nome técnico embaixo.
 </div>
 
-<h2 class="secao" id="auditoria">19. Auditoria <span class="rota">/auditoria</span></h2>
-<div class="objetivo">Objetivo: linha do tempo com as ações administrativas realizadas no sistema (quem fez o quê e quando) — útil para investigar uma mudança inesperada.</div>
-<div class="nota">Acesse pelo botão <span class="btn">Ver auditoria</span> no Dashboard, ou digitando <code>/auditoria</code> diretamente. Só é visível para quem tem a permissão correspondente.</div>
-<p>Cada item mostra o usuário responsável (ou "Sistema", quando a ação não teve um usuário associado), a ação realizada, a entidade afetada e a data/hora. Não há filtros nem paginação — a tela mostra os eventos mais recentes.</p>
+<h2 class="secao" id="auditoria">19. Logs de Auditoria <span class="rota">/auditoria</span></h2>
+<div class="objetivo">Objetivo: registrar quem alterou o quê, quando e — nos eventos de acesso — a partir de onde. É onde se investiga uma mudança inesperada.</div>
+<p>
+  Acesse por <strong>Configurações → Logs de Auditoria</strong>. Exige a permissão
+  <code>dashboard.auditoria</code>.
+</p>
+<h3>O que é registrado</h3>
+<ul>
+  <li><strong>Alterações</strong>: criação, edição e exclusão de convênios, regras e valores, pacientes, profissionais, especialidades, médicos, solicitações, guias, sessões, antecipações, conciliações, usuários, papéis, permissões e todas as configurações. O registro é automático — não depende de alguém lembrar de anotar.</li>
+  <li><strong>Acessos</strong>: login, logout, tentativa de login recusada e acesso negado por falta de permissão, com IP e navegador.</li>
+  <li><strong>Importações</strong>: um evento por lote de analítico, com arquivo, quantidade de linhas e totais — e não um evento por linha.</li>
+  <li><strong>Manutenção</strong>: o próprio expurgo da trilha se registra.</li>
+</ul>
+<h3>Senha e chave nunca aparecem</h3>
+<p>
+  Campo sensível — senha do portal da operadora, chave da OpenAI, senha do SMTP, senha de usuário — registra apenas
+  que <strong>foi alterado</strong>, por quem e quando. O valor não entra na trilha, nem o antigo nem o novo.
+</p>
+<div class="nota">
+  Atenção ao vocabulário: a <strong>senha da guia</strong> é o código de autorização que o convênio devolve, e essa
+  aparece normalmente na trilha — é justamente o dado que se precisa auditar.
+</div>
+<h3>Consulta</h3>
+<ul>
+  <li>Filtros de período, <strong>busca por nome da pessoa</strong>, autor (todos, somente pessoas ou somente o sistema), tipo de ação e ação específica.</li>
+  <li>O seletor de <strong>Tipo de ação</strong> agrupa em Acesso, Criação, Alteração, Exclusão, Importação e Manutenção; escolher um tipo restringe o seletor de Ação ao que pertence a ele.</li>
+  <li>O botão <span class="btn">O que mudou</span> abre o detalhe campo a campo, com o valor anterior e o novo lado a lado.</li>
+  <li><span class="btn">Exportar CSV</span> baixa exatamente o recorte filtrado.</li>
+</ul>
+<h3>Retenção</h3>
+<p>
+  O prazo padrão é de <strong>12 meses</strong>, ajustável em Configurações → Globais (mínimo de 3). Todo dia, uma
+  rotina exporta em CSV o que passou do prazo e só então apaga. Se a exportação falhar, nada é removido.
+</p>
+<div class="nota">
+  A trilha é somente-acréscimo: nenhuma tela do sistema altera ou apaga um registro de auditoria. Só a rotina de
+  retenção remove. E ela começou vazia em 13/08/2026 — o que aconteceu antes disso não foi registrado.
+</div>
 
 <h2 class="secao" id="configuracoes">20. Configurações <span class="rota">/configuracoes</span></h2>
-<div class="objetivo">Objetivo: parâmetros e integrações da clínica. É um grupo do menu: o rótulo abre esta tela e a seta ao lado lista as seis áreas.</div>
+<div class="objetivo">Objetivo: parâmetros e integrações da clínica. É um grupo do menu: o rótulo abre esta tela e a seta ao lado lista as oito áreas.</div>
 <p>
   A tela de entrada tem a escolha de <strong>tema visual</strong> no topo e, abaixo, um cartão explicando cada área.
   Todas exigem a permissão <code>configuracoes.manage</code> (Unimed RDA exige <code>configuracoes.unimed.manage</code>).
@@ -619,6 +802,8 @@
   <tr><td><strong>Prompts Operacionais</strong></td><td>As instruções que a IA recebe para cada tipo de documento.</td></tr>
   <tr><td><strong>Templates de E-mails</strong></td><td>O texto de cada mensagem que o sistema envia.</td></tr>
   <tr><td><strong>Unimed RDA</strong></td><td>Credenciais do portal e o de-para de especialidades e profissionais da automação.</td></tr>
+  <tr><td><strong>Perfis e Permissões</strong></td><td>Os papéis da clínica e o que cada um enxerga e altera. Ver <a href="#permissoes">Perfis e Permissões</a>.</td></tr>
+  <tr><td><strong>Logs de Auditoria</strong></td><td>Quem alterou o quê e quando. Ver <a href="#auditoria">Logs de Auditoria</a>.</td></tr>
 </table>
 
 <h3>Aparência (tema claro / escuro)</h3>
@@ -634,6 +819,8 @@
   <tr><td><strong>Aviso de senha vencendo</strong></td><td>Com quantos dias de antecedência a guia é marcada como prestes a vencer.</td></tr>
   <tr><td><strong>Sessões por especialidade</strong></td><td>Quantidade sugerida ao acrescentar uma especialidade na solicitação.</td></tr>
   <tr><td><strong>Itens por página</strong></td><td>Tamanho padrão das listagens.</td></tr>
+  <tr><td><strong>Retenção da auditoria (meses)</strong></td><td>Por quanto tempo a trilha é mantida. Padrão de 12 meses, mínimo de 3. Todo dia o que vence é exportado em CSV no servidor e depois removido.</td></tr>
+  <tr><td><strong>Imagem da carteirinha (dias)</strong></td><td>Por quanto tempo a foto lida pela IA fica guardada. Padrão de 30 dias. Passado o prazo, a imagem é apagada — o cadastro do paciente não muda.</td></tr>
 </table>
 <div class="nota">
   O prazo da sessão conta <strong>a partir da entrada, não do último clique</strong>. Passadas as horas configuradas,

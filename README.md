@@ -30,6 +30,7 @@ gestao-convenios/
 | [`docs/schema.md`](docs/schema.md) | Modelo de dados completo — Etapa 1 (MVP) e Etapa 2 |
 | [`docs/decisoes-arquitetura.md`](docs/decisoes-arquitetura.md) | Decisões de arquitetura já validadas (ADRs) — não reabrir sem motivo forte |
 | [`docs/roadmap-mvp.md`](docs/roadmap-mvp.md) | Checklist ordenado de execução da Etapa 1 |
+| [`docs/resumo-entregas-2026-08-14.md`](docs/resumo-entregas-2026-08-14.md) | O que entrou em produção em 13 e 14/08/2026, com as pendências registradas |
 | [`PROMPT-CLAUDE-CODE.md`](PROMPT-CLAUDE-CODE.md) | Prompt pronto pra rodar no Claude Code e gerar o esqueleto inicial |
 
 ## Como começar

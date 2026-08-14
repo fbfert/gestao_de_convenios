@@ -47,3 +47,21 @@ de criação **e** edição.
 - [x] 6.4 Tirar a listagem da tela enquanto o formulário está aberto, tanto na criação quanto na edição.
 - [x] 6.5 Teste de navegação cobrindo o fluxo de edição em tela própria.
 - [ ] 6.6 `GET /convenios/{id}`: a hidratação lê a listagem, que devolve só convênios ativos. Abrir `/convenios/{id}/editar` de um convênio inativo mostra "não encontrado" em vez do formulário. Mesma raiz da 5.4.
+
+## 7. Auditoria do sistema inteiro (2026-08-14)
+
+O mesmo defeito foi relatado em Médicos, o que motivou varrer todas as telas com
+`Editar`. O padrão se repetia: a criação tinha rota própria, a edição continuava
+embutida na listagem por estado local.
+
+| Situação | Telas |
+|---|---|
+| Já corretas | Convênios, Profissionais, Especialidades, Usuários, Permissões |
+| Corrigidas nesta rodada | Médicos, Pacientes, Templates de E-mail, Prompts Operacionais |
+| Sem edição inline | Guias, Solicitações, Antecipações, Analíticos |
+| Fora do escopo | Clínicas |
+
+- [x] 7.1 Rota `/:id/editar` em Médicos, Pacientes, Templates de E-mail e Prompts Operacionais.
+- [x] 7.2 Hidratação ao abrir pela URL ou recarregar, com ref para refetch em background não sobrescrever o que já foi digitado.
+- [x] 7.3 Listagem sai da tela enquanto o formulário está aberto.
+- [ ] 7.4 Clínicas edita dentro do próprio cartão da lista, e não numa seção de formulário disputando espaço com ela. É outro padrão, em tela de super admin — fica para decisão.

@@ -16,6 +16,7 @@ import type { GuiaFilters, GuiaForm } from './types'
 import { GuiaStatusActions } from './GuiaStatusActions'
 import { SENHA_VENCENDO_EM_DIAS } from './senhaValidade'
 import { Indicadores } from '../../components/ui/Indicadores'
+import { Tooltip } from '../../components/ui/Tooltip'
 
 const defaultFilters: GuiaFilters = {
   status: '',
@@ -201,8 +202,17 @@ export function GuiasPage() {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Guias</p>
-            <h2 className="mt-2 text-3xl font-semibold text-white">
+            <h2 className="mt-2 flex items-center gap-2 text-3xl font-semibold text-white">
               Controle da guia e do prazo de senha
+              <Tooltip rotulo="O que é uma guia">
+                <p className="font-semibold text-white">Documento de autorização</p>
+                <p className="mt-1">
+                  A guia é o documento oficial que o convênio devolve autorizando o tratamento, com
+                  senha e prazo de validade. Ela nasce a partir de uma Solicitação aprovada; ao ser
+                  &quot;Finalizada&quot; (senha preenchida), gera automaticamente uma Antecipação.
+                  &quot;Senha&quot; aqui é o código de autorização do convênio — não é senha de login.
+                </p>
+              </Tooltip>
             </h2>
           </div>
 
@@ -643,7 +653,7 @@ export function GuiasPage() {
                           </div>
                         </td>
                         <td className="px-4 py-4">
-                          <div className="flex flex-wrap gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
                             <GuiaStatusActions guia={guia} />
                           <button
                             type="button"
@@ -654,6 +664,10 @@ export function GuiasPage() {
                           >
                             Gerar conciliação
                           </button>
+                          <Tooltip rotulo="O que este botão faz">
+                            Cria a linha de fechamento financeiro desta guia na tela de Conciliação.
+                            Só fica disponível quando a guia está aprovada/finalizada.
+                          </Tooltip>
                           </div>
                         </td>
                     </tr>

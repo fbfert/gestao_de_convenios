@@ -16,6 +16,7 @@ import type { PacientesConsulta } from './usePacientes'
 import { TelefonesInput } from './TelefonesInput'
 import type { LeituraCarteirinha, Paciente, PacienteForm } from './types'
 import { Indicadores } from '../../components/ui/Indicadores'
+import { Tooltip } from '../../components/ui/Tooltip'
 
 const emptyForm: PacienteForm = {
   nome: '',
@@ -338,7 +339,13 @@ export function PacientesPage() {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Pacientes</p>
-            <h2 className="mt-2 text-3xl font-semibold text-white">Cadastro e referência de pacientes</h2>
+            <h2 className="mt-2 flex items-center gap-2 text-3xl font-semibold text-white">
+              Cadastro e referência de pacientes
+              <Tooltip rotulo="Para que serve esta tela">
+                É a base usada por Solicitações, Guias e Antecipações. Cadastre o paciente aqui —
+                com o convênio certo e a carteirinha correta — antes de abrir um pedido para ele.
+              </Tooltip>
+            </h2>
           </div>
 
           <button
@@ -458,7 +465,14 @@ export function PacientesPage() {
 
             <div className="grid gap-4 md:grid-cols-2">
               <label className="block space-y-2">
-                <span className="text-sm font-medium text-slate-200">Validade da carteirinha</span>
+                <span className="flex items-center gap-1 text-sm font-medium text-slate-200">
+                  Validade da carteirinha
+                  <Tooltip rotulo="O que acontece se vencer">
+                    Uma carteirinha vencida só gera um aviso, aqui e ao abrir uma solicitação para o
+                    paciente — nada é bloqueado. Confira o cartão atual com o paciente antes de
+                    seguir.
+                  </Tooltip>
+                </span>
                 <input
                   type="date"
                   value={form.validade_carteirinha}
@@ -520,7 +534,14 @@ export function PacientesPage() {
                 className="h-4 w-4 rounded border-white/20 bg-white/10 text-cyan-300 focus:ring-cyan-300/20"
                 data-testid="paciente-ativo"
               />
-              <span className="text-sm font-medium text-slate-200">Ativo</span>
+              <span className="flex items-center gap-1 text-sm font-medium text-slate-200">
+                Ativo
+                <Tooltip rotulo="O que muda ao desmarcar">
+                  Paciente inativo some das listas do dia a dia, mas nada é apagado: o histórico de
+                  solicitações, guias e sessões continua íntegro. Use para quem parou de ser
+                  atendido.
+                </Tooltip>
+              </span>
             </label>
 
             {formError ? (

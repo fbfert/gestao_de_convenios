@@ -21,6 +21,7 @@ import {
   defaultBlankTemplateData,
   renderLancamentoPrintTemplate,
 } from './printTemplate'
+import { Tooltip } from '../../components/ui/Tooltip'
 
 const defaultFilters: LancamentoFilters = {
   profissional_id: '',
@@ -156,7 +157,17 @@ export function LancamentosPage() {
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Sessões</p>
-              <h2 className="mt-2 text-3xl font-semibold text-white">Registro de sessões</h2>
+              <h2 className="mt-2 flex items-center gap-2 text-3xl font-semibold text-white">
+                Registro de sessões
+                <Tooltip rotulo="O que se registra aqui">
+                  <p className="font-semibold text-white">O atendimento realizado</p>
+                  <p className="mt-1">
+                    Cada sessão lançada aqui consome uma unidade da cota da Antecipação escolhida.
+                    Dá para digitar manualmente (botão Novo) ou importar a transcrição de um
+                    formulário em papel lido por IA (Importar transcrição).
+                  </p>
+                </Tooltip>
+              </h2>
             </div>
 
             <div className="flex flex-wrap gap-2">
@@ -191,6 +202,18 @@ export function LancamentosPage() {
               >
                 Novo
               </button>
+              <Tooltip rotulo="Diferença entre os botões">
+                <p><strong>Templates:</strong> textos padrão reaproveitados no resumo da sessão.</p>
+                <p className="mt-1">
+                  <strong>Importar transcrição:</strong> lê por IA um formulário em papel já
+                  preenchido, com várias sessões de uma vez.
+                </p>
+                <p className="mt-1">
+                  <strong>Imprimir modelo em branco:</strong> gera a tabela em papel para o
+                  profissional preencher à mão durante o atendimento.
+                </p>
+                <p className="mt-1"><strong>Novo:</strong> digita uma sessão manualmente, uma de cada vez.</p>
+              </Tooltip>
             </div>
           </div>
 
@@ -234,7 +257,14 @@ export function LancamentosPage() {
               </div>
 
               <label className="block space-y-2">
-                <span className="text-sm font-medium text-slate-200">Antecipação</span>
+                <span className="flex items-center gap-1 text-sm font-medium text-slate-200">
+                  Antecipação
+                  <Tooltip rotulo="O que escolher aqui">
+                    A cota de sessões do paciente para esta especialidade/ciclo. Escolha a que
+                    corresponde ao atendimento — lançar contra a antecipação errada consome a cota
+                    de outro paciente ou especialidade.
+                  </Tooltip>
+                </span>
                 <Select
                   value={form.antecipacao_id}
                   onChange={(event) =>

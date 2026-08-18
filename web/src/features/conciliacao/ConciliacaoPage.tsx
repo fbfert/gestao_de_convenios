@@ -12,6 +12,7 @@ import {
 } from './useConciliacoes'
 import type { ConciliacaoFilters } from './types'
 import { Indicadores } from '../../components/ui/Indicadores'
+import { Tooltip } from '../../components/ui/Tooltip'
 
 const defaultFilters: ConciliacaoFilters = {
   convenio_id: '',
@@ -122,7 +123,17 @@ export function ConciliacaoPage() {
           <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">
             Conciliação financeira
           </p>
-          <h2 className="mt-2 text-3xl font-semibold text-white">Fechamento de guias</h2>
+          <h2 className="mt-2 flex items-center gap-2 text-3xl font-semibold text-white">
+            Fechamento de guias
+            <Tooltip rotulo="Como funciona o fechamento">
+              <p className="font-semibold text-white">Ciclo fixo, sem pular etapas</p>
+              <p className="mt-1">
+                Uma conciliação nasce do botão &quot;Gerar conciliação&quot; em Guias, nunca aqui.
+                Depois segue sempre Pendente → Conferida → Paga, cruzando o valor esperado com o
+                que o convênio efetivamente pagou (importado em Analíticos).
+              </p>
+            </Tooltip>
+          </h2>
         </div>
 
         <Indicadores
@@ -338,13 +349,25 @@ export function ConciliacaoPage() {
                       {formatCurrency(conciliacao.valor_total)}
                     </td>
                     <td className="px-4 py-4 text-slate-200">
-                      {formatPercent(conciliacao.percentual_repasse_profissional)}
+                      <span className="flex items-center gap-1">
+                        {formatPercent(conciliacao.percentual_repasse_profissional)}
+                        <Tooltip rotulo="O que é repasse">
+                          O percentual e o valor que a clínica repassa ao profissional que executou
+                          as sessões, cadastrado em Profissionais.
+                        </Tooltip>
+                      </span>
                     </td>
                     <td className="px-4 py-4 text-slate-200">
                       {formatCurrency(conciliacao.valor_repasse_total)}
                     </td>
                     <td className="px-4 py-4 text-slate-200">
-                      {formatCurrency(conciliacao.entrada_total)}
+                      <span className="flex items-center gap-1">
+                        {formatCurrency(conciliacao.entrada_total)}
+                        <Tooltip rotulo="Entrada e saída">
+                          Entrada é o que a clínica recebe do convênio por esta guia; saída é o que
+                          é repassado ao profissional. A diferença é o resultado da clínica na guia.
+                        </Tooltip>
+                      </span>
                     </td>
                     <td className="px-4 py-4 text-slate-200">
                       {formatCurrency(conciliacao.saida_total)}
@@ -365,7 +388,7 @@ export function ConciliacaoPage() {
                       ) : null}
                     </td>
                     <td className="px-4 py-4">
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <button
                           type="button"
                           onClick={() => handleConferir(conciliacao.id)}
@@ -384,6 +407,11 @@ export function ConciliacaoPage() {
                         >
                           Marcar pago
                         </button>
+                        <Tooltip rotulo="Sobre estas etapas">
+                          &quot;Marcar conferido&quot; só fica ativo em Pendente, e confirma que os
+                          valores foram checados. &quot;Marcar pago&quot; só fica ativo em Conferida,
+                          e fecha o ciclo. Não há como pular etapa nem voltar um status já avançado.
+                        </Tooltip>
                       </div>
                     </td>
                   </tr>

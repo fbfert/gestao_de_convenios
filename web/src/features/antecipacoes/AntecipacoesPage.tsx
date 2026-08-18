@@ -7,6 +7,7 @@ import { translateStatus } from '../../lib/statusLabels'
 import { useConvenios, usePacientes } from '../../lib/queries/useReferenceData'
 import { useAntecipacoes } from './useAntecipacoes'
 import type { AntecipacaoFilters } from './types'
+import { Tooltip } from '../../components/ui/Tooltip'
 
 const defaultFilters: AntecipacaoFilters = {
   status: '',
@@ -70,7 +71,18 @@ export function AntecipacoesPage() {
     <div className="space-y-8" data-testid="antecipacoes-page">
       <section>
         <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Antecipações</p>
-        <h2 className="mt-2 text-3xl font-semibold text-white">Painel de agendamento</h2>
+        <h2 className="mt-2 flex items-center gap-2 text-3xl font-semibold text-white">
+          Painel de agendamento
+          <Tooltip rotulo="O que é uma antecipação?">
+            <p className="font-semibold text-white">Cota de sessões por ciclo</p>
+            <p className="mt-1">
+              Uma antecipação é a cota de sessões autorizadas por ciclo (ex.: 12/mês) para um
+              paciente. Ela nasce sozinha quando uma guia é finalizada — não existe botão de criar
+              aqui. Cada sessão lançada em Sessões consome uma unidade; ao esgotar a cota ela fecha
+              sozinha.
+            </p>
+          </Tooltip>
+        </h2>
       </section>
 
       <section className="space-y-4 rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
@@ -219,10 +231,14 @@ export function AntecipacoesPage() {
                           <span>{antecipacao.qtd_autorizada}</span>
                         </div>
                         <p
-                          className="text-sm font-semibold text-white"
+                          className="flex items-center gap-1 text-sm font-semibold text-white"
                           data-testid={`antecipacao-cota-text-${antecipacao.id}`}
                         >
                           {antecipacao.qtd_utilizada}/{antecipacao.qtd_autorizada}
+                          <Tooltip rotulo="Como ler a cota">
+                            Sessões usadas / sessões autorizadas neste ciclo. Ao chegar no total, a
+                            antecipação fecha sozinha.
+                          </Tooltip>
                         </p>
                         <div className="h-2 overflow-hidden rounded-full bg-white/10">
                           <div
@@ -256,7 +272,7 @@ export function AntecipacoesPage() {
                         </p>
                       ) : null}
                     </td>
-                    <td className="px-4 py-4">
+                    <td className="flex items-center gap-1 px-4 py-4">
                       <Link
                         to={`/lancamentos?antecipacao_id=${antecipacao.id}`}
                         className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/10"
@@ -264,6 +280,10 @@ export function AntecipacoesPage() {
                       >
                         Registrar
                       </Link>
+                      <Tooltip rotulo="O que este botão faz">
+                        Leva para a tela de Sessões com esta antecipação já pré-selecionada, para
+                        lançar um novo atendimento.
+                      </Tooltip>
                     </td>
                   </tr>
                 ))}

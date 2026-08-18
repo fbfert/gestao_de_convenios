@@ -5,6 +5,7 @@ import { Select } from '../../components/ui/Select'
 import type { EspecialidadeRef, ProfissionalRef } from '../../lib/queries/useReferenceData'
 import { especialidadesRepetidas, rotuloEspecialidade } from './solicitacaoItens'
 import type { SolicitacaoFormItem } from './types'
+import { Tooltip } from '../../components/ui/Tooltip'
 
 function fieldClasses() {
   return 'w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20'
@@ -120,8 +121,13 @@ export function SolicitacaoItensFields({
             </label>
 
             <label className="block space-y-2">
-              <span className="text-xs uppercase tracking-[0.25em] text-slate-400">
+              <span className="flex items-center gap-1 text-xs uppercase tracking-[0.25em] text-slate-400">
                 Profissional executante
+                <Tooltip rotulo="Por que a lista muda">
+                  Só aparece quem atende a especialidade escolhida ao lado — como especialidade
+                  principal ou em &quot;Atende também em&quot;, cadastrado em Profissionais. Lançar
+                  no nome de quem não faz a terapia gera glosa na conciliação.
+                </Tooltip>
               </span>
               <Select
                 value={item.profissional_id}
@@ -170,7 +176,13 @@ export function SolicitacaoItensFields({
             </label>
 
             <label className="block space-y-2">
-              <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Qtd.</span>
+              <span className="flex items-center gap-1 text-xs uppercase tracking-[0.25em] text-slate-400">
+                Qtd.
+                <Tooltip rotulo="O que este número significa">
+                  Quantas sessões dessa especialidade estão sendo pedidas ao convênio nesta guia —
+                  não é a cota por ciclo (isso quem define é a regra do convênio, na Antecipação).
+                </Tooltip>
+              </span>
               <input
                 type="number"
                 min="1"

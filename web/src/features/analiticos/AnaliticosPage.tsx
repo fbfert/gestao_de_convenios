@@ -8,6 +8,7 @@ import type {
   AnaliticoUnimedPreview,
 } from '../lancamentos/types'
 import { useAnaliticosLotes, type AnaliticoLoteFilters } from './useAnaliticos'
+import { Tooltip } from '../../components/ui/Tooltip'
 
 function formatEmpty(value: string | null | undefined) {
   return value && value.trim() !== '' ? value : '—'
@@ -195,7 +196,13 @@ function LotesTable({
           />
         </label>
         <label className="space-y-2">
-          <span className="text-xs uppercase tracking-[0.2em] text-slate-400">Status</span>
+          <span className="flex items-center gap-1 text-xs uppercase tracking-[0.2em] text-slate-400">
+            Status
+            <Tooltip rotulo="Valores aceitos">
+              Campo de texto livre, não uma lista. Digite parte do status do lote — por exemplo
+              &quot;importado&quot; — para filtrar.
+            </Tooltip>
+          </span>
           <input
             type="text"
             value={filtros.status}
@@ -373,7 +380,14 @@ export function AnaliticosPage() {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Analíticos</p>
-            <h2 className="mt-2 text-3xl font-semibold text-white">Importação e conferência</h2>
+            <h2 className="mt-2 flex items-center gap-2 text-3xl font-semibold text-white">
+              Importação e conferência
+              <Tooltip rotulo="O que é um analítico">
+                É o relatório que o convênio envia com o que foi pago e o que foi glosado (recusado)
+                por guia. Importe aqui antes de gerar a conciliação financeira — o cálculo de
+                pago/glosado/saldo por guia já aparece na pré-visualização.
+              </Tooltip>
+            </h2>
           </div>
 
           <Link
@@ -421,7 +435,14 @@ export function AnaliticosPage() {
           </div>
 
           <label className="block space-y-2">
-            <span className="text-sm font-medium text-slate-200">Arquivo Excel</span>
+            <span className="flex items-center gap-1 text-sm font-medium text-slate-200">
+              Arquivo Excel
+              <Tooltip rotulo="Formato exigido">
+                Envie o arquivo .xlsx/.xls no formato original exportado pelo convênio, sem colunas
+                removidas ou reordenadas — é esse cabeçalho que identifica cada coluna. Uma
+                planilha reformatada manualmente costuma vir vazia ou com valores trocados.
+              </Tooltip>
+            </span>
             <input
               type="file"
               accept=".xlsx,.xls"
@@ -533,9 +554,16 @@ export function AnaliticosPage() {
               <ConciliacaoTable rows={conciliacaoRows} />
               <article className="rounded-3xl border border-white/10 bg-white/5 p-4">
                 <h4 className="text-base font-semibold text-white">Revisão final</h4>
-                <p className="mt-2 text-sm text-slate-300">
-                  Use o botão salvar para manter a revisão atual ou recusar para limpar a visualização
-                  e iniciar outra importação.
+                <p className="mt-2 flex items-start gap-1 text-sm text-slate-300">
+                  <span>
+                    Use o botão salvar para manter a revisão atual ou recusar para limpar a
+                    visualização e iniciar outra importação.
+                  </span>
+                  <Tooltip rotulo="O que já aconteceu no servidor">
+                    O lote já foi gravado durante a importação. &quot;Salvar lote&quot; só confirma
+                    visualmente que foi conferido; &quot;Recusar&quot; apenas limpa esta tela, sem
+                    desfazer nada no servidor.
+                  </Tooltip>
                 </p>
 
                 <div className="mt-6 flex flex-wrap gap-3">

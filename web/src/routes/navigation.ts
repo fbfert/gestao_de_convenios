@@ -124,7 +124,7 @@ export const operacaoItems: NavLeaf[] = [
     to: '/antecipacoes',
     label: 'Antecipações',
     descricao:
-      'Agrupa sessões já executadas em um lote de pagamento adiantado ao profissional, antes do convênio pagar.',
+      'A cota de sessões autorizadas por ciclo (ex.: 12/mês). Mostra quanto já foi usado e alerta quem está sem próxima sessão agendada.',
     metricKey: 'antecipacoes',
     permissao: 'dashboard.antecipacoes',
   },

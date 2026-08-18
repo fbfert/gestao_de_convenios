@@ -168,11 +168,12 @@
     <li><a href="#especialidades">15. Especialidades</a></li>
     <li><a href="#usuarios">16. Usuários</a></li>
     <li><a href="#clinicas">17. Clínicas</a></li>
-    <li><a href="#permissoes">18. Perfis e Permissões</a></li>
-    <li><a href="#auditoria">19. Logs de Auditoria</a></li>
-    <li><a href="#configuracoes">20. Configurações</a></li>
-    <li><a href="#manual">21. Manual (esta tela)</a></li>
-    <li><a href="#glossario">22. Glossário de status</a></li>
+    <li><a href="#automacoes">18. Automações</a></li>
+    <li><a href="#permissoes">19. Perfis e Permissões</a></li>
+    <li><a href="#auditoria">20. Logs de Auditoria</a></li>
+    <li><a href="#configuracoes">21. Configurações</a></li>
+    <li><a href="#manual">22. Manual (esta tela)</a></li>
+    <li><a href="#glossario">23. Glossário de status</a></li>
   </ol>
 </nav>
 
@@ -210,7 +211,7 @@
   <tr><td><strong>Gestão de Convênios</strong></td><td>A tela inicial, com os números do seu papel e a auditoria recente.</td></tr>
   <tr><td><strong>Cadastros</strong> <span class="rota">/cadastros</span></td><td>Pacientes, Profissionais, Especialidades, Médicos, Convênios e Usuários — as bases que mudam pouco.</td></tr>
   <tr><td><strong>Operação</strong> <span class="rota">/operacao-convenios</span></td><td>Pacientes, Solicitações, Guias, Sessões, Antecipações, Analíticos e Conciliações, nessa ordem — é a sequência de uso.</td></tr>
-  <tr><td><strong>Automações</strong></td><td>Execuções automáticas no portal do convênio.</td></tr>
+  <tr><td><strong>Automações</strong></td><td>O robô que gera guias e consulta status/senha no portal da Unimed, sem digitação manual. Ver <a href="#automacoes">Automações</a>.</td></tr>
   <tr><td><strong>Configurações</strong> <span class="rota">/configuracoes</span></td><td>Parâmetros e integrações, mais <strong>Perfis e Permissões</strong> e <strong>Logs de Auditoria</strong>.</td></tr>
   <tr><td><strong>Configurações</strong></td><td>Globais, Envio de E-mails, Configurações de IA, Prompts Operacionais, Templates de E-mails e Unimed RDA.</td></tr>
   <tr><td><strong>Manual</strong></td><td>Esta documentação.</td></tr>
@@ -277,6 +278,11 @@
   <li><strong>Conciliação:</strong> o fechamento financeiro por guia, cruzando o valor esperado com o analítico. Segue um ciclo fixo: <span class="badge cinza">Pendente</span> → <span class="badge azul">Conferida</span> → <span class="badge verde">Paga</span>.</li>
 </ol>
 <p>Por trás de tudo isso, o cadastro de <a href="#convenios">Convênios</a> define as regras (quantas sessões por ciclo, validade da senha) e os valores pagos por especialidade/profissional, usados nos cálculos da conciliação.</p>
+<div class="dica">
+  <strong>Onde entra a automação:</strong> em convênios com conector API (hoje, Unimed), os dois primeiros passos — gerar a
+  guia e descobrir se a senha já saiu — podem acontecer sozinhos, por trás da tela de <a href="#automacoes">Automações</a>.
+  O restante do fluxo (Antecipação em diante) é sempre manual, feito pela equipe da clínica.
+</div>
 
 <h2 class="secao" id="login">3. Login <span class="rota">/login</span></h2>
 <div class="objetivo">Objetivo: entrar no sistema com seu e-mail e senha cadastrados.</div>
@@ -529,6 +535,11 @@
   fique atento a esse alerta para não deixar o paciente sem continuidade do tratamento.
 </div>
 <p>Cada linha mostra uma barra de progresso da cota (sessões utilizadas / sessões autorizadas no ciclo).</p>
+<div class="dica">
+  <strong>Exemplo:</strong> uma regra de convênio autoriza 12 sessões por mês para Fonoaudiologia. Ao abrir o ciclo, a
+  antecipação nasce com <em>0/12</em>. Cada sessão registrada em <a href="#lancamentos">Sessões</a> soma uma unidade;
+  ao chegar em <em>12/12</em> ela fecha sozinha. Se uma sessão for excluída depois, a cota volta e a antecipação reabre.
+</div>
 
 <h2 class="secao" id="lancamentos">10. Sessões / Lançamentos <span class="rota">/lancamentos</span></h2>
 <div class="objetivo">Objetivo: registrar cada sessão de terapia realizada, seja digitando manualmente, seja importando a transcrição de um formulário em papel preenchido durante o atendimento.</div>
@@ -590,6 +601,11 @@
   <tr><td><span class="btn">Limpar filtros</span></td><td>Reseta busca por arquivo, status e datas de importação.</td></tr>
 </table>
 <p>A tela de detalhe do lote (<code>/analiticos/:id</code>) é só de consulta: mostra os totais e as três tabelas completas (analítico, glosas, conciliação).</p>
+<div class="aviso">
+  O arquivo precisa vir <strong>no formato original exportado pelo convênio</strong>, sem colunas removidas ou
+  reordenadas — é esse cabeçalho que o sistema usa para identificar cada coluna. Se a pré-visualização vier vazia ou
+  com valores trocados, o motivo mais comum é uma planilha reformatada manualmente antes do envio.
+</div>
 
 <h2 class="secao" id="conciliacao">12. Conciliação <span class="rota">/conciliacao</span></h2>
 <div class="objetivo">Objetivo: fechar financeiramente cada guia — calcular valor total, percentual e valor de repasse ao profissional, e controlar o pagamento.</div>
@@ -680,6 +696,10 @@
   <tr><td><span class="btn">Filtrar</span></td><td>Busca por nome ou e-mail.</td></tr>
   <tr><td><span class="btn">Anterior</span> / <span class="btn">Próxima</span></td><td>Paginação (10 por página).</td></tr>
 </table>
+<div class="nota">
+  O <strong>e-mail é único em todo o sistema</strong>, não só dentro da clínica — ver <a href="#clinicas">Clínicas</a>.
+  Ao criar um usuário, se o e-mail já existir em qualquer outra clínica cadastrada, o sistema recusa o cadastro.
+</div>
 
 <h2 class="secao" id="clinicas">17. Clínicas <span class="rota">/clinicas</span></h2>
 <div class="objetivo">Objetivo: cadastrar e manter as clínicas (tenants) atendidas pelo sistema. Visível apenas para quem tem a marca de administrador do sistema — ver <a href="#conceitos">Conceitos gerais</a>.</div>
@@ -707,7 +727,39 @@
   executou a ação para fora do sistema.
 </p>
 
-<h2 class="secao" id="permissoes">18. Perfis e Permissões <span class="rota">/permissoes</span></h2>
+<h2 class="secao" id="automacoes">18. Automações <span class="rota">/automacoes</span></h2>
+<div class="objetivo">Objetivo: acompanhar as execuções automáticas no portal da Unimed — o "robô" que gera guias e consulta status/senha sem intervenção manual.</div>
+<p>
+  Quando uma solicitação é registrada para um convênio com conector <strong>API</strong> (ver <a href="#convenios">Convênios</a>),
+  o sistema não espera a equipe digitar nada no portal da operadora: ele enfileira uma execução automática que faz login,
+  preenche o pedido e devolve o número da guia. Depois, uma rotina periódica volta ao portal para consultar se a
+  senha e a validade já saíram. Esta tela é o painel de controle dessas execuções — não é onde elas são disparadas.
+</p>
+<h3>O que aparece na lista</h3>
+<table>
+  <tr><th>Coluna</th><th>O que significa</th></tr>
+  <tr><td>Operação</td><td><code>gerar_guia</code> (envia o pedido e obtém a guia), <code>consult_status_batch</code> (verifica status de guias pendentes) e <code>capture_authorization_data_batch</code> (captura senha e validade).</td></tr>
+  <tr><td>Status</td><td><span class="badge cinza">queued</span> aguardando o worker · <span class="badge azul">running</span> em execução · <span class="badge verde">succeeded</span> concluída · <span class="badge vermelho">failed</span> falhou · <span class="badge ambar">uncertain</span> terminou sem confirmação clara · <span class="badge ambar">needs_attention</span> precisa de alguém olhar.</td></tr>
+  <tr><td>Guia</td><td>A guia relacionada, quando já existe uma.</td></tr>
+  <tr><td>Fila</td><td>Quando a execução entrou na fila (<code>queued_at</code>).</td></tr>
+</table>
+<table>
+  <tr><th>Botão/Filtro</th><th>O que faz</th></tr>
+  <tr><td><span class="btn">Aplicar</span></td><td>Filtra por Status, Operação e pela caixa "Atenção" (mostra só o que precisa de intervenção).</td></tr>
+  <tr><td>Número da execução (link)</td><td>Abre o detalhe: dados da execução, uma linha do tempo completa de eventos e, quando houver, o código e a mensagem do erro.</td></tr>
+  <tr><td><span class="btn">Reprocessar</span></td><td>Só aparece em execuções <span class="badge vermelho">failed</span> ou <span class="badge ambar">needs_attention</span>. Coloca a mesma operação de volta na fila.</td></tr>
+</table>
+<div class="nota">
+  Cada execução tem uma <strong>chave de idempotência</strong>: pedir a mesma operação para a mesma guia/item duas
+  vezes não gera duas execuções nem duplica a guia. Também não é possível ter duas execuções da mesma operação
+  <span class="badge azul">rodando</span> ao mesmo tempo para o mesmo tenant — a segunda espera a primeira terminar.
+</div>
+<div class="dica">
+  Automação <strong>parada não trava o atendimento</strong>: quem tem urgência sempre pode cadastrar a guia manualmente
+  em <a href="#guias">Guias</a> enquanto a execução automática fica pendente ou é investigada.
+</div>
+
+<h2 class="secao" id="permissoes">19. Perfis e Permissões <span class="rota">/permissoes</span></h2>
 <div class="objetivo">Objetivo: definir os papéis da clínica e exatamente o que cada um vê e faz. O catálogo de permissões é fixo; o que a clínica monta é a combinação delas em cada papel.</div>
 <p>
   Acesse por <strong>Configurações → Perfis e Permissões</strong>, ou pelo botão Permissões na tela de Usuários.
@@ -749,7 +801,7 @@
   <code>lancamentos.viewOwn</code> —, com o nome técnico embaixo.
 </div>
 
-<h2 class="secao" id="auditoria">19. Logs de Auditoria <span class="rota">/auditoria</span></h2>
+<h2 class="secao" id="auditoria">20. Logs de Auditoria <span class="rota">/auditoria</span></h2>
 <div class="objetivo">Objetivo: registrar quem alterou o quê, quando e — nos eventos de acesso — a partir de onde. É onde se investiga uma mudança inesperada.</div>
 <p>
   Acesse por <strong>Configurações → Logs de Auditoria</strong>. Exige a permissão
@@ -788,7 +840,7 @@
   retenção remove. E ela começou vazia em 13/08/2026 — o que aconteceu antes disso não foi registrado.
 </div>
 
-<h2 class="secao" id="configuracoes">20. Configurações <span class="rota">/configuracoes</span></h2>
+<h2 class="secao" id="configuracoes">21. Configurações <span class="rota">/configuracoes</span></h2>
 <div class="objetivo">Objetivo: parâmetros e integrações da clínica. É um grupo do menu: o rótulo abre esta tela e a seta ao lado lista as oito áreas.</div>
 <p>
   A tela de entrada tem a escolha de <strong>tema visual</strong> no topo e, abaixo, um cartão explicando cada área.
@@ -856,7 +908,7 @@
   instrução, e o erro só apareceria na hora de enviar um documento. Se não quiser usá-los, desative.
 </div>
 
-<h2 class="secao" id="manual">21. Manual <span class="rota">/manual</span></h2>
+<h2 class="secao" id="manual">22. Manual <span class="rota">/manual</span></h2>
 <div class="objetivo">Objetivo: esta própria tela — o manual de uso do sistema, disponível a qualquer usuário logado a partir do menu superior.</div>
 <p>
   A tela tem duas abas: <strong>Manual</strong>, este texto, e <strong>Mapa Mental</strong>, uma visão de topo em uma
@@ -875,7 +927,7 @@
   técnica antes de salvar mudanças grandes.
 </div>
 
-<h2 class="secao" id="glossario">22. Glossário de status</h2>
+<h2 class="secao" id="glossario">23. Glossário de status</h2>
 <table>
   <tr><th>Tela</th><th>Status possíveis</th></tr>
   <tr><td>Solicitações</td><td><span class="badge cinza">Cadastrado</span> · <span class="badge azul">Em análise</span> · <span class="badge verde">Aprovado</span> · <span class="badge vermelho">Negado</span> · <span class="badge cinza">Cancelado</span> · <span class="badge ambar">Vencido</span></td></tr>
@@ -883,6 +935,7 @@
   <tr><td>Antecipações</td><td><span class="badge azul">Aberta</span> · <span class="badge cinza">Fechada</span></td></tr>
   <tr><td>Sessões (Lançamentos)</td><td><span class="badge verde">Concluído</span> · <span class="badge ambar">Perdido</span> · <span class="badge cinza">Cancelado</span></td></tr>
   <tr><td>Conciliação</td><td><span class="badge cinza">Pendente</span> · <span class="badge azul">Conferida</span> · <span class="badge verde">Paga</span></td></tr>
+  <tr><td>Automações</td><td><span class="badge cinza">queued</span> · <span class="badge azul">running</span> · <span class="badge verde">succeeded</span> · <span class="badge vermelho">failed</span> · <span class="badge ambar">uncertain</span> · <span class="badge ambar">needs_attention</span></td></tr>
 </table>
 
 <hr class="fim" />

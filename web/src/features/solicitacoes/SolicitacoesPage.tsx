@@ -24,6 +24,7 @@ import { SolicitacaoGuiaModal } from './SolicitacaoGuiaModal'
 import { SolicitacaoItensFields } from './SolicitacaoItensFields'
 import { emptyItem, itensEstaoCompletos } from './solicitacaoItens'
 import { Indicadores } from '../../components/ui/Indicadores'
+import { Tooltip } from '../../components/ui/Tooltip'
 
 const emptyArray: never[] = []
 
@@ -290,12 +291,20 @@ export function SolicitacoesPage() {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Solicitações</p>
-            <h2 className="mt-2 text-3xl font-semibold text-white">
+            <h2 className="mt-2 flex items-center gap-2 text-3xl font-semibold text-white">
               Primeiro contato do fluxo de convênios
+              <Tooltip rotulo="O que é uma solicitação">
+                <p className="font-semibold text-white">O pedido de autorização</p>
+                <p className="mt-1">
+                  É o primeiro passo do atendimento: registra o pedido médico enviado ao convênio,
+                  com uma ou mais especialidades. Depois de aprovada, cada especialidade vira uma
+                  Guia. Cadastre o paciente antes, em Pacientes.
+                </p>
+              </Tooltip>
             </h2>
           </div>
 
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
               onClick={() => navigate('/solicitacoes/ler-pedido-medico')}
@@ -304,6 +313,12 @@ export function SolicitacoesPage() {
             >
               Ler pedido médico
             </button>
+            <Tooltip rotulo="Diferença entre os botões">
+              <strong>Ler pedido médico</strong> envia o pedido escaneado para a IA preencher o
+              formulário sozinha, com sugestões de paciente/médico/especialidades para conferir.
+              <strong className="mt-1 block">Novo</strong> abre o mesmo formulário em branco, para
+              digitar tudo manualmente.
+            </Tooltip>
             <button
               type="button"
               onClick={handleNew}
@@ -676,15 +691,23 @@ export function SolicitacoesPage() {
                                     </span>
                                   ) : null}
                                   {isUnimedRda ? (
-                                    <button
-                                      type="button"
-                                      onClick={() => void handleEnviarItemUnimed(item.id)}
-                                      disabled={!canSend || enviarItemUnimed.isPending}
-                                      className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1.5 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-400/20 disabled:cursor-not-allowed disabled:opacity-50"
-                                      data-testid={`solicitacao-item-enviar-unimed-${item.id}`}
-                                    >
-                                      Enviar para Unimed
-                                    </button>
+                                    <>
+                                      <button
+                                        type="button"
+                                        onClick={() => void handleEnviarItemUnimed(item.id)}
+                                        disabled={!canSend || enviarItemUnimed.isPending}
+                                        className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1.5 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-400/20 disabled:cursor-not-allowed disabled:opacity-50"
+                                        data-testid={`solicitacao-item-enviar-unimed-${item.id}`}
+                                      >
+                                        Enviar para Unimed
+                                      </button>
+                                      <Tooltip rotulo="Quando este botão funciona">
+                                        Dispara o robô da Unimed para gerar a guia sozinho (ver
+                                        Automações). Só fica ativo com a solicitação aprovada, sem
+                                        guia gerada ainda e sem outra execução em andamento para
+                                        este item.
+                                      </Tooltip>
+                                    </>
                                   ) : null}
                                 </div>
                               </div>

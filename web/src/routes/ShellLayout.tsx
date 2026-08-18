@@ -42,6 +42,7 @@ function GrupoNav({
       <div className={`flex items-stretch overflow-hidden rounded-full border ${ativo ? 'border-cyan-300/40' : 'border-white/10'}`}>
         <NavLink
           to={grupo.to}
+          title={grupo.descricao}
           className={`px-4 py-2 text-sm font-medium transition ${
             ativo ? 'bg-cyan-400/15 text-cyan-50' : 'bg-white/5 text-slate-200 hover:bg-white/10'
           }`}
@@ -93,6 +94,7 @@ function GrupoNav({
                 key={`${grupo.to}${filho.to}`}
                 to={filho.to}
                 role="menuitem"
+                title={filho.descricao}
                 className={({ isActive }) =>
                   [
                     'block rounded-xl px-3 py-2 text-sm transition',
@@ -223,6 +225,7 @@ export function ShellLayout() {
                 <NavLink
                   key={entry.to}
                   to={entry.to}
+                  title={entry.descricao}
                   className={({ isActive }) => classesLink(isActive)}
                 >
                   {entry.label}

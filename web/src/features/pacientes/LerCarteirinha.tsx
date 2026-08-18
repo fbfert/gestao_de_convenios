@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getHttpErrorMessage, useLerCarteirinha } from './usePacientes'
 import type { LeituraCarteirinha } from './types'
+import { Tooltip } from '../../components/ui/Tooltip'
 
 /** Largura máxima da foto enviada. Acima disso só cresce o upload. */
 const LARGURA_MAXIMA = 1600
@@ -190,8 +191,14 @@ export function LerCarteirinha({
           </button>
         ) : null}
 
-        <span className="text-xs text-slate-400">
+        <span className="flex items-center gap-1 text-xs text-slate-400">
           Foto, arquivo ou webcam. Os dados lidos vêm para conferência antes de salvar.
+          <Tooltip rotulo="Como funciona a leitura">
+            A IA extrai número da carteirinha, nome, convênio, CPF, validade e data de nascimento.
+            Campo não reconhecido volta vazio e não apaga o que você já tinha digitado. A imagem
+            fica guardada por 30 dias (ajustável em Configurações → Globais) e depois é apagada
+            automaticamente.
+          </Tooltip>
         </span>
       </div>
 

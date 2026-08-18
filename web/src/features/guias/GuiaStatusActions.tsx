@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { getHttpErrorMessage, useFinalizarGuia, useNegarGuia } from './useGuias'
 import type { Guia, GuiaFinalizarForm } from './types'
+import { Tooltip } from '../../components/ui/Tooltip'
 
 const emptyFinalizeForm: GuiaFinalizarForm = {
   senha: '',
@@ -79,7 +80,13 @@ export function GuiaStatusActions({ guia }: { guia: Guia }) {
       {isFinalizeOpen ? (
         <div className="grid gap-3 rounded-2xl border border-white/10 bg-slate-950/50 p-4 md:grid-cols-[1fr_1fr_auto] md:items-end">
           <label className="space-y-2">
-            <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Senha</span>
+            <span className="flex items-center gap-1 text-xs uppercase tracking-[0.25em] text-slate-400">
+              Senha
+              <Tooltip rotulo="O que é a senha aqui">
+                É o código de autorização que o convênio devolve para a guia — não é senha de login.
+                Preencher aqui muda o status para Aprovada.
+              </Tooltip>
+            </span>
             <input
               value={finalizeDraft.senha}
               onChange={(event) =>

@@ -149,7 +149,7 @@ class AuditoriaApiTest extends TestCase
         $evento = AuditLog::query()->where('acao', 'papel.permissoes_alteradas')->latest('id')->firstOrFail();
 
         $this->assertSame('funcionario', $evento->payload['nome']);
-        $this->assertContains('lancamentos.manage', $evento->payload['revogadas']);
+        $this->assertContains('profissionais.manage', $evento->payload['revogadas']);
     }
 
     public function test_consulta_filtra_por_acao_usuario_e_periodo(): void

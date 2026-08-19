@@ -30,7 +30,7 @@ class PermissionsApiTest extends TestCase
         $this->getJson('/api/permissions')
             ->assertOk()
             ->assertJsonCount(count(PermissionCatalog::all()), 'data')
-            ->assertJsonPath('data.0.name', 'antecipacoes.view');
+            ->assertJsonPath('data.0.name', 'antecipacoes.manage');
     }
 
     public function test_carrega_e_atualiza_permissoes_do_role(): void
@@ -69,8 +69,8 @@ class PermissionsApiTest extends TestCase
 
         $this->getJson('/api/permissions')
             ->assertOk()
-            ->assertJsonPath('data.0.name', 'antecipacoes.view')
-            ->assertJsonPath('data.0.label', 'Abrir antecipações de toda a clínica');
+            ->assertJsonPath('data.0.name', 'antecipacoes.manage')
+            ->assertJsonPath('data.0.label', 'Editar dados de antecipações');
     }
 
     public function test_recusa_remover_administracao_do_proprio_papel(): void

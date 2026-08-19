@@ -169,6 +169,39 @@ export function useLancamento(id: number | null) {
   })
 }
 
+export type LancamentoEditForm = {
+  profissional_id: string
+  data_sessao: string
+  hora_inicio: string
+  hora_fim: string
+  acompanhante: string
+  resumo_atividades: string
+  observacoes: string
+}
+
+export function useAtualizarLancamento() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ id, payload }: { id: number; payload: LancamentoEditForm }) => {
+      const { data } = await apiClient.patch<{ data: Lancamento }>(`/lancamentos/${id}`, {
+        profissional_id: Number(payload.profissional_id),
+        data_sessao: payload.data_sessao,
+        hora_inicio: payload.hora_inicio || null,
+        hora_fim: payload.hora_fim || null,
+        acompanhante: payload.acompanhante || null,
+        resumo_atividades: payload.resumo_atividades || null,
+        observacoes: payload.observacoes || null,
+      })
+      return data.data
+    },
+    onSuccess: async (_data, { id }) => {
+      await queryClient.invalidateQueries({ queryKey: ['lancamentos'] })
+      await queryClient.invalidateQueries({ queryKey: ['lancamentos', id] })
+    },
+  })
+}
+
 export function useLancamentoPrintTemplate() {
   return useQuery({
     queryKey: ['lancamentos', 'templates', 'registro-sessoes'],

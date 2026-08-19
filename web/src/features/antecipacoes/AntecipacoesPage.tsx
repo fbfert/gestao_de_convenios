@@ -8,6 +8,7 @@ import { useConvenios, usePacientes } from '../../lib/queries/useReferenceData'
 import { useAntecipacoes } from './useAntecipacoes'
 import type { AntecipacaoFilters } from './types'
 import { Tooltip } from '../../components/ui/Tooltip'
+import { usePode } from '../../lib/permissoes'
 
 const defaultFilters: AntecipacaoFilters = {
   status: '',
@@ -40,6 +41,7 @@ function temSessaoFutura(antecipacao: {
 }
 
 export function AntecipacoesPage() {
+  const pode = usePode()
   const [filters, setFilters] = useState(defaultFilters)
   const [draftFilters, setDraftFilters] = useState(defaultFilters)
   const [page, setPage] = useState(1)
@@ -284,6 +286,15 @@ export function AntecipacoesPage() {
                         Leva para a tela de Sessões com esta antecipação já pré-selecionada, para
                         lançar um novo atendimento.
                       </Tooltip>
+                      {pode('antecipacoes.manage') ? (
+                        <Link
+                          to={`/antecipacoes/${antecipacao.id}/editar`}
+                          className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/10"
+                          data-testid={`antecipacao-editar-${antecipacao.id}`}
+                        >
+                          Editar
+                        </Link>
+                      ) : null}
                     </td>
                   </tr>
                 ))}

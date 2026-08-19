@@ -133,6 +133,33 @@ class GuiaService
         ])->findOrFail($id);
     }
 
+    /**
+     * Edicao manual (admin): campos de correcao, nunca status/paciente/convenio
+     * — ver UpdateGuiaRequest. Sem trava de status de proposito: e uma
+     * ferramenta de correcao, deve valer mesmo apos Finalizada/Negada.
+     */
+    public function atualizar(Guia $guia, array $dados): Guia
+    {
+        $guia->fill(array_filter([
+            'profissional_id' => $dados['profissional_id'] ?? null,
+            'especialidade_id' => $dados['especialidade_id'] ?? null,
+            'numero_guia' => array_key_exists('numero_guia', $dados) ? $dados['numero_guia'] : null,
+            'tipo_terapia' => $dados['tipo_terapia'] ?? null,
+            'data_solicitacao' => $dados['data_solicitacao'] ?? null,
+            'data_finalizacao' => array_key_exists('data_finalizacao', $dados) ? $dados['data_finalizacao'] : null,
+            'sessoes_solicitadas' => array_key_exists('sessoes_solicitadas', $dados) ? $dados['sessoes_solicitadas'] : null,
+            'sessoes_autorizadas' => array_key_exists('sessoes_autorizadas', $dados) ? $dados['sessoes_autorizadas'] : null,
+            'protocolo_operadora' => array_key_exists('protocolo_operadora', $dados) ? $dados['protocolo_operadora'] : null,
+            'senha' => array_key_exists('senha', $dados) ? $dados['senha'] : null,
+            'validade_senha' => array_key_exists('validade_senha', $dados) ? $dados['validade_senha'] : null,
+            'observacoes' => array_key_exists('observacoes', $dados) ? $dados['observacoes'] : null,
+        ], fn ($value) => $value !== null));
+
+        $guia->save();
+
+        return $guia->refresh();
+    }
+
     public function finalizar(Guia $guia, array $dados): Guia
     {
         if ($guia->status !== GuiaStatus::UNDER_REVIEW) {

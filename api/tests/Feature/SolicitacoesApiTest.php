@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\AuditLog;
 use App\Models\Convenio;
 use App\Models\Especialidade;
 use App\Models\Guia;
@@ -216,6 +217,51 @@ class SolicitacoesApiTest extends TestCase
         $this->patchJson("/api/solicitacoes/{$negada}/status", ['status' => 'canceled'])
             ->assertStatus(422)
             ->assertJsonValidationErrors(['status']);
+    }
+
+    public function test_admin_edita_solicitacao_e_fica_registrado_na_auditoria(): void
+    {
+        $this->autenticar();
+        $payload = $this->payloadSolicitacao('Unimed');
+        $id = $this->postJson('/api/solicitacoes', $payload)->assertCreated()->json('data.id');
+
+        $outroMedico = Medico::query()->where('id', '!=', $payload['medico_id'])->firstOrFail();
+
+        $this->patchJson("/api/solicitacoes/{$id}", [
+            'medico_id' => $outroMedico->id,
+            'cid' => 'F84.0',
+            'observacoes' => 'Corrigido pelo admin',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.medico_id', $outroMedico->id)
+            ->assertJsonPath('data.cid', 'F84.0')
+            // paciente_id/convenio_id nao fazem parte do payload aceito: continuam os mesmos.
+            ->assertJsonPath('data.paciente_id', $payload['paciente_id'])
+            ->assertJsonPath('data.convenio_id', $payload['convenio_id']);
+
+        $evento = AuditLog::query()
+            ->where('entidade', 'solicitacoes')
+            ->where('entidade_id', $id)
+            ->where('acao', 'updated')
+            ->latest('id')
+            ->firstOrFail();
+
+        $this->assertSame($payload['medico_id'], $evento->payload['antes']['medico_id']);
+        $this->assertSame($outroMedico->id, $evento->payload['depois']['medico_id']);
+        $this->assertSame('F84.0', $evento->payload['depois']['cid']);
+    }
+
+    public function test_funcionario_nao_pode_editar_solicitacao(): void
+    {
+        $this->autenticar();
+        $id = $this->postJson('/api/solicitacoes', $this->payloadSolicitacao('Unimed'))
+            ->assertCreated()
+            ->json('data.id');
+
+        $funcionario = User::query()->where('email', 'funcionario@clinica-exemplo.test')->firstOrFail();
+        Sanctum::actingAs($funcionario);
+
+        $this->patchJson("/api/solicitacoes/{$id}", ['cid' => 'F84.0'])->assertForbidden();
     }
 
     public function test_usuariode_um_tenant_nao_enxerga_solicitacao_de_outro_tenant_via_http(): void

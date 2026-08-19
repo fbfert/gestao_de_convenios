@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Antecipacao;
 use App\Models\AnaliticoUnimedLinha;
+use App\Models\AuditLog;
 use App\Models\AnaliticoUnimedLote;
 use App\Models\Convenio;
 use App\Models\Especialidade;
@@ -69,6 +70,53 @@ class LancamentosApiTest extends TestCase
                 'profissional_id',
                 'data_sessao',
             ]);
+    }
+
+    public function test_admin_edita_lancamento_e_fica_registrado_na_auditoria(): void
+    {
+        $this->autenticar();
+        $antecipacao = $this->criarAntecipacaoAberta('SC Saúde', 'Fonoaudiologia', 'convencional');
+        $profissionalAlvo = Profissional::query()->where('especialidade_id', $antecipacao->guia->especialidade_id)->firstOrFail();
+
+        $lancamentoId = $this->postJson("/api/antecipacoes/{$antecipacao->id}/lancamentos", [
+            'profissional_id' => $profissionalAlvo->id,
+            'data_sessao' => today()->toDateString(),
+        ])->assertCreated()->json('data.id');
+
+        $this->patchJson("/api/lancamentos/{$lancamentoId}", [
+            'acompanhante' => 'Mãe da paciente',
+            'resumo_atividades' => 'Corrigido pelo admin',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.acompanhante', 'Mãe da paciente')
+            ->assertJsonPath('data.antecipacao_id', $antecipacao->id);
+
+        $evento = AuditLog::query()
+            ->where('entidade', 'lancamentos')
+            ->where('entidade_id', $lancamentoId)
+            ->where('acao', 'updated')
+            ->latest('id')
+            ->firstOrFail();
+
+        $this->assertSame('Mãe da paciente', $evento->payload['depois']['acompanhante']);
+    }
+
+    public function test_funcionario_nao_pode_editar_lancamento(): void
+    {
+        $this->autenticar();
+        $antecipacao = $this->criarAntecipacaoAberta('SC Saúde', 'Fonoaudiologia', 'convencional');
+        $profissionalAlvo = Profissional::query()->where('especialidade_id', $antecipacao->guia->especialidade_id)->firstOrFail();
+
+        $lancamentoId = $this->postJson("/api/antecipacoes/{$antecipacao->id}/lancamentos", [
+            'profissional_id' => $profissionalAlvo->id,
+            'data_sessao' => today()->toDateString(),
+        ])->assertCreated()->json('data.id');
+
+        $funcionario = User::query()->where('email', 'funcionario@clinica-exemplo.test')->firstOrFail();
+        Sanctum::actingAs($funcionario);
+
+        $this->patchJson("/api/lancamentos/{$lancamentoId}", ['acompanhante' => 'Não deveria'])
+            ->assertForbidden();
     }
 
     public function test_registrar_em_antecipacao_fechada_retorna_422(): void

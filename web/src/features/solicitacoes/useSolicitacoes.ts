@@ -56,6 +56,45 @@ export function useCriarSolicitacao() {
   })
 }
 
+export function useSolicitacao(id: number | null) {
+  return useQuery({
+    queryKey: ['solicitacoes', id],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ data: Solicitacao }>(`/solicitacoes/${id}`)
+      return data.data
+    },
+    enabled: id !== null,
+  })
+}
+
+export type SolicitacaoEditForm = {
+  medico_id: string
+  cid: string
+  solicitado_em: string
+  observacoes: string
+}
+
+export function useAtualizarSolicitacao() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ id, payload }: { id: number; payload: SolicitacaoEditForm }) => {
+      const { data } = await apiClient.patch<{ data: Solicitacao }>(`/solicitacoes/${id}`, {
+        medico_id: Number(payload.medico_id),
+        cid: payload.cid.trim() || null,
+        solicitado_em: payload.solicitado_em,
+        observacoes: payload.observacoes || null,
+      })
+
+      return data.data
+    },
+    onSuccess: async (_data, { id }) => {
+      await queryClient.invalidateQueries({ queryKey: ['solicitacoes'] })
+      await queryClient.invalidateQueries({ queryKey: ['solicitacoes', id] })
+    },
+  })
+}
+
 export function useAnalisarPedidoMedico() {
   return useMutation({
     mutationFn: async (arquivo: File) => {

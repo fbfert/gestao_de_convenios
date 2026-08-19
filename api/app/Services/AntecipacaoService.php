@@ -56,6 +56,30 @@ class AntecipacaoService
         return Antecipacao::query()->with(['guia.especialidade', 'paciente', 'convenio', 'lancamentos'])->findOrFail($id);
     }
 
+    /**
+     * Edicao manual (admin): so qtd_autorizada/ciclo_inicio/ciclo_fim, nunca
+     * qtd_utilizada/status/vinculos — ver UpdateAntecipacaoRequest. Quando
+     * qtd_autorizada muda, reavalia o status a partir da cota real em vez de
+     * deixá-lo inerte: sem isso, aumentar a cota de um ciclo já fechado não o
+     * reabriria (nada mais reavalia status fora de consumirCota()/remover()).
+     */
+    public function atualizar(Antecipacao $antecipacao, array $dados): Antecipacao
+    {
+        $antecipacao->fill(array_filter([
+            'qtd_autorizada' => $dados['qtd_autorizada'] ?? null,
+            'ciclo_inicio' => $dados['ciclo_inicio'] ?? null,
+            'ciclo_fim' => $dados['ciclo_fim'] ?? null,
+        ], fn ($value) => $value !== null));
+
+        if ($antecipacao->isDirty('qtd_autorizada')) {
+            $antecipacao->status = $antecipacao->qtd_utilizada >= $antecipacao->qtd_autorizada ? 'closed' : 'open';
+        }
+
+        $antecipacao->save();
+
+        return $antecipacao->refresh();
+    }
+
     public function abrirCiclo(Guia $guia): Antecipacao
     {
         $regra = ConvenioRegra::query()

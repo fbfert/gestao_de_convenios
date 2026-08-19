@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\AuditLog;
 use App\Models\Convenio;
 use App\Models\ConciliacaoFinanceira;
 use App\Models\Antecipacao;
@@ -217,6 +218,59 @@ class GuiasApiTest extends TestCase
             ->assertOk()
             ->assertJsonFragment(['id' => $guiaPropria->id])
             ->assertJsonMissing(['id' => $guiaOutra->id]);
+    }
+
+    public function test_admin_edita_guia_e_fica_registrado_na_auditoria(): void
+    {
+        $this->autenticar();
+        $payload = $this->payloadGuia('Unimed');
+        $id = $this->postJson('/api/guias', $payload)->assertCreated()->json('data.id');
+
+        $this->patchJson("/api/guias/{$id}", [
+            'numero_guia' => 'GUIA-CORRIGIDA-1',
+            'senha' => 'SENHACORRIGIDA',
+            'observacoes' => 'Corrigido pelo admin',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.numero_guia', 'GUIA-CORRIGIDA-1')
+            ->assertJsonPath('data.senha', 'SENHACORRIGIDA')
+            // status/paciente/convenio nao fazem parte do payload aceito: continuam os mesmos.
+            ->assertJsonPath('data.status', 'under_review')
+            ->assertJsonPath('data.paciente_id', $payload['paciente_id']);
+
+        $evento = AuditLog::query()
+            ->where('entidade', 'guias')
+            ->where('entidade_id', $id)
+            ->where('acao', 'updated')
+            ->latest('id')
+            ->firstOrFail();
+
+        $this->assertSame($payload['numero_guia'], $evento->payload['antes']['numero_guia']);
+        $this->assertSame('GUIA-CORRIGIDA-1', $evento->payload['depois']['numero_guia']);
+    }
+
+    public function test_admin_pode_editar_guia_mesmo_ja_finalizada(): void
+    {
+        $this->autenticar();
+        $id = $this->postJson('/api/guias', $this->payloadGuia('Unimed'))->assertCreated()->json('data.id');
+
+        $this->patchJson("/api/guias/{$id}/finalizar", ['senha' => 'ABC123'])->assertOk();
+
+        $this->patchJson("/api/guias/{$id}", ['protocolo_operadora' => 'PROTOCOLO-999'])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'finalized')
+            ->assertJsonPath('data.protocolo_operadora', 'PROTOCOLO-999');
+    }
+
+    public function test_funcionario_nao_pode_editar_guia(): void
+    {
+        $this->autenticar();
+        $id = $this->postJson('/api/guias', $this->payloadGuia('Unimed'))->assertCreated()->json('data.id');
+
+        $funcionario = User::query()->where('email', 'funcionario@clinica-exemplo.test')->firstOrFail();
+        Sanctum::actingAs($funcionario);
+
+        $this->patchJson("/api/guias/{$id}", ['numero_guia' => 'NAO-DEVERIA'])->assertForbidden();
     }
 
     public function test_usuario_sem_permissao_recebe_403_na_listagem(): void

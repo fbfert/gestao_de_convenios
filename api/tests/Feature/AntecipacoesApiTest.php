@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Antecipacao;
+use App\Models\AuditLog;
 use App\Models\Convenio;
 use App\Models\Especialidade;
 use App\Models\Guia;
@@ -52,6 +53,57 @@ class AntecipacoesApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.id', $fechada->id)
             ->assertJsonPath('data.lancamentos.0.data_sessao', today()->toDateString());
+    }
+
+    public function test_admin_edita_antecipacao_e_fica_registrado_na_auditoria(): void
+    {
+        $this->autenticar();
+        $antecipacao = $this->criarAntecipacaoAberta('SC Saúde', 'Fonoaudiologia', 'convencional');
+        $qtdOriginal = $antecipacao->qtd_autorizada;
+
+        $this->patchJson("/api/antecipacoes/{$antecipacao->id}", [
+            'qtd_autorizada' => $qtdOriginal + 5,
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.qtd_autorizada', $qtdOriginal + 5)
+            // qtd_utilizada/status nao fazem parte do payload aceito: continuam calculados pelo sistema.
+            ->assertJsonPath('data.qtd_utilizada', $antecipacao->qtd_utilizada)
+            ->assertJsonPath('data.status', 'open');
+
+        $evento = AuditLog::query()
+            ->where('entidade', 'antecipacoes')
+            ->where('entidade_id', $antecipacao->id)
+            ->where('acao', 'updated')
+            ->latest('id')
+            ->firstOrFail();
+
+        $this->assertSame($qtdOriginal, $evento->payload['antes']['qtd_autorizada']);
+        $this->assertSame($qtdOriginal + 5, $evento->payload['depois']['qtd_autorizada']);
+    }
+
+    public function test_aumentar_qtd_autorizada_reabre_antecipacao_fechada(): void
+    {
+        $this->autenticar();
+        $fechada = $this->criarAntecipacaoFechada('Unimed', 'Fisioterapia', 'especializada');
+        $this->assertSame('closed', $fechada->status);
+
+        $this->patchJson("/api/antecipacoes/{$fechada->id}", [
+            'qtd_autorizada' => $fechada->qtd_autorizada + 10,
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'open');
+    }
+
+    public function test_funcionario_nao_pode_editar_antecipacao(): void
+    {
+        $this->autenticar();
+        $antecipacao = $this->criarAntecipacaoAberta('SC Saúde', 'Fonoaudiologia', 'convencional');
+
+        $funcionario = User::query()->where('email', 'funcionario@clinica-exemplo.test')->firstOrFail();
+        Sanctum::actingAs($funcionario);
+
+        $this->patchJson("/api/antecipacoes/{$antecipacao->id}", ['qtd_autorizada' => 999])
+            ->assertForbidden();
     }
 
     public function test_usuario_de_um_tenant_nao_enxerga_antecipacao_de_outro_tenant_via_http(): void

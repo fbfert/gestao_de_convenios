@@ -65,6 +65,49 @@ export function useCriarGuia() {
   })
 }
 
+export type GuiaEditForm = {
+  profissional_id: string
+  especialidade_id: string
+  numero_guia: string
+  tipo_terapia: string
+  data_solicitacao: string
+  data_finalizacao: string
+  sessoes_solicitadas: string
+  sessoes_autorizadas: string
+  protocolo_operadora: string
+  senha: string
+  validade_senha: string
+  observacoes: string
+}
+
+export function useAtualizarGuia() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ id, payload }: { id: number; payload: GuiaEditForm }) => {
+      const { data } = await apiClient.patch<{ data: Guia }>(`/guias/${id}`, {
+        profissional_id: Number(payload.profissional_id),
+        especialidade_id: Number(payload.especialidade_id),
+        numero_guia: payload.numero_guia.trim() || null,
+        tipo_terapia: payload.tipo_terapia,
+        data_solicitacao: payload.data_solicitacao,
+        data_finalizacao: payload.data_finalizacao || null,
+        sessoes_solicitadas: payload.sessoes_solicitadas ? Number(payload.sessoes_solicitadas) : null,
+        sessoes_autorizadas: payload.sessoes_autorizadas ? Number(payload.sessoes_autorizadas) : null,
+        protocolo_operadora: payload.protocolo_operadora.trim() || null,
+        senha: payload.senha.trim() || null,
+        validade_senha: payload.validade_senha || null,
+        observacoes: payload.observacoes || null,
+      })
+      return data.data
+    },
+    onSuccess: async (_data, { id }) => {
+      await queryClient.invalidateQueries({ queryKey: ['guias'] })
+      await queryClient.invalidateQueries({ queryKey: ['guias', id] })
+    },
+  })
+}
+
 export function useFinalizarGuia() {
   const queryClient = useQueryClient()
 

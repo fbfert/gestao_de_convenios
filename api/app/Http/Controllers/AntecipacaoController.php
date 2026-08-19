@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\UpdateAntecipacaoRequest;
 use App\Http\Resources\AntecipacaoResource;
 use App\Models\Antecipacao;
 use App\Services\AntecipacaoService;
@@ -25,5 +26,10 @@ class AntecipacaoController extends Controller
     public function show(Antecipacao $antecipacao): AntecipacaoResource
     {
         return new AntecipacaoResource($this->service->buscar($antecipacao->id));
+    }
+
+    public function update(UpdateAntecipacaoRequest $request, Antecipacao $antecipacao): AntecipacaoResource
+    {
+        return new AntecipacaoResource($this->service->atualizar($antecipacao, $request->validated()));
     }
 }

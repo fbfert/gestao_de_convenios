@@ -5,11 +5,13 @@ import { ProtectedRoute } from './ProtectedRoute'
 import { ShellLayout } from './ShellLayout'
 import { SolicitacoesPage } from '../features/solicitacoes/SolicitacoesPage'
 import { LerPedidoMedicoPage } from '../features/solicitacoes/LerPedidoMedicoPage'
+import { SolicitacaoEditarPage } from '../features/solicitacoes/SolicitacaoEditarPage'
 import { PacientesPage } from '../features/pacientes'
-import { GuiaDetalhePage, GuiasPage } from '../features/guias'
+import { GuiaDetalhePage, GuiaEditarPage, GuiasPage } from '../features/guias'
 import { AntecipacoesPage } from '../features/antecipacoes/AntecipacoesPage'
+import { AntecipacaoEditarPage } from '../features/antecipacoes/AntecipacaoEditarPage'
 import { AnaliticosPage, AnaliticoDetalhePage } from '../features/analiticos'
-import { LancamentosPage } from '../features/lancamentos'
+import { LancamentosPage, LancamentoEditarPage } from '../features/lancamentos'
 import { LancamentoTemplatesPage } from '../features/lancamentos/LancamentoTemplatesPage'
 import { ImportarSessoesPage } from '../features/lancamentos/ImportarSessoesPage'
 import { ConciliacaoPage } from '../features/conciliacao'
@@ -50,22 +52,26 @@ export function AppRoutes() {
           <Route path="/solicitacoes" element={<SolicitacoesPage />} />
           <Route path="/solicitacoes/ler-pedido-medico" element={<LerPedidoMedicoPage />} />
           <Route path="/solicitacoes/nova" element={<SolicitacoesPage />} />
+          <Route path="/solicitacoes/:id/editar" element={<SolicitacaoEditarPage />} />
           <Route path="/pacientes" element={<PacientesPage />} />
           <Route path="/pacientes/novo" element={<PacientesPage />} />
           <Route path="/pacientes/:id/editar" element={<PacientesPage />} />
           <Route path="/guias" element={<GuiasPage />} />
           <Route path="/guias/nova" element={<GuiasPage />} />
           <Route path="/guias/:id" element={<GuiaDetalhePage />} />
+          <Route path="/guias/:id/editar" element={<GuiaEditarPage />} />
           <Route path="/convenios" element={<ConveniosPage />} />
           <Route path="/convenios/novo" element={<ConveniosPage />} />
           <Route path="/convenios/ajuda" element={<ConvenioAjudaPage />} />
           <Route path="/convenios/:id" element={<ConvenioDetalhePage />} />
           <Route path="/convenios/:id/editar" element={<ConveniosPage />} />
           <Route path="/antecipacoes" element={<AntecipacoesPage />} />
+          <Route path="/antecipacoes/:id/editar" element={<AntecipacaoEditarPage />} />
           <Route path="/lancamentos/templates" element={<LancamentoTemplatesPage />} />
           <Route path="/lancamentos/templates/" element={<LancamentoTemplatesPage />} />
           <Route path="/lancamentos" element={<LancamentosPage />} />
           <Route path="/lancamentos/novo" element={<LancamentosPage />} />
+          <Route path="/lancamentos/:id/editar" element={<LancamentoEditarPage />} />
           <Route path="/lancamentos/importar" element={<ImportarSessoesPage />} />
           <Route path="/analiticos" element={<AnaliticosPage />} />
           <Route path="/analiticos/:id" element={<AnaliticoDetalhePage />} />

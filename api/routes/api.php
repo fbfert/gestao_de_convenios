@@ -136,6 +136,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EncerrarSessaoExpirada::
     Route::post('/solicitacoes/especialidades-rapido', [SolicitacaoController::class, 'storeEspecialidadeRapida']);
     Route::post('/solicitacoes/medicos-rapido', [SolicitacaoController::class, 'storeMedicoRapido']);
     Route::get('/solicitacoes/{solicitacao}', [SolicitacaoController::class, 'show']);
+    Route::patch('/solicitacoes/{solicitacao}', [SolicitacaoController::class, 'update'])->middleware('permission:solicitacoes.manage');
     Route::get('/solicitacoes/{solicitacao}/pedido-medico', [SolicitacaoController::class, 'pedidoMedico']);
     Route::post('/solicitacoes/{solicitacao}/documentos', [SolicitacaoDocumentoController::class, 'store']);
     Route::get('/solicitacoes/{solicitacao}/documentos/{documento}', [SolicitacaoDocumentoController::class, 'download']);
@@ -148,6 +149,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EncerrarSessaoExpirada::
     Route::get('/guias', [GuiaController::class, 'index']);
     Route::post('/guias', [GuiaController::class, 'store']);
     Route::get('/guias/{guia}', [GuiaController::class, 'show']);
+    Route::patch('/guias/{guia}', [GuiaController::class, 'update'])->middleware('permission:guias.manage');
     Route::patch('/guias/{guia}/finalizar', [GuiaController::class, 'finalizar']);
     Route::patch('/guias/{guia}/negar', [GuiaController::class, 'negar']);
     Route::post('/guias/{guia}/consultar-unimed', [GuiaController::class, 'consultarUnimed']);
@@ -155,6 +157,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EncerrarSessaoExpirada::
 
     Route::get('/antecipacoes', [AntecipacaoController::class, 'index']);
     Route::get('/antecipacoes/{antecipacao}', [AntecipacaoController::class, 'show']);
+    Route::patch('/antecipacoes/{antecipacao}', [AntecipacaoController::class, 'update'])->middleware('permission:antecipacoes.manage');
     Route::post('/antecipacoes/{antecipacao}/lancamentos', [LancamentoController::class, 'store']);
     Route::post('/antecipacoes/{antecipacao}/lancamentos/importar-transcricao', [LancamentoController::class, 'importarTranscricao']);
     Route::post('/antecipacoes/{antecipacao}/lancamentos/ler-registro', [LancamentoController::class, 'lerRegistroSessoes']);
@@ -166,7 +169,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EncerrarSessaoExpirada::
 
     Route::get('/lancamentos', [LancamentoController::class, 'index']);
     Route::get('/lancamentos/{lancamento}', [LancamentoController::class, 'show']);
-    Route::patch('/lancamentos/{lancamento}', [LancamentoController::class, 'update']);
+    Route::patch('/lancamentos/{lancamento}', [LancamentoController::class, 'update'])->middleware('permission:lancamentos.manage');
     Route::delete('/lancamentos/{lancamento}', [LancamentoController::class, 'destroy']);
 
     Route::post('/guias/{guia}/conciliacao', [ConciliacaoController::class, 'store']);

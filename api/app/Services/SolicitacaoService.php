@@ -167,6 +167,26 @@ class SolicitacaoService
         ]];
     }
 
+    /**
+     * Edicao manual (admin): so medico/cid/data/observacoes — ver
+     * UpdateSolicitacaoRequest. paciente_id/convenio_id ficam de fora de
+     * proposito: sao identidade com dados gravados em Guia/Antecipacao/
+     * Conciliacao ja geradas a partir do valor original.
+     */
+    public function atualizar(Solicitacao $solicitacao, array $dados): Solicitacao
+    {
+        $solicitacao->fill(array_filter([
+            'medico_id' => $dados['medico_id'] ?? null,
+            'cid' => array_key_exists('cid', $dados) ? $dados['cid'] : null,
+            'solicitado_em' => $dados['solicitado_em'] ?? null,
+            'observacoes' => array_key_exists('observacoes', $dados) ? $dados['observacoes'] : null,
+        ], fn ($value) => $value !== null));
+
+        $solicitacao->save();
+
+        return $solicitacao->refresh();
+    }
+
     public function aprovar(Solicitacao $solicitacao): Solicitacao
     {
         return $this->alterarStatus($solicitacao, 'approved');

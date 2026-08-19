@@ -22,6 +22,7 @@ import {
   renderLancamentoPrintTemplate,
 } from './printTemplate'
 import { Tooltip } from '../../components/ui/Tooltip'
+import { usePode } from '../../lib/permissoes'
 
 const defaultFilters: LancamentoFilters = {
   profissional_id: '',
@@ -48,6 +49,7 @@ function formatEmpty(value: string | null | undefined) {
 }
 
 export function LancamentosPage() {
+  const pode = usePode()
   const navigate = useNavigate()
   const isCreateRoute = useMatch('/lancamentos/novo') !== null
   const [searchParams] = useSearchParams()
@@ -501,6 +503,7 @@ export function LancamentosPage() {
                     ordenacao={ordenacao}
                     onOrdenar={ordenarPor}
                   />
+                    <ColunaOrdenavel titulo="Ações" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/10 bg-slate-950/30">
@@ -528,11 +531,22 @@ export function LancamentosPage() {
                       <td className="px-4 py-4 text-slate-200">
                         {translateStatus('lancamentos', lancamento.status)}
                       </td>
+                      <td className="px-4 py-4">
+                        {pode('lancamentos.manage') ? (
+                          <Link
+                            to={`/lancamentos/${lancamento.id}/editar`}
+                            className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/10"
+                            data-testid={`lancamento-editar-${lancamento.id}`}
+                          >
+                            Editar
+                          </Link>
+                        ) : null}
+                      </td>
                     </tr>
                   ))}
                   {lancamentos.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="px-4 py-8 text-center text-slate-300">
+                      <td colSpan={8} className="px-4 py-8 text-center text-slate-300">
                         Nenhuma sessão encontrada.
                       </td>
                     </tr>

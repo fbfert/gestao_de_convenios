@@ -17,6 +17,7 @@ import { GuiaStatusActions } from './GuiaStatusActions'
 import { SENHA_VENCENDO_EM_DIAS } from './senhaValidade'
 import { Indicadores } from '../../components/ui/Indicadores'
 import { Tooltip } from '../../components/ui/Tooltip'
+import { usePode } from '../../lib/permissoes'
 
 const defaultFilters: GuiaFilters = {
   status: '',
@@ -60,6 +61,7 @@ function statusTone(status: string) {
 }
 
 export function GuiasPage() {
+  const pode = usePode()
   const navigate = useNavigate()
   const isCreateRoute = useMatch('/guias/nova') !== null
   const [filters, setFilters] = useState(defaultFilters)
@@ -668,6 +670,15 @@ export function GuiasPage() {
                             Cria a linha de fechamento financeiro desta guia na tela de Conciliação.
                             Só fica disponível quando a guia está aprovada/finalizada.
                           </Tooltip>
+                          {pode('guias.manage') ? (
+                            <Link
+                              to={`/guias/${guia.id}/editar`}
+                              className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/10"
+                              data-testid={`guia-editar-${guia.id}`}
+                            >
+                              Editar
+                            </Link>
+                          ) : null}
                           </div>
                         </td>
                     </tr>

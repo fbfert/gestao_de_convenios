@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { ColunaOrdenavel } from '../../components/ui/ColunaOrdenavel'
 import { useOrdenacao } from '../../lib/useOrdenacao'
-import { useMatch, useNavigate } from 'react-router-dom'
+import { Link, useMatch, useNavigate } from 'react-router-dom'
 import { translateStatus } from '../../lib/statusLabels'
 import { Select } from '../../components/ui/Select'
 import {
@@ -25,6 +25,7 @@ import { SolicitacaoItensFields } from './SolicitacaoItensFields'
 import { emptyItem, itensEstaoCompletos } from './solicitacaoItens'
 import { Indicadores } from '../../components/ui/Indicadores'
 import { Tooltip } from '../../components/ui/Tooltip'
+import { usePode } from '../../lib/permissoes'
 
 const emptyArray: never[] = []
 
@@ -85,6 +86,7 @@ function selectClasses() {
 }
 
 export function SolicitacoesPage() {
+  const pode = usePode()
   const navigate = useNavigate()
   const isCreateRoute = useMatch('/solicitacoes/nova') !== null
   const [filters, setFilters] = useState(defaultFilters)
@@ -756,6 +758,15 @@ export function SolicitacoesPage() {
                         >
                           Anexos ({solicitacao.documentos?.length ?? 0})
                         </button>
+                        {pode('solicitacoes.manage') ? (
+                          <Link
+                            to={`/solicitacoes/${solicitacao.id}/editar`}
+                            className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/10"
+                            data-testid={`solicitacao-editar-${solicitacao.id}`}
+                          >
+                            Editar
+                          </Link>
+                        ) : null}
                       </div>
                     </td>
                   </tr>

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\AnalyzePedidoMedicoRequest;
 use App\Http\Requests\MutateSolicitacaoStatusRequest;
 use App\Http\Requests\StoreSolicitacaoRequest;
+use App\Http\Requests\UpdateSolicitacaoRequest;
 use App\Http\Requests\UpdateSolicitacaoStatusRequest;
 use App\Http\Resources\SolicitacaoResource;
 use App\Models\Convenio;
@@ -47,6 +48,11 @@ class SolicitacaoController extends Controller
     public function show(Solicitacao $solicitacao): SolicitacaoResource
     {
         return new SolicitacaoResource($solicitacao->load(['paciente', 'profissional', 'especialidade', 'convenio', 'medico', 'itens.especialidade.convenioMapeamentos', 'itens.profissional', 'itens.documentos', 'itens.guia', 'itens.automacaoExecucoes', 'documentos', 'guia.paciente', 'guia.convenio', 'guia.profissional', 'guia.especialidade', 'guia.solicitacaoItem.especialidade', 'guia.solicitacaoItem.profissional', 'guia.antecipacoes', 'guia.conciliacoes']));
+    }
+
+    public function update(UpdateSolicitacaoRequest $request, Solicitacao $solicitacao): SolicitacaoResource
+    {
+        return new SolicitacaoResource($this->service->atualizar($solicitacao, $request->validated())->load(['paciente', 'profissional', 'especialidade', 'convenio', 'medico', 'itens.especialidade.convenioMapeamentos', 'itens.profissional', 'itens.documentos', 'itens.guia', 'itens.automacaoExecucoes', 'documentos', 'guia']));
     }
 
     public function aprovar(MutateSolicitacaoStatusRequest $request, Solicitacao $solicitacao): SolicitacaoResource

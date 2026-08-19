@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\MutateGuiaStatusRequest;
 use App\Http\Requests\StoreGuiaRequest;
+use App\Http\Requests\UpdateGuiaRequest;
 use App\Http\Resources\GuiaResource;
 use App\Models\Guia;
 use App\Services\Automation\CapturarSenhaValidadeUnimedService;
@@ -42,6 +43,11 @@ class GuiaController extends Controller
     public function show(Guia $guia): GuiaResource
     {
         return new GuiaResource($this->service->buscar($guia->id));
+    }
+
+    public function update(UpdateGuiaRequest $request, Guia $guia): GuiaResource
+    {
+        return new GuiaResource($this->service->atualizar($guia, $request->validated()));
     }
 
     public function finalizar(MutateGuiaStatusRequest $request, Guia $guia): GuiaResource

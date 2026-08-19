@@ -473,7 +473,7 @@ export function UsuariosPage() {
             Não foi possível carregar os usuários.
           </div>
         ) : (
-          <div className="overflow-hidden rounded-3xl border border-white/10">
+          <div className="overflow-x-auto rounded-3xl border border-white/10">
             <table className="w-full border-collapse text-left text-sm">
               <thead className="bg-white/5 text-xs uppercase tracking-[0.25em] text-slate-400">
                 <tr>
@@ -482,6 +482,7 @@ export function UsuariosPage() {
                     coluna="nome"
                     ordenacao={ordenacao}
                     onOrdenar={ordenarPor}
+                    className="w-full px-4 py-3"
                   />
                   <ColunaOrdenavel
                     titulo="E-mail"
@@ -497,7 +498,7 @@ export function UsuariosPage() {
                     ordenacao={ordenacao}
                     onOrdenar={ordenarPor}
                   />
-                  <ColunaOrdenavel titulo="Ações" />
+                  <ColunaOrdenavel titulo="Ações" className="w-px px-4 py-3" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/10 bg-slate-950/30">
@@ -520,8 +521,8 @@ export function UsuariosPage() {
                         {usuario.ativo ? 'Ativo' : 'Inativo'}
                       </span>
                     </td>
-                    <td className="px-4 py-4">
-                      <div className="flex flex-wrap gap-2">
+                    <td className="w-px whitespace-nowrap px-4 py-4">
+                      <div className="flex flex-nowrap gap-2">
                         <button
                           type="button"
                           onClick={() => handleEdit(usuario)}

@@ -259,7 +259,7 @@ export function ConciliacaoPage() {
             Não foi possível carregar a lista.
           </div>
         ) : (
-          <div className="overflow-hidden rounded-3xl border border-white/10">
+          <div className="overflow-x-auto rounded-3xl border border-white/10">
             <table className="w-full border-collapse text-left text-sm">
               <thead className="bg-white/5 text-xs uppercase tracking-[0.25em] text-slate-400">
                 <tr>
@@ -277,6 +277,7 @@ export function ConciliacaoPage() {
                     coluna="profissional"
                     ordenacao={ordenacao}
                     onOrdenar={ordenarPor}
+                    className="w-full px-4 py-3"
                   />
                   <ColunaOrdenavel
                     titulo="Qtd."
@@ -306,7 +307,7 @@ export function ConciliacaoPage() {
                     ordenacao={ordenacao}
                     onOrdenar={ordenarPor}
                   />
-                  <ColunaOrdenavel titulo="Ações" />
+                  <ColunaOrdenavel titulo="Ações" className="w-px px-4 py-3" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/10 bg-slate-950/30">
@@ -387,8 +388,8 @@ export function ConciliacaoPage() {
                         </p>
                       ) : null}
                     </td>
-                    <td className="px-4 py-4">
-                      <div className="flex flex-wrap items-center gap-2">
+                    <td className="w-px whitespace-nowrap px-4 py-4">
+                      <div className="flex flex-nowrap items-center gap-2">
                         <button
                           type="button"
                           onClick={() => handleConferir(conciliacao.id)}

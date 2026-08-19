@@ -177,7 +177,7 @@ export function AntecipacoesPage() {
             Não foi possível carregar a lista.
           </div>
         ) : (
-          <div className="overflow-hidden rounded-3xl border border-white/10">
+          <div className="overflow-x-auto rounded-3xl border border-white/10">
             <table className="w-full border-collapse text-left text-sm">
               <thead className="bg-white/5 text-xs uppercase tracking-[0.25em] text-slate-400">
                 <tr>
@@ -192,6 +192,7 @@ export function AntecipacoesPage() {
                     coluna="paciente"
                     ordenacao={ordenacao}
                     onOrdenar={ordenarPor}
+                    className="w-full px-4 py-3"
                   />
                   <ColunaOrdenavel
                     titulo="Convênio"
@@ -211,7 +212,7 @@ export function AntecipacoesPage() {
                     ordenacao={ordenacao}
                     onOrdenar={ordenarPor}
                   />
-                  <ColunaOrdenavel titulo="Ações" />
+                  <ColunaOrdenavel titulo="Ações" className="w-px px-4 py-3" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/10 bg-slate-950/30">
@@ -274,7 +275,7 @@ export function AntecipacoesPage() {
                         </p>
                       ) : null}
                     </td>
-                    <td className="flex items-center gap-1 px-4 py-4">
+                    <td className="flex w-px flex-nowrap items-center gap-1 whitespace-nowrap px-4 py-4">
                       <Link
                         to={`/lancamentos?antecipacao_id=${antecipacao.id}`}
                         className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/10"

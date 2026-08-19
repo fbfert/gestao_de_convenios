@@ -51,19 +51,24 @@ class UserSeeder extends Seeder
         // Administrador nominal do sistema. Fica aqui alem da migration
         // 2026_08_07_100000 porque `migrate:fresh --seed` derruba o schema:
         // sem isso a conta some do ambiente local e do banco de testes.
-        $felipe = User::query()->updateOrCreate(
-            ['email' => 'fbfert@gmail.com'],
-            [
-                'tenant_id' => $tenant->id,
-                'name' => 'Felipe B. Fert',
-                'password' => 'polenta22POLENTA@@',
-                'ativo' => true,
-            ]
-        );
+        // A senha nunca fica no código-fonte: vem de env, e sem ela esse
+        // usuário simplesmente não é criado/atualizado por este seeder.
+        $felipe = null;
+        if ($senhaFelipe = env('SEED_ADMIN_PASSWORD')) {
+            $felipe = User::query()->updateOrCreate(
+                ['email' => 'fbfert@gmail.com'],
+                [
+                    'tenant_id' => $tenant->id,
+                    'name' => 'Felipe B. Fert',
+                    'password' => $senhaFelipe,
+                    'ativo' => true,
+                ]
+            );
+        }
 
         $admin->syncRoles(['admin']);
         $funcionario->syncRoles(['funcionario']);
         $profissionalUser->syncRoles(['profissional']);
-        $felipe->syncRoles(['admin']);
+        $felipe?->syncRoles(['admin']);
     }
 }

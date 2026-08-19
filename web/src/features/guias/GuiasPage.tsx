@@ -534,6 +534,7 @@ export function GuiasPage() {
                     coluna="paciente"
                     ordenacao={ordenacao}
                     onOrdenar={ordenarPor}
+                    className="w-full px-4 py-3"
                   />
                     <ColunaOrdenavel titulo="Carteirinha" />
                     <ColunaOrdenavel
@@ -579,7 +580,7 @@ export function GuiasPage() {
                     onOrdenar={ordenarPor}
                   />
                     <ColunaOrdenavel titulo="Última consulta" />
-                    <ColunaOrdenavel titulo="Ações" />
+                    <ColunaOrdenavel titulo="Ações" className="w-px px-4 py-3" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/10 bg-slate-950/30">
@@ -654,8 +655,8 @@ export function GuiasPage() {
                             ) : null}
                           </div>
                         </td>
-                        <td className="px-4 py-4">
-                          <div className="flex flex-wrap items-center gap-2">
+                        <td className="w-px whitespace-nowrap px-4 py-4">
+                          <div className="flex flex-nowrap items-center gap-2">
                             <GuiaStatusActions guia={guia} />
                           <button
                             type="button"

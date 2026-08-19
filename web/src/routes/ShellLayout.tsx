@@ -9,6 +9,40 @@ const linkBase = 'rounded-full border px-4 py-2 text-sm font-medium transition'
 const linkAtivo = 'border-cyan-300/40 bg-cyan-400/15 text-cyan-50'
 const linkInativo = 'border-white/10 bg-white/5 text-slate-200 hover:bg-white/10'
 
+/**
+ * Telas de Cadastros, Operação e Auditoria são dominadas por uma tabela — o
+ * usuário quer ver o máximo de colunas possível, e a largura central de
+ * 1152px (max-w-6xl) sobra pouco em monitor grande. As demais telas
+ * (Dashboard, Manual, Configurações...) continuam no container padrão: são
+ * formulários e painéis pequenos, que ficariam com linhas de leitura enormes
+ * se esticados sem necessidade.
+ *
+ * O prefixo cobre a família de rotas inteira (lista, novo, editar, detalhe),
+ * não só a URL exata da listagem: trocar de largura ao entrar num formulário
+ * da mesma tela pareceria quebrado.
+ */
+const LARGURA_AMPLA_PREFIXOS = [
+  '/pacientes',
+  '/solicitacoes',
+  '/guias',
+  '/lancamentos',
+  '/antecipacoes',
+  '/analiticos',
+  '/conciliacao',
+  '/profissionais',
+  '/especialidades',
+  '/medicos',
+  '/convenios',
+  '/usuarios',
+  '/auditoria',
+]
+
+function usaLarguraAmpla(pathname: string): boolean {
+  return LARGURA_AMPLA_PREFIXOS.some(
+    (prefixo) => pathname === prefixo || pathname.startsWith(`${prefixo}/`),
+  )
+}
+
 function classesLink(isActive: boolean) {
   return [linkBase, isActive ? linkAtivo : linkInativo].join(' ')
 }
@@ -125,6 +159,8 @@ export function ShellLayout() {
   // sem exigir que a pessoa saia e entre de novo.
   useSessaoAtual()
   const entradas = montarMenu(Boolean(user?.super_admin), pode)
+  const larguraAmpla = usaLarguraAmpla(location.pathname)
+  const larguraContainer = larguraAmpla ? 'max-w-[1900px]' : 'max-w-6xl'
   const [grupoAberto, setGrupoAberto] = useState<string | null>(null)
   const navRef = useRef<HTMLElement | null>(null)
   const timerFechar = useRef<number | null>(null)
@@ -209,7 +245,9 @@ export function ShellLayout() {
         subir.
       */}
       <header className="relative z-50 border-b border-white/10 bg-slate-950/60 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-6 py-4 lg:flex-row lg:items-center lg:justify-between">
+        <div
+          className={`mx-auto flex w-full flex-col gap-4 px-6 py-4 transition-[max-width] duration-200 lg:flex-row lg:items-center lg:justify-between ${larguraContainer}`}
+        >
           <nav ref={navRef} className="flex flex-wrap items-center gap-2">
             {entradas.map((entry) =>
               isGroup(entry) ? (
@@ -255,7 +293,9 @@ export function ShellLayout() {
         </div>
       </header>
 
-      <main className="relative z-0 mx-auto w-full max-w-6xl px-6 py-10">
+      <main
+        className={`relative z-0 mx-auto w-full px-6 py-10 transition-[max-width] duration-200 ${larguraContainer}`}
+      >
         <div className="rounded-[2rem] border border-white/10 bg-white/5 p-8 shadow-2xl shadow-slate-950/40 backdrop-blur-sm">
           <Outlet />
         </div>

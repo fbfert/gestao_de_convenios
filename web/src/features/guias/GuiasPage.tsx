@@ -427,11 +427,10 @@ export function GuiasPage() {
 
       {!isCreateRoute ? (
       <section className="space-y-4 rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-
-          <form className="grid gap-3 md:grid-cols-2 xl:grid-cols-4" onSubmit={handleFilterSubmit}>
-            <label className="space-y-2">
-              <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Status</span>
+        <form className="flex flex-wrap items-center gap-3" onSubmit={handleFilterSubmit}>
+          <label className="flex items-center gap-2">
+            <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Status</span>
+            <div className="w-44">
               <Select
                 value={draftFilters.status}
                 onChange={(event) =>
@@ -450,10 +449,12 @@ export function GuiasPage() {
                 <option value="denied">Negado</option>
                 <option value="expired">Vencido</option>
               </Select>
-            </label>
+            </div>
+          </label>
 
-            <label className="space-y-2">
-              <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Convênio</span>
+          <label className="flex items-center gap-2">
+            <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Convênio</span>
+            <div className="w-44">
               <Select
                 value={draftFilters.convenio_id}
                 onChange={(event) =>
@@ -472,10 +473,12 @@ export function GuiasPage() {
                   </option>
                 ))}
               </Select>
-            </label>
+            </div>
+          </label>
 
-            <label className="space-y-2">
-              <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Paciente</span>
+          <label className="flex items-center gap-2">
+            <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Paciente</span>
+            <div className="w-52">
               <Select
                 value={draftFilters.paciente_id}
                 onChange={(event) =>
@@ -491,16 +494,16 @@ export function GuiasPage() {
                   </option>
                 ))}
               </Select>
-            </label>
+            </div>
+          </label>
 
-            <button
-              type="submit"
-              className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
-            >
-              Aplicar
-            </button>
-          </form>
-        </div>
+          <button
+            type="submit"
+            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+          >
+            Aplicar
+          </button>
+        </form>
 
         {guiasQuery.isLoading ? (
           <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">

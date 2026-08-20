@@ -24,6 +24,7 @@ import { DashboardPage } from '../features/dashboard'
 import { CadastrosPage, OperacaoConveniosPage } from '../features/grupos'
 import { AuditoriaPage } from '../features/auditoria'
 import {
+  ConfiguracoesClinicaSyncPage,
   ConfiguracoesGeralPage,
   ConfiguracoesGlobaisPage,
   ConfiguracoesIaPage,
@@ -99,6 +100,7 @@ export function AppRoutes() {
           <Route path="/configuracoes/ia/prompts/novo" element={<PromptsOperacionaisPage />} />
           <Route path="/configuracoes/ia/prompts/:id/editar" element={<PromptsOperacionaisPage />} />
           <Route path="/configuracoes/unimed" element={<ConfiguracoesPage aba="unimed" />} />
+          <Route path="/configuracoes/clinica" element={<ConfiguracoesClinicaSyncPage />} />
           <Route path="/configuracoes/templates-emails" element={<EmailTemplatesPage />} />
           <Route path="/configuracoes/templates-emails/novo" element={<EmailTemplatesPage />} />
           <Route path="/configuracoes/templates-emails/:id/editar" element={<EmailTemplatesPage />} />

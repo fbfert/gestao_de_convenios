@@ -190,6 +190,13 @@ export const configuracoesItems: NavLeaf[] = [
     permissao: 'configuracoes.unimed.manage',
   },
   {
+    to: '/configuracoes/clinica',
+    label: 'Sincronização com o clinica',
+    descricao:
+      'Status da sincronização automática de profissionais e pacientes com o clinica.gestaonossa.com.br, e o botão para rodar na hora.',
+    permissao: 'configuracoes.clinica.manage',
+  },
+  {
     to: '/permissoes',
     label: 'Perfis e Permissões',
     descricao:

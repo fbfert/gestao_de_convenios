@@ -22,6 +22,7 @@ use App\Http\Controllers\LancamentoPrintTemplateController;
 use App\Http\Controllers\AnaliticoController;
 use App\Http\Controllers\AiPromptTemplateController;
 use App\Http\Controllers\AiSettingsController;
+use App\Http\Controllers\ClinicaSyncController;
 use App\Http\Controllers\ConfiguracaoGlobalController;
 use App\Http\Controllers\ManualController;
 use App\Http\Controllers\PacienteController;
@@ -73,6 +74,8 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EncerrarSessaoExpirada::
     Route::post('/configuracoes/ia/prompts', [AiPromptTemplateController::class, 'store'])->middleware('permission:configuracoes.manage');
     Route::put('/configuracoes/ia/prompts/{aiPromptTemplate}', [AiPromptTemplateController::class, 'update'])->middleware('permission:configuracoes.manage');
     Route::delete('/configuracoes/ia/prompts/{aiPromptTemplate}', [AiPromptTemplateController::class, 'destroy'])->middleware('permission:configuracoes.manage');
+    Route::get('/configuracoes/clinica-sync', [ClinicaSyncController::class, 'show'])->middleware('permission:configuracoes.clinica.manage');
+    Route::post('/configuracoes/clinica-sync/sincronizar', [ClinicaSyncController::class, 'sincronizar'])->middleware('permission:configuracoes.clinica.manage');
     Route::get('/configuracoes/unimed', [UnimedSettingsController::class, 'show'])->middleware('permission:configuracoes.unimed.manage');
     Route::put('/configuracoes/unimed', [UnimedSettingsController::class, 'update'])->middleware('permission:configuracoes.unimed.manage');
     Route::get('/configuracoes/unimed/worker-health', [UnimedSettingsController::class, 'health'])->middleware('permission:configuracoes.unimed.manage');

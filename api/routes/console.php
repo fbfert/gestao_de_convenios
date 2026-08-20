@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Schedule;
 use App\Jobs\EnfileirarConsultasUnimedDueJob;
 use App\Jobs\ExpurgarAuditoriaJob;
 use App\Jobs\ExpurgarCarteirinhasJob;
+use App\Jobs\SincronizarClinicaJob;
 use App\Jobs\VerificarGuiasDiarioJob;
 use App\Models\AutomacaoEvento;
 use Illuminate\Support\Facades\Storage;
@@ -59,3 +60,8 @@ Schedule::job(new ExpurgarAuditoriaJob)->dailyAt('03:30')->withoutOverlapping();
 
 // Imagem de documento pessoal nao fica no servidor alem do prazo da clinica.
 Schedule::job(new ExpurgarCarteirinhasJob)->dailyAt('03:45')->withoutOverlapping();
+
+// Sync bidirecional de profissionais/pacientes com clinica.gestaonossa.com.br
+// (intervalo decidido em 20/08/2026). O botao "Sincronizar Agora" na tela de
+// configuracoes despacha o mesmo job com origem=manual, fora deste agendamento.
+Schedule::job(new SincronizarClinicaJob)->everyFiveMinutes()->withoutOverlapping();

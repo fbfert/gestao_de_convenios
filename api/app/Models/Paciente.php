@@ -14,12 +14,14 @@ class Paciente extends Model
     protected $fillable = [
         'tenant_id', 'nome', 'cpf', 'data_nascimento', 'carteirinha', 'validade_carteirinha',
         'convenio_id', 'telefone', 'clinica_agil_id', 'ativo',
+        'clinica_id', 'sincronizado_em', 'clinica_status',
     ];
 
     protected $casts = [
         'ativo' => 'boolean',
         'data_nascimento' => 'date',
         'validade_carteirinha' => 'date',
+        'sincronizado_em' => 'datetime',
     ];
 
     public function carteirinhaVencida(): bool

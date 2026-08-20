@@ -52,6 +52,7 @@ class PermissionCatalog
         'manual.manage' => 'Editar o manual do sistema',
         'configuracoes.manage' => 'Alterar configurações do sistema',
         'configuracoes.unimed.manage' => 'Configurar a automação da Unimed',
+        'configuracoes.clinica.manage' => 'Configurar a sincronização com o clinica',
     ];
 
     /** @return string[] */

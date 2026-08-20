@@ -20,11 +20,14 @@ class Profissional extends Model
         'conselho_registro',
         'ativo',
         'percentual_repasse',
+        'clinica_id',
+        'sincronizado_em',
     ];
 
     protected $casts = [
         'ativo' => 'boolean',
         'percentual_repasse' => 'decimal:2',
+        'sincronizado_em' => 'datetime',
     ];
 
     /**

@@ -30,15 +30,15 @@ export function LoginPage() {
 
   return (
     <div className="grid min-h-screen place-items-center px-4 py-10" data-testid="login-page">
-      <div className="w-full max-w-md rounded-[2rem] border border-white/10 bg-slate-950/80 p-8 shadow-2xl shadow-cyan-950/30 backdrop-blur">
+      <div className="w-full max-w-md rounded-janela border border-linha bg-superficie p-8 shadow-e3">
         <div className="mb-8">
-          <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">
+          <p className="text-xs uppercase tracking-[0.3em] text-acento">
             Acesso interno
           </p>
-          <h1 className="mt-2 text-3xl font-semibold text-white">
+          <h1 className="mt-2 text-3xl font-semibold text-texto">
             Entrar no sistema
           </h1>
-          <p className="mt-2 text-sm leading-6 text-slate-300">
+          <p className="mt-2 text-sm leading-6 text-texto-suave">
             Use o usuário seedado do ambiente local para testar o fluxo real de
             autenticação.
           </p>
@@ -46,12 +46,12 @@ export function LoginPage() {
 
         <form className="space-y-5" onSubmit={handleSubmit}>
           <label className="block space-y-2">
-            <span className="text-sm font-medium text-slate-200">E-mail</span>
+            <span className="text-sm font-medium text-texto">E-mail</span>
             <input
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20"
+              className="w-full rounded-campo border border-borda-campo bg-superficie px-4 py-3 text-texto outline-none transition placeholder:text-texto-desativado focus-visible:border-foco focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foco"
               placeholder="admin@clinica-exemplo.test"
               autoComplete="email"
               data-testid="login-email"
@@ -59,12 +59,12 @@ export function LoginPage() {
           </label>
 
           <label className="block space-y-2">
-            <span className="text-sm font-medium text-slate-200">Senha</span>
+            <span className="text-sm font-medium text-texto">Senha</span>
             <input
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20"
+              className="w-full rounded-campo border border-borda-campo bg-superficie px-4 py-3 text-texto outline-none transition placeholder:text-texto-desativado focus-visible:border-foco focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foco"
               placeholder="password"
               autoComplete="current-password"
               data-testid="login-password"
@@ -72,7 +72,7 @@ export function LoginPage() {
           </label>
 
           {error ? (
-            <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+            <p className="rounded-campo border border-perigo/30 bg-perigo-suave px-4 py-3 text-sm text-perigo-texto">
               {error}
             </p>
           ) : null}

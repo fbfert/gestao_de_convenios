@@ -3,11 +3,12 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useLogout, useSessaoAtual } from '../features/auth'
 import { usePode } from '../lib/permissoes'
 import { useAuthStore } from '../stores/authStore'
+import { Botao } from '../components/ui/Botao'
 import { isGroup, montarMenu, type NavGroup } from './navigation'
 
-const linkBase = 'rounded-full border px-4 py-2 text-sm font-medium transition'
-const linkAtivo = 'border-cyan-300/40 bg-cyan-400/15 text-cyan-50'
-const linkInativo = 'border-white/10 bg-white/5 text-slate-200 hover:bg-white/10'
+const linkBase = 'rounded-pilula px-4 py-2 text-sm font-medium transition'
+const linkAtivo = 'bg-acento-suave font-semibold text-acento-intenso'
+const linkInativo = 'text-texto-suave hover:bg-fundo hover:text-texto'
 
 /**
  * Telas de Cadastros, Operação e Auditoria são dominadas por uma tabela — o
@@ -73,12 +74,12 @@ function GrupoNav({
 
   return (
     <div className="relative" onMouseEnter={onAbrir} onMouseLeave={onFechar}>
-      <div className={`flex items-stretch overflow-hidden rounded-full border ${ativo ? 'border-cyan-300/40' : 'border-white/10'}`}>
+      <div className={`flex items-stretch overflow-hidden rounded-pilula ${ativo ? 'bg-acento-suave' : ''}`}>
         <NavLink
           to={grupo.to}
           title={grupo.descricao}
           className={`px-4 py-2 text-sm font-medium transition ${
-            ativo ? 'bg-cyan-400/15 text-cyan-50' : 'bg-white/5 text-slate-200 hover:bg-white/10'
+            ativo ? 'font-semibold text-acento-intenso' : 'text-texto-suave hover:bg-fundo hover:text-texto'
           }`}
         >
           {grupo.label}
@@ -90,10 +91,10 @@ function GrupoNav({
           aria-expanded={aberto}
           aria-haspopup="true"
           aria-label={`Abrir submenu de ${grupo.label}`}
-          className={`border-l px-2 transition ${
+          className={`px-2 transition ${
             ativo
-              ? 'border-cyan-300/30 bg-cyan-400/15 text-cyan-50 hover:bg-cyan-400/25'
-              : 'border-white/10 bg-white/5 text-slate-300 hover:bg-white/10'
+              ? 'font-semibold text-acento-intenso hover:bg-acento-suave'
+              : 'text-texto-suave hover:bg-fundo hover:text-texto'
           }`}
           data-testid={`nav-grupo-${grupo.to.replace('/', '')}`}
         >
@@ -116,12 +117,10 @@ function GrupoNav({
           sumia antes de o clique chegar no item. Como padding, a faixa
           pertence ao involucro e a travessia continua dentro do grupo.
         */
-        <div className="absolute left-0 top-full z-50 pt-2">
+        <div className="absolute left-0 top-full z-(--z-menu) pt-2">
           <div
             role="menu"
-            /* bg-slate-950 e opaco nos dois temas (no claro o token vira branco).
-               Fundo translucido aqui deixava o submenu ilegivel sobre a pagina. */
-            className="min-w-60 overflow-hidden rounded-2xl border border-white/10 bg-slate-950 p-1 shadow-2xl shadow-slate-950/40"
+            className="min-w-60 overflow-hidden rounded-superficie border border-linha bg-superficie-elevada p-1 shadow-e2"
           >
             {grupo.children.map((filho) => (
               <NavLink
@@ -131,10 +130,10 @@ function GrupoNav({
                 title={filho.descricao}
                 className={({ isActive }) =>
                   [
-                    'block rounded-xl px-3 py-2 text-sm transition',
+                    'block rounded-controle px-3 py-2 text-sm transition',
                     isActive
-                      ? 'bg-cyan-400/15 text-cyan-50'
-                      : 'text-slate-200 hover:bg-white/10 hover:text-white',
+                      ? 'bg-acento-suave font-semibold text-acento-intenso'
+                      : 'text-texto-suave hover:bg-fundo hover:text-texto',
                   ].join(' ')
                 }
               >
@@ -235,16 +234,15 @@ export function ShellLayout() {
   }
 
   return (
-    <div className="min-h-screen text-slate-100" data-testid="shell-layout">
+    <div className="min-h-screen bg-fundo text-texto" data-testid="shell-layout">
       {/*
-        `relative z-50` e o que mantem o submenu na frente do conteudo. O
-        `backdrop-blur` daqui e o `backdrop-blur-sm` do card do <main> criam,
-        cada um, um contexto de empilhamento proprio; sem z-index explicito
-        vence a ordem do DOM, e o <main> vem depois. O z-50 do painel do
-        submenu so vale dentro do header, entao precisa ser o header inteiro a
-        subir.
+        `relative z-(--z-fixo)` e o que mantem o submenu na frente do
+        conteudo — sem z-index explicito vence a ordem do DOM, e o <main> vem
+        depois. Header flat (sem blur/transparencia): o clinica nao usa
+        glassmorphism, e o painel de submenu opaco precisava disso pra nao
+        ficar ilegivel por cima da pagina.
       */}
-      <header className="relative z-50 border-b border-white/10 bg-slate-950/60 backdrop-blur">
+      <header className="relative z-(--z-fixo) border-b border-linha bg-superficie">
         <div
           className={`mx-auto flex w-full flex-col gap-4 px-6 py-4 transition-[max-width] duration-200 lg:flex-row lg:items-center lg:justify-between ${larguraContainer}`}
         >
@@ -274,31 +272,33 @@ export function ShellLayout() {
 
           <div className="flex items-center gap-4 self-end lg:self-auto">
             <div className="text-right">
-              <p className="text-sm font-medium text-white">{user?.name}</p>
-              <p className="text-xs text-slate-300">
+              <p className="text-sm font-medium text-texto">{user?.name}</p>
+              <p className="text-xs text-texto-suave">
                 {tenant?.nome} · {tenant?.slug}
               </p>
             </div>
 
-            <button
+            <Botao
               type="button"
+              variante="secundario"
+              tamanho="sm"
               onClick={handleLogout}
-              className="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10 disabled:opacity-60"
-              disabled={logout.isPending}
+              carregando={logout.isPending}
               data-testid="shell-logout"
             >
-              {logout.isPending ? 'Saindo...' : 'Sair'}
-            </button>
+              Sair
+            </Botao>
           </div>
         </div>
       </header>
 
+      {/* Nenhum painel envolvendo o conteudo — o clinica nao usa uma unica
+          "moldura" gigante por cima de tudo; cada tela constroi seus proprios
+          cards (rounded-janela/superficie) direto sobre o fundo da pagina. */}
       <main
         className={`relative z-0 mx-auto w-full px-6 py-10 transition-[max-width] duration-200 ${larguraContainer}`}
       >
-        <div className="rounded-[2rem] border border-white/10 bg-white/5 p-8 shadow-2xl shadow-slate-950/40 backdrop-blur-sm">
-          <Outlet />
-        </div>
+        <Outlet />
       </main>
     </div>
   )

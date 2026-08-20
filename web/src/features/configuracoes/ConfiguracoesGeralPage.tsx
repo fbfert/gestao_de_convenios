@@ -9,11 +9,6 @@ import { themeOptions, useThemeStore, type Theme } from '../../stores/themeStore
  * vigor — usar var(--color-*) faria as três amostras ficarem iguais.
  */
 const previewsPorTema: Record<Theme, { fundo: string; textoPrincipal: string; acento: string }> = {
-  'clinicas-claro': {
-    fundo: 'linear-gradient(180deg, #faf9f7 0%, #f1efeb 100%)',
-    textoPrincipal: '#211f1b',
-    acento: '#16695f',
-  },
   claro: {
     fundo: 'linear-gradient(180deg, #f7f9fc 0%, #eef2f7 100%)',
     textoPrincipal: '#1e293b',
@@ -56,7 +51,7 @@ export function ConfiguracoesGeralPage() {
           imediatamente.
         </p>
 
-        <div className="mt-5 grid gap-3 sm:grid-cols-3">
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
           {themeOptions.map((option) => {
             const isActive = theme === option.value
             const preview = previewsPorTema[option.value]

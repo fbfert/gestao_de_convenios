@@ -1,12 +1,5 @@
 @import "tailwindcss";
 
-@font-face {
-  font-family: "Plus Jakarta Sans Var";
-  src: url("./assets/fontes/plus-jakarta-sans-var.woff2") format("woff2");
-  font-weight: 400 800;
-  font-display: swap;
-}
-
 @theme {
   --font-sans: "Inter", "Segoe UI", sans-serif;
 }
@@ -28,12 +21,11 @@
  * usa a paleta padrão, onde `bg-white` é branco e `text-slate-950` é escuro.
  *
  * Camada semântica (--fundo/--acento/--texto/...) — adicionada em 20/08/2026
- * pra trazer o visual do clinica.gestaonossa.com.br como 3º tema
- * ("clinicas-claro"). Em escuro/claro ela só ALIASA os tokens nativos que já
- * existiam (zero mudança visual); em clinicas-claro ela recebe os valores
- * literais do clinica (mais precisos que a redefinição de slate-/cyan-* logo
- * abaixo, que é só a rede de segurança pros ~53 arquivos ainda não migrados
- * pra usar os nomes semânticos direto — ver docs/clinica-tema-migracao.md).
+ * junto com um 3º tema ("clinicas-claro", visual do clinica.gestaonossa.com.br,
+ * removido em 20/08/2026 a pedido do usuário). Ficou: em escuro/claro ela só
+ * ALIASA os tokens nativos que já existiam (zero mudança visual) — é o que os
+ * componentes novos (Botao/Badge/Card/Tabela, ShellLayout, ConfirmarExclusao,
+ * LoginPage) consomem, e continuam funcionando normalmente nos dois temas.
  */
 
 :root {
@@ -41,9 +33,6 @@
     radial-gradient(circle at top, rgba(30, 41, 59, 0.25), transparent 42%),
     linear-gradient(180deg, #07111f 0%, #0f172a 100%);
   --app-color-scheme: dark;
-  /* escuro/claro não têm fonte de título própria — títulos usam a mesma
-     stack do corpo, como sempre foi. */
-  --font-display: var(--font-sans);
 
   /* Semânticos — aliasando os nativos, mesmo valor em qualquer tema que não
      redefina explicitamente (escuro e claro não redefinem: preservam 100% do
@@ -165,113 +154,6 @@
     --color-amber-500: oklch(63% 0.15 66);
   }
 
-  /*
-   * Clínicas Claro — visual do clinica.gestaonossa.com.br (design-system
-   * dele em /opt/clinica/web/src/index.css). Vira o tema PADRÃO pra quem
-   * nunca escolheu um (ver themeStore.ts).
-   *
-   * Dois níveis de redefinição aqui, de propósito:
-   * 1) os tokens nativos slate-/cyan-/rose-/emerald-/amber-* — rede de
-   *    segurança: qualquer tela ainda não migrada pros nomes semânticos já
-   *    herda a cor certa, sem precisar editar JSX.
-   * 2) os tokens semânticos (--fundo/--acento/--texto/...) — valores LITERAIS
-   *    do clinica, exatos, é a fonte de verdade pra quem usa <Botao>/<Badge>/
-   *    <Card> ou as classes bg-acento/text-texto-suave etc.
-   */
-  :root[data-theme='clinicas-claro'] {
-    --app-bg: #faf9f7;
-    --app-color-scheme: light;
-
-    /* Neutros (nível 1 do clinica: --neutro-0..900, matiz quente ~85°) --- */
-    --color-white: #211f1b;
-
-    --color-slate-50: #0d0b08;
-    --color-slate-100: #17140f;
-    --color-slate-200: #211f1b;
-    --color-slate-300: #5f5a51;
-    --color-slate-400: #8f8a80;
-    --color-slate-500: #a9a49b;
-    --color-slate-600: #d3cfc7;
-    --color-slate-700: #e5e2dc;
-    --color-slate-800: #f1efeb;
-    --color-slate-900: #faf9f7;
-    --color-slate-950: #ffffff;
-
-    /* Verde-petróleo — cor de ação (marca-* do clinica) ------------------- */
-    --color-cyan-50: #edf7f5;
-    --color-cyan-100: #d6ede9;
-    --color-cyan-200: #addcd5;
-    --color-cyan-300: #10554e;
-    --color-cyan-400: #16695f;
-    --color-cyan-500: #23867c;
-    --color-cyan-600: #47a399;
-    --color-cyan-950: #edf7f5;
-
-    /* Vermelho — erro ------------------------------------------------------ */
-    --color-rose-50: #8f2b23;
-    --color-rose-100: #992f27;
-    --color-rose-200: #b3372e;
-    --color-rose-300: #b3372e;
-    --color-rose-400: #c4453b;
-    --color-rose-500: #d65c51;
-
-    /* Verde — sucesso ------------------------------------------------------ */
-    --color-emerald-50: #1d6b41;
-    --color-emerald-100: #1d6b41;
-    --color-emerald-200: #248050;
-    --color-emerald-300: #2b955f;
-    --color-emerald-400: #33ab6e;
-    --color-emerald-500: #3bc07d;
-
-    /* Âmbar — atenção ------------------------------------------------------ */
-    --color-amber-50: #8a5a00;
-    --color-amber-100: #8a5a00;
-    --color-amber-200: #9c6800;
-    --color-amber-300: #b87a00;
-    --color-amber-400: #d08800;
-    --color-amber-500: #e09600;
-
-    /* Semânticos — valores literais do clinica (index.css dele) ---------- */
-    --fundo: #faf9f7;
-    --superficie: #ffffff;
-    --superficie-elevada: #ffffff;
-    --texto: #211f1b;
-    --texto-suave: #5f5a51;
-    --texto-desativado: #a9a49b;
-    --linha: #e5e2dc;
-    --linha-forte: #d3cfc7;
-    --borda-campo: #8f8a80;
-    --neutro-desativado: #f1efeb;
-    --selecao: #d6ede9;
-    --foco: #16695f;
-    --acento: #16695f;
-    --acento-intenso: #10554e;
-    --sobre-acento: #ffffff;
-    --acento-suave: #edf7f5;
-    --perigo: #b3372e;
-    --perigo-intenso: #992f27;
-    --sobre-perigo: #ffffff;
-    --perigo-texto: #8f2b23;
-    --perigo-suave: #fbeeec;
-    --sucesso-texto: #1d6b41;
-    --sucesso-suave: #eaf5ee;
-    --alerta-texto: #8a5a00;
-    --alerta-suave: #fcf3e1;
-
-    --raio-controle: 6px;
-    --raio-campo: 8px;
-    --raio-superficie: 12px;
-    --raio-janela: 16px;
-    --raio-pilula: 999px;
-    --sombra-e1: 0 1px 2px 0 rgb(33 31 27 / 0.05);
-    --sombra-e2: 0 2px 8px -1px rgb(33 31 27 / 0.08), 0 1px 2px 0 rgb(33 31 27 / 0.04);
-    --sombra-e3: 0 16px 40px -8px rgb(33 31 27 / 0.16), 0 4px 12px -2px rgb(33 31 27 / 0.06);
-
-    /* --font-sans continua a stack de sistema (corpo do texto) — só os
-       títulos (h1-h3, ver @layer base abaixo) usam a Plus Jakarta Sans,
-       igual ao clinica (--font-texto vs --font-display lá). */
-    --font-display: "Plus Jakarta Sans Var", "Inter", "Segoe UI", sans-serif;
-  }
 }
 
 /* Ponte Tailwind v4 — os semânticos viram utilitário (bg-acento, text-texto-suave, rounded-janela...). */
@@ -324,10 +206,6 @@
     margin: 0;
     color: var(--texto);
     background: transparent;
-  }
-
-  h1, h2, h3 {
-    font-family: var(--font-display);
   }
 
   /*
@@ -385,12 +263,6 @@
   :root[data-theme='claro'] select optgroup {
     background-color: #ffffff;
     color: #1e293b;
-  }
-
-  :root[data-theme='clinicas-claro'] select option,
-  :root[data-theme='clinicas-claro'] select optgroup {
-    background-color: #ffffff;
-    color: #211f1b;
   }
 
   * {

@@ -55,6 +55,7 @@
   --texto-suave: var(--color-slate-400);
   --texto-desativado: var(--color-slate-500);
   --linha: color-mix(in oklab, var(--color-white) 10%, transparent);
+  --linha-forte: color-mix(in oklab, var(--color-white) 18%, transparent);
   --borda-campo: color-mix(in oklab, var(--color-white) 15%, transparent);
   --neutro-desativado: color-mix(in oklab, var(--color-white) 6%, transparent);
   --selecao: color-mix(in oklab, var(--color-cyan-400) 25%, transparent);
@@ -83,6 +84,16 @@
   --sombra-e1: 0 1px 2px 0 rgb(0 0 0 / 0.3);
   --sombra-e2: 0 8px 24px -4px rgb(0 0 0 / 0.4), 0 2px 6px -1px rgb(0 0 0 / 0.25);
   --sombra-e3: 0 24px 60px -12px rgb(0 0 0 / 0.55), 0 6px 16px -2px rgb(0 0 0 / 0.3);
+
+  /* z-index nomeado — não tem namespace no Tailwind v4, consumido via
+     z-(--z-menu) etc. Mesma escala do clinica. */
+  --z-fixo: 10;
+  --z-fixo-canto: 11;
+  --z-scrim: 40;
+  --z-dialogo: 50;
+  --z-menu: 55;
+  --z-toast: 60;
+  --z-tooltip: 70;
 
   /* Duração/curva — não têm namespace no Tailwind v4 (consumidos via
      duration-(--duracao-1)), então não entram no @theme inline abaixo. */
@@ -228,6 +239,7 @@
     --texto-suave: #5f5a51;
     --texto-desativado: #a9a49b;
     --linha: #e5e2dc;
+    --linha-forte: #d3cfc7;
     --borda-campo: #8f8a80;
     --neutro-desativado: #f1efeb;
     --selecao: #d6ede9;
@@ -271,6 +283,7 @@
   --color-texto-suave: var(--texto-suave);
   --color-texto-desativado: var(--texto-desativado);
   --color-linha: var(--linha);
+  --color-linha-forte: var(--linha-forte);
   --color-borda-campo: var(--borda-campo);
   --color-neutro-desativado: var(--neutro-desativado);
   --color-selecao: var(--selecao);
@@ -315,6 +328,27 @@
 
   h1, h2, h3 {
     font-family: var(--font-display);
+  }
+
+  /*
+   * Tabelas — tratamento base pra todo <table> do app (nenhum JSX precisa
+   * mudar): cabeçalho com borda inferior forte, linha com feedback de hover
+   * (hoje inexistente — <tr> não tem classe nenhuma) e divisor pelas classes
+   * que já foram migradas (divide-linha, ver commit da migração de tabelas).
+   * Mesmo tratamento do componente Tabela do clinica (componentes/ui/tabela.tsx
+   * de lá), só que aplicado globalmente em vez de via compound component —
+   * as 18 tabelas do gescon ainda são <table> puro, não JSX estruturado.
+   */
+  table thead th {
+    border-bottom: 1px solid var(--linha-forte);
+  }
+
+  table tbody tr {
+    transition: background-color var(--duracao-1) ease;
+  }
+
+  table tbody tr:hover {
+    background-color: var(--fundo);
   }
 
   @media print {

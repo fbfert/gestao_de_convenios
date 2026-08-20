@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 
+import { Botao } from './Botao'
+
 const PALAVRA = 'EXCLUIR'
 
 /**
@@ -55,7 +57,7 @@ export function ConfirmarExclusao({
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-(--z-dialogo) flex items-center justify-center bg-texto/40 p-4"
       role="dialog"
       aria-modal="true"
       aria-label={titulo}
@@ -66,17 +68,17 @@ export function ConfirmarExclusao({
         className="w-full max-w-lg space-y-4 rounded-janela border border-perigo/30 bg-superficie-elevada p-6 shadow-e3"
       >
         <div>
-          <h3 className="text-lg font-semibold text-white">{titulo}</h3>
-          <p className="mt-2 text-sm leading-6 text-slate-300">{descricao}</p>
+          <h3 className="text-lg font-semibold text-texto">{titulo}</h3>
+          <p className="mt-2 text-sm leading-6 text-texto-suave">{descricao}</p>
         </div>
 
-        <p className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white">
+        <p className="rounded-campo border border-linha bg-fundo px-4 py-3 text-sm text-texto">
           {alvo}
         </p>
 
         <label className="block space-y-2">
-          <span className="text-sm text-slate-200">
-            Para confirmar, digite <strong className="text-rose-200">{PALAVRA}</strong>
+          <span className="text-sm text-texto">
+            Para confirmar, digite <strong className="text-perigo-texto">{PALAVRA}</strong>
           </span>
           <input
             ref={inputRef}
@@ -84,29 +86,25 @@ export function ConfirmarExclusao({
             onChange={(evento) => setTexto(evento.target.value)}
             autoComplete="off"
             spellCheck={false}
-            className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-rose-300/70 focus:ring-2 focus:ring-rose-300/20"
+            className="w-full rounded-campo border border-borda-campo bg-superficie px-4 py-3 text-texto outline-none transition focus-visible:border-perigo focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-perigo"
             data-testid="confirmar-exclusao-texto"
           />
         </label>
 
         <div className="flex flex-wrap justify-end gap-3">
-          <button
-            type="button"
-            onClick={onCancelar}
-            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
-            data-testid="confirmar-exclusao-cancelar"
-          >
+          <Botao type="button" variante="secundario" onClick={onCancelar} data-testid="confirmar-exclusao-cancelar">
             Cancelar
-          </button>
+          </Botao>
 
-          <button
+          <Botao
             type="submit"
-            disabled={!liberado || confirmando}
-            className="rounded-2xl border border-rose-400/30 bg-rose-500/20 px-4 py-3 text-sm font-semibold text-rose-50 transition hover:bg-rose-500/30 disabled:opacity-40"
+            variante="perigo"
+            disabled={!liberado}
+            carregando={confirmando}
             data-testid="confirmar-exclusao-confirmar"
           >
-            {confirmando ? 'Excluindo...' : 'Excluir definitivamente'}
-          </button>
+            Excluir definitivamente
+          </Botao>
         </div>
       </form>
     </div>

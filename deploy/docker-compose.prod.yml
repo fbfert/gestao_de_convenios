@@ -1,3 +1,8 @@
+# Nome de projeto fixo: sem isto o Compose usa o nome do diretório ("deploy")
+# como project name, e como o clinica também roda de uma pasta "deploy/", os
+# dois projetos colidem no mesmo namespace — um `--remove-orphans` de um lado
+# apaga containers do outro. Já aconteceu em 20/08/2026, ver [[servidor-gestaonossa-virtualmin]].
+name: gescon
 services:
   gescon-db:
     image: mariadb:11
@@ -63,8 +68,13 @@ services:
     networks: [gescon]
 
 volumes:
+  # name: pino explícito para os volumes reais já existentes (criados sob o
+  # antigo project name "deploy") — sem isto, mudar `name:` acima criaria
+  # volumes novos vazios em vez de reconectar aos dados de produção.
   gescon_db_data:
+    name: deploy_gescon_db_data
   gescon_storage:
+    name: deploy_gescon_storage
 
 networks:
   gescon:

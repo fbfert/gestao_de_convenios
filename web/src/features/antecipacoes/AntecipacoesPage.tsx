@@ -87,7 +87,7 @@ export function AntecipacoesPage() {
         </h2>
       </section>
 
-      <section className="space-y-4 rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
+      <section className="space-y-4 rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
         {alertasContinuidade.length > 0 ? (
           <div
             className="rounded-3xl border border-amber-400/20 bg-amber-500/10 px-4 py-4 text-sm text-amber-50"
@@ -177,9 +177,9 @@ export function AntecipacoesPage() {
             Não foi possível carregar a lista.
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-3xl border border-white/10">
+          <div className="overflow-x-auto rounded-superficie border border-linha">
             <table className="w-full border-collapse text-left text-sm">
-              <thead className="bg-white/5 text-xs uppercase tracking-[0.25em] text-slate-400">
+              <thead className="bg-fundo text-xs uppercase tracking-[0.25em] text-texto-suave">
                 <tr>
                   <ColunaOrdenavel
                     titulo="ID"
@@ -215,7 +215,7 @@ export function AntecipacoesPage() {
                   <ColunaOrdenavel titulo="Ações" className="w-px px-4 py-3" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/10 bg-slate-950/30">
+              <tbody className="divide-y divide-linha bg-superficie">
                 {antecipacoes.map((antecipacao) => (
                   <tr key={antecipacao.id} data-testid={`antecipacao-row-${antecipacao.id}`}>
                     <td className="px-4 py-4 font-medium text-white">#{antecipacao.id}</td>

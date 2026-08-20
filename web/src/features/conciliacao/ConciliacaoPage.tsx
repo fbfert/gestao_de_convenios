@@ -158,7 +158,7 @@ export function ConciliacaoPage() {
         />
       </section>
 
-      <section className="space-y-4 rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
+      <section className="space-y-4 rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
         <form className="grid gap-3 md:grid-cols-2 xl:grid-cols-4" onSubmit={handleFilterSubmit}>
           <label className="space-y-2">
             <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Convênio</span>
@@ -259,9 +259,9 @@ export function ConciliacaoPage() {
             Não foi possível carregar a lista.
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-3xl border border-white/10">
+          <div className="overflow-x-auto rounded-superficie border border-linha">
             <table className="w-full border-collapse text-left text-sm">
-              <thead className="bg-white/5 text-xs uppercase tracking-[0.25em] text-slate-400">
+              <thead className="bg-fundo text-xs uppercase tracking-[0.25em] text-texto-suave">
                 <tr>
                   <ColunaOrdenavel
                     titulo="ID"
@@ -310,7 +310,7 @@ export function ConciliacaoPage() {
                   <ColunaOrdenavel titulo="Ações" className="w-px px-4 py-3" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/10 bg-slate-950/30">
+              <tbody className="divide-y divide-linha bg-superficie">
                 {conciliacoes.map((conciliacao) => (
                   <tr key={conciliacao.id} data-testid={`conciliacao-row-${conciliacao.id}`}>
                     <td className="px-4 py-4 font-medium text-white">#{conciliacao.id}</td>

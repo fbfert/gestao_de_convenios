@@ -49,7 +49,7 @@ export function ConfiguracoesGeralPage() {
         </p>
       </section>
 
-      <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
+      <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
         <h3 className="text-lg font-semibold text-white">Aparência</h3>
         <p className="mt-2 text-sm text-slate-300">
           Escolha o tema visual do sistema. A preferência vale para este navegador e é aplicada
@@ -107,7 +107,7 @@ export function ConfiguracoesGeralPage() {
             <Link
               key={item.to}
               to={item.to}
-              className="group block rounded-[1.75rem] border border-white/10 bg-white/5 p-5 shadow-xl shadow-slate-950/20 transition hover:border-cyan-300/40 hover:bg-white/10"
+              className="group block rounded-janela border border-linha bg-fundo p-5 shadow-e1 transition hover:border-acento/40 hover:bg-superficie"
               data-testid={`configuracoes-card-${item.to.split('/').pop()}`}
             >
               <p className="text-base font-semibold text-white group-hover:text-cyan-50">

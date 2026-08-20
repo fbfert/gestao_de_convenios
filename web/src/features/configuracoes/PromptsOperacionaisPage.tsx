@@ -206,7 +206,7 @@ export function PromptsOperacionaisPage() {
       {isFormRoute ? (
         <form
           onSubmit={handleSubmit}
-          className="rounded-[1.75rem] border border-cyan-300/30 bg-slate-950/60 p-6"
+          className="rounded-janela border border-acento/30 bg-superficie-elevada shadow-e2 p-6"
           data-testid="prompt-form"
         >
           <h3 className="text-lg font-semibold text-white">

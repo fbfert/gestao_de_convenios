@@ -86,7 +86,7 @@ export function ConfiguracoesGlobaisPage() {
         </p>
       ) : null}
 
-      <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
+      <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
         <h3 className="text-lg font-semibold text-white">Sessão</h3>
         <p className="mt-1 text-sm text-slate-300">
           Quanto tempo um login vale. O prazo conta a partir da entrada, não do último clique:
@@ -132,7 +132,7 @@ export function ConfiguracoesGlobaisPage() {
         </div>
       </section>
 
-      <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
+      <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
         <h3 className="text-lg font-semibold text-white">Operação</h3>
         <p className="mt-1 text-sm text-slate-300">
           Padrões que as telas usam quando você não informa outra coisa.

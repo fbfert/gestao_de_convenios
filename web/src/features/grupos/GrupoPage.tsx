@@ -17,7 +17,7 @@ type DashboardResponse = {
 }
 
 const cartao =
-  'rounded-[1.75rem] border border-white/10 bg-white/5 p-5 shadow-xl shadow-slate-950/20'
+  'rounded-janela border border-linha bg-fundo p-5 shadow-e1'
 
 export type GrupoPageProps = {
   titulo: string

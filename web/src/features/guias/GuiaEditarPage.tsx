@@ -98,7 +98,7 @@ export function GuiaEditarPage() {
           Guia não encontrada.
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-4 rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
+        <form onSubmit={handleSubmit} className="space-y-4 rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Paciente</span>

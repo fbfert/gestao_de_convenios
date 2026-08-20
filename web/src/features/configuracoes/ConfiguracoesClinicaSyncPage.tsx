@@ -71,7 +71,7 @@ export function ConfiguracoesClinicaSyncPage() {
         </p>
       ) : null}
 
-      <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
+      <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <h3 className="text-lg font-semibold text-white">Última execução</h3>

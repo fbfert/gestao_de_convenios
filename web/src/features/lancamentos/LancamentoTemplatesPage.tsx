@@ -109,7 +109,7 @@ export function LancamentoTemplatesPage() {
         <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
           <form
             onSubmit={handleSubmit}
-            className="space-y-4 rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6"
+            className="space-y-4 rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6"
           >
             <label className="block space-y-2">
               <span className="text-sm font-medium text-slate-200">Nome do template</span>
@@ -165,7 +165,7 @@ export function LancamentoTemplatesPage() {
           </form>
 
           <aside className="space-y-4">
-            <div className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
+            <div className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
               <h3 className="text-lg font-semibold text-white">Placeholders</h3>
               <div className="mt-4 flex flex-wrap gap-2">
                 {placeholders.map((placeholder) => (
@@ -179,7 +179,7 @@ export function LancamentoTemplatesPage() {
               </div>
             </div>
 
-            <div className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-4">
+            <div className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-4">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <h3 className="text-lg font-semibold text-white">Preview</h3>
                 <span className="text-xs text-slate-400">Dados de exemplo</span>

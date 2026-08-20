@@ -34,7 +34,7 @@ function DetailTable({
         <h3 className="text-base font-semibold text-white">{title}</h3>
       </div>
       <table className="w-full border-collapse text-left text-sm">
-        <thead className="bg-white/5 text-xs uppercase tracking-[0.25em] text-slate-400">
+        <thead className="bg-fundo text-xs uppercase tracking-[0.25em] text-texto-suave">
           <tr>
             {columns.map((column) => (
               <th key={column.key} className="px-4 py-3">
@@ -43,7 +43,7 @@ function DetailTable({
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-white/10 bg-slate-950/30">
+        <tbody className="divide-y divide-linha bg-superficie">
           {rows.map((row, index) => (
             <tr key={`${title}-${index}`}>
               {columns.map((column) => (

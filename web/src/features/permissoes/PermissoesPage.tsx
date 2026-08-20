@@ -14,7 +14,7 @@ import {
 import type { PermissionRef, RoleRef } from './types'
 import { Botao } from '../../components/ui/Botao'
 
-const card = 'rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6'
+const card = 'rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6'
 const campo =
   'w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20'
 
@@ -106,7 +106,7 @@ function ListaDePapeis() {
             <Link
               key={papel.id}
               to={`/permissoes/${encodeURIComponent(papel.name)}/editar`}
-              className="group block rounded-[1.75rem] border border-white/10 bg-white/5 p-5 transition hover:border-cyan-300/40 hover:bg-white/10"
+              className="group block rounded-janela border border-linha bg-fundo p-5 transition hover:border-acento/40 hover:bg-superficie"
               data-testid={`papel-${papel.name}`}
             >
               <div className="flex items-center justify-between gap-3">

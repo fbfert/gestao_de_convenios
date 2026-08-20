@@ -40,7 +40,7 @@ function AnaliticoTable({ rows }: { rows: AnaliticoUnimedLinha[] }) {
         <h4 className="text-sm font-semibold uppercase tracking-[0.25em] text-cyan-100">Analítico</h4>
       </div>
       <table className="w-full border-collapse text-left text-sm">
-        <thead className="bg-white/5 text-xs uppercase tracking-[0.25em] text-slate-400">
+        <thead className="bg-fundo text-xs uppercase tracking-[0.25em] text-texto-suave">
           <tr>
             <th className="px-4 py-3">Guia</th>
             <th className="px-4 py-3">Realização</th>
@@ -49,7 +49,7 @@ function AnaliticoTable({ rows }: { rows: AnaliticoUnimedLinha[] }) {
             <th className="px-4 py-3">Valor</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-white/10 bg-slate-950/30">
+        <tbody className="divide-y divide-linha bg-superficie">
           {rows.map((linha) => (
             <tr key={linha.linha}>
               <td className="px-4 py-4">{cell(linha.numero_guia_operadora)}</td>
@@ -79,7 +79,7 @@ function GlosaTable({ rows }: { rows: AnaliticoUnimedGlosaLinha[] }) {
         <h4 className="text-sm font-semibold uppercase tracking-[0.25em] text-cyan-100">Glosas</h4>
       </div>
       <table className="w-full border-collapse text-left text-sm">
-        <thead className="bg-white/5 text-xs uppercase tracking-[0.25em] text-slate-400">
+        <thead className="bg-fundo text-xs uppercase tracking-[0.25em] text-texto-suave">
           <tr>
             <th className="px-4 py-3">Guia</th>
             <th className="px-4 py-3">Realização</th>
@@ -87,7 +87,7 @@ function GlosaTable({ rows }: { rows: AnaliticoUnimedGlosaLinha[] }) {
             <th className="px-4 py-3">Valor</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-white/10 bg-slate-950/30">
+        <tbody className="divide-y divide-linha bg-superficie">
           {rows.map((linha) => (
             <tr key={linha.linha}>
               <td className="px-4 py-4">{cell(linha.numero_guia_operadora)}</td>
@@ -118,7 +118,7 @@ function ConciliacaoTable({ rows }: { rows: AnaliticoUnimedConciliacaoLinha[] })
         </h4>
       </div>
       <table className="w-full border-collapse text-left text-sm">
-        <thead className="bg-white/5 text-xs uppercase tracking-[0.25em] text-slate-400">
+        <thead className="bg-fundo text-xs uppercase tracking-[0.25em] text-texto-suave">
           <tr>
             <th className="px-4 py-3">Origem</th>
             <th className="px-4 py-3">Guia</th>
@@ -126,7 +126,7 @@ function ConciliacaoTable({ rows }: { rows: AnaliticoUnimedConciliacaoLinha[] })
             <th className="px-4 py-3">Valor</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-white/10 bg-slate-950/30">
+        <tbody className="divide-y divide-linha bg-superficie">
           {rows.map((linha) => (
             <tr key={`${linha.origem}-${linha.linha ?? linha.chave_conciliacao}`}>
               <td className="px-4 py-4 text-slate-200">{linha.origem}</td>
@@ -175,7 +175,7 @@ function LotesTable({
   onLimparFiltros: () => void
 }) {
   return (
-    <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
+    <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <h3 className="text-lg font-semibold text-white">Lotes importados</h3>
@@ -248,7 +248,7 @@ function LotesTable({
       ) : (
         <div className="mt-4 overflow-hidden rounded-3xl border border-white/10">
           <table className="w-full border-collapse text-left text-sm">
-            <thead className="bg-white/5 text-xs uppercase tracking-[0.25em] text-slate-400">
+            <thead className="bg-fundo text-xs uppercase tracking-[0.25em] text-texto-suave">
               <tr>
                 <th className="px-4 py-3">Arquivo</th>
                 <th className="px-4 py-3">Importado em</th>
@@ -257,7 +257,7 @@ function LotesTable({
                 <th className="px-4 py-3">Ações</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/10 bg-slate-950/30">
+            <tbody className="divide-y divide-linha bg-superficie">
               {rows.map((lote) => (
                 <tr key={lote.id}>
                   <td className="px-4 py-4">
@@ -423,7 +423,7 @@ export function AnaliticosPage() {
         onLimparFiltros={limparFiltros}
       />
 
-      <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
+      <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="flex items-start justify-between gap-4">
             <div>

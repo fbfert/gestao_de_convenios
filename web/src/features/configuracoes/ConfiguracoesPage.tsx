@@ -315,7 +315,7 @@ export function ConfiguracoesPage({ aba }: { aba: ConfiguracoesAba }) {
           className="space-y-6"
           data-testid="configuracoes-emails-form"
         >
-          <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
+          <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
             <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
               <div>
                 <h3 className="text-lg font-semibold text-white">SMTP</h3>
@@ -466,7 +466,7 @@ export function ConfiguracoesPage({ aba }: { aba: ConfiguracoesAba }) {
             </div>
           </section>
 
-          <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
+          <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
             <h3 className="text-lg font-semibold text-white">Enviar e-mail de teste</h3>
             <p className="mt-1 text-sm text-slate-300">
               O teste usa o SMTP <strong>já salvo</strong>, não o que está digitado acima. Salve
@@ -537,7 +537,7 @@ export function ConfiguracoesPage({ aba }: { aba: ConfiguracoesAba }) {
           className="space-y-6"
           data-testid="configuracoes-unimed-form"
         >
-          <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
+          <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
             <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
               <div>
                 <h3 className="text-lg font-semibold text-white">Portal Unimed RDA</h3>
@@ -686,7 +686,7 @@ export function ConfiguracoesPage({ aba }: { aba: ConfiguracoesAba }) {
 
           {canManageUnimed ? (
             <section className="grid gap-6 xl:grid-cols-2">
-              <div className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
+              <div className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
                 <h3 className="text-lg font-semibold text-white">Especialidade x Convênio</h3>
                 <form onSubmit={handleEspecialidadeMapeamentoSubmit} className="mt-4 grid gap-3">
                   <select
@@ -760,7 +760,7 @@ export function ConfiguracoesPage({ aba }: { aba: ConfiguracoesAba }) {
                 </div>
               </div>
 
-              <div className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
+              <div className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
                 <h3 className="text-lg font-semibold text-white">Profissional x Convênio</h3>
                 <form onSubmit={handleProfissionalMapeamentoSubmit} className="mt-4 grid gap-3">
                   <select
@@ -822,7 +822,7 @@ export function ConfiguracoesPage({ aba }: { aba: ConfiguracoesAba }) {
               </div>
             </section>
           ) : (
-            <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6 text-sm text-slate-300">
+            <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6 text-sm text-texto-suave">
               Seu usuário não possui permissão para editar configurações Unimed.
             </section>
           )}

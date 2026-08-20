@@ -10,7 +10,7 @@ import {
 } from './useAuditoria'
 import type { AuditFiltros, AuditItem, AuditPayload } from './types'
 
-const card = 'rounded-[1.75rem] border border-white/10 bg-white/5 p-5 shadow-xl shadow-slate-950/20'
+const card = 'rounded-janela border border-linha bg-fundo p-5 shadow-e1'
 const campo =
   'w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20'
 
@@ -349,7 +349,7 @@ export function AuditoriaPage() {
       ) : null}
 
       {auditoria.isError ? (
-        <div className="rounded-[1.75rem] border border-rose-400/20 bg-rose-500/10 p-6 text-sm text-rose-100">
+        <div className="rounded-janela border border-perigo/30 bg-perigo-suave p-6 text-sm text-perigo-texto">
           Não foi possível carregar a auditoria.
         </div>
       ) : null}

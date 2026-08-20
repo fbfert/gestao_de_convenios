@@ -213,7 +213,7 @@ export function ProfissionaisPage() {
       ) : null}
 
       {isFormRoute && (!isEditRoute || profissionalEmEdicao) ? (
-        <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
+        <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
           <form onSubmit={handleSubmit} className="space-y-4" data-testid="profissional-form">
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -391,7 +391,7 @@ export function ProfissionaisPage() {
 
       {isEditRoute && !profissionalEmEdicao ? (
         <section
-          className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6"
+          className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6"
           data-testid="profissional-edicao-indisponivel"
         >
           {profissionaisQuery.isLoading ? (
@@ -410,7 +410,7 @@ export function ProfissionaisPage() {
       ) : null}
 
       {!isFormRoute ? (
-      <section className="space-y-4 rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
+      <section className="space-y-4 rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
 
           <form className="flex flex-wrap gap-3" onSubmit={handleFilterSubmit}>
@@ -455,9 +455,9 @@ export function ProfissionaisPage() {
             Não foi possível carregar os profissionais.
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-3xl border border-white/10">
+          <div className="overflow-x-auto rounded-superficie border border-linha">
             <table className="w-full border-collapse text-left text-sm">
-              <thead className="bg-white/5 text-xs uppercase tracking-[0.25em] text-slate-400">
+              <thead className="bg-fundo text-xs uppercase tracking-[0.25em] text-texto-suave">
                 <tr>
                   <ColunaOrdenavel
                     titulo="Nome"
@@ -488,7 +488,7 @@ export function ProfissionaisPage() {
                   <ColunaOrdenavel titulo="Ações" className="w-px px-4 py-3" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/10 bg-slate-950/30">
+              <tbody className="divide-y divide-linha bg-superficie">
                 {profissionais.map((profissional) => (
                   <tr key={profissional.id} data-testid={`profissional-row-${profissional.id}`}>
                     <td className="px-4 py-4 text-slate-100">

@@ -94,7 +94,7 @@ export function LancamentoEditarPage() {
           Sessão não encontrada.
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-4 rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
+        <form onSubmit={handleSubmit} className="space-y-4 rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
           <div className="space-y-2">
             <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Antecipação</span>
             <p className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white">

@@ -41,6 +41,9 @@
     radial-gradient(circle at top, rgba(30, 41, 59, 0.25), transparent 42%),
     linear-gradient(180deg, #07111f 0%, #0f172a 100%);
   --app-color-scheme: dark;
+  /* escuro/claro não têm fonte de título própria — títulos usam a mesma
+     stack do corpo, como sempre foi. */
+  --font-display: var(--font-sans);
 
   /* Semânticos — aliasando os nativos, mesmo valor em qualquer tema que não
      redefina explicitamente (escuro e claro não redefinem: preservam 100% do
@@ -252,7 +255,10 @@
     --sombra-e2: 0 2px 8px -1px rgb(33 31 27 / 0.08), 0 1px 2px 0 rgb(33 31 27 / 0.04);
     --sombra-e3: 0 16px 40px -8px rgb(33 31 27 / 0.16), 0 4px 12px -2px rgb(33 31 27 / 0.06);
 
-    --font-sans: "Plus Jakarta Sans Var", "Inter", "Segoe UI", sans-serif;
+    /* --font-sans continua a stack de sistema (corpo do texto) — só os
+       títulos (h1-h3, ver @layer base abaixo) usam a Plus Jakarta Sans,
+       igual ao clinica (--font-texto vs --font-display lá). */
+    --font-display: "Plus Jakarta Sans Var", "Inter", "Segoe UI", sans-serif;
   }
 }
 
@@ -305,6 +311,10 @@
     margin: 0;
     color: var(--texto);
     background: transparent;
+  }
+
+  h1, h2, h3 {
+    font-family: var(--font-display);
   }
 
   @media print {

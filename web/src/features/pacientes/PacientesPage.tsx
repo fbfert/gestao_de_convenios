@@ -360,7 +360,7 @@ export function PacientesPage() {
       ) : null}
 
       {isFormRoute ? (
-        <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
+        <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
           <form onSubmit={handleSubmit} className="space-y-4" data-testid="paciente-form">
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -576,7 +576,7 @@ export function PacientesPage() {
       ) : null}
 
       {!isFormRoute ? (
-      <section className="space-y-4 rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
+      <section className="space-y-4 rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
 
           <form className="grid w-full gap-3 md:grid-cols-2 xl:grid-cols-4" onSubmit={handleFilterSubmit}>
@@ -672,7 +672,7 @@ export function PacientesPage() {
         ) : (
           <div className="overflow-hidden rounded-3xl border border-white/10">
             <table className="w-full border-collapse text-left text-sm">
-              <thead className="bg-white/5 text-xs uppercase tracking-[0.25em] text-slate-400">
+              <thead className="bg-fundo text-xs uppercase tracking-[0.25em] text-texto-suave">
                 <tr>
                   {[
                     { coluna: 'nome', texto: 'Nome' },
@@ -708,7 +708,7 @@ export function PacientesPage() {
                   <th className="px-4 py-3">Ações</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/10 bg-slate-950/30">
+              <tbody className="divide-y divide-linha bg-superficie">
                 {pacientes.map((paciente) => (
                   <tr key={paciente.id} data-testid={`paciente-row-${paciente.id}`}>
                     <td className="px-4 py-4 text-slate-100">

@@ -63,7 +63,7 @@ export function ConfirmarExclusao({
     >
       <form
         onSubmit={enviar}
-        className="w-full max-w-lg space-y-4 rounded-[1.75rem] border border-rose-400/20 bg-slate-950 p-6 shadow-2xl shadow-slate-950/60"
+        className="w-full max-w-lg space-y-4 rounded-janela border border-perigo/30 bg-superficie-elevada p-6 shadow-e3"
       >
         <div>
           <h3 className="text-lg font-semibold text-white">{titulo}</h3>

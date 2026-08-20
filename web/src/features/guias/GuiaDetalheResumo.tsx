@@ -147,7 +147,7 @@ export function GuiaDetalheResumo({ guia }: { guia: Guia }) {
           <DetailItem label="Observações">{guia.observacoes ?? '-'}</DetailItem>
         </section>
       ) : (
-        <section className="space-y-4 rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
+        <section className="space-y-4 rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
           <div className="grid gap-4 md:grid-cols-2">
             <label className="block space-y-2">
               <span className="text-sm font-medium text-slate-200">Especialidade</span>
@@ -323,7 +323,7 @@ export function GuiaDetalheResumo({ guia }: { guia: Guia }) {
       )}
 
       {guia.solicitacao_item || guia.automacao_execucao || guia.ultima_automacao_unimed ? (
-        <section className="rounded-[1.75rem] border border-cyan-300/20 bg-cyan-400/10 p-6">
+        <section className="rounded-janela border border-acento/20 bg-acento-suave p-6">
           <h3 className="text-lg font-semibold text-white">Operação Unimed</h3>
           <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <DetailItem label="Item da solicitação">
@@ -387,7 +387,7 @@ export function GuiaDetalheResumo({ guia }: { guia: Guia }) {
       ) : null}
 
       <section className="grid gap-4 xl:grid-cols-2">
-        <article className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
+        <article className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
           <div className="flex items-center justify-between gap-4">
             <h3 className="text-lg font-semibold text-white">Antecipações</h3>
             <Link to="/antecipacoes" className="text-sm font-semibold text-cyan-200 hover:text-cyan-100">
@@ -408,7 +408,7 @@ export function GuiaDetalheResumo({ guia }: { guia: Guia }) {
           )}
         </article>
 
-        <article className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
+        <article className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
           <div className="flex items-center justify-between gap-4">
             <h3 className="text-lg font-semibold text-white">Conciliação</h3>
             <Link to="/conciliacao" className="text-sm font-semibold text-cyan-200 hover:text-cyan-100">

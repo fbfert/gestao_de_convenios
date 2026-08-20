@@ -25,7 +25,7 @@ type DashboardResponse = {
   recent_audits: AuditItem[]
 }
 
-const card = 'rounded-[1.75rem] border border-white/10 bg-white/5 p-5 shadow-xl shadow-slate-950/20'
+const card = 'rounded-janela border border-linha bg-fundo p-5 shadow-e1'
 
 function formatDateTime(value: string | null) {
   if (!value) {
@@ -75,11 +75,11 @@ export function DashboardPage() {
       </section>
 
       {dashboardQuery.isLoading ? (
-        <div className="rounded-[1.75rem] border border-white/10 bg-white/5 p-6 text-sm text-slate-300">
+        <div className="rounded-janela border border-linha bg-fundo p-6 text-sm text-texto-suave">
           Carregando Dashboard...
         </div>
       ) : dashboardQuery.isError ? (
-        <div className="rounded-[1.75rem] border border-rose-400/20 bg-rose-500/10 p-6 text-sm text-rose-100">
+        <div className="rounded-janela border border-perigo/30 bg-perigo-suave p-6 text-sm text-perigo-texto">
           Não foi possível carregar o Dashboard.
         </div>
       ) : null}

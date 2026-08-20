@@ -71,7 +71,7 @@ function SolicitacaoDados({ solicitacao }: { solicitacao: Solicitacao }) {
   }
 
   return (
-    <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
+    <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h3 className="text-lg font-semibold text-white">Dados da solicitação</h3>
         {pode('solicitacoes.manage') && !editando ? (

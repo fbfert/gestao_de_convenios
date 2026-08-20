@@ -104,7 +104,7 @@ export function TenantsPage() {
     // Guarda de cortesia: a rota é alcançável por URL. A restrição de verdade
     // está no middleware `super-admin`, que devolve 403 em toda chamada.
     return (
-      <div className="rounded-[1.75rem] border border-rose-400/20 bg-rose-500/10 p-6 text-sm text-rose-100">
+      <div className="rounded-janela border border-perigo/30 bg-perigo-suave p-6 text-sm text-perigo-texto">
         Esta área é restrita à administração do sistema.
       </div>
     )
@@ -146,7 +146,7 @@ export function TenantsPage() {
       {edicao === 'nova' ? (
         <form
           onSubmit={handleCriar}
-          className="rounded-[1.75rem] border border-cyan-300/30 bg-slate-950/60 p-6"
+          className="rounded-janela border border-acento/30 bg-superficie-elevada shadow-e2 p-6"
           data-testid="tenant-form"
         >
           <h3 className="text-lg font-semibold text-white">Nova clínica</h3>

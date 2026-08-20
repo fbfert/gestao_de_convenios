@@ -77,7 +77,7 @@ export function AutomacoesPage() {
           </div>
         ) : (
           <>
-            <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
+            <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                 <div>
                   <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Automação</p>
@@ -117,7 +117,7 @@ export function AutomacoesPage() {
               </button>
             </section>
 
-            <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
+            <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
               <h3 className="text-lg font-semibold text-white">Timeline</h3>
               <div className="mt-4 space-y-3">
                 {execucao.eventos?.map((evento) => (
@@ -155,7 +155,7 @@ export function AutomacoesPage() {
         <Summary label="Filtro" value={filters.status || filters.operacao || 'Todos'} />
       </section>
 
-      <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
+      <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
         <form className="grid gap-3 md:grid-cols-4" onSubmit={handleFilterSubmit}>
           <select
             value={draftFilters.status}
@@ -199,7 +199,7 @@ export function AutomacoesPage() {
 
         <div className="mt-5 overflow-hidden rounded-3xl border border-white/10">
           <table className="w-full border-collapse text-left text-sm">
-            <thead className="bg-white/5 text-xs uppercase tracking-[0.25em] text-slate-400">
+            <thead className="bg-fundo text-xs uppercase tracking-[0.25em] text-texto-suave">
               <tr>
                 <th className="px-4 py-3">ID</th>
                 <th className="px-4 py-3">Operação</th>
@@ -208,7 +208,7 @@ export function AutomacoesPage() {
                 <th className="px-4 py-3">Fila</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/10 bg-slate-950/30">
+            <tbody className="divide-y divide-linha bg-superficie">
               {automacoes.map((execucao) => (
                 <tr key={execucao.id}>
                   <td className="px-4 py-4">

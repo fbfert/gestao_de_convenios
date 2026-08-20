@@ -433,7 +433,7 @@ export function LerPedidoMedicoPage() {
         </div>
       </section>
 
-      <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
+      <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
         <form onSubmit={handleAnalyze} className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
           <label className="block space-y-2">
             <span className="text-sm font-medium text-slate-200">Arquivo do pedido médico</span>
@@ -457,7 +457,7 @@ export function LerPedidoMedicoPage() {
       </section>
 
       {resultado ? (
-        <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
+        <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
           <form onSubmit={handleSubmit} className="space-y-5" data-testid="pedido-medico-form">
             <div>
               <h3 className="text-lg font-semibold text-white">Revisar nova solicitação</h3>

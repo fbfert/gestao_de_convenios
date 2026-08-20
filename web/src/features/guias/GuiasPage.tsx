@@ -261,7 +261,7 @@ export function GuiasPage() {
       ) : null}
 
       {isFormOpen || isCreateRoute ? (
-        <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
+        <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
           <form onSubmit={handleCreateSubmit} className="space-y-4">
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -423,7 +423,7 @@ export function GuiasPage() {
       ) : null}
 
       {!isCreateRoute ? (
-      <section className="space-y-4 rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
+      <section className="space-y-4 rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
         <form className="flex flex-wrap items-center gap-3" onSubmit={handleFilterSubmit}>
           <label className="flex items-center gap-2">
             <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Status</span>
@@ -516,9 +516,9 @@ export function GuiasPage() {
             ) : null}
             {/* Com as colunas de sessões separadas a tabela não cabe mais em telas médias:
                 rola na horizontal em vez de cortar Senha, Validade e Ações. */}
-            <div className="overflow-x-auto rounded-3xl border border-white/10">
+            <div className="overflow-x-auto rounded-superficie border border-linha">
               <table className="w-full border-collapse text-left text-sm">
-                <thead className="bg-white/5 text-xs uppercase tracking-[0.25em] text-slate-400">
+                <thead className="bg-fundo text-xs uppercase tracking-[0.25em] text-texto-suave">
                   <tr>
                     <ColunaOrdenavel
                     titulo="Nº Guia"
@@ -580,7 +580,7 @@ export function GuiasPage() {
                     <ColunaOrdenavel titulo="Ações" className="w-px px-4 py-3" />
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/10 bg-slate-950/30">
+                <tbody className="divide-y divide-linha bg-superficie">
                   {guias.map((guia) => (
                     <tr key={guia.id} data-testid={`guia-row-${guia.id}`}>
                       <td className="px-4 py-4 font-medium text-white">

@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { useLogin } from '../features/auth'
+import { Botao } from '../components/ui/Botao'
 
 export function LoginPage() {
   const navigate = useNavigate()
@@ -76,14 +77,15 @@ export function LoginPage() {
             </p>
           ) : null}
 
-          <button
+          <Botao
             type="submit"
+            variante="primario"
+            className="w-full"
             disabled={login.isPending}
-            className="inline-flex w-full items-center justify-center rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-70"
             data-testid="login-submit"
           >
             {login.isPending ? 'Entrando...' : 'Entrar'}
-          </button>
+          </Botao>
         </form>
       </div>
     </div>

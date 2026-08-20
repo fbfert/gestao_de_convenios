@@ -11,6 +11,7 @@ import {
   type TenantEdicaoForm,
   type TenantForm,
 } from './useTenants'
+import { Botao } from '../../components/ui/Botao'
 
 function inputClasses() {
   return 'w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20'
@@ -122,14 +123,9 @@ export function TenantsPage() {
       </section>
 
       <div className="flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          onClick={abrirNova}
-          className="rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
-          data-testid="tenant-nova"
-        >
+        <Botao variante="primario" onClick={abrirNova} data-testid="tenant-nova">
           Nova clínica
-        </button>
+        </Botao>
         <span className="text-xs text-slate-400">
           {tenants.length} {tenants.length === 1 ? 'clínica cadastrada' : 'clínicas cadastradas'}
         </span>
@@ -268,21 +264,12 @@ export function TenantsPage() {
           </div>
 
           <div className="mt-5 flex flex-wrap gap-3">
-            <button
-              type="submit"
-              disabled={criar.isPending}
-              className="rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:opacity-60"
-              data-testid="tenant-salvar"
-            >
+            <Botao type="submit" variante="primario" disabled={criar.isPending} data-testid="tenant-salvar">
               {criar.isPending ? 'Criando...' : 'Criar clínica'}
-            </button>
-            <button
-              type="button"
-              onClick={fechar}
-              className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
-            >
+            </Botao>
+            <Botao type="button" variante="secundario" onClick={fechar}>
               Cancelar
-            </button>
+            </Botao>
           </div>
         </form>
       ) : null}
@@ -347,20 +334,12 @@ export function TenantsPage() {
                 </label>
 
                 <div className="flex flex-wrap gap-3">
-                  <button
-                    type="submit"
-                    disabled={atualizar.isPending}
-                    className="rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:opacity-60"
-                  >
+                  <Botao type="submit" variante="primario" disabled={atualizar.isPending}>
                     {atualizar.isPending ? 'Salvando...' : 'Salvar'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={fechar}
-                    className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
-                  >
+                  </Botao>
+                  <Botao type="button" variante="secundario" onClick={fechar}>
                     Cancelar
-                  </button>
+                  </Botao>
                 </div>
               </form>
             ) : (
@@ -387,14 +366,15 @@ export function TenantsPage() {
                   </p>
                 </div>
 
-                <button
+                <Botao
                   type="button"
+                  variante="secundario"
+                  tamanho="sm"
                   onClick={() => abrirEdicao(tenant)}
-                  className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
                   data-testid={`tenant-editar-${tenant.slug}`}
                 >
                   Editar
-                </button>
+                </Botao>
               </div>
             )}
           </article>

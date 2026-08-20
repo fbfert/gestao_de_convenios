@@ -1,6 +1,7 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import { Select } from '../../components/ui/Select'
 import { Tooltip } from '../../components/ui/Tooltip'
+import { Botao } from '../../components/ui/Botao'
 import {
   exportarAuditoria,
   getHttpErrorMessage,
@@ -331,12 +332,7 @@ export function AuditoriaPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <button
-            className="rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
-            data-testid="auditoria-filtrar"
-          >
-            Filtrar
-          </button>
+          <Botao type="submit" data-testid="auditoria-filtrar">Filtrar</Botao>
           <button type="button" onClick={limpar} className="text-sm text-slate-300">
             Limpar
           </button>

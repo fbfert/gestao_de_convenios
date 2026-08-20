@@ -11,6 +11,7 @@ import {
   type AiPrompt,
   type AiPromptForm,
 } from './useAiPrompts'
+import { Botao } from '../../components/ui/Botao'
 
 function inputClasses() {
   return 'w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20'
@@ -182,14 +183,9 @@ export function PromptsOperacionaisPage() {
       </section>
 
       <div className="flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          onClick={abrirNovo}
-          className="rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
-          data-testid="prompt-novo"
-        >
+        <Botao type="button" onClick={abrirNovo} data-testid="prompt-novo">
           Novo prompt
-        </button>
+        </Botao>
         <span className="text-xs text-slate-400">
           {prompts.length} {prompts.length === 1 ? 'prompt cadastrado' : 'prompts cadastrados'}
         </span>
@@ -309,21 +305,12 @@ export function PromptsOperacionaisPage() {
           </label>
 
           <div className="mt-5 flex flex-wrap gap-3">
-            <button
-              type="submit"
-              disabled={salvando}
-              className="rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:opacity-60"
-              data-testid="prompt-salvar"
-            >
+            <Botao type="submit" carregando={salvando} data-testid="prompt-salvar">
               {salvando ? 'Salvando...' : 'Salvar prompt'}
-            </button>
-            <button
-              type="button"
-              onClick={fechar}
-              className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
-            >
+            </Botao>
+            <Botao type="button" variante="secundario" onClick={fechar}>
               Cancelar
-            </button>
+            </Botao>
           </div>
         </form>
       ) : null}

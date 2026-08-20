@@ -1,7 +1,30 @@
 import { Link } from 'react-router-dom'
 import { usePode } from '../../lib/permissoes'
 import { configuracoesItems, filtrarItens } from '../../routes/navigation'
-import { themeOptions, useThemeStore } from '../../stores/themeStore'
+import { themeOptions, useThemeStore, type Theme } from '../../stores/themeStore'
+
+/**
+ * Miniatura de cada tema. Cores literais de propósito (não tokens): a
+ * miniatura precisa mostrar os OUTROS temas também, não só o que está em
+ * vigor — usar var(--color-*) faria as três amostras ficarem iguais.
+ */
+const previewsPorTema: Record<Theme, { fundo: string; textoPrincipal: string; acento: string }> = {
+  'clinicas-claro': {
+    fundo: 'linear-gradient(180deg, #faf9f7 0%, #f1efeb 100%)',
+    textoPrincipal: '#211f1b',
+    acento: '#16695f',
+  },
+  claro: {
+    fundo: 'linear-gradient(180deg, #f7f9fc 0%, #eef2f7 100%)',
+    textoPrincipal: '#1e293b',
+    acento: '#0e7490',
+  },
+  escuro: {
+    fundo: 'linear-gradient(180deg, #07111f 0%, #0f172a 100%)',
+    textoPrincipal: '#e2e8f0',
+    acento: '#22d3ee',
+  },
+}
 
 /**
  * Tela de entrada de /configuracoes. Recebeu o que antes era a aba "Geral":
@@ -33,9 +56,10 @@ export function ConfiguracoesGeralPage() {
           imediatamente.
         </p>
 
-        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+        <div className="mt-5 grid gap-3 sm:grid-cols-3">
           {themeOptions.map((option) => {
             const isActive = theme === option.value
+            const preview = previewsPorTema[option.value]
 
             return (
               <button
@@ -61,28 +85,13 @@ export function ConfiguracoesGeralPage() {
                 <span className="mt-2 block text-xs leading-5 text-slate-400">
                   {option.description}
                 </span>
-                {/*
-                  Miniatura do tema. As cores sao literais porque precisam
-                  mostrar o tema oposto tambem: usar os tokens faria as duas
-                  amostras ficarem iguais, sempre a do tema em vigor.
-                */}
                 <span
                   aria-hidden="true"
                   className="mt-3 flex h-12 items-center gap-2 overflow-hidden rounded-xl border border-white/10 px-3"
-                  style={
-                    option.value === 'claro'
-                      ? { background: 'linear-gradient(180deg, #f7f9fc 0%, #eef2f7 100%)' }
-                      : { background: 'linear-gradient(180deg, #07111f 0%, #0f172a 100%)' }
-                  }
+                  style={{ background: preview.fundo }}
                 >
-                  <span
-                    className="h-2 w-16 rounded-full"
-                    style={{ background: option.value === 'claro' ? '#1e293b' : '#e2e8f0' }}
-                  />
-                  <span
-                    className="h-2 w-8 rounded-full"
-                    style={{ background: option.value === 'claro' ? '#0e7490' : '#22d3ee' }}
-                  />
+                  <span className="h-2 w-16 rounded-full" style={{ background: preview.textoPrincipal }} />
+                  <span className="h-2 w-8 rounded-full" style={{ background: preview.acento }} />
                 </span>
               </button>
             )

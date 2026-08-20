@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useEffect, useState, type ReactNode } from 'react'
+import { Botao } from '../../components/ui/Botao'
 import { Select } from '../../components/ui/Select'
 import { usePode } from '../../lib/permissoes'
 import { useEspecialidades, useProfissionais } from '../../lib/queries/useReferenceData'
@@ -306,23 +307,17 @@ export function GuiaDetalheResumo({ guia }: { guia: Guia }) {
           ) : null}
 
           <div className="flex gap-2">
-            <button
-              type="button"
+            <Botao
+              variante="primario"
               onClick={() => void salvar()}
               disabled={atualizar.isPending}
-              className="rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:opacity-60"
               data-testid="guia-resumo-salvar"
             >
               {atualizar.isPending ? 'Salvando...' : 'Salvar alterações'}
-            </button>
-            <button
-              type="button"
-              onClick={() => setEditando(false)}
-              className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
-              data-testid="guia-resumo-cancelar"
-            >
+            </Botao>
+            <Botao variante="secundario" onClick={() => setEditando(false)} data-testid="guia-resumo-cancelar">
               Cancelar
-            </button>
+            </Botao>
           </div>
         </section>
       )}

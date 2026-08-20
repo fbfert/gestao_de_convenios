@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { ColunaOrdenavel } from '../../components/ui/ColunaOrdenavel'
 import { useOrdenacao } from '../../lib/useOrdenacao'
 import { Link, useMatch, useNavigate } from 'react-router-dom'
+import { Badge } from '../../components/ui/Badge'
+import { Botao } from '../../components/ui/Botao'
 import { Select } from '../../components/ui/Select'
 import { translateStatus } from '../../lib/statusLabels'
 import { formatCarteirinha } from '../../lib/carteirinha'
@@ -41,22 +43,22 @@ function selectClasses() {
   return 'w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20'
 }
 
-function statusTone(status: string) {
+function statusTone(status: string): 'acento' | 'sucesso' | 'alerta' | 'perigo' {
   switch (status) {
     case 'registered':
-      return 'bg-cyan-400/15 text-cyan-100 border-cyan-400/20'
+      return 'acento'
     case 'approved':
     case 'finalized':
-      return 'bg-emerald-400/15 text-emerald-100 border-emerald-400/20'
+      return 'sucesso'
     case 'needs_verification':
-      return 'bg-amber-400/15 text-amber-100 border-amber-400/20'
+      return 'alerta'
     case 'canceled':
     case 'denied':
-      return 'bg-rose-400/15 text-rose-100 border-rose-400/20'
+      return 'perigo'
     case 'expired':
-      return 'bg-amber-400/15 text-amber-100 border-amber-400/20'
+      return 'alerta'
     default:
-      return 'bg-cyan-400/15 text-cyan-100 border-cyan-400/20'
+      return 'acento'
   }
 }
 
@@ -218,14 +220,9 @@ export function GuiasPage() {
             </h2>
           </div>
 
-          <button
-            type="button"
-            onClick={handleNew}
-            className="rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
-            data-testid="guia-novo"
-          >
+          <Botao variante="primario" onClick={handleNew} data-testid="guia-novo">
             Novo
-          </button>
+          </Botao>
         </div>
 
         {/* O contador vira linha compacta; o filtro de validade continua sendo
@@ -270,8 +267,8 @@ export function GuiasPage() {
               <div>
                 <h3 className="text-lg font-semibold text-white">Nova guia</h3>
               </div>
-              <button
-                type="button"
+              <Botao
+                variante="secundario"
                 onClick={() => {
                   if (isCreateRoute) {
                     navigate('/guias')
@@ -280,11 +277,10 @@ export function GuiasPage() {
 
                   setIsFormOpen(false)
                 }}
-                className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
                 data-testid="guia-fechar"
               >
                 Fechar
-              </button>
+              </Botao>
             </div>
 
             <label className="block space-y-2">
@@ -413,14 +409,15 @@ export function GuiasPage() {
               </p>
             ) : null}
 
-            <button
+            <Botao
               type="submit"
+              variante="primario"
+              className="w-full"
               disabled={criarGuia.isPending || !formIsReady}
-              className="inline-flex w-full items-center justify-center rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:opacity-60"
               data-testid="guia-submit"
             >
               {criarGuia.isPending ? 'Salvando...' : 'Criar guia'}
-            </button>
+            </Botao>
           </form>
         </section>
       ) : null}
@@ -497,12 +494,9 @@ export function GuiasPage() {
             </div>
           </label>
 
-          <button
-            type="submit"
-            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
-          >
+          <Botao type="submit" variante="secundario">
             Aplicar
-          </button>
+          </Botao>
         </form>
 
         {guiasQuery.isLoading ? (
@@ -610,14 +604,9 @@ export function GuiasPage() {
                         </td>
                         <td className="px-4 py-4">
                           <div className="flex flex-col gap-2">
-                            <span
-                              className={`inline-flex w-fit rounded-full border px-3 py-1 text-xs font-semibold ${statusTone(
-                                guia.status,
-                              )}`}
-                              data-testid={`guia-status-${guia.id}`}
-                            >
+                            <Badge tone={statusTone(guia.status)} data-testid={`guia-status-${guia.id}`}>
                               {translateStatus('guias', guia.status)}
-                            </span>
+                            </Badge>
                             {guia.automacao_execucao ? (
                               <span className="inline-flex w-fit rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-100">
                                 Unimed · {guia.automacao_execucao.status}

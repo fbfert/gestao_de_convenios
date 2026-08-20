@@ -13,6 +13,8 @@ import {
 } from './useUsuarios'
 import type { Usuario, UsuarioForm } from './types'
 import { Indicadores } from '../../components/ui/Indicadores'
+import { Botao } from '../../components/ui/Botao'
+import { Badge } from '../../components/ui/Badge'
 
 const emptyForm: UsuarioForm = {
   name: '',
@@ -25,12 +27,6 @@ const emptyForm: UsuarioForm = {
 
 function selectClasses() {
   return 'w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20'
-}
-
-function statusTone(ativo: boolean) {
-  return ativo
-    ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-100'
-    : 'border-rose-400/30 bg-rose-400/10 text-rose-100'
 }
 
 function toForm(usuario: Usuario): UsuarioForm {
@@ -253,14 +249,9 @@ export function UsuariosPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={handleNew}
-              className="rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
-              data-testid="usuario-novo"
-            >
+            <Botao variante="primario" onClick={handleNew} data-testid="usuario-novo">
               Novo
-            </button>
+            </Botao>
           </div>
         </div>
 
@@ -404,9 +395,10 @@ export function UsuariosPage() {
             ) : null}
 
             <div className="flex gap-3">
-              <button
+              <Botao
                 type="submit"
-                className="inline-flex flex-1 items-center justify-center rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:opacity-60"
+                variante="primario"
+                className="flex-1"
                 disabled={
                   criarUsuario.isPending ||
                   atualizarUsuario.isPending ||
@@ -423,15 +415,15 @@ export function UsuariosPage() {
                   : criarUsuario.isPending
                     ? 'Salvando...'
                     : 'Criar usuário'}
-              </button>
-              <button
+              </Botao>
+              <Botao
                 type="button"
+                variante="secundario"
                 onClick={handleCancel}
-                className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
                 data-testid={editingId ? 'usuario-cancelar' : 'usuario-fechar'}
               >
                 {editingId ? 'Cancelar' : 'Fechar'}
-              </button>
+              </Botao>
             </div>
           </form>
         </section>
@@ -454,13 +446,9 @@ export function UsuariosPage() {
                 data-testid="usuario-busca"
               />
             </label>
-            <button
-              type="submit"
-              className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
-              data-testid="usuario-busca-submit"
-            >
+            <Botao type="submit" variante="secundario" data-testid="usuario-busca-submit">
               Filtrar
-            </button>
+            </Botao>
           </form>
         </div>
 
@@ -512,14 +500,12 @@ export function UsuariosPage() {
                     <td className="px-4 py-4 text-slate-200">{usuario.role}</td>
                     <td className="px-4 py-4 text-slate-200">{usuario.profissional?.nome ?? '-'}</td>
                     <td className="px-4 py-4">
-                      <span
-                        className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${statusTone(
-                          usuario.ativo,
-                        )}`}
+                      <Badge
+                        tone={usuario.ativo ? 'sucesso' : 'perigo'}
                         data-testid={`usuario-status-${usuario.id}`}
                       >
                         {usuario.ativo ? 'Ativo' : 'Inativo'}
-                      </span>
+                      </Badge>
                     </td>
                     <td className="w-px whitespace-nowrap px-4 py-4">
                       <div className="flex flex-nowrap gap-2">
@@ -567,27 +553,29 @@ export function UsuariosPage() {
         )}
 
         <div className="flex items-center justify-between gap-3">
-          <button
+          <Botao
             type="button"
-            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10 disabled:opacity-50"
+            variante="secundario"
+            tamanho="sm"
             onClick={() => setPage((current) => Math.max(1, current - 1))}
             disabled={page <= 1 || usuariosQuery.isFetching}
           >
             Anterior
-          </button>
+          </Botao>
 
           <p className="text-sm text-slate-300">
             Página {page} de {totalPages}
           </p>
 
-          <button
+          <Botao
             type="button"
-            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10 disabled:opacity-50"
+            variante="secundario"
+            tamanho="sm"
             onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
             disabled={page >= totalPages || usuariosQuery.isFetching}
           >
             Próxima
-          </button>
+          </Botao>
         </div>
       </section>
       ) : null}

@@ -7,6 +7,7 @@ import {
   useSalvarAiSettings,
   type AiOpenaiForm,
 } from './useAiSettings'
+import { Botao } from '../../components/ui/Botao'
 
 function inputClasses() {
   return 'w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20'
@@ -188,15 +189,15 @@ export function ConfiguracoesIaPage() {
         </label>
 
         <div className="mt-5 flex flex-wrap items-center gap-3">
-          <button
+          <Botao
             type="button"
+            variante="secundario"
             onClick={() => void modelosQuery.refetch()}
-            disabled={modelosQuery.isFetching}
-            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10 disabled:opacity-60"
+            carregando={modelosQuery.isFetching}
             data-testid="ia-openai-listar-modelos"
           >
             {modelosQuery.isFetching ? 'Listando modelos...' : 'Listar modelos'}
-          </button>
+          </Botao>
           <span className="text-xs text-slate-400">
             Usa a chave já salva. Salve antes de listar.
           </span>
@@ -261,14 +262,14 @@ export function ConfiguracoesIaPage() {
         ))}
       </datalist>
 
-      <button
+      <Botao
         type="submit"
-        disabled={salvar.isPending}
-        className="inline-flex w-full items-center justify-center rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:opacity-60"
+        carregando={salvar.isPending}
+        className="w-full"
         data-testid="configuracoes-ia-salvar"
       >
         {salvar.isPending ? 'Salvando...' : 'Salvar conexão'}
-      </button>
+      </Botao>
     </form>
   )
 }

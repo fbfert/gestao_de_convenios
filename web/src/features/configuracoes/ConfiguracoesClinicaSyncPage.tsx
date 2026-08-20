@@ -4,20 +4,18 @@ import {
   useSincronizarClinicaAgora,
   type ClinicaSyncResumoEntidade,
 } from './useClinicaSync'
+import { Botao } from '../../components/ui/Botao'
+import { Badge, type BadgeProps } from '../../components/ui/Badge'
 
 function formatarData(iso: string | null): string {
   if (!iso) return '—'
   return new Date(iso).toLocaleString('pt-BR')
 }
 
-function badgeClasses(status: 'ok' | 'error' | null) {
-  if (status === 'ok') {
-    return 'border-emerald-400/20 bg-emerald-500/10 text-emerald-100'
-  }
-  if (status === 'error') {
-    return 'border-rose-400/20 bg-rose-500/10 text-rose-100'
-  }
-  return 'border-white/10 bg-white/5 text-slate-300'
+function badgeTone(status: 'ok' | 'error' | null): NonNullable<BadgeProps['tone']> {
+  if (status === 'ok') return 'sucesso'
+  if (status === 'error') return 'perigo'
+  return 'neutro'
 }
 
 function BlocoEntidade({ titulo, resumo }: { titulo: string; resumo: ClinicaSyncResumoEntidade | undefined }) {
@@ -82,15 +80,14 @@ export function ConfiguracoesClinicaSyncPage() {
             ) : null}
           </div>
 
-          <button
+          <Botao
             type="button"
+            carregando={sincronizar.isPending}
             onClick={() => sincronizar.mutate()}
-            disabled={sincronizar.isPending}
-            className="inline-flex items-center justify-center rounded-2xl bg-cyan-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:opacity-60"
             data-testid="clinica-sync-agora"
           >
             {sincronizar.isPending ? 'Sincronizando...' : 'Sincronizar Agora'}
-          </button>
+          </Botao>
         </div>
 
         {sincronizar.isError ? (
@@ -102,9 +99,9 @@ export function ConfiguracoesClinicaSyncPage() {
         {ultima ? (
           <div className="mt-5 space-y-4">
             <div className="flex flex-wrap items-center gap-3 text-xs">
-              <span className={`rounded-full border px-3 py-1 font-semibold uppercase tracking-wide ${badgeClasses(ultima.status)}`}>
+              <Badge tone={badgeTone(ultima.status)} className="uppercase tracking-wide">
                 {ultima.status === 'ok' ? 'OK' : 'Erro'}
-              </span>
+              </Badge>
               <span className="text-slate-400">
                 {ultima.origem === 'manual' ? 'Manual' : 'Agendado'} · {formatarData(ultima.iniciado_em)}
               </span>

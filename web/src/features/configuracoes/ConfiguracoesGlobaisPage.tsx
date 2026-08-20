@@ -7,6 +7,7 @@ import {
   useSalvarConfiguracoesGlobais,
   type ConfiguracoesGlobaisForm,
 } from './useConfiguracoesGlobais'
+import { Botao } from '../../components/ui/Botao'
 
 function inputClasses() {
   return 'w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20'
@@ -239,14 +240,14 @@ export function ConfiguracoesGlobaisPage() {
         </p>
       ) : null}
 
-      <button
+      <Botao
         type="submit"
-        disabled={salvar.isPending}
-        className="inline-flex w-full items-center justify-center rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:opacity-60"
+        carregando={salvar.isPending}
+        className="w-full"
         data-testid="globais-salvar"
       >
         {salvar.isPending ? 'Salvando...' : 'Salvar configurações globais'}
-      </button>
+      </Botao>
     </form>
   )
 }

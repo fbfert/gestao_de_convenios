@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Botao } from '../../components/ui/Botao'
 import { Select } from '../../components/ui/Select'
 import { useProfissionais } from '../../lib/queries/useReferenceData'
 import { useAntecipacoes } from '../antecipacoes/useAntecipacoes'
@@ -242,15 +243,14 @@ export function ImportarSessoesPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
+          <Botao
+            variante="primario"
             onClick={() => arquivoRef.current?.click()}
             disabled={!prontoParaLer || lendo}
-            className="inline-flex items-center justify-center rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:opacity-60"
             data-testid="importar-arquivo-botao"
           >
             {lerArquivo.isPending ? 'Lendo registro...' : 'Ler foto ou PDF do registro'}
-          </button>
+          </Botao>
 
           <input
             ref={arquivoRef}

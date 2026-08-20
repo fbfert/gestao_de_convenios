@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getHttpErrorMessage, useLerCarteirinha } from './usePacientes'
 import type { LeituraCarteirinha } from './types'
+import { Botao } from '../../components/ui/Botao'
 import { Tooltip } from '../../components/ui/Tooltip'
 
 /** Largura máxima da foto enviada. Acima disso só cresce o upload. */
@@ -148,11 +149,10 @@ export function LerCarteirinha({
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-3">
-        <button
-          type="button"
+        <Botao
+          variante="primario"
           onClick={() => inputRef.current?.click()}
           disabled={ler.isPending || camera}
-          className="inline-flex items-center gap-2 rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:opacity-60"
           data-testid="paciente-ler-carteirinha"
         >
           <svg aria-hidden="true" viewBox="0 0 20 20" className="h-4 w-4">
@@ -167,7 +167,7 @@ export function LerCarteirinha({
             />
           </svg>
           {ler.isPending ? 'Lendo carteirinha...' : 'Ler Carteirinha'}
-        </button>
+        </Botao>
 
         {webcamDisponivel() ? (
           <button
@@ -224,14 +224,9 @@ export function LerCarteirinha({
           />
 
           <div className="flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={capturar}
-              className="rounded-2xl bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
-              data-testid="paciente-webcam-capturar"
-            >
+            <Botao variante="primario" onClick={capturar} data-testid="paciente-webcam-capturar">
               Tirar foto e ler
-            </button>
+            </Botao>
             <button type="button" onClick={fecharCamera} className="text-sm text-slate-300">
               Cancelar
             </button>

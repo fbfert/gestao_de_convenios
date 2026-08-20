@@ -26,6 +26,8 @@ import { emptyItem, itensEstaoCompletos } from './solicitacaoItens'
 import { Indicadores } from '../../components/ui/Indicadores'
 import { Tooltip } from '../../components/ui/Tooltip'
 import { usePode } from '../../lib/permissoes'
+import { Botao } from '../../components/ui/Botao'
+import { Badge, type BadgeProps } from '../../components/ui/Badge'
 
 const emptyArray: never[] = []
 
@@ -65,19 +67,18 @@ const statusActions: Array<{ status: SolicitacaoStatus; label: string; className
   },
 ]
 
-function statusTone(status: string) {
+function statusTone(status: string): NonNullable<BadgeProps['tone']> {
   switch (status) {
-    case 'registered':
-      return 'bg-cyan-400/15 text-cyan-100 border-cyan-400/20'
     case 'approved':
-      return 'bg-emerald-400/15 text-emerald-100 border-emerald-400/20'
+      return 'sucesso'
     case 'canceled':
     case 'denied':
-      return 'bg-rose-400/15 text-rose-100 border-rose-400/20'
+      return 'perigo'
     case 'expired':
-      return 'bg-amber-400/15 text-amber-100 border-amber-400/20'
+      return 'alerta'
+    case 'registered':
     default:
-      return 'bg-cyan-400/15 text-cyan-100 border-cyan-400/20'
+      return 'acento'
   }
 }
 
@@ -321,14 +322,9 @@ export function SolicitacoesPage() {
               <strong className="mt-1 block">Novo</strong> abre o mesmo formulário em branco, para
               digitar tudo manualmente.
             </Tooltip>
-            <button
-              type="button"
-              onClick={handleNew}
-              className="rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
-              data-testid="solicitacao-novo"
-            >
+            <Botao variante="primario" onClick={handleNew} data-testid="solicitacao-novo">
               Novo
-            </button>
+            </Botao>
           </div>
         </div>
 
@@ -350,14 +346,9 @@ export function SolicitacoesPage() {
               <div>
                 <h3 className="text-lg font-semibold text-white">Nova solicitação</h3>
               </div>
-              <button
-                type="button"
-                onClick={handleCancel}
-                className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
-                data-testid="solicitacao-fechar"
-              >
+              <Botao type="button" variante="secundario" onClick={handleCancel} data-testid="solicitacao-fechar">
                 Fechar
-              </button>
+              </Botao>
             </div>
 
             {!formReady ? (
@@ -516,14 +507,15 @@ export function SolicitacoesPage() {
               </p>
             ) : null}
 
-            <button
+            <Botao
               type="submit"
-              className="inline-flex w-full items-center justify-center rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:opacity-60"
+              variante="primario"
+              className="w-full"
               disabled={criarSolicitacao.isPending || !formIsComplete}
               data-testid="solicitacao-submit"
             >
               {criarSolicitacao.isPending ? 'Salvando...' : 'Criar solicitação'}
-            </button>
+            </Botao>
           </form>
         </section>
       ) : null}
@@ -578,12 +570,9 @@ export function SolicitacoesPage() {
               </Select>
             </label>
 
-            <button
-              type="submit"
-              className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
-            >
+            <Botao type="submit" variante="secundario">
               Aplicar
-            </button>
+            </Botao>
           </form>
         </div>
 
@@ -722,14 +711,9 @@ export function SolicitacoesPage() {
                       )}
                     </td>
                     <td className="px-4 py-4">
-                      <span
-                        className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${statusTone(
-                          solicitacao.status,
-                        )}`}
-                        data-testid={`solicitacao-status-${solicitacao.id}`}
-                      >
+                      <Badge tone={statusTone(solicitacao.status)} data-testid={`solicitacao-status-${solicitacao.id}`}>
                         {translateStatus('solicitacoes', solicitacao.status)}
-                      </span>
+                      </Badge>
                     </td>
                     <td className="px-4 py-4 text-slate-200">
                       {solicitacao.medico?.nome ?? solicitacao.medico_id}
@@ -785,27 +769,29 @@ export function SolicitacoesPage() {
         )}
 
         <div className="flex items-center justify-between gap-3">
-          <button
+          <Botao
             type="button"
-            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10 disabled:opacity-50"
+            variante="secundario"
+            tamanho="sm"
             onClick={() => setPage((current) => Math.max(1, current - 1))}
             disabled={page <= 1 || solicitacoesQuery.isFetching}
           >
             Anterior
-          </button>
+          </Botao>
 
           <p className="text-sm text-slate-300">
             Página {page} de {totalPages}
           </p>
 
-          <button
+          <Botao
             type="button"
-            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10 disabled:opacity-50"
+            variante="secundario"
+            tamanho="sm"
             onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
             disabled={page >= totalPages || solicitacoesQuery.isFetching}
           >
             Próxima
-          </button>
+          </Botao>
         </div>
       </section>
       ) : null}

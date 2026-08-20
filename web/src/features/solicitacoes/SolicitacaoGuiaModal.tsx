@@ -8,6 +8,7 @@ import { getHttpErrorMessage, useGuia } from '../guias/useGuias'
 import { abrirPedidoMedico, useAtualizarSolicitacao, type SolicitacaoEditForm } from './useSolicitacoes'
 import { SolicitacaoAnexos } from './SolicitacaoAnexos'
 import type { Solicitacao } from './types'
+import { Botao } from '../../components/ui/Botao'
 
 type SolicitacaoGuiaModalProps = {
   solicitacao: Solicitacao | null
@@ -159,23 +160,23 @@ function SolicitacaoDados({ solicitacao }: { solicitacao: Solicitacao }) {
           ) : null}
 
           <div className="flex gap-2">
-            <button
+            <Botao
               type="button"
+              variante="primario"
               onClick={() => void salvar()}
               disabled={atualizar.isPending}
-              className="rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:opacity-60"
               data-testid="solicitacao-modal-salvar"
             >
               {atualizar.isPending ? 'Salvando...' : 'Salvar alterações'}
-            </button>
-            <button
+            </Botao>
+            <Botao
               type="button"
+              variante="secundario"
               onClick={() => setEditando(false)}
-              className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
               data-testid="solicitacao-modal-cancelar"
             >
               Cancelar
-            </button>
+            </Botao>
           </div>
         </div>
       )}

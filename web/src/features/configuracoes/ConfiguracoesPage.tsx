@@ -21,6 +21,7 @@ import {
   type UnimedProfissionalMapeamentoForm,
   type UnimedSettingsForm,
 } from './useUnimedSettings'
+import { Botao } from '../../components/ui/Botao'
 
 const emptySmtpForm: EmailSettingsForm['smtp'] = {
   host: '',
@@ -519,14 +520,14 @@ export function ConfiguracoesPage({ aba }: { aba: ConfiguracoesAba }) {
             </p>
           ) : null}
 
-          <button
+          <Botao
             type="submit"
-            disabled={salvarEmailSettings.isPending}
-            className="inline-flex w-full items-center justify-center rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:opacity-60"
+            carregando={salvarEmailSettings.isPending}
+            className="w-full"
             data-testid="configuracoes-emails-salvar"
           >
             {salvarEmailSettings.isPending ? 'Salvando...' : 'Salvar configurações de email'}
-          </button>
+          </Botao>
         </form>
       ) : null}
 
@@ -652,15 +653,15 @@ export function ConfiguracoesPage({ aba }: { aba: ConfiguracoesAba }) {
                   {unimedWorkerHealth.data?.status ?? 'Não consultado'}
                 </p>
               </div>
-              <button
+              <Botao
                 type="button"
+                variante="secundario"
                 onClick={() => void unimedWorkerHealth.refetch()}
-                disabled={unimedWorkerHealth.isFetching}
-                className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10 disabled:opacity-60"
+                carregando={unimedWorkerHealth.isFetching}
                 data-testid="unimed-worker-health"
               >
                 {unimedWorkerHealth.isFetching ? 'Consultando...' : 'Healthcheck'}
-              </button>
+              </Botao>
               {unimedSettingsQuery.data?.credential?.automation_paused_at ? (
                 <button
                   type="button"
@@ -725,14 +726,13 @@ export function ConfiguracoesPage({ aba }: { aba: ConfiguracoesAba }) {
                     className={inputClasses()}
                     data-testid="unimed-mapeamento-quantidade"
                   />
-                  <button
+                  <Botao
                     type="submit"
                     disabled={!unimedForm.convenio_id || !especialidadeMapeamentoForm.codigo_procedimento}
-                    className="rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 disabled:opacity-60"
                     data-testid="unimed-mapeamento-especialidade-salvar"
                   >
                     Salvar
-                  </button>
+                  </Botao>
                 </form>
                 <div className="mt-4 space-y-2">
                   {(especialidadeMapeamentosQuery.data ?? []).map((mapeamento) => (
@@ -790,14 +790,13 @@ export function ConfiguracoesPage({ aba }: { aba: ConfiguracoesAba }) {
                     placeholder="Código operadora"
                     data-testid="unimed-mapeamento-codigo-operadora"
                   />
-                  <button
+                  <Botao
                     type="submit"
                     disabled={!unimedForm.convenio_id || !profissionalMapeamentoForm.codigo_operadora}
-                    className="rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 disabled:opacity-60"
                     data-testid="unimed-mapeamento-profissional-salvar"
                   >
                     Salvar
-                  </button>
+                  </Botao>
                 </form>
                 <div className="mt-4 space-y-2">
                   {(profissionalMapeamentosQuery.data ?? []).map((mapeamento) => (
@@ -840,14 +839,15 @@ export function ConfiguracoesPage({ aba }: { aba: ConfiguracoesAba }) {
             </p>
           ) : null}
 
-          <button
+          <Botao
             type="submit"
-            disabled={salvarUnimedSettings.isPending || !canManageUnimed}
-            className="inline-flex w-full items-center justify-center rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:opacity-60"
+            disabled={!canManageUnimed}
+            carregando={salvarUnimedSettings.isPending}
+            className="w-full"
             data-testid="configuracoes-unimed-salvar"
           >
             {salvarUnimedSettings.isPending ? 'Salvando...' : 'Salvar configurações Unimed'}
-          </button>
+          </Botao>
         </form>
       ) : null}
     </div>

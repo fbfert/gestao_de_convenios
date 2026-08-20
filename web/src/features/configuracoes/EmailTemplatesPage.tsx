@@ -10,6 +10,8 @@ import {
   type EmailTemplateForm,
   type EmailTemplateSettings,
 } from './useEmailSettings'
+import { Botao } from '../../components/ui/Botao'
+import { Badge, type BadgeProps } from '../../components/ui/Badge'
 
 const emptyForm: EmailTemplateForm = {
   chave: '',
@@ -23,10 +25,8 @@ function fieldClasses() {
   return 'w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20'
 }
 
-function statusTone(ativo: boolean) {
-  return ativo
-    ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-100'
-    : 'border-rose-400/30 bg-rose-400/10 text-rose-100'
+function statusTone(ativo: boolean): NonNullable<BadgeProps['tone']> {
+  return ativo ? 'sucesso' : 'perigo'
 }
 
 function toForm(template: EmailTemplateSettings): EmailTemplateForm {
@@ -200,14 +200,9 @@ export function EmailTemplatesPage() {
             >
               Voltar
             </Link>
-            <button
-              type="button"
-              onClick={handleNew}
-              className="rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
-              data-testid="email-template-novo"
-            >
+            <Botao type="button" onClick={handleNew} data-testid="email-template-novo">
               Novo template
-            </button>
+            </Botao>
           </div>
         </div>
 
@@ -309,10 +304,10 @@ export function EmailTemplatesPage() {
             ) : null}
 
             <div className="flex gap-3">
-              <button
+              <Botao
                 type="submit"
-                className="inline-flex flex-1 items-center justify-center rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:opacity-60"
-                disabled={criarTemplate.isPending || atualizarTemplate.isPending}
+                className="flex-1"
+                carregando={criarTemplate.isPending || atualizarTemplate.isPending}
                 data-testid="email-template-submit"
               >
                 {editingId
@@ -322,15 +317,15 @@ export function EmailTemplatesPage() {
                   : criarTemplate.isPending
                     ? 'Salvando...'
                     : 'Criar template'}
-              </button>
-              <button
+              </Botao>
+              <Botao
                 type="button"
+                variante="secundario"
                 onClick={handleCancel}
-                className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
                 data-testid="email-template-cancelar"
               >
                 Cancelar
-              </button>
+              </Botao>
             </div>
           </form>
         </section>
@@ -378,13 +373,9 @@ export function EmailTemplatesPage() {
                     </td>
                     <td className="px-4 py-4 text-slate-200">{template.assunto}</td>
                     <td className="px-4 py-4">
-                      <span
-                        className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${statusTone(
-                          template.ativo,
-                        )}`}
-                      >
+                      <Badge tone={statusTone(template.ativo)}>
                         {template.ativo ? 'Ativo' : 'Inativo'}
-                      </span>
+                      </Badge>
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex flex-wrap gap-2">

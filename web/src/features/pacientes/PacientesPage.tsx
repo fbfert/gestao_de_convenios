@@ -17,6 +17,8 @@ import { TelefonesInput } from './TelefonesInput'
 import type { LeituraCarteirinha, Paciente, PacienteForm } from './types'
 import { Indicadores } from '../../components/ui/Indicadores'
 import { Tooltip } from '../../components/ui/Tooltip'
+import { Botao } from '../../components/ui/Botao'
+import { Badge } from '../../components/ui/Badge'
 
 const emptyForm: PacienteForm = {
   nome: '',
@@ -41,12 +43,6 @@ const filtrosVazios: PacientesConsulta = {
 
 function selectClasses() {
   return 'w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20'
-}
-
-function statusTone(ativo: boolean) {
-  return ativo
-    ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-100'
-    : 'border-rose-400/30 bg-rose-400/10 text-rose-100'
 }
 
 function toForm(paciente: Paciente): PacienteForm {
@@ -348,14 +344,9 @@ export function PacientesPage() {
             </h2>
           </div>
 
-          <button
-            type="button"
-            onClick={handleNew}
-            className="rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
-            data-testid="paciente-novo"
-          >
+          <Botao variante="primario" onClick={handleNew} data-testid="paciente-novo">
             Novo
-          </button>
+          </Botao>
         </div>
 
         <Indicadores
@@ -551,9 +542,10 @@ export function PacientesPage() {
             ) : null}
 
             <div className="flex gap-3">
-              <button
+              <Botao
                 type="submit"
-                className="inline-flex flex-1 items-center justify-center rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:opacity-60"
+                variante="primario"
+                className="flex-1"
                 disabled={
                   criarPaciente.isPending ||
                   atualizarPaciente.isPending ||
@@ -569,15 +561,15 @@ export function PacientesPage() {
                   : criarPaciente.isPending
                     ? 'Salvando...'
                     : 'Criar paciente'}
-              </button>
-              <button
+              </Botao>
+              <Botao
                 type="button"
+                variante="secundario"
                 onClick={handleCancel}
-                className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
                 data-testid={editingId ? 'paciente-cancelar' : 'paciente-fechar'}
               >
                 {editingId ? 'Cancelar' : 'Fechar'}
-              </button>
+              </Botao>
             </div>
           </form>
         </section>
@@ -649,13 +641,9 @@ export function PacientesPage() {
             </label>
 
             <div className="flex gap-3 md:col-span-2 xl:col-span-4">
-              <button
-                type="submit"
-                className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
-                data-testid="paciente-busca-submit"
-              >
+              <Botao type="submit" variante="secundario" data-testid="paciente-busca-submit">
                 Filtrar
-              </button>
+              </Botao>
               <button
                 type="button"
                 onClick={() => {
@@ -752,14 +740,12 @@ export function PacientesPage() {
                       )}
                     </td>
                     <td className="px-4 py-4">
-                      <span
-                        className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${statusTone(
-                          paciente.ativo,
-                        )}`}
+                      <Badge
+                        tone={paciente.ativo ? 'sucesso' : 'perigo'}
                         data-testid={`paciente-status-${paciente.id}`}
                       >
                         {paciente.ativo ? 'Ativo' : 'Inativo'}
-                      </span>
+                      </Badge>
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex flex-wrap gap-2">

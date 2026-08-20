@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { ColunaOrdenavel } from '../../components/ui/ColunaOrdenavel'
 import { useOrdenacao } from '../../lib/useOrdenacao'
+import { Botao } from '../../components/ui/Botao'
 import { Indicadores } from '../../components/ui/Indicadores'
 import { Link, useMatch, useNavigate, useSearchParams } from 'react-router-dom'
 import { translateStatus } from '../../lib/statusLabels'
@@ -187,23 +188,17 @@ export function LancamentosPage() {
               >
                 Importar transcrição
               </Link>
-              <button
-                type="button"
+              <Botao
+                variante="secundario"
                 onClick={() => window.print()}
-                className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
                 data-testid="lancamento-imprimir-modelo"
                 disabled={printTemplateQuery.isLoading || printHtml.trim() === ''}
               >
                 {printTemplateQuery.isLoading ? 'Carregando modelo...' : 'Imprimir modelo em branco'}
-              </button>
-              <button
-                type="button"
-                onClick={handleNew}
-                className="rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
-                data-testid="lancamento-novo"
-              >
+              </Botao>
+              <Botao variante="primario" onClick={handleNew} data-testid="lancamento-novo">
                 Novo
-              </button>
+              </Botao>
               <Tooltip rotulo="Diferença entre os botões">
                 <p><strong>Templates:</strong> textos padrão reaproveitados no resumo da sessão.</p>
                 <p className="mt-1">
@@ -241,8 +236,8 @@ export function LancamentosPage() {
                 <div>
                   <h3 className="text-lg font-semibold text-white">Novo lançamento manual</h3>
                 </div>
-              <button
-                type="button"
+              <Botao
+                variante="secundario"
                 onClick={() => {
                   if (isCreateRoute) {
                     navigate('/lancamentos')
@@ -251,11 +246,10 @@ export function LancamentosPage() {
 
                   setIsFormOpen(false)
                 }}
-                className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
                 data-testid="lancamento-fechar"
               >
-                  Fechar
-                </button>
+                Fechar
+              </Botao>
               </div>
 
               <label className="block space-y-2">
@@ -391,14 +385,15 @@ export function LancamentosPage() {
                   : 'Selecione uma antecipação para registrar a sessão.'}
               </div>
 
-              <button
+              <Botao
                 type="submit"
+                variante="primario"
+                className="w-full"
                 disabled={criarLancamento.isPending}
-                className="inline-flex w-full items-center justify-center rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:opacity-60"
                 data-testid="lancamento-submit"
               >
                 {criarLancamento.isPending ? 'Salvando...' : 'Registrar sessão'}
-              </button>
+              </Botao>
             </form>
           </section>
         ) : null}
@@ -444,12 +439,9 @@ export function LancamentosPage() {
                 />
               </label>
 
-              <button
-                type="submit"
-                className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
-              >
+              <Botao type="submit" variante="secundario">
                 Aplicar
-              </button>
+              </Botao>
             </form>
           </div>
 

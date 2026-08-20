@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Botao } from '../../components/ui/Botao'
 import {
   getHttpErrorMessage,
   useAtualizarLancamentoPrintTemplate,
@@ -90,13 +91,9 @@ export function LancamentoTemplatesPage() {
             <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Sessões</p>
             <h2 className="mt-2 text-3xl font-semibold text-white">Templates de impressão</h2>
           </div>
-          <button
-            type="button"
-            onClick={() => navigate('/lancamentos')}
-            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
-          >
+          <Botao variante="secundario" onClick={() => navigate('/lancamentos')}>
             Voltar
-          </button>
+          </Botao>
         </div>
       </section>
 
@@ -156,14 +153,15 @@ export function LancamentoTemplatesPage() {
               </p>
             ) : null}
 
-            <button
+            <Botao
               type="submit"
+              variante="primario"
+              className="w-full"
               disabled={atualizarTemplate.isPending || form.nome.trim() === '' || form.html.trim() === ''}
-              className="inline-flex w-full items-center justify-center rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:opacity-60"
               data-testid="lancamento-template-salvar"
             >
               {atualizarTemplate.isPending ? 'Salvando...' : 'Salvar template'}
-            </button>
+            </Botao>
           </form>
 
           <aside className="space-y-4">

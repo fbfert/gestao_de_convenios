@@ -6,6 +6,7 @@ import {
   useAtualizarAntecipacao,
   type AntecipacaoEditForm,
 } from './useAntecipacoes'
+import { Botao } from '../../components/ui/Botao'
 
 function fieldClasses() {
   return 'w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20'
@@ -143,21 +144,12 @@ export function AntecipacaoEditarPage() {
           ) : null}
 
           <div className="flex gap-2">
-            <button
-              type="submit"
-              disabled={atualizar.isPending}
-              className="rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:opacity-60"
-              data-testid="antecipacao-editar-salvar"
-            >
+            <Botao type="submit" carregando={atualizar.isPending} data-testid="antecipacao-editar-salvar">
               {atualizar.isPending ? 'Salvando...' : 'Salvar alterações'}
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/antecipacoes')}
-              className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
-            >
+            </Botao>
+            <Botao type="button" variante="secundario" onClick={() => navigate('/antecipacoes')}>
               Cancelar
-            </button>
+            </Botao>
           </div>
         </form>
       )}

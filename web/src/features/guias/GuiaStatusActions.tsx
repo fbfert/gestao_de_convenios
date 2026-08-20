@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { getHttpErrorMessage, useFinalizarGuia, useNegarGuia } from './useGuias'
 import type { Guia, GuiaFinalizarForm } from './types'
+import { Botao } from '../../components/ui/Botao'
 import { Tooltip } from '../../components/ui/Tooltip'
 
 const emptyFinalizeForm: GuiaFinalizarForm = {
@@ -112,22 +113,17 @@ export function GuiaStatusActions({ guia }: { guia: Guia }) {
             />
           </label>
           <div className="flex gap-2">
-            <button
-              type="button"
+            <Botao
+              variante="primario"
               onClick={handleFinalize}
               disabled={finalizarGuia.isPending}
-              className="rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:opacity-60"
               data-testid={`guia-finalizar-confirmar-${guia.id}`}
             >
               {finalizarGuia.isPending ? 'Finalizando...' : 'Finalizar'}
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsFinalizeOpen(false)}
-              className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
-            >
+            </Botao>
+            <Botao variante="secundario" onClick={() => setIsFinalizeOpen(false)}>
               Cancelar
-            </button>
+            </Botao>
           </div>
         </div>
       ) : null}

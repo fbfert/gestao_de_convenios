@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: "Plus Jakarta Sans Var";
+  src: url("./assets/fontes/plus-jakarta-sans-var.woff2") format("woff2");
+  font-weight: 400 800;
+  font-display: swap;
+}
+
 @theme {
   --font-sans: "Inter", "Segoe UI", sans-serif;
 }
@@ -10,15 +17,23 @@
  * As telas usam diretamente as classes utilitárias do Tailwind (text-slate-200,
  * bg-white/5, bg-cyan-400, ...). No Tailwind v4 cada utilitário resolve para
  * var(--color-*), então basta redefinir essas variáveis em
- * :root[data-theme='claro'] para o app inteiro trocar de tema — sem tocar em JSX.
+ * :root[data-theme='...'] para o app inteiro trocar de tema — sem tocar em JSX.
  *
  * Regra de leitura da paleta clara: a escala fica invertida. No tema escuro os
- * tons baixos (100/200) são claros e os altos (900/950) são escuros; no tema
+ * tons baixos (100/200) são claros e os altos (900/950) são escuros; em tema
  * claro é o contrário. Assim `text-slate-200` continua sendo "texto principal" e
  * `bg-slate-950` continua sendo "superfície", em qualquer tema.
  *
  * As redefinições ficam dentro de @media screen de propósito: a impressão sempre
  * usa a paleta padrão, onde `bg-white` é branco e `text-slate-950` é escuro.
+ *
+ * Camada semântica (--fundo/--acento/--texto/...) — adicionada em 20/08/2026
+ * pra trazer o visual do clinica.gestaonossa.com.br como 3º tema
+ * ("clinicas-claro"). Em escuro/claro ela só ALIASA os tokens nativos que já
+ * existiam (zero mudança visual); em clinicas-claro ela recebe os valores
+ * literais do clinica (mais precisos que a redefinição de slate-/cyan-* logo
+ * abaixo, que é só a rede de segurança pros ~53 arquivos ainda não migrados
+ * pra usar os nomes semânticos direto — ver docs/clinica-tema-migracao.md).
  */
 
 :root {
@@ -26,6 +41,51 @@
     radial-gradient(circle at top, rgba(30, 41, 59, 0.25), transparent 42%),
     linear-gradient(180deg, #07111f 0%, #0f172a 100%);
   --app-color-scheme: dark;
+
+  /* Semânticos — aliasando os nativos, mesmo valor em qualquer tema que não
+     redefina explicitamente (escuro e claro não redefinem: preservam 100% do
+     visual atual). */
+  --fundo: var(--color-slate-950);
+  --superficie: var(--color-slate-950);
+  --superficie-elevada: var(--color-slate-900);
+  --texto: var(--color-slate-200);
+  --texto-suave: var(--color-slate-400);
+  --texto-desativado: var(--color-slate-500);
+  --linha: color-mix(in oklab, var(--color-white) 10%, transparent);
+  --borda-campo: color-mix(in oklab, var(--color-white) 15%, transparent);
+  --neutro-desativado: color-mix(in oklab, var(--color-white) 6%, transparent);
+  --selecao: color-mix(in oklab, var(--color-cyan-400) 25%, transparent);
+  --foco: var(--color-cyan-300);
+  --acento: var(--color-cyan-400);
+  --acento-intenso: var(--color-cyan-300);
+  --sobre-acento: var(--color-slate-950);
+  --acento-suave: color-mix(in oklab, var(--color-cyan-400) 15%, transparent);
+  --perigo: var(--color-rose-400);
+  --perigo-intenso: var(--color-rose-300);
+  --sobre-perigo: var(--color-slate-950);
+  --perigo-texto: var(--color-rose-100);
+  --perigo-suave: color-mix(in oklab, var(--color-rose-400) 15%, transparent);
+  --sucesso-texto: var(--color-emerald-100);
+  --sucesso-suave: color-mix(in oklab, var(--color-emerald-400) 15%, transparent);
+  --alerta-texto: var(--color-amber-100);
+  --alerta-suave: color-mix(in oklab, var(--color-amber-400) 15%, transparent);
+
+  /* Raio/sombra — papéis novos (não existiam antes; escuro/claro usam estes
+     defaults, iguais ao que os componentes já usam hoje via classe literal). */
+  --raio-controle: 1rem;
+  --raio-campo: 1rem;
+  --raio-superficie: 1.75rem;
+  --raio-janela: 1.75rem;
+  --raio-pilula: 9999px;
+  --sombra-e1: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --sombra-e2: 0 8px 24px -4px rgb(0 0 0 / 0.4), 0 2px 6px -1px rgb(0 0 0 / 0.25);
+  --sombra-e3: 0 24px 60px -12px rgb(0 0 0 / 0.55), 0 6px 16px -2px rgb(0 0 0 / 0.3);
+
+  /* Duração/curva — não têm namespace no Tailwind v4 (consumidos via
+     duration-(--duracao-1)), então não entram no @theme inline abaixo. */
+  --duracao-1: 100ms;
+  --duracao-2: 160ms;
+  --duracao-3: 220ms;
 }
 
 @media screen {
@@ -90,6 +150,147 @@
     --color-amber-400: oklch(65% 0.15 68);
     --color-amber-500: oklch(63% 0.15 66);
   }
+
+  /*
+   * Clínicas Claro — visual do clinica.gestaonossa.com.br (design-system
+   * dele em /opt/clinica/web/src/index.css). Vira o tema PADRÃO pra quem
+   * nunca escolheu um (ver themeStore.ts).
+   *
+   * Dois níveis de redefinição aqui, de propósito:
+   * 1) os tokens nativos slate-/cyan-/rose-/emerald-/amber-* — rede de
+   *    segurança: qualquer tela ainda não migrada pros nomes semânticos já
+   *    herda a cor certa, sem precisar editar JSX.
+   * 2) os tokens semânticos (--fundo/--acento/--texto/...) — valores LITERAIS
+   *    do clinica, exatos, é a fonte de verdade pra quem usa <Botao>/<Badge>/
+   *    <Card> ou as classes bg-acento/text-texto-suave etc.
+   */
+  :root[data-theme='clinicas-claro'] {
+    --app-bg: #faf9f7;
+    --app-color-scheme: light;
+
+    /* Neutros (nível 1 do clinica: --neutro-0..900, matiz quente ~85°) --- */
+    --color-white: #211f1b;
+
+    --color-slate-50: #0d0b08;
+    --color-slate-100: #17140f;
+    --color-slate-200: #211f1b;
+    --color-slate-300: #5f5a51;
+    --color-slate-400: #8f8a80;
+    --color-slate-500: #a9a49b;
+    --color-slate-600: #d3cfc7;
+    --color-slate-700: #e5e2dc;
+    --color-slate-800: #f1efeb;
+    --color-slate-900: #faf9f7;
+    --color-slate-950: #ffffff;
+
+    /* Verde-petróleo — cor de ação (marca-* do clinica) ------------------- */
+    --color-cyan-50: #edf7f5;
+    --color-cyan-100: #d6ede9;
+    --color-cyan-200: #addcd5;
+    --color-cyan-300: #10554e;
+    --color-cyan-400: #16695f;
+    --color-cyan-500: #23867c;
+    --color-cyan-600: #47a399;
+    --color-cyan-950: #edf7f5;
+
+    /* Vermelho — erro ------------------------------------------------------ */
+    --color-rose-50: #8f2b23;
+    --color-rose-100: #992f27;
+    --color-rose-200: #b3372e;
+    --color-rose-300: #b3372e;
+    --color-rose-400: #c4453b;
+    --color-rose-500: #d65c51;
+
+    /* Verde — sucesso ------------------------------------------------------ */
+    --color-emerald-50: #1d6b41;
+    --color-emerald-100: #1d6b41;
+    --color-emerald-200: #248050;
+    --color-emerald-300: #2b955f;
+    --color-emerald-400: #33ab6e;
+    --color-emerald-500: #3bc07d;
+
+    /* Âmbar — atenção ------------------------------------------------------ */
+    --color-amber-50: #8a5a00;
+    --color-amber-100: #8a5a00;
+    --color-amber-200: #9c6800;
+    --color-amber-300: #b87a00;
+    --color-amber-400: #d08800;
+    --color-amber-500: #e09600;
+
+    /* Semânticos — valores literais do clinica (index.css dele) ---------- */
+    --fundo: #faf9f7;
+    --superficie: #ffffff;
+    --superficie-elevada: #ffffff;
+    --texto: #211f1b;
+    --texto-suave: #5f5a51;
+    --texto-desativado: #a9a49b;
+    --linha: #e5e2dc;
+    --borda-campo: #8f8a80;
+    --neutro-desativado: #f1efeb;
+    --selecao: #d6ede9;
+    --foco: #16695f;
+    --acento: #16695f;
+    --acento-intenso: #10554e;
+    --sobre-acento: #ffffff;
+    --acento-suave: #edf7f5;
+    --perigo: #b3372e;
+    --perigo-intenso: #992f27;
+    --sobre-perigo: #ffffff;
+    --perigo-texto: #8f2b23;
+    --perigo-suave: #fbeeec;
+    --sucesso-texto: #1d6b41;
+    --sucesso-suave: #eaf5ee;
+    --alerta-texto: #8a5a00;
+    --alerta-suave: #fcf3e1;
+
+    --raio-controle: 6px;
+    --raio-campo: 8px;
+    --raio-superficie: 12px;
+    --raio-janela: 16px;
+    --raio-pilula: 999px;
+    --sombra-e1: 0 1px 2px 0 rgb(33 31 27 / 0.05);
+    --sombra-e2: 0 2px 8px -1px rgb(33 31 27 / 0.08), 0 1px 2px 0 rgb(33 31 27 / 0.04);
+    --sombra-e3: 0 16px 40px -8px rgb(33 31 27 / 0.16), 0 4px 12px -2px rgb(33 31 27 / 0.06);
+
+    --font-sans: "Plus Jakarta Sans Var", "Inter", "Segoe UI", sans-serif;
+  }
+}
+
+/* Ponte Tailwind v4 — os semânticos viram utilitário (bg-acento, text-texto-suave, rounded-janela...). */
+@theme inline {
+  --color-fundo: var(--fundo);
+  --color-superficie: var(--superficie);
+  --color-superficie-elevada: var(--superficie-elevada);
+  --color-texto: var(--texto);
+  --color-texto-suave: var(--texto-suave);
+  --color-texto-desativado: var(--texto-desativado);
+  --color-linha: var(--linha);
+  --color-borda-campo: var(--borda-campo);
+  --color-neutro-desativado: var(--neutro-desativado);
+  --color-selecao: var(--selecao);
+  --color-foco: var(--foco);
+  --color-acento: var(--acento);
+  --color-acento-intenso: var(--acento-intenso);
+  --color-sobre-acento: var(--sobre-acento);
+  --color-acento-suave: var(--acento-suave);
+  --color-perigo: var(--perigo);
+  --color-perigo-intenso: var(--perigo-intenso);
+  --color-sobre-perigo: var(--sobre-perigo);
+  --color-perigo-texto: var(--perigo-texto);
+  --color-perigo-suave: var(--perigo-suave);
+  --color-sucesso-texto: var(--sucesso-texto);
+  --color-sucesso-suave: var(--sucesso-suave);
+  --color-alerta-texto: var(--alerta-texto);
+  --color-alerta-suave: var(--alerta-suave);
+
+  --radius-controle: var(--raio-controle);
+  --radius-campo: var(--raio-campo);
+  --radius-superficie: var(--raio-superficie);
+  --radius-janela: var(--raio-janela);
+  --radius-pilula: var(--raio-pilula);
+  --shadow-e1: var(--sombra-e1);
+  --shadow-e2: var(--sombra-e2);
+  --shadow-e3: var(--sombra-e3);
 }
 
 @layer base {
@@ -102,12 +303,8 @@
   body {
     min-height: 100vh;
     margin: 0;
-    color: #e2e8f0;
+    color: var(--texto);
     background: transparent;
-  }
-
-  :root[data-theme='claro'] body {
-    color: oklch(29.5% 0.041 260.031);
   }
 
   @media print {
@@ -144,6 +341,12 @@
   :root[data-theme='claro'] select optgroup {
     background-color: #ffffff;
     color: #1e293b;
+  }
+
+  :root[data-theme='clinicas-claro'] select option,
+  :root[data-theme='clinicas-claro'] select optgroup {
+    background-color: #ffffff;
+    color: #211f1b;
   }
 
   * {

@@ -2,6 +2,8 @@ import { Link, useParams } from 'react-router-dom'
 import { useState, type FormEvent } from 'react'
 import { getHttpErrorMessage, useAutomacao, useAutomacoes, useReprocessarAutomacao } from './useAutomacoes'
 import type { AutomacaoFilters } from './types'
+import { Botao } from '../../components/ui/Botao'
+import { Badge, type BadgeProps } from '../../components/ui/Badge'
 
 const defaultFilters: AutomacaoFilters = {
   status: '',
@@ -17,16 +19,16 @@ function attention(status: string) {
   return ['failed', 'uncertain', 'needs_attention'].includes(status)
 }
 
-function statusTone(status: string) {
+function statusTone(status: string): NonNullable<BadgeProps['tone']> {
   if (attention(status)) {
-    return 'border-rose-400/20 bg-rose-500/10 text-rose-100'
+    return 'perigo'
   }
 
   if (status === 'succeeded') {
-    return 'border-emerald-400/20 bg-emerald-400/10 text-emerald-100'
+    return 'sucesso'
   }
 
-  return 'border-cyan-400/20 bg-cyan-400/10 text-cyan-100'
+  return 'acento'
 }
 
 export function AutomacoesPage() {
@@ -82,9 +84,9 @@ export function AutomacoesPage() {
                   <h2 className="mt-2 text-3xl font-semibold text-white">Execução #{execucao.id}</h2>
                   <p className="mt-2 text-sm text-slate-300">{execucao.operacao}</p>
                 </div>
-                <span className={`w-fit rounded-full border px-3 py-1 text-xs font-semibold ${statusTone(execucao.status)}`}>
+                <Badge tone={statusTone(execucao.status)} className="w-fit">
                   {execucao.status}
-                </span>
+                </Badge>
               </div>
 
               {attention(execucao.status) ? (
@@ -192,9 +194,7 @@ export function AutomacoesPage() {
             />
             Atenção
           </label>
-          <button type="submit" className="rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950">
-            Aplicar
-          </button>
+          <Botao type="submit">Aplicar</Botao>
         </form>
 
         <div className="mt-5 overflow-hidden rounded-3xl border border-white/10">
@@ -218,9 +218,7 @@ export function AutomacoesPage() {
                   </td>
                   <td className="px-4 py-4 text-slate-200">{execucao.operacao}</td>
                   <td className="px-4 py-4">
-                    <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${statusTone(execucao.status)}`}>
-                      {execucao.status}
-                    </span>
+                    <Badge tone={statusTone(execucao.status)}>{execucao.status}</Badge>
                   </td>
                   <td className="px-4 py-4 text-slate-200">{execucao.guia?.numero_guia ?? execucao.guia_id ?? '-'}</td>
                   <td className="px-4 py-4 text-slate-200">{execucao.queued_at ?? '-'}</td>

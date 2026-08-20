@@ -30,6 +30,7 @@ import type {
   SolicitacaoForm,
   SolicitacaoFormItem,
 } from './types'
+import { Botao } from '../../components/ui/Botao'
 
 const emptyArray: never[] = []
 
@@ -195,13 +196,14 @@ function QuickCreateModal({
                 </p>
               ) : null}
 
-              <button
+              <Botao
                 type="submit"
+                variante="primario"
+                className="w-full"
                 disabled={isSaving || nome.trim() === '' || !carteirinhaOk}
-                className="inline-flex w-full items-center justify-center rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:opacity-60"
               >
                 {isSaving ? 'Salvando...' : 'Salvar'}
-              </button>
+              </Botao>
             </form>
           </DialogPanel>
         </div>
@@ -425,13 +427,9 @@ export function LerPedidoMedicoPage() {
             <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Solicitações</p>
             <h2 className="mt-2 text-3xl font-semibold text-white">Ler pedido médico</h2>
           </div>
-          <button
-            type="button"
-            onClick={() => navigate('/solicitacoes')}
-            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
-          >
+          <Botao type="button" variante="secundario" onClick={() => navigate('/solicitacoes')}>
             Voltar
-          </button>
+          </Botao>
         </div>
       </section>
 
@@ -447,14 +445,14 @@ export function LerPedidoMedicoPage() {
               data-testid="pedido-medico-arquivo"
             />
           </label>
-          <button
+          <Botao
             type="submit"
+            variante="primario"
             disabled={analisarPedido.isPending}
-            className="rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:opacity-60"
             data-testid="pedido-medico-analisar"
           >
             {analisarPedido.isPending ? 'Lendo...' : 'Ler pedido'}
-          </button>
+          </Botao>
         </form>
       </section>
 
@@ -499,13 +497,9 @@ export function LerPedidoMedicoPage() {
                 <p className="text-sm font-medium text-slate-200">
                   Paciente {extractedPaciente ? `lido: ${extractedPaciente}` : ''}
                 </p>
-                <button
-                  type="button"
-                  onClick={() => openQuickModal('paciente', extractedPaciente)}
-                  className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
-                >
+                <Botao type="button" variante="secundario" tamanho="sm" onClick={() => openQuickModal('paciente', extractedPaciente)}>
                   Novo paciente
-                </button>
+                </Botao>
               </div>
               {resultado.sugestoes.pacientes.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
@@ -545,13 +539,9 @@ export function LerPedidoMedicoPage() {
                 <p className="text-sm font-medium text-slate-200">
                   Médico solicitante {extractedMedico ? `lido: ${extractedMedico}` : ''}
                 </p>
-                <button
-                  type="button"
-                  onClick={() => openQuickModal('medico', extractedMedico)}
-                  className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
-                >
+                <Botao type="button" variante="secundario" tamanho="sm" onClick={() => openQuickModal('medico', extractedMedico)}>
                   Novo médico
-                </button>
+                </Botao>
               </div>
               {resultado.sugestoes.medicos.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
@@ -594,13 +584,9 @@ export function LerPedidoMedicoPage() {
                     ? ` · ${especialidadesLidas.length} lida${especialidadesLidas.length > 1 ? 's' : ''} no documento`
                     : ''}
                 </p>
-                <button
-                  type="button"
-                  onClick={() => openQuickModal('especialidade', '')}
-                  className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
-                >
+                <Botao type="button" variante="secundario" tamanho="sm" onClick={() => openQuickModal('especialidade', '')}>
                   Nova especialidade
-                </button>
+                </Botao>
               </div>
 
               {/*
@@ -700,14 +686,15 @@ export function LerPedidoMedicoPage() {
               </p>
             ) : null}
 
-            <button
+            <Botao
               type="submit"
+              variante="primario"
+              className="w-full"
               disabled={criarSolicitacao.isPending || !formIsComplete}
-              className="inline-flex w-full items-center justify-center rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:opacity-60"
               data-testid="pedido-medico-submit"
             >
               {criarSolicitacao.isPending ? 'Salvando...' : 'Criar solicitação'}
-            </button>
+            </Botao>
           </form>
         </section>
       ) : null}

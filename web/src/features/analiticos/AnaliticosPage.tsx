@@ -9,6 +9,7 @@ import type {
 } from '../lancamentos/types'
 import { useAnaliticosLotes, type AnaliticoLoteFilters } from './useAnaliticos'
 import { Tooltip } from '../../components/ui/Tooltip'
+import { Botao } from '../../components/ui/Botao'
 
 function formatEmpty(value: string | null | undefined) {
   return value && value.trim() !== '' ? value : '—'
@@ -230,13 +231,9 @@ function LotesTable({
           />
         </label>
         <div className="xl:col-span-4 flex flex-wrap gap-3">
-          <button
-            type="button"
-            onClick={onLimparFiltros}
-            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
-          >
+          <Botao type="button" variante="secundario" onClick={onLimparFiltros}>
             Limpar filtros
-          </button>
+          </Botao>
         </div>
       </form>
 
@@ -458,14 +455,13 @@ export function AnaliticosPage() {
             </p>
           ) : null}
 
-          <button
+          <Botao
             type="submit"
-            disabled={importarAnalitico.isPending}
-            className="inline-flex items-center justify-center rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:opacity-60"
+            carregando={importarAnalitico.isPending}
             data-testid="analiticos-importar"
           >
             {importarAnalitico.isPending ? 'Lendo planilha...' : 'Importar analítico'}
-          </button>
+          </Botao>
         </form>
 
         {preview ? (
@@ -575,14 +571,14 @@ export function AnaliticosPage() {
                   >
                     {salvo ? 'Lote salvo' : 'Salvar lote'}
                   </button>
-                  <button
+                  <Botao
                     type="button"
+                    variante="secundario"
                     onClick={handleRecusar}
-                    className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
                     data-testid="analiticos-recusar"
                   >
                     Recusar
-                  </button>
+                  </Botao>
                 </div>
 
                 {salvo ? (

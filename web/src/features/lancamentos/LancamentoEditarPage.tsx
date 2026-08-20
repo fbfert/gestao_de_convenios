@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Botao } from '../../components/ui/Botao'
 import { Select } from '../../components/ui/Select'
 import { useProfissionais } from '../../lib/queries/useReferenceData'
 import {
@@ -194,21 +195,12 @@ export function LancamentoEditarPage() {
           ) : null}
 
           <div className="flex gap-2">
-            <button
-              type="submit"
-              disabled={atualizar.isPending}
-              className="rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:opacity-60"
-              data-testid="lancamento-editar-salvar"
-            >
+            <Botao type="submit" variante="primario" disabled={atualizar.isPending} data-testid="lancamento-editar-salvar">
               {atualizar.isPending ? 'Salvando...' : 'Salvar alterações'}
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/lancamentos')}
-              className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
-            >
+            </Botao>
+            <Botao variante="secundario" onClick={() => navigate('/lancamentos')}>
               Cancelar
-            </button>
+            </Botao>
           </div>
         </form>
       )}

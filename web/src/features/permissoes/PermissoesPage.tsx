@@ -12,12 +12,11 @@ import {
   useUpdateRolePermissions,
 } from './usePermissoes'
 import type { PermissionRef, RoleRef } from './types'
+import { Botao } from '../../components/ui/Botao'
 
 const card = 'rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6'
 const campo =
   'w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20'
-const botaoPrimario =
-  'inline-flex items-center justify-center rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:opacity-60'
 
 const domainLabels: Record<string, string> = {
   dashboard: 'Acesso às telas',
@@ -92,14 +91,9 @@ function ListaDePapeis() {
           <h2 className="mt-2 text-3xl font-semibold text-white">Papéis da clínica</h2>
         </div>
 
-        <button
-          type="button"
-          onClick={() => navigate('/permissoes/novo')}
-          className={botaoPrimario}
-          data-testid="papel-novo"
-        >
+        <Botao variante="primario" onClick={() => navigate('/permissoes/novo')} data-testid="papel-novo">
           Novo perfil
-        </button>
+        </Botao>
       </section>
 
       {rolesQuery.isLoading ? (
@@ -203,9 +197,9 @@ function NovoPapel() {
           <Erro mensagem={erro} />
 
           <div className="flex gap-3">
-            <button className={botaoPrimario} disabled={criar.isPending}>
+            <Botao variante="primario" disabled={criar.isPending}>
               {criar.isPending ? 'Criando...' : 'Criar perfil'}
-            </button>
+            </Botao>
             <button
               type="button"
               onClick={() => navigate('/permissoes')}
@@ -376,15 +370,15 @@ function EditarPapel({ nome }: { nome: string }) {
         <Erro mensagem={erro} />
 
         <div className="flex flex-wrap items-center gap-3">
-          <button
+          <Botao
             type="button"
+            variante="primario"
             onClick={salvar}
-            className={botaoPrimario}
             disabled={salvando}
             data-testid="permissoes-salvar"
           >
             {salvando ? 'Salvando...' : 'Salvar perfil'}
-          </button>
+          </Botao>
 
           {papel && !papel.sistema ? (
             <button

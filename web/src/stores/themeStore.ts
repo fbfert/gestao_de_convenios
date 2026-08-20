@@ -1,10 +1,15 @@
 import { create } from 'zustand'
 
-export type Theme = 'escuro' | 'claro'
+export type Theme = 'escuro' | 'claro' | 'clinicas-claro'
 
 export const themeStorageKey = 'gestao-convenios-tema'
 
 export const themeOptions: { value: Theme; label: string; description: string }[] = [
+  {
+    value: 'clinicas-claro',
+    label: 'Clínicas Claro',
+    description: 'O visual do clinica.gestaonossa.com.br — bege claro e verde-petróleo. Tema padrão.',
+  },
   {
     value: 'escuro',
     label: 'Escuro',
@@ -17,10 +22,13 @@ export const themeOptions: { value: Theme; label: string; description: string }[
   },
 ]
 
-export const defaultTheme: Theme = 'escuro'
+// Vira o padrão em 20/08/2026 — quem já tinha 'escuro'/'claro' salvo no
+// localStorage continua exatamente como está (isTheme só valida o que já
+// existe lá; nunca reescreve sozinho).
+export const defaultTheme: Theme = 'clinicas-claro'
 
 function isTheme(value: unknown): value is Theme {
-  return value === 'escuro' || value === 'claro'
+  return value === 'escuro' || value === 'claro' || value === 'clinicas-claro'
 }
 
 export function readStoredTheme(): Theme {

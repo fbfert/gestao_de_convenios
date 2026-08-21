@@ -90,27 +90,30 @@ export function DashboardPage() {
           <h3 className="mt-2 text-2xl font-semibold text-white">Resumo por área</h3>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {blocks.map((block) =>
             block.href ? (
-              <Link key={block.key} to={block.href} className={card}>
-                <div className="flex h-full flex-col justify-between gap-4">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.25em] text-cyan-300/70">
-                      {block.label}
-                    </p>
-                    <p className="mt-3 text-4xl font-semibold text-white">{block.value}</p>
-                    <p className="mt-2 text-sm text-slate-300">{block.detail}</p>
-                  </div>
-                  <span className="text-sm font-medium text-cyan-200">Abrir {block.label}</span>
+              <Link
+                key={block.key}
+                to={block.href}
+                className="rounded-janela border border-linha bg-fundo px-4 py-3 shadow-e1 transition hover:border-cyan-300/30"
+              >
+                <p className="text-xs uppercase tracking-[0.2em] text-cyan-300/70">{block.label}</p>
+                <div className="mt-1 flex items-baseline justify-between gap-2">
+                  <span className="text-3xl font-semibold text-white">{block.value}</span>
+                  <span className="text-xs font-medium text-cyan-200">Abrir →</span>
                 </div>
+                <p className="mt-1 truncate text-xs text-slate-400" title={block.detail}>
+                  {block.detail}
+                </p>
               </Link>
             ) : (
-              <article key={block.key} className={card}>
-                <p className="text-xs uppercase tracking-[0.25em] text-cyan-300/70">{block.label}</p>
-                <p className="mt-3 text-4xl font-semibold text-white">{block.value}</p>
-                <p className="mt-2 text-sm text-slate-300">{block.detail}</p>
-                <p className="mt-4 text-sm text-slate-400">Indicador sem tela própria.</p>
+              <article key={block.key} className="rounded-janela border border-linha bg-fundo px-4 py-3 shadow-e1">
+                <p className="text-xs uppercase tracking-[0.2em] text-cyan-300/70">{block.label}</p>
+                <p className="mt-1 text-3xl font-semibold text-white">{block.value}</p>
+                <p className="mt-1 truncate text-xs text-slate-400" title={block.detail}>
+                  {block.detail}
+                </p>
               </article>
             ),
           )}

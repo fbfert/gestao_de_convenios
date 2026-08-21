@@ -213,7 +213,7 @@
   <tr><td><strong>Operação</strong> <span class="rota">/operacao-convenios</span></td><td>Pacientes, Solicitações, Guias, Sessões, Antecipações, Analíticos e Conciliações, nessa ordem — é a sequência de uso.</td></tr>
   <tr><td><strong>Automações</strong></td><td>O robô que gera guias e consulta status/senha no portal da Unimed, sem digitação manual. Ver <a href="#automacoes">Automações</a>.</td></tr>
   <tr><td><strong>Configurações</strong> <span class="rota">/configuracoes</span></td><td>Parâmetros e integrações, mais <strong>Perfis e Permissões</strong> e <strong>Logs de Auditoria</strong>.</td></tr>
-  <tr><td><strong>Configurações</strong></td><td>Globais, Envio de E-mails, Configurações de IA, Prompts Operacionais, Templates de E-mails e Unimed RDA.</td></tr>
+  <tr><td><strong>Configurações</strong></td><td>Globais, Envio de E-mails, Configurações de IA, Prompts Operacionais, Templates de E-mails, Unimed RDA e Sincronização com o clinica.</td></tr>
   <tr><td><strong>Manual</strong></td><td>Esta documentação.</td></tr>
 </table>
 <p>
@@ -248,6 +248,10 @@
   </li>
   <li>
     <strong>Os contadores</strong> (Total, Ativos, Inativos) ficam em uma linha compacta no topo.
+  </li>
+  <li>
+    <strong>Cadastros, Operação e Auditoria usam um container mais largo</strong> que o resto do sistema, para caber
+    mais colunas em telas grandes. Dashboard, Manual e Configurações continuam no tamanho de sempre.
   </li>
 </ul>
 
@@ -439,6 +443,23 @@
   <tr><td><span class="btn">Anterior</span> / <span class="btn">Próxima</span></td><td>Navega entre páginas (10 solicitações por página).</td></tr>
 </table>
 
+<h3>Corrigir dados já registrados</h3>
+<p>
+  Quem tem a permissão <code>solicitacoes.manage</code> (por padrão, só o papel <strong>admin</strong>) pode
+  corrigir <strong>médico solicitante, CID, data e observações</strong> depois de a solicitação já existir.
+  Paciente e convênio ficam travados: a guia e a antecipação já geradas usam esse dado.
+</p>
+<table>
+  <tr><th>Onde</th><th>Como</th></tr>
+  <tr><td>Tela própria <span class="rota">/solicitacoes/{id}/editar</span></td><td>Botão <span class="btn">Editar</span> na linha da listagem (só aparece para quem tem a permissão).</td></tr>
+  <tr><td>Janela de detalhe</td><td>Clicar no nome do paciente abre a mesma janela de sempre — agora, além dos anexos e da guia vinculada, ela também mostra os dados da solicitação com um botão <span class="btn">Ativar edição</span>, para corrigir sem sair da tela.</td></tr>
+</table>
+<div class="nota">
+  Toda alteração fica registrada nos <a href="#auditoria">Logs de Auditoria</a>, com o valor anterior e o novo. Por
+  padrão só o admin tem essa permissão — a clínica pode concedê-la ao <code>funcionario</code> em
+  <a href="#permissoes">Perfis e Permissões</a>.
+</div>
+
 <h3>Anexos da solicitação</h3>
 <p>
   Cada solicitação guarda os documentos do processo — pedido médico, guia gerada, comprovantes. Para
@@ -474,6 +495,26 @@
   <tr><td><span class="btn">Ver antecipações</span></td><td>Leva para <a href="#antecipacoes">Antecipações</a>, já filtrando pela guia.</td></tr>
   <tr><td><span class="btn">Ver conciliação</span></td><td>Leva para <a href="#conciliacao">Conciliação</a>, já filtrando pela guia.</td></tr>
 </table>
+
+<h3>Corrigir dados já registrados</h3>
+<p>
+  Quem tem a permissão <code>guias.manage</code> (por padrão, só o papel <strong>admin</strong>) pode corrigir
+  <strong>especialidade, profissional executante, número da guia, tipo de terapia, datas, senha/validade,
+  sessões solicitadas/autorizadas, protocolo da operadora e observações</strong>. Paciente, convênio e status
+  ficam travados — o status muda só pelos botões <span class="btn">Finalizar</span>/<span class="btn">Negar</span>.
+  Diferente das ações de status, essa edição continua disponível mesmo depois de a guia estar
+  <span class="badge verde">Aprovada</span> ou <span class="badge vermelho">Negada</span>.
+</p>
+<table>
+  <tr><th>Onde</th><th>Como</th></tr>
+  <tr><td>Tela própria <span class="rota">/guias/{id}/editar</span></td><td>Botão <span class="btn">Editar</span> na linha da listagem (só aparece para quem tem a permissão).</td></tr>
+  <tr><td>Tela de detalhe da guia, ou a mesma janela aberta a partir de <a href="#solicitacoes">Solicitações</a></td><td>Botão <span class="btn">Ativar edição</span>, ao lado do status — os campos viram formulário na hora, sem trocar de tela.</td></tr>
+</table>
+<div class="nota">
+  Toda alteração fica registrada nos <a href="#auditoria">Logs de Auditoria</a>, com o valor anterior e o novo. Por
+  padrão só o admin tem essa permissão — a clínica pode concedê-la ao <code>funcionario</code> em
+  <a href="#permissoes">Perfis e Permissões</a>.
+</div>
 
 <h2 class="secao" id="convenios">8. Convênios <span class="rota">/convenios</span></h2>
 <div class="objetivo">Objetivo: cadastrar os planos de saúde parceiros e configurar as regras de autorização e a tabela de valores usados nos cálculos financeiros.</div>
@@ -524,12 +565,19 @@
 
 <h2 class="secao" id="antecipacoes">9. Antecipações <span class="rota">/antecipacoes</span></h2>
 <div class="objetivo">Objetivo: acompanhar a cota de sessões autorizadas por ciclo (ex.: quantas sessões do mês já foram usadas) e identificar pacientes sem próximos agendamentos.</div>
-<p>Tela somente de consulta e navegação — status possíveis: <span class="badge azul">Aberta</span> e <span class="badge cinza">Fechada</span>.</p>
+<p>Tela sobretudo de consulta e navegação — status possíveis: <span class="badge azul">Aberta</span> e <span class="badge cinza">Fechada</span>.</p>
 <table>
   <tr><th>Botão</th><th>O que faz</th></tr>
   <tr><td><span class="btn">Registrar</span> (por linha)</td><td>Leva para <a href="#lancamentos">Sessões</a> já com essa antecipação pré-selecionada, para lançar um novo atendimento.</td></tr>
+  <tr><td><span class="btn">Editar</span> (por linha)</td><td>Só aparece para quem tem <code>antecipacoes.manage</code> (por padrão, só o admin). Abre <span class="rota">/antecipacoes/{id}/editar</span>.</td></tr>
   <tr><td><span class="btn">Aplicar</span> (filtros)</td><td>Filtra por Status, Paciente e Convênio.</td></tr>
 </table>
+<div class="nota">
+  A edição libera só <strong>quantidade autorizada por ciclo</strong> e <strong>ciclo início/fim</strong>. A
+  quantidade já utilizada e o status (aberta/fechada) continuam 100% automáticos, derivados das sessões lançadas —
+  não dá para descolar a cota do que foi de fato executado. Aumentar a quantidade autorizada reabre sozinha uma
+  antecipação que já tinha fechado. Fica registrado nos <a href="#auditoria">Logs de Auditoria</a>.
+</div>
 <div class="aviso">
   Um aviso em destaque aparece quando existem antecipações abertas <strong>sem nenhuma sessão futura agendada</strong> —
   fique atento a esse alerta para não deixar o paciente sem continuidade do tratamento.
@@ -583,11 +631,13 @@
 <table>
   <tr><th>Botão</th><th>O que faz</th></tr>
   <tr><td><span class="btn">Aplicar</span> (filtros)</td><td>Filtra por Profissional executante e Data da sessão.</td></tr>
+  <tr><td><span class="btn">Editar</span> (por linha)</td><td>Só aparece para quem tem <code>lancamentos.manage</code> (por padrão, só o admin). Abre <span class="rota">/lancamentos/{id}/editar</span>, com Profissional executante, data, hora início/fim, acompanhante, resumo e observações — a antecipação vinculada fica travada.</td></tr>
 </table>
 <p>
   A listagem <strong>ordena pelos cabeçalhos</strong>: ID, Antecipação, Profissional executante, Data/Hora,
   Acompanhante e Status.
 </p>
+<div class="nota">Toda edição fica registrada nos <a href="#auditoria">Logs de Auditoria</a>, com o valor anterior e o novo.</div>
 
 <h2 class="secao" id="analiticos">11. Analíticos <span class="rota">/analiticos</span></h2>
 <div class="objetivo">Objetivo: importar o relatório (Excel) que o convênio envia com o que foi pago e o que foi glosado (recusado) por guia, antes de gerar a conciliação financeira.</div>
@@ -800,6 +850,15 @@
   Cada permissão aparece com um rótulo legível — "Abrir apenas as próprias sessões" em vez de
   <code>lancamentos.viewOwn</code> —, com o nome técnico embaixo.
 </div>
+<h3>Editar dados de Solicitações, Guias, Sessões e Antecipações</h3>
+<p>
+  <code>solicitacoes.manage</code>, <code>guias.manage</code>, <code>lancamentos.manage</code> e
+  <code>antecipacoes.manage</code> controlam a <strong>correção</strong> de um registro já existente — ver
+  <a href="#solicitacoes">Solicitações</a>, <a href="#guias">Guias</a>, <a href="#lancamentos">Sessões</a> e
+  <a href="#antecipacoes">Antecipações</a> — e não a criação normal, que continua liberada pra quem tem acesso à
+  tela. Por padrão, só o papel <code>admin</code> tem essas quatro; a clínica pode conceder ao
+  <code>funcionario</code> se quiser que a operação corrija os próprios erros sem depender do admin.
+</p>
 
 <h2 class="secao" id="auditoria">20. Logs de Auditoria <span class="rota">/auditoria</span></h2>
 <div class="objetivo">Objetivo: registrar quem alterou o quê, quando e — nos eventos de acesso — a partir de onde. É onde se investiga uma mudança inesperada.</div>
@@ -841,10 +900,11 @@
 </div>
 
 <h2 class="secao" id="configuracoes">21. Configurações <span class="rota">/configuracoes</span></h2>
-<div class="objetivo">Objetivo: parâmetros e integrações da clínica. É um grupo do menu: o rótulo abre esta tela e a seta ao lado lista as oito áreas.</div>
+<div class="objetivo">Objetivo: parâmetros e integrações da clínica. É um grupo do menu: o rótulo abre esta tela e a seta ao lado lista as nove áreas.</div>
 <p>
   A tela de entrada tem a escolha de <strong>tema visual</strong> no topo e, abaixo, um cartão explicando cada área.
-  Todas exigem a permissão <code>configuracoes.manage</code> (Unimed RDA exige <code>configuracoes.unimed.manage</code>).
+  Todas exigem a permissão <code>configuracoes.manage</code> (Unimed RDA exige <code>configuracoes.unimed.manage</code>;
+  Sincronização com o clinica exige <code>configuracoes.clinica.manage</code>).
 </p>
 <table>
   <tr><th>Área</th><th>Para que serve</th></tr>
@@ -854,15 +914,37 @@
   <tr><td><strong>Prompts Operacionais</strong></td><td>As instruções que a IA recebe para cada tipo de documento.</td></tr>
   <tr><td><strong>Templates de E-mails</strong></td><td>O texto de cada mensagem que o sistema envia.</td></tr>
   <tr><td><strong>Unimed RDA</strong></td><td>Credenciais do portal e o de-para de especialidades e profissionais da automação.</td></tr>
+  <tr><td><strong>Sincronização com o clinica</strong> <span class="rota">/configuracoes/clinica</span></td><td>Status e botão para forçar na hora a sincronização automática de Profissionais e Pacientes com o clinica.gestaonossa.com.br.</td></tr>
   <tr><td><strong>Perfis e Permissões</strong></td><td>Os papéis da clínica e o que cada um enxerga e altera. Ver <a href="#permissoes">Perfis e Permissões</a>.</td></tr>
   <tr><td><strong>Logs de Auditoria</strong></td><td>Quem alterou o quê e quando. Ver <a href="#auditoria">Logs de Auditoria</a>.</td></tr>
 </table>
 
 <h3>Aparência (tema claro / escuro)</h3>
 <p>
-  Fica na tela de entrada de Configurações. A escolha vale <strong>para o navegador</strong>, não para o usuário:
-  trocar de máquina ou de navegador volta ao tema escuro, que é o padrão.
+  Fica na tela de entrada de Configurações. A escolha vale <strong>para o navegador</strong>, não para o usuário, e
+  é aplicada na hora: trocar de máquina ou de navegador volta ao tema <strong>Claro</strong>, que é o padrão.
 </p>
+
+<h3>Sincronização com o clinica</h3>
+<p>
+  O gescon convive com o <strong>clinica</strong> (clinica.gestaonossa.com.br, o sistema de agenda/cadastro).
+  Profissionais e Pacientes ficam <strong>espelhados nos dois sentidos</strong>: cadastrar ou alterar em qualquer um
+  dos dois reflete no outro. A sincronização roda sozinha a cada 5 minutos.
+</p>
+<table>
+  <tr><th>Botão</th><th>O que faz</th></tr>
+  <tr><td><span class="btn">Sincronizar Agora</span></td><td>Dispara uma rodada na hora, em vez de esperar o próximo ciclo automático, e mostra o resultado assim que termina.</td></tr>
+</table>
+<p>
+  A tela mostra a <strong>última execução</strong>: origem (Manual ou Agendado), horário, status
+  (<span class="badge verde">OK</span> ou <span class="badge vermelho">Erro</span>) e, para Profissionais e
+  Pacientes, quantos registros foram <em>trazidos do clinica</em> e quantos foram <em>enviados pro clinica</em> —
+  em cada sentido, quantos criados, quantos atualizados e, se houver, uma lista do que ficou pendente.
+</p>
+<div class="nota">
+  Se a conexão com o clinica ainda não foi configurada para a clínica, a tela avisa e não há execução para mostrar.
+  Configurar a conexão é tarefa da equipe técnica.
+</div>
 
 <h3>Globais</h3>
 <table>

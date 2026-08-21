@@ -156,10 +156,10 @@
       <div class="ramo-titulo">Operação</div>
       <ul class="folhas">
         <li><b>1. Pacientes</b><small>confira antes de abrir o pedido</small></li>
-        <li><b>2. Solicitações</b><small>pedido médico · várias especialidades · leitura por IA</small></li>
-        <li><b>3. Guias</b><small>senha + validade, uma por especialidade</small></li>
-        <li><b>4. Sessões</b><small>atendimento realizado · registro lido por IA</small></li>
-        <li><b>5. Antecipações</b><small>cota de sessões autorizadas por ciclo</small></li>
+        <li><b>2. Solicitações</b><small>pedido médico · várias especialidades · leitura por IA · admin edita</small></li>
+        <li><b>3. Guias</b><small>senha + validade, uma por especialidade · admin edita mesmo depois de finalizada</small></li>
+        <li><b>4. Sessões</b><small>atendimento realizado · registro lido por IA · admin edita</small></li>
+        <li><b>5. Antecipações</b><small>cota de sessões autorizadas por ciclo · admin edita a quantidade</small></li>
         <li><b>6. Analíticos</b><small>extrato de pagamento do convênio</small></li>
         <li><b>7. Conciliações</b><small>pendente → conferida → paga</small></li>
       </ul>
@@ -169,13 +169,14 @@
       <div class="stub"></div>
       <div class="ramo-titulo">Configurações</div>
       <ul class="folhas">
-        <li><b>Aparência</b><small>tema claro/escuro, por navegador</small></li>
+        <li><b>Aparência</b><small>tema claro (padrão) ou escuro, por navegador</small></li>
         <li><b>Globais</b><small>tempo de sessão, padrões e prazos de retenção</small></li>
         <li><b>Envio de E-mails</b><small>SMTP + envio de teste</small></li>
         <li><b>Configurações de IA</b><small>chave OpenAI e modelo padrão</small></li>
         <li><b>Prompts Operacionais</b><small>instruções da leitura automática</small></li>
         <li><b>Templates de E-mails</b><small>texto das mensagens</small></li>
         <li><b>Unimed RDA</b><small>credencial e de-para da automação</small></li>
+        <li><b>Sincronização com o clinica</b><small>profissionais e pacientes espelhados, mão dupla, a cada 5 min</small></li>
         <li><b>Perfis e Permissões</b><small>papéis próprios da clínica</small></li>
         <li><b>Logs de Auditoria</b><small>quem alterou o quê e quando</small></li>
       </ul>
@@ -211,7 +212,9 @@
     primeiros são papéis, editáveis na tela de <em>Permissões</em>; o último é uma marca separada, concedida fora do
     sistema. <strong>Pacientes aparece em duas colunas</strong> — é a mesma tela, listada em Operação por ser o
     primeiro passo do fluxo. <strong>Perfis e Permissões e Logs de Auditoria</strong> migraram de Administração
-    para dentro de Configurações.
+    para dentro de Configurações. <strong>"admin edita"</strong>, na coluna azul, marca as telas em que o papel
+    admin pode corrigir um registro já criado (permissões <code>*.manage</code> próprias, cedíveis ao
+    <em>funcionario</em> em Permissões) — não é a criação normal, que continua liberada pra quem acessa a tela.
   </div>
 </div>
 

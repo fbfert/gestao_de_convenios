@@ -58,6 +58,13 @@ export type MedicoRef = {
   ativo: boolean
 }
 
+export type CidRef = {
+  id: number
+  codigo: string
+  descricao: string
+  ativo: boolean
+}
+
 type ListResponse<T> = {
   data: T[]
 }
@@ -79,6 +86,16 @@ export function useEspecialidades(filtros?: { convenio_id?: string | number }) {
       const { data } = await apiClient.get<ListResponse<EspecialidadeRef>>('/especialidades', {
         params: { convenio_id: filtros?.convenio_id || undefined },
       })
+      return data.data
+    },
+  })
+}
+
+export function useCids() {
+  return useQuery({
+    queryKey: ['cids'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<ListResponse<CidRef>>('/cids')
       return data.data
     },
   })

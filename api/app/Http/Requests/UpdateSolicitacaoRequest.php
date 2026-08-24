@@ -29,7 +29,11 @@ class UpdateSolicitacaoRequest extends FormRequest
                 'integer',
                 Rule::exists('medicos', 'id')->where(fn ($query) => $query->where('tenant_id', $tenantId)),
             ],
-            'cid' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'cid_id' => [
+                'required',
+                'integer',
+                Rule::exists('cids', 'id')->where(fn ($query) => $query->where('tenant_id', $tenantId)),
+            ],
             'solicitado_em' => ['sometimes', 'date'],
             'observacoes' => ['sometimes', 'nullable', 'string'],
         ];

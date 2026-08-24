@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Cid;
 use App\Models\Convenio;
 use App\Models\Especialidade;
 use App\Models\Guia;
@@ -286,6 +287,7 @@ class SolicitacaoDocumentosApiTest extends TestCase
             'paciente_id' => $paciente->id,
             'convenio_id' => $convenio->id,
             'medico_id' => $medico->id,
+            'cid_id' => Cid::query()->where('codigo', 'F84.0')->firstOrFail()->id,
             'solicitado_em' => '2026-08-06',
         ] + $extra;
     }

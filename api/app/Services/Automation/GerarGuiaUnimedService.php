@@ -188,6 +188,7 @@ class GerarGuiaUnimedService
             'solicitacao.paciente',
             'solicitacao.convenio',
             'solicitacao.medico',
+            'solicitacao.cidCadastro',
             'solicitacao.documentos',
             'documentos',
             'especialidade',
@@ -201,7 +202,7 @@ class GerarGuiaUnimedService
         return [
             'solicitacao_id' => $item->solicitacao_id,
             'solicitacao_item_id' => $item->id,
-            'cid' => $item->solicitacao->cid,
+            'cid' => $item->solicitacao->cid_id ? $item->solicitacao->cidCadastro?->codigo : $item->solicitacao->cid,
             'medico' => [
                 'id' => $item->solicitacao->medico_id,
                 'nome' => $item->solicitacao->medico?->nome,

@@ -9,6 +9,7 @@ import {
   type SolicitacaoEditForm,
 } from './useSolicitacoes'
 import { Botao } from '../../components/ui/Botao'
+import { CidCampo } from '../cids/CidCampo'
 
 function fieldClasses() {
   return 'w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20'
@@ -16,7 +17,7 @@ function fieldClasses() {
 
 const formVazio: SolicitacaoEditForm = {
   medico_id: '',
-  cid: '',
+  cid_id: '',
   solicitado_em: '',
   observacoes: '',
 }
@@ -41,7 +42,7 @@ export function SolicitacaoEditarPage() {
 
     setForm({
       medico_id: String(solicitacao.medico_id),
-      cid: solicitacao.cid ?? '',
+      cid_id: solicitacao.cid_id ? String(solicitacao.cid_id) : '',
       solicitado_em: solicitacao.solicitado_em.slice(0, 10),
       observacoes: solicitacao.observacoes ?? '',
     })
@@ -128,11 +129,10 @@ export function SolicitacaoEditarPage() {
 
           <label className="block space-y-2">
             <span className="text-sm font-medium text-slate-200">CID</span>
-            <input
-              value={form.cid}
-              onChange={(event) => setForm((current) => ({ ...current, cid: event.target.value }))}
-              className={fieldClasses()}
-              data-testid="solicitacao-editar-cid"
+            <CidCampo
+              value={form.cid_id}
+              onChange={(cidId) => setForm((current) => ({ ...current, cid_id: cidId }))}
+              testIdPrefix="solicitacao-editar-cid"
             />
           </label>
 
@@ -166,7 +166,7 @@ export function SolicitacaoEditarPage() {
             <Botao
               type="submit"
               variante="primario"
-              disabled={atualizar.isPending}
+              disabled={atualizar.isPending || form.cid_id === ''}
               data-testid="solicitacao-editar-salvar"
             >
               {atualizar.isPending ? 'Salvando...' : 'Salvar alterações'}

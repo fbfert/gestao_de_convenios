@@ -9,7 +9,12 @@ export type Solicitacao = {
   especialidade_id: number
   convenio_id: number
   medico_id: number
-  cid: string | null
+  cid_id: number | null
+  cid: {
+    id: number
+    codigo: string
+    descricao: string
+  } | null
   medico?: {
     id: number
     nome: string
@@ -131,7 +136,7 @@ export type SolicitacaoForm = {
   paciente_id: string
   convenio_id: string
   medico_id: string
-  cid: string
+  cid_id: string
   solicitado_em: string
   observacoes: string
   pedido_medico_upload_id?: string

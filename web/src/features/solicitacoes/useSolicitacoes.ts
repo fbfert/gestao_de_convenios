@@ -10,7 +10,7 @@ import type {
   SolicitacaoForm,
   SolicitacaoStatus,
 } from './types'
-import type { EspecialidadeRef, MedicoRef, PacienteRef } from '../../lib/queries/useReferenceData'
+import type { CidRef, EspecialidadeRef, MedicoRef, PacienteRef } from '../../lib/queries/useReferenceData'
 
 export function useSolicitacoes(filters: SolicitacaoFilters, page: number) {
   return useQuery({
@@ -39,7 +39,7 @@ export function useCriarSolicitacao() {
         paciente_id: Number(payload.paciente_id),
         convenio_id: Number(payload.convenio_id),
         medico_id: Number(payload.medico_id),
-        cid: payload.cid.trim() || null,
+        cid_id: Number(payload.cid_id),
         itens: payload.itens.map((item) => ({
           especialidade_id: Number(item.especialidade_id),
           profissional_id: Number(item.profissional_id),
@@ -69,7 +69,7 @@ export function useSolicitacao(id: number | null) {
 
 export type SolicitacaoEditForm = {
   medico_id: string
-  cid: string
+  cid_id: string
   solicitado_em: string
   observacoes: string
 }
@@ -81,7 +81,7 @@ export function useAtualizarSolicitacao() {
     mutationFn: async ({ id, payload }: { id: number; payload: SolicitacaoEditForm }) => {
       const { data } = await apiClient.patch<{ data: Solicitacao }>(`/solicitacoes/${id}`, {
         medico_id: Number(payload.medico_id),
-        cid: payload.cid.trim() || null,
+        cid_id: Number(payload.cid_id),
         solicitado_em: payload.solicitado_em,
         observacoes: payload.observacoes || null,
       })
@@ -161,6 +161,24 @@ export function useCriarMedicoRapido() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['medicos'] })
+    },
+  })
+}
+
+export function useCriarCidRapido() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (payload: { codigo: string; descricao: string }) => {
+      const { data } = await apiClient.post<{ data: CidRef }>(
+        '/solicitacoes/cids-rapido',
+        payload,
+      )
+
+      return data.data
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['cids'] })
     },
   })
 }

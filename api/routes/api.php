@@ -13,6 +13,7 @@ use App\Http\Controllers\ConvenioProfissionalMapeamentoController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\RolePermissionController;
+use App\Http\Controllers\CidController;
 use App\Http\Controllers\EspecialidadeController;
 use App\Http\Controllers\ConciliacaoController;
 use App\Http\Controllers\GuiaController;
@@ -100,6 +101,9 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EncerrarSessaoExpirada::
     Route::get('/especialidades', [EspecialidadeController::class, 'index']);
     Route::post('/especialidades', [EspecialidadeController::class, 'store'])->middleware('permission:especialidades.manage');
     Route::patch('/especialidades/{especialidade}', [EspecialidadeController::class, 'update'])->middleware('permission:especialidades.manage');
+    Route::get('/cids', [CidController::class, 'index']);
+    Route::post('/cids', [CidController::class, 'store']);
+    Route::patch('/cids/{cid}', [CidController::class, 'update']);
     Route::get('/convenios', [ConvenioController::class, 'index']);
     Route::post('/convenios', [ConvenioController::class, 'store'])->middleware('permission:convenios.manage');
     Route::patch('/convenios/{convenio}', [ConvenioController::class, 'update'])->middleware('permission:convenios.manage');
@@ -138,6 +142,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EncerrarSessaoExpirada::
     Route::post('/solicitacoes/pacientes-rapido', [SolicitacaoController::class, 'storePacienteRapido']);
     Route::post('/solicitacoes/especialidades-rapido', [SolicitacaoController::class, 'storeEspecialidadeRapida']);
     Route::post('/solicitacoes/medicos-rapido', [SolicitacaoController::class, 'storeMedicoRapido']);
+    Route::post('/solicitacoes/cids-rapido', [SolicitacaoController::class, 'storeCidRapido']);
     Route::get('/solicitacoes/{solicitacao}', [SolicitacaoController::class, 'show']);
     Route::patch('/solicitacoes/{solicitacao}', [SolicitacaoController::class, 'update'])->middleware('permission:solicitacoes.manage');
     Route::get('/solicitacoes/{solicitacao}/pedido-medico', [SolicitacaoController::class, 'pedidoMedico']);

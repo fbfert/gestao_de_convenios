@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\AiOpenaiSetting;
 use App\Models\AiPromptTemplate;
+use App\Models\Cid;
 use App\Models\Convenio;
 use App\Models\Especialidade;
 use App\Models\Medico;
@@ -244,6 +245,7 @@ class PedidoMedicoSolicitacaoApiTest extends TestCase
             'especialidade_id' => $especialidade->id,
             'convenio_id' => $convenio->id,
             'medico_id' => $medico->id,
+            'cid_id' => Cid::query()->where('codigo', 'F84.0')->firstOrFail()->id,
             'solicitado_em' => '2026-07-22',
             'observacoes' => 'Pedido com assinatura ilegível.',
         ] + $extra;

@@ -62,6 +62,12 @@ export const cadastrosItems: NavLeaf[] = [
     permissao: 'dashboard.especialidades',
   },
   {
+    to: '/cids',
+    label: 'CIDs',
+    descricao:
+      'Os códigos CID-10 usados nas solicitações — cada terapia precisa de um diagnóstico vinculado.',
+  },
+  {
     to: '/medicos',
     label: 'Médicos',
     descricao:

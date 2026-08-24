@@ -31,6 +31,7 @@ import type {
   SolicitacaoFormItem,
 } from './types'
 import { Botao } from '../../components/ui/Botao'
+import { CidCampo } from '../cids/CidCampo'
 
 const emptyArray: never[] = []
 
@@ -38,7 +39,7 @@ const emptyForm: SolicitacaoForm = {
   paciente_id: '',
   convenio_id: '',
   medico_id: '',
-  cid: '',
+  cid_id: '',
   solicitado_em: new Date().toISOString().slice(0, 10),
   observacoes: '',
   itens: [{ ...emptyItem }],
@@ -303,6 +304,7 @@ export function LerPedidoMedicoPage() {
     form.convenio_id !== '' &&
     form.paciente_id !== '' &&
     form.medico_id !== '' &&
+    form.cid_id !== '' &&
     form.solicitado_em !== '' &&
     itensEstaoCompletos(form.itens) &&
     resultado !== null
@@ -658,6 +660,15 @@ export function LerPedidoMedicoPage() {
                 disabled={especialidadesQuery.isLoading || profissionaisQuery.isLoading}
               />
             </div>
+
+            <label className="block space-y-2">
+              <span className="text-sm font-medium text-slate-200">CID</span>
+              <CidCampo
+                value={form.cid_id}
+                onChange={(cidId) => setForm((current) => ({ ...current, cid_id: cidId }))}
+                testIdPrefix="pedido-medico-cid"
+              />
+            </label>
 
             <label className="block space-y-2">
               <span className="text-sm font-medium text-slate-200">Data da solicitação</span>

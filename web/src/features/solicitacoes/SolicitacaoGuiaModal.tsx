@@ -9,6 +9,7 @@ import { abrirPedidoMedico, useAtualizarSolicitacao, type SolicitacaoEditForm } 
 import { SolicitacaoAnexos } from './SolicitacaoAnexos'
 import type { Solicitacao } from './types'
 import { Botao } from '../../components/ui/Botao'
+import { CidCampo } from '../cids/CidCampo'
 
 type SolicitacaoGuiaModalProps = {
   solicitacao: Solicitacao | null
@@ -30,7 +31,7 @@ function DetailItem({ label, children }: { label: string; children: ReactNode })
 
 const formVazio: SolicitacaoEditForm = {
   medico_id: '',
-  cid: '',
+  cid_id: '',
   solicitado_em: '',
   observacoes: '',
 }
@@ -51,7 +52,7 @@ function SolicitacaoDados({ solicitacao }: { solicitacao: Solicitacao }) {
   const iniciarEdicao = () => {
     setForm({
       medico_id: String(solicitacao.medico_id),
-      cid: solicitacao.cid ?? '',
+      cid_id: solicitacao.cid_id ? String(solicitacao.cid_id) : '',
       solicitado_em: solicitacao.solicitado_em.slice(0, 10),
       observacoes: solicitacao.observacoes ?? '',
     })
@@ -97,7 +98,9 @@ function SolicitacaoDados({ solicitacao }: { solicitacao: Solicitacao }) {
       {!editando ? (
         <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <DetailItem label="Médico solicitante">{solicitacao.medico?.nome ?? solicitacao.medico_id}</DetailItem>
-          <DetailItem label="CID">{solicitacao.cid ?? '-'}</DetailItem>
+          <DetailItem label="CID">
+            {solicitacao.cid ? `${solicitacao.cid.codigo} — ${solicitacao.cid.descricao}` : '-'}
+          </DetailItem>
           <DetailItem label="Data da solicitação">{solicitacao.solicitado_em}</DetailItem>
           <DetailItem label="Observações">{solicitacao.observacoes ?? '-'}</DetailItem>
         </div>
@@ -124,11 +127,10 @@ function SolicitacaoDados({ solicitacao }: { solicitacao: Solicitacao }) {
             </label>
             <label className="block space-y-2">
               <span className="text-sm font-medium text-slate-200">CID</span>
-              <input
-                value={form.cid}
-                onChange={(event) => setForm((current) => ({ ...current, cid: event.target.value }))}
-                className={fieldClasses()}
-                data-testid="solicitacao-modal-cid"
+              <CidCampo
+                value={form.cid_id}
+                onChange={(cidId) => setForm((current) => ({ ...current, cid_id: cidId }))}
+                testIdPrefix="solicitacao-modal-cid"
               />
             </label>
           </div>
@@ -164,7 +166,7 @@ function SolicitacaoDados({ solicitacao }: { solicitacao: Solicitacao }) {
               type="button"
               variante="primario"
               onClick={() => void salvar()}
-              disabled={atualizar.isPending}
+              disabled={atualizar.isPending || form.cid_id === ''}
               data-testid="solicitacao-modal-salvar"
             >
               {atualizar.isPending ? 'Salvando...' : 'Salvar alterações'}

@@ -17,6 +17,7 @@ import { ImportarSessoesPage } from '../features/lancamentos/ImportarSessoesPage
 import { ConciliacaoPage } from '../features/conciliacao'
 import { MedicosPage } from '../features/medicos'
 import { EspecialidadesPage } from '../features/especialidades'
+import { CidsPage } from '../features/cids'
 import { PermissoesPage } from '../features/permissoes'
 import { UsuariosPage } from '../features/usuarios'
 import { ProfissionaisPage } from '../features/profissionais'
@@ -83,6 +84,9 @@ export function AppRoutes() {
           <Route path="/especialidades" element={<EspecialidadesPage />} />
           <Route path="/especialidades/nova" element={<EspecialidadesPage />} />
           <Route path="/especialidades/:id/editar" element={<EspecialidadesPage />} />
+          <Route path="/cids" element={<CidsPage />} />
+          <Route path="/cids/novo" element={<CidsPage />} />
+          <Route path="/cids/:id/editar" element={<CidsPage />} />
           <Route path="/medicos" element={<MedicosPage />} />
           <Route path="/medicos/novo" element={<MedicosPage />} />
           <Route path="/medicos/:id/editar" element={<MedicosPage />} />

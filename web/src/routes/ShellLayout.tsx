@@ -32,6 +32,7 @@ const LARGURA_AMPLA_PREFIXOS = [
   '/conciliacao',
   '/profissionais',
   '/especialidades',
+  '/cids',
   '/medicos',
   '/convenios',
   '/usuarios',

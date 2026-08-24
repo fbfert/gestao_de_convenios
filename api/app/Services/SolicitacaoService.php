@@ -26,6 +26,7 @@ class SolicitacaoService
                 'especialidade',
                 'convenio',
                 'medico',
+                'cidCadastro',
                 'itens.especialidade.convenioMapeamentos',
                 'itens.profissional',
                 'itens.documentos',
@@ -83,7 +84,7 @@ class SolicitacaoService
                 'especialidade_id' => $dados['especialidade_id'] ?? $primeiroItem['especialidade_id'],
                 'convenio_id' => $dados['convenio_id'],
                 'medico_id' => $dados['medico_id'],
-                'cid' => $dados['cid'] ?? null,
+                'cid_id' => $dados['cid_id'] ?? null,
                 'status' => 'under_review',
                 'solicitado_em' => $dados['solicitado_em'],
                 'observacoes' => $dados['observacoes'] ?? null,
@@ -177,7 +178,7 @@ class SolicitacaoService
     {
         $solicitacao->fill(array_filter([
             'medico_id' => $dados['medico_id'] ?? null,
-            'cid' => array_key_exists('cid', $dados) ? $dados['cid'] : null,
+            'cid_id' => $dados['cid_id'] ?? null,
             'solicitado_em' => $dados['solicitado_em'] ?? null,
             'observacoes' => array_key_exists('observacoes', $dados) ? $dados['observacoes'] : null,
         ], fn ($value) => $value !== null));

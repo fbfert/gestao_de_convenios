@@ -122,6 +122,7 @@ class GerarGuiaUnimedService
                 'login' => $credential->login,
                 'password' => $credential->password,
                 'base_url' => $credential->base_url,
+                'nome_contratado' => $credential->nome_contratado,
             ],
         ];
     }

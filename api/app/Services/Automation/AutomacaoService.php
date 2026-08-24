@@ -33,6 +33,32 @@ class AutomacaoService
                 ->first();
 
             if ($existing) {
+                // Em execucao ou ja concluida: a chave de idempotencia existe
+                // exatamente pra nao duplicar isso, devolve como esta.
+                if (in_array($existing->status, self::ACTIVE_STATUSES, true) || $existing->status === 'succeeded') {
+                    return $existing;
+                }
+
+                // Falhou antes: e um reenvio de verdade, nao duplicata. Sem
+                // atualizar o payload aqui, qualquer correcao feita depois da
+                // falha (CRM, CID, codigo do profissional...) nunca chegava
+                // ao worker — a chave de idempotencia e identica a cada
+                // tentativa (mesmo tenant/operacao/item), entao so devolver
+                // o registro antigo reenviava pra sempre o payload congelado
+                // da primeira tentativa.
+                $existing->fill([
+                    'status' => 'queued',
+                    'payload' => $this->redactor->redact($payload),
+                    'resultado' => [],
+                    'erro_codigo' => null,
+                    'erro_mensagem' => null,
+                    'queued_at' => now(),
+                    'started_at' => null,
+                    'finished_at' => null,
+                ])->save();
+
+                $this->registrarEvento($existing, 'queued', 'queued', $payload);
+
                 return $existing;
             }
 

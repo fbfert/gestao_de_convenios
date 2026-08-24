@@ -27,6 +27,7 @@ class UpdateUnimedSettingsRequest extends FormRequest
             'credential.login' => ['required', 'string', 'max:255'],
             'credential.password' => ['nullable', 'string', 'max:2000'],
             'credential.base_url' => ['nullable', 'url', 'max:255'],
+            'credential.nome_contratado' => ['nullable', 'string', 'max:255'],
             'credential.ativo' => ['required', 'boolean'],
         ];
     }

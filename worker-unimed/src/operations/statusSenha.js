@@ -67,9 +67,10 @@ async function consultarStatusBatch(page, request) {
   }
 }
 
-async function consultarStatusGuia(page, guia) {
+async function consultarStatusGuia(mainPage, guia) {
+  let page = mainPage
   try {
-    await abrirBeneficiario(page)
+    page = await abrirBeneficiario(mainPage)
     await preencherCarteirinha(page, splitCarteirinha(guia.paciente?.carteirinha))
 
     const restriction = await textoRestricao(page)
@@ -120,6 +121,12 @@ async function consultarStatusGuia(page, guia) {
       message: error instanceof Error ? error.message : 'Falha ao consultar guia.',
       conclusivo: false,
     })
+  } finally {
+    // abrirBeneficiario troca para uma popup; sem fechar, um lote com muitas
+    // guias acumula uma janela por item.
+    if (page !== mainPage) {
+      await page.close().catch(() => {})
+    }
   }
 }
 

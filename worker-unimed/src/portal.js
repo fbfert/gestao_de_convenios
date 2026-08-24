@@ -1,5 +1,11 @@
 export const DEFAULT_TIMEOUT = Number(process.env.UNIMED_WORKER_STEP_TIMEOUT_MS ?? 5000)
 
+// O <a id="cadastro_biometria"> real tem largura/altura zero no layout — o
+// Magneto pinta o botao visivel ("+ Novo Exame") num filho fora da caixa do
+// pai. Um .click() do Playwright no <a> nunca passa da checagem de
+// visibilidade; por isso sempre miramos nesse filho, que tem geometria real.
+const NOVO_EXAME_BOTAO = '#cadastro_biometria .MagnetoBigRoundedButton'
+
 export async function login(page, credential) {
   const loginUrl = loginUrlFromCredential(credential)
   await page.goto(loginUrl, { waitUntil: 'domcontentloaded', timeout: DEFAULT_TIMEOUT })
@@ -9,7 +15,11 @@ export async function login(page, credential) {
   await page.locator('[name="Button_DoLogin"]').click({ timeout: DEFAULT_TIMEOUT })
   await waitProcessing(page)
 
-  if (await hasText(page, 'Login inválido') || await hasText(page, 'Senha inválida')) {
+  if (
+    (await hasText(page, 'Login inválido')) ||
+    (await hasText(page, 'Senha inválida')) ||
+    (await hasText(page, 'Usuário ou Senha inválidos'))
+  ) {
     throw new WorkerResultError({
       status: 'failed',
       error_code: 'LOGIN_ERROR',
@@ -17,14 +27,39 @@ export async function login(page, credential) {
     })
   }
 
-  await page.locator('#novo-exame').waitFor({ timeout: DEFAULT_TIMEOUT })
+  await page.locator(NOVO_EXAME_BOTAO).waitFor({ timeout: DEFAULT_TIMEOUT })
 }
 
+/**
+ * Clicar em "+ Novo Exame" abre uma janela popup de verdade (window.open) —
+ * todo o cadastro do beneficiario e a geracao da guia acontecem dentro dela,
+ * nunca na pagina original. Por isso devolvemos a popup: quem chama passa a
+ * operar nela dai em diante (troca o `page` que estava usando).
+ */
 export async function abrirBeneficiario(page) {
-  await page.locator('#novo-exame').click({ timeout: DEFAULT_TIMEOUT })
-  await waitProcessing(page)
-  await page.locator('#ignora-cartao').click({ timeout: DEFAULT_TIMEOUT })
-  await page.locator('#cadastrar-beneficiario').click({ timeout: DEFAULT_TIMEOUT })
+  const [popup] = await Promise.all([
+    page.context().waitForEvent('page', { timeout: DEFAULT_TIMEOUT }),
+    page.locator(NOVO_EXAME_BOTAO).click({ timeout: DEFAULT_TIMEOUT }),
+  ])
+  await popup.waitForLoadState('domcontentloaded', { timeout: DEFAULT_TIMEOUT })
+
+  // Cada passo daqui pra frente e uma navegacao de pagina real (o dynaHash na
+  // URL muda a cada clique), nao so uma troca de conteudo via AJAX — por isso
+  // esperamos o carregamento da pagina, e nao so o spinner de "Processando".
+  await popup.locator('#ignora-cartao').click({ timeout: DEFAULT_TIMEOUT })
+  await waitProcessing(popup)
+  await popup.waitForLoadState('domcontentloaded', { timeout: DEFAULT_TIMEOUT })
+
+  // As duas opcoes dessa tela ("beneficiario local" e "beneficiario de
+  // intercambio") sao links sem id, so texto — a nossa clinica atende
+  // convenio de intercambio, entao e sempre essa.
+  await popup
+    .getByText('Cadastre o beneficiário e prossiga com o atendimento.')
+    .click({ timeout: DEFAULT_TIMEOUT })
+  await waitProcessing(popup)
+  await popup.waitForLoadState('domcontentloaded', { timeout: DEFAULT_TIMEOUT })
+
+  return popup
 }
 
 export async function preencherCarteirinha(page, card) {

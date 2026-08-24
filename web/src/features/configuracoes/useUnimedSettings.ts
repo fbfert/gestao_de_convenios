@@ -14,6 +14,7 @@ export type UnimedCredentialSettings = {
   id: number
   login: string
   base_url: string | null
+  nome_contratado: string | null
   ativo: boolean
   senha_configurada: boolean
   automation_paused_at: string | null
@@ -30,6 +31,7 @@ export type UnimedCredentialForm = {
   login: string
   password: string
   base_url: string
+  nome_contratado: string
   ativo: boolean
 }
 
@@ -103,6 +105,7 @@ export function useSalvarUnimedSettings() {
           login: payload.credential.login,
           password: payload.credential.password,
           base_url: payload.credential.base_url.trim() || null,
+          nome_contratado: payload.credential.nome_contratado.trim() || null,
           ativo: payload.credential.ativo,
         },
       })

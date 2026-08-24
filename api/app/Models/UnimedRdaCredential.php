@@ -20,6 +20,7 @@ class UnimedRdaCredential extends Model
         'login',
         'password',
         'base_url',
+        'nome_contratado',
         'ativo',
         'automation_paused_at',
         'automation_paused_reason',

@@ -17,6 +17,7 @@ class UnimedSettingsResource extends JsonResource
                 'id' => $credential->id,
                 'login' => $credential->login,
                 'base_url' => $credential->base_url,
+                'nome_contratado' => $credential->nome_contratado,
                 'ativo' => $credential->ativo,
                 'senha_configurada' => filled($credential->password),
                 'automation_paused_at' => $credential->automation_paused_at?->toISOString(),

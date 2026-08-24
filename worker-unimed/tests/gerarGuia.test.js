@@ -21,6 +21,7 @@ function requestForScenario(scenario, overrides = {}) {
         login: 'operador',
         password: 'secret',
         base_url: fixtureUrl(scenario),
+        nome_contratado: 'CLINICA TESTE',
       },
       paciente: {
         nome: 'Paciente Teste',

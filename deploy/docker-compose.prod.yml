@@ -56,6 +56,13 @@ services:
       UNIMED_WORKER_HOST: 0.0.0.0
       UNIMED_WORKER_PORT: "8787"
       UNIMED_WORKER_TOKEN: ${WORKER_TOKEN}
+    # Mesmo volume do gescon-app, no mesmo caminho: o payload manda o
+    # `local_path` calculado dentro do gescon-app (ex.: pedido medico em
+    # /var/www/html/storage/app/...), e sem isto o worker nao acha o arquivo
+    # pra anexar (ENOENT) — containers diferentes nao compartilham disco.
+    # Somente leitura: o worker so precisa ler o que o app ja gravou.
+    volumes:
+      - gescon_storage:/var/www/html/storage:ro
     healthcheck:
       # /health passa pelo mesmo gate de auth do resto da API, entao o
       # healthcheck precisa mandar o Bearer. O token vem do env do proprio

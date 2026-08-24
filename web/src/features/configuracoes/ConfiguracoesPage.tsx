@@ -38,6 +38,7 @@ const emptyUnimedCredentialForm: UnimedSettingsForm['credential'] = {
   login: '',
   password: '',
   base_url: 'https://portal.unimed.coop.br',
+  nome_contratado: '',
   ativo: true,
 }
 
@@ -163,6 +164,7 @@ export function ConfiguracoesPage({ aba }: { aba: ConfiguracoesAba }) {
             login: data.credential.login,
             password: '',
             base_url: data.credential.base_url ?? '',
+            nome_contratado: data.credential.nome_contratado ?? '',
             ativo: data.credential.ativo,
           }
         : emptyUnimedCredentialForm,
@@ -532,11 +534,12 @@ export function ConfiguracoesPage({ aba }: { aba: ConfiguracoesAba }) {
       ) : null}
 
       {activeTab === 'unimed' ? (
-        <form
-          onSubmit={handleUnimedSubmit}
-          className="space-y-6"
-          data-testid="configuracoes-unimed-form"
-        >
+        <div className="space-y-6" data-testid="configuracoes-unimed-page">
+          <form
+            onSubmit={handleUnimedSubmit}
+            className="space-y-6"
+            data-testid="configuracoes-unimed-credencial-form"
+          >
           <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
             <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
               <div>
@@ -644,6 +647,22 @@ export function ConfiguracoesPage({ aba }: { aba: ConfiguracoesAba }) {
                   disabled={!canManageUnimed}
                 />
               </label>
+              <label className="space-y-2">
+                <span className="text-sm font-medium text-slate-200">Nome do Contratado</span>
+                <input
+                  value={unimedForm.credential.nome_contratado}
+                  onChange={(event) =>
+                    setUnimedForm((current) => ({
+                      ...current,
+                      credential: { ...current.credential, nome_contratado: event.target.value },
+                    }))
+                  }
+                  className={inputClasses()}
+                  placeholder="Nome da clínica cadastrado como prestador na Unimed"
+                  data-testid="unimed-nome-contratado"
+                  disabled={!canManageUnimed}
+                />
+              </label>
             </div>
 
             <div className="mt-5 flex flex-wrap items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-4">
@@ -683,6 +702,17 @@ export function ConfiguracoesPage({ aba }: { aba: ConfiguracoesAba }) {
               ) : null}
             </div>
           </section>
+
+            <Botao
+              type="submit"
+              disabled={!canManageUnimed}
+              carregando={salvarUnimedSettings.isPending}
+              className="w-full"
+              data-testid="configuracoes-unimed-salvar"
+            >
+              {salvarUnimedSettings.isPending ? 'Salvando...' : 'Salvar configurações Unimed'}
+            </Botao>
+          </form>
 
           {canManageUnimed ? (
             <section className="grid gap-6 xl:grid-cols-2">
@@ -838,17 +868,7 @@ export function ConfiguracoesPage({ aba }: { aba: ConfiguracoesAba }) {
               {error}
             </p>
           ) : null}
-
-          <Botao
-            type="submit"
-            disabled={!canManageUnimed}
-            carregando={salvarUnimedSettings.isPending}
-            className="w-full"
-            data-testid="configuracoes-unimed-salvar"
-          >
-            {salvarUnimedSettings.isPending ? 'Salvando...' : 'Salvar configurações Unimed'}
-          </Botao>
-        </form>
+        </div>
       ) : null}
     </div>
   )

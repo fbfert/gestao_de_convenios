@@ -5,6 +5,19 @@
   <title>Fixture Unimed Status Senha</title>
 </head>
 <body>
+  <!--
+    Fluxo real confirmado em producao (25/08/2026): login -> tela "Exames em
+    aberto" (menu persistente, sempre visivel) -> campo s_nr_guia + botao
+    Button_FIltro -> clica na guia encontrada -> tela de execucao SP/SADT com
+    DT_AUTORIZACAO / NR_SENHA / DT_VALIDADE_SENHA / QT_SOLIC_1 / QT_AUTORIZADA_1
+    ja preenchidos. Nao ha campo "Situacao" separado: autorizado = tem
+    DT_AUTORIZACAO + NR_SENHA.
+  -->
+  <nav id="menu" style="display:none">
+    <!-- login() espera este botao ficar visivel para confirmar que autenticou. -->
+    <a id="cadastro_biometria" href="#"><div class="MagnetoBigRoundedButton">+ Novo Exame</div></a>
+    <a id="exames-abertos" href="#">Exames em aberto</a>
+  </nav>
   <main id="app">
     <form id="login-form">
       <input id="login" name="login">
@@ -16,168 +29,83 @@
     const params = new URLSearchParams(location.search)
     const scenario = params.get('scenario') || 'status-approved'
     const app = document.querySelector('#app')
-    let openPage = 1
+    const menu = document.querySelector('#menu')
+
+    // guia usada pelos testes (ver statusSenha.test.js): "UNI-123".
+    const GUIA_EXISTENTE = 'UNI-123'
+
+    const cenarios = {
+      'status-approved': { autorizado: true, comQuantidades: false },
+      'status-approved-com-quantidades': { autorizado: true, comQuantidades: true },
+      'status-em-analise': { autorizado: false, comQuantidades: false },
+      'status-nao-encontrada': { naoEncontrada: true },
+      'capture-sucesso': { autorizado: true, comQuantidades: false },
+      'capture-sem-senha': { autorizado: false, comQuantidades: false },
+      'capture-nao-encontrada': { naoEncontrada: true },
+    }
 
     document.querySelector('[name="Button_DoLogin"]').addEventListener('click', renderHome)
 
     function renderHome() {
+      menu.style.display = 'block'
+      menu.querySelector('#exames-abertos').onclick = (event) => {
+        event.preventDefault()
+        renderExamesAbertos()
+      }
+      renderExamesAbertos()
+    }
+
+    function renderExamesAbertos() {
       app.innerHTML = `
-        <a id="cadastro_biometria" href="#"><div class="MagnetoBigRoundedButton">+ Novo Exame</div></a>
-        <a id="exames-abertos" href="#">Exames em aberto</a>
+        <input name="s_nr_guia">
+        <button name="Button_FIltro" type="button">Filtrar</button>
+        <div id="resultado"></div>
       `
-      document.querySelector('#cadastro_biometria').addEventListener('click', (event) => {
-        event.preventDefault()
-        const popup = window.open('about:blank', '_blank')
-        popup.document.open()
-        popup.document.write(popupHtml(scenario))
-        popup.document.close()
-      })
-      document.querySelector('#exames-abertos').addEventListener('click', (event) => {
-        event.preventDefault()
-        openPage = 1
-        renderOpenExams()
+      document.querySelector('[name="Button_FIltro"]').addEventListener('click', () => {
+        const numero = document.querySelector('[name="s_nr_guia"]').value
+        renderResultado(numero)
       })
     }
 
-    function renderOpenExams() {
-      if (scenario === 'capture-not-found') {
-        app.innerHTML = `
-          <table><tr data-guia-row><td>OUTRA-999</td><td>Paciente Teste</td></tr></table>
-        `
+    function renderResultado(numero) {
+      const cfg = cenarios[scenario] ?? cenarios['status-approved']
+      const resultado = document.querySelector('#resultado')
+
+      if (cfg.naoEncontrada || numero !== GUIA_EXISTENTE) {
+        resultado.innerHTML = '<table><tr><td>0 exame(s) encontrado(s)</td></tr></table>'
         return
       }
 
-      if (scenario === 'capture-page-2' && openPage === 1) {
-        app.innerHTML = `
-          <table><tr data-guia-row><td>OUTRA-111</td><td>Paciente Teste</td></tr></table>
-          <a data-next-page href="#">Próxima</a>
-        `
-        document.querySelector('[data-next-page]').addEventListener('click', (event) => {
-          event.preventDefault()
-          openPage = 2
-          renderOpenExams()
-        })
-        return
-      }
-
-      app.innerHTML = `
+      resultado.innerHTML = `
         <table>
           <tr data-guia-row>
-            <td><a href="#" data-open-guide>UNI-123</a></td>
+            <td>25/08/2026 13:53</td>
+            <td><a href="#" data-open-guia>${numero}</a></td>
             <td>Paciente Teste</td>
-            <td>12345678123456012</td>
           </tr>
         </table>
       `
-      document.querySelector('[data-open-guide]').addEventListener('click', (event) => {
+      document.querySelector('[data-open-guia]').addEventListener('click', (event) => {
         event.preventDefault()
-        renderExecution()
+        renderExecucao(cfg)
       })
     }
 
-    function renderExecution() {
+    function renderExecucao(cfg) {
+      const dtAutorizacao = cfg.autorizado ? '25/08/2026' : ''
+      const nrSenha = cfg.autorizado ? '9248082' : ''
+      const dtValidadeSenha = cfg.autorizado ? '24/10/2026' : ''
+      const qtSolic = cfg.comQuantidades ? '10' : ''
+      const qtAut = cfg.comQuantidades ? '6' : ''
+
       app.innerHTML = `
-        <input id="NR_SENHA" name="NR_SENHA" value="SENHA-321">
-        <input id="DT_VALIDADE_SENHA" name="DT_VALIDADE_SENHA" value="15/09/2026">
-        <a id="voltar-exames-abertos" href="#">Exames em aberto</a>
+        <input name="NR_GUIA" value="${GUIA_EXISTENTE}">
+        <input name="DT_AUTORIZACAO" value="${dtAutorizacao}">
+        <input name="NR_SENHA" value="${nrSenha}">
+        <input name="DT_VALIDADE_SENHA" value="${dtValidadeSenha}">
+        <input name="QT_SOLIC_1" value="${qtSolic}">
+        <input name="QT_AUTORIZADA_1" value="${qtAut}">
       `
-      document.querySelector('#voltar-exames-abertos').addEventListener('click', (event) => {
-        event.preventDefault()
-        renderOpenExams()
-      })
-    }
-
-    // String JS, nao bloco de texto embutido: a popup tem sua propria tag de
-    // fechamento de script, que um bloco de texto no HTML principal fecharia
-    // cedo demais. Dentro de uma string JS o \/ escapa isso direito.
-    function popupHtml(scenarioValue) {
-      return `<!doctype html>
-<html lang="pt-BR">
-<head><meta charset="utf-8"><title>Fixture Unimed - Popup Novo Exame</title></head>
-<body>
-  <main id="app"></main>
-  <script>
-    const scenario = ${JSON.stringify(scenarioValue)}
-    const app = document.querySelector('#app')
-
-    // Tela inicial da popup: "Passe o cartão..." com o link de problemas.
-    renderCardPopup()
-
-    function renderCardPopup() {
-      app.innerHTML = '<a id="ignora-cartao" href="#">clique aqui</a>'
-      document.querySelector('#ignora-cartao').addEventListener('click', (event) => {
-        event.preventDefault()
-        renderCardOptions()
-      })
-    }
-
-    function renderCardOptions() {
-      // As duas opcoes reais nao tem id, so texto.
-      app.innerHTML = \`
-        <a href="#" data-beneficiary-option="local">Beneficiário local sem cartão ou cartão não lê. Localize o beneficiário e prossiga com o atendimento.</a>
-        <a href="#" data-beneficiary-option="intercambio">Beneficiário de intercâmbio sem cartão. Cadastre o beneficiário e prossiga com o atendimento.</a>
-      \`
-      document.querySelector('[data-beneficiary-option="intercambio"]').addEventListener('click', (event) => {
-        event.preventDefault()
-        renderBeneficiary()
-      })
-    }
-
-    function renderBeneficiary() {
-      app.innerHTML = \`
-        <input id="CD_UNIMED" name="CD_UNIMED">
-        <input id="CD_CARTAO" name="CD_CARTAO">
-        <input id="CD_BENEF" name="CD_BENEF">
-        <input id="CD_DEPEN" name="CD_DEPEN">
-        <input id="NR_DV" name="NR_DV">
-        <button name="Button_Insert" type="button">Verificar</button>
-      \`
-      document.querySelector('[name="Button_Insert"]').addEventListener('click', renderLocateGuide)
-    }
-
-    function renderLocateGuide() {
-      if (scenario === 'status-restriction') {
-        app.innerHTML = '<p>Restrição Administrativa - procurar atendimento</p>'
-        return
-      }
-
-      app.innerHTML = '<a id="localizar-guia-link" href="#">Localizar Guia</a>'
-      document.querySelector('#localizar-guia-link').addEventListener('click', (event) => {
-        event.preventDefault()
-        app.innerHTML = \`
-          <input id="s_NR_GUIA" name="s_NR_GUIA">
-          <button id="localizar-guia" name="Button_DoSearch" type="button">Localizar</button>
-        \`
-        document.querySelector('#localizar-guia').addEventListener('click', renderGuideStatus)
-      })
-    }
-
-    function renderGuideStatus() {
-      const statusByScenario = {
-        'status-approved': 'Autorizado',
-        'status-approved-com-quantidades': 'Autorizado',
-        'status-under-review': 'Em Análise',
-        'status-denied': 'Negado',
-        'status-canceled': 'Cancelado',
-      }
-      const status = statusByScenario[scenario] || 'Autorizado'
-      const quantidades = scenario === 'status-approved-com-quantidades'
-        ? '<td>Qtd: 10</td><td>Qtd Aut: 6</td>'
-        : ''
-      app.innerHTML = \`
-        <table>
-          <tr data-guia-row>
-            <td>UNI-123</td>
-            <td>Situação: \${status}</td>
-            <td>Paciente Teste</td>
-            \${quantidades}
-          </tr>
-        </table>
-      \`
-    }
-  <\/script>
-</body>
-</html>`
     }
   </script>
 </body>

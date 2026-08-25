@@ -20,6 +20,8 @@ class ConfiguracaoGlobal extends Model
         'itens_por_pagina',
         'auditoria_retencao_meses',
         'carteirinha_retencao_dias',
+        'unimed_recheck_horas_sucesso',
+        'unimed_recheck_horas_falha',
     ];
 
     protected $casts = [
@@ -29,6 +31,8 @@ class ConfiguracaoGlobal extends Model
         'itens_por_pagina' => 'integer',
         'auditoria_retencao_meses' => 'integer',
         'carteirinha_retencao_dias' => 'integer',
+        'unimed_recheck_horas_sucesso' => 'integer',
+        'unimed_recheck_horas_falha' => 'integer',
     ];
 
     /**

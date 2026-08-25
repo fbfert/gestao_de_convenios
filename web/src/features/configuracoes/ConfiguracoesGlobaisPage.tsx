@@ -20,6 +20,8 @@ const formVazio: ConfiguracoesGlobaisForm = {
   itens_por_pagina: '15',
   auditoria_retencao_meses: '12',
   carteirinha_retencao_dias: '30',
+  unimed_recheck_horas_sucesso: '24',
+  unimed_recheck_horas_falha: '2',
 }
 
 /** Atalhos de tempo de sessão, para não ter que calcular minutos na mão. */

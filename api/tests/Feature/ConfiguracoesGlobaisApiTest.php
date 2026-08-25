@@ -25,7 +25,9 @@ class ConfiguracoesGlobaisApiTest extends TestCase
             ->assertJsonPath('data.sessoes_padrao', 10)
             ->assertJsonPath('data.itens_por_pagina', 15)
             ->assertJsonPath('data.auditoria_retencao_meses', 12)
-            ->assertJsonPath('data.carteirinha_retencao_dias', 30);
+            ->assertJsonPath('data.carteirinha_retencao_dias', 30)
+            ->assertJsonPath('data.unimed_recheck_horas_sucesso', 24)
+            ->assertJsonPath('data.unimed_recheck_horas_falha', 2);
     }
 
     public function test_salva_e_valida_os_limites(): void
@@ -39,6 +41,8 @@ class ConfiguracoesGlobaisApiTest extends TestCase
             'itens_por_pagina' => 50,
             'auditoria_retencao_meses' => 24,
             'carteirinha_retencao_dias' => 45,
+            'unimed_recheck_horas_sucesso' => 24,
+            'unimed_recheck_horas_falha' => 2,
         ])->assertOk()
             ->assertJsonPath('data.sessao_minutos', 120)
             ->assertJsonPath('data.auditoria_retencao_meses', 24);
@@ -50,6 +54,8 @@ class ConfiguracoesGlobaisApiTest extends TestCase
             'itens_por_pagina' => 50,
             'auditoria_retencao_meses' => 12,
             'carteirinha_retencao_dias' => 30,
+            'unimed_recheck_horas_sucesso' => 24,
+            'unimed_recheck_horas_falha' => 2,
         ])->assertJsonValidationErrors('sessao_minutos');
 
         $this->putJson('/api/configuracoes/globais', [
@@ -59,6 +65,8 @@ class ConfiguracoesGlobaisApiTest extends TestCase
             'itens_por_pagina' => 1,
             'auditoria_retencao_meses' => 12,
             'carteirinha_retencao_dias' => 30,
+            'unimed_recheck_horas_sucesso' => 24,
+            'unimed_recheck_horas_falha' => 2,
         ])->assertJsonValidationErrors('itens_por_pagina');
 
         // Piso de 3 meses: prazo menor esvaziaria a trilha antes de qualquer
@@ -70,7 +78,22 @@ class ConfiguracoesGlobaisApiTest extends TestCase
             'itens_por_pagina' => 50,
             'auditoria_retencao_meses' => 1,
             'carteirinha_retencao_dias' => 30,
+            'unimed_recheck_horas_sucesso' => 24,
+            'unimed_recheck_horas_falha' => 2,
         ])->assertJsonValidationErrors('auditoria_retencao_meses');
+
+        // Teto de 168h (7 dias): acima disso o reagendamento deixa de ser prazo
+        // curto de retry e vira "praticamente nunca".
+        $this->putJson('/api/configuracoes/globais', [
+            'sessao_minutos' => 120,
+            'senha_alerta_dias' => 15,
+            'sessoes_padrao' => 20,
+            'itens_por_pagina' => 50,
+            'auditoria_retencao_meses' => 12,
+            'carteirinha_retencao_dias' => 30,
+            'unimed_recheck_horas_sucesso' => 24,
+            'unimed_recheck_horas_falha' => 200,
+        ])->assertJsonValidationErrors('unimed_recheck_horas_falha');
     }
 
     public function test_token_expira_depois_do_tempo_configurado(): void

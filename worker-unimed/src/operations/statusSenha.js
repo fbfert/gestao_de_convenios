@@ -2,16 +2,10 @@ import { chromium } from 'playwright'
 import {
   DEFAULT_TIMEOUT,
   WorkerResultError,
-  abrirBeneficiario,
-  atualizarCadastroSeNecessario,
   fillIfVisible,
   login,
   mapPortalStatus,
   parseNumber,
-  pickValue,
-  preencherCarteirinha,
-  splitCarteirinha,
-  textoRestricao,
   waitProcessing,
 } from '../portal.js'
 
@@ -55,7 +49,6 @@ async function consultarStatusBatch(page, request) {
   const results = []
   for (const guia of guias) {
     results.push(await consultarStatusGuia(page, guia))
-    await voltarInicioSePossivel(page)
   }
 
   return {
@@ -67,48 +60,48 @@ async function consultarStatusBatch(page, request) {
   }
 }
 
-async function consultarStatusGuia(mainPage, guia) {
-  let page = mainPage
+/**
+ * Fluxo real confirmado em produção (25/08/2026, guia 50143966538): a tela
+ * que já aparece logo depois do login ("Exames em aberto") tem um formulário
+ * de busca de verdade — campo `s_nr_guia` + botão `Button_FIltro` (esse nome
+ * mal escrito é do próprio portal, não é typo nosso). Clicando na guia
+ * encontrada, abre a tela de execução do SP/SADT, que já traz preenchidos
+ * `DT_AUTORIZACAO`, `NR_SENHA`, `DT_VALIDADE_SENHA`, `QT_SOLIC_1` e
+ * `QT_AUTORIZADA_1` — dá pra ler os quatro sem nunca submeter o formulário.
+ *
+ * A versão anterior deste arquivo reusava o fluxo de "+ Novo Exame"
+ * (cadastro de beneficiário, pensado para CRIAR um exame) para consultar
+ * status de uma guia já existente — por isso travava sempre no mesmo lugar
+ * (não existe busca por guia nessa tela). Ver AutomacaoExecucao #16/#19 em
+ * produção para o timeout original.
+ */
+async function consultarStatusGuia(page, guia) {
   try {
-    page = await abrirBeneficiario(mainPage)
-    await preencherCarteirinha(page, splitCarteirinha(guia.paciente?.carteirinha))
-
-    const restriction = await textoRestricao(page)
-    if (restriction) {
-      return itemResult(guia, {
-        status: 'failed',
-        error_code: 'BENEFICIARY_RESTRICTION',
-        message: restriction,
-        conclusivo: false,
-      })
-    }
-
-    await atualizarCadastroSeNecessario(page)
-    await abrirLocalizarGuia(page)
-    await fillIfVisible(page, '[name="s_NR_GUIA"], #s_NR_GUIA', guia.numero_guia)
-    await page.locator('[name="Button_DoSearch"], #localizar-guia').click({ timeout: DEFAULT_TIMEOUT })
-    await waitProcessing(page)
-
-    const statusText = await lerSituacaoGuia(page, guia.numero_guia)
-    if (!statusText) {
+    const encontrada = await abrirGuiaPorFiltro(page, guia.numero_guia)
+    if (!encontrada) {
       return itemResult(guia, {
         status: 'failed',
         error_code: 'GUIA_NOT_FOUND',
-        message: 'Guia não encontrada no portal.',
+        message: 'Guia não encontrada em Exames em aberto.',
         conclusivo: false,
       })
     }
 
-    const guiaStatus = mapPortalStatus(statusText)
+    const dados = await lerDadosExecucaoGuia(page)
+    // Presença de data de autorização + senha é o sinal de autorizado — a
+    // tela de execução não traz um rótulo "Situação" separado.
+    const autorizada = Boolean(dados.dtAutorizacao && dados.nrSenha)
+    const situacao = autorizada ? 'Autorizado' : 'Em análise'
 
     return itemResult(guia, {
       status: 'succeeded',
-      portal_status: guiaStatus,
-      guia_status: guiaStatus,
-      unimed_status: statusText,
-      status_operadora: statusText,
-      conclusivo: true,
-      ...(await lerQuantidades(page, guia.numero_guia)),
+      portal_status: situacao,
+      guia_status: mapPortalStatus(situacao),
+      unimed_status: situacao,
+      status_operadora: situacao,
+      conclusivo: autorizada,
+      ...(dados.qtSolicitadas !== null ? { sessoes_solicitadas: dados.qtSolicitadas } : {}),
+      ...(dados.qtAutorizadas !== null ? { sessoes_autorizadas: dados.qtAutorizadas } : {}),
     })
   } catch (error) {
     if (error instanceof WorkerResultError) {
@@ -121,61 +114,18 @@ async function consultarStatusGuia(mainPage, guia) {
       message: error instanceof Error ? error.message : 'Falha ao consultar guia.',
       conclusivo: false,
     })
-  } finally {
-    // abrirBeneficiario troca para uma popup; sem fechar, um lote com muitas
-    // guias acumula uma janela por item.
-    if (page !== mainPage) {
-      await page.close().catch(() => {})
-    }
   }
 }
 
 async function capturarAutorizacaoBatch(page, request) {
   const payload = request.payload ?? {}
   const guias = guiasFromPayload(payload)
-  const pending = new Map(guias.map((guia) => [String(guia.numero_guia), guia]))
-  const results = []
 
   await login(page, payload.credential ?? {})
-  await abrirExamesAbertos(page)
 
-  const visited = new Set()
-  while (true) {
-    const pageKey = await page.locator('body').innerText({ timeout: DEFAULT_TIMEOUT }).catch(() => String(visited.size))
-    if (visited.has(pageKey)) {
-      break
-    }
-    visited.add(pageKey)
-
-    for (const [numeroGuia, guia] of [...pending]) {
-      const found = await abrirGuiaEmExamesAbertos(page, guia)
-      if (!found) {
-        continue
-      }
-
-      const senha = await readInputOrText(page, '[name="NR_SENHA"], #NR_SENHA, [data-field="NR_SENHA"]')
-      const validadeSenha = normalizeDate(await readInputOrText(page, '[name="DT_VALIDADE_SENHA"], #DT_VALIDADE_SENHA, [data-field="DT_VALIDADE_SENHA"]'))
-
-      results.push(itemResult(guia, {
-        status: 'succeeded',
-        senha,
-        validade_senha: validadeSenha,
-      }))
-      pending.delete(numeroGuia)
-      await voltarExamesAbertos(page)
-    }
-
-    if (pending.size === 0 || !await irProximaPagina(page)) {
-      break
-    }
-  }
-
-  for (const guia of pending.values()) {
-    results.push(itemResult(guia, {
-      status: 'failed',
-      error_code: 'NOT_FOUND_IN_OPEN_EXAMS',
-      message: 'Guia não encontrada em Exames em aberto.',
-    }))
+  const results = []
+  for (const guia of guias) {
+    results.push(await capturarAutorizacaoGuia(page, guia))
   }
 
   return {
@@ -187,80 +137,92 @@ async function capturarAutorizacaoBatch(page, request) {
   }
 }
 
-/**
- * A operadora pode revisar a quantidade autorizada depois da guia gerada. Usamos os
- * mesmos rótulos que o gerarGuia já lê do HTML real ("Qtd:" e "Qtd Aut:"). Quando a
- * tela não traz essas informações, devolvemos objeto vazio e nada é sobrescrito.
- */
-async function lerQuantidades(page, numeroGuia) {
-  const row = await rowByGuia(page, numeroGuia)
-  const texto = row
-    ? await row.innerText().catch(() => '')
-    : await page.locator('body').innerText({ timeout: DEFAULT_TIMEOUT }).catch(() => '')
+async function capturarAutorizacaoGuia(page, guia) {
+  try {
+    const encontrada = await abrirGuiaPorFiltro(page, guia.numero_guia)
+    if (!encontrada) {
+      return itemResult(guia, {
+        status: 'failed',
+        error_code: 'NOT_FOUND_IN_OPEN_EXAMS',
+        message: 'Guia não encontrada em Exames em aberto.',
+      })
+    }
 
-  const solicitadas = parseNumber(pickValue(texto, /Qtd:\s*(\d+)/i))
-  const autorizadas = parseNumber(pickValue(texto, /Qtd\s*Aut\.?:\s*(\d+)/i))
-  const quantidades = {}
+    const dados = await lerDadosExecucaoGuia(page)
+    if (!dados.nrSenha) {
+      return itemResult(guia, {
+        status: 'failed',
+        error_code: 'SENHA_NAO_DISPONIVEL',
+        message: 'Guia encontrada em Exames em aberto, mas o portal ainda não mostra senha de autorização.',
+      })
+    }
 
-  if (solicitadas !== null) {
-    quantidades.sessoes_solicitadas = solicitadas
+    return itemResult(guia, {
+      status: 'succeeded',
+      senha: dados.nrSenha,
+      validade_senha: dados.dtValidadeSenha,
+    })
+  } catch (error) {
+    if (error instanceof WorkerResultError) {
+      throw error
+    }
+
+    return itemResult(guia, {
+      status: 'failed',
+      error_code: 'ITEM_CAPTURE_FAILED',
+      message: error instanceof Error ? error.message : 'Falha ao capturar autorização.',
+    })
   }
-  if (autorizadas !== null) {
-    quantidades.sessoes_autorizadas = autorizadas
-  }
-
-  return quantidades
 }
 
-async function abrirLocalizarGuia(page) {
-  const link = page.locator('#localizar-guia-link, a:has-text("Localizar Guia"), a:has-text("Localizar guia")').first()
-  if (await link.isVisible({ timeout: 500 }).catch(() => false)) {
-    await link.click({ timeout: DEFAULT_TIMEOUT })
-    await waitProcessing(page)
+/**
+ * Busca a guia em "Exames em aberto" pelo número exato (campo `s_nr_guia` +
+ * `Button_FIltro`) e, se achar, clica nela — deixando `page` na tela de
+ * execução do SP/SADT. Devolve false sem lançar quando a guia não aparece
+ * (não é erro de automação, é a guia genuinamente não estar nessa lista).
+ */
+async function abrirGuiaPorFiltro(page, numeroGuia) {
+  await abrirExamesAbertos(page)
+  await fillIfVisible(page, '[name="s_nr_guia"]', numeroGuia)
+  await page.locator('[name="Button_FIltro"]').first().click({ timeout: DEFAULT_TIMEOUT })
+  await waitProcessing(page)
+
+  const row = await rowByGuia(page, numeroGuia)
+  if (!row) {
+    return false
   }
+
+  await row.locator('a').first().click({ timeout: DEFAULT_TIMEOUT })
+  await waitProcessing(page)
+  await page.waitForLoadState('domcontentloaded', { timeout: DEFAULT_TIMEOUT }).catch(() => {})
+
+  return true
+}
+
+async function lerDadosExecucaoGuia(page) {
+  const dtAutorizacao = await valorCampo(page, 'DT_AUTORIZACAO')
+  const nrSenha = await valorCampo(page, 'NR_SENHA')
+  const dtValidadeSenha = normalizeDate(await valorCampo(page, 'DT_VALIDADE_SENHA'))
+  const qtSolicitadas = parseNumber(await valorCampo(page, 'QT_SOLIC_1'))
+  const qtAutorizadas = parseNumber(await valorCampo(page, 'QT_AUTORIZADA_1'))
+
+  return { dtAutorizacao, nrSenha, dtValidadeSenha, qtSolicitadas, qtAutorizadas }
+}
+
+async function valorCampo(page, name) {
+  const locator = page.locator(`[name="${name}"]`).first()
+  if ((await locator.count()) === 0) {
+    return null
+  }
+
+  const value = await locator.inputValue({ timeout: DEFAULT_TIMEOUT }).catch(() => null)
+  return value && value.trim() !== '' ? value.trim() : null
 }
 
 export async function abrirExamesAbertos(page) {
   const link = page.locator('#exames-abertos, a:has-text("Exames em aberto")').first()
   await link.click({ timeout: DEFAULT_TIMEOUT })
   await waitProcessing(page)
-}
-
-async function lerSituacaoGuia(page, numeroGuia) {
-  const row = await rowByGuia(page, numeroGuia)
-  if (row) {
-    const text = await row.innerText()
-    return pickValue(text, /Situa[cç][aã]o:\s*([^\n\t]+)/i)
-      ?? pickValue(text, /Status:\s*([^\n\t]+)/i)
-      ?? text.split(/\r?\n/).map((line) => line.trim()).find((line) => /Autorizado|Em execução|Em estudo|Em Análise|Negado|Cancelado/i.test(line))
-      ?? null
-  }
-
-  const body = await page.locator('body').innerText({ timeout: DEFAULT_TIMEOUT }).catch(() => '')
-  if (!body.includes(String(numeroGuia))) {
-    return null
-  }
-
-  return pickValue(body, /Situa[cç][aã]o:\s*([^\n\t]+)/i)
-    ?? pickValue(body, /Status:\s*([^\n\t]+)/i)
-}
-
-async function abrirGuiaEmExamesAbertos(page, guia) {
-  const row = await rowByGuia(page, guia.numero_guia)
-  if (!row) {
-    return false
-  }
-
-  const text = await row.innerText()
-  const card = String(guia.paciente?.carteirinha ?? '').replace(/\D/g, '')
-  if (card && !text.replace(/\D/g, '').includes(card.slice(-6))) {
-    return false
-  }
-
-  await row.locator('a, button').filter({ hasText: String(guia.numero_guia) }).first().click({ timeout: DEFAULT_TIMEOUT })
-    .catch(async () => row.locator('a, button').first().click({ timeout: DEFAULT_TIMEOUT }))
-  await waitProcessing(page)
-  return true
 }
 
 async function rowByGuia(page, numeroGuia) {
@@ -275,42 +237,6 @@ async function rowByGuia(page, numeroGuia) {
   }
 
   return null
-}
-
-async function irProximaPagina(page) {
-  const next = page.locator('a:has-text("Próxima"), a:has-text("Proxima"), [data-next-page]').first()
-  if (!await next.isVisible({ timeout: 500 }).catch(() => false)) {
-    return false
-  }
-
-  await next.click({ timeout: DEFAULT_TIMEOUT })
-  await waitProcessing(page)
-  return true
-}
-
-async function voltarInicioSePossivel(page) {
-  const link = page.locator('#home, a:has-text("Início"), a:has-text("Inicio")').first()
-  if (await link.isVisible({ timeout: 500 }).catch(() => false)) {
-    await link.click({ timeout: DEFAULT_TIMEOUT })
-    await waitProcessing(page)
-  }
-}
-
-async function voltarExamesAbertos(page) {
-  const link = page.locator('#voltar-exames-abertos, a:has-text("Exames em aberto")').first()
-  if (await link.isVisible({ timeout: 500 }).catch(() => false)) {
-    await link.click({ timeout: DEFAULT_TIMEOUT })
-    await waitProcessing(page)
-  }
-}
-
-async function readInputOrText(page, selector) {
-  const locator = page.locator(selector).first()
-  if (!await locator.isVisible({ timeout: 500 }).catch(() => false)) {
-    return null
-  }
-
-  return await locator.inputValue({ timeout: 500 }).catch(() => locator.innerText({ timeout: DEFAULT_TIMEOUT }))
 }
 
 function guiasFromPayload(payload) {

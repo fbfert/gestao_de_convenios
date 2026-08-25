@@ -5,6 +5,7 @@ namespace App\Services\Automation;
 use App\Exceptions\AutomationConcurrencyException;
 use App\Jobs\ExecutarAutomacaoUnimedJob;
 use App\Models\AutomacaoExecucao;
+use App\Models\ConfiguracaoGlobal;
 use App\Models\Guia;
 use App\Models\UnimedRdaCredential;
 use App\Services\GuiaService;
@@ -14,7 +15,6 @@ use Illuminate\Validation\ValidationException;
 class ConsultarStatusUnimedService
 {
     private const ACTIVE_STATUSES = ['queued', 'running'];
-    private const DEFAULT_DUE_HOURS = 24;
     public const OPERATION = 'consult_status_batch';
 
     public function __construct(
@@ -45,7 +45,12 @@ class ConsultarStatusUnimedService
             ]);
         }
 
-        $guia->forceFill(['unimed_next_check_at' => now()->addHours(self::DEFAULT_DUE_HOURS)])->save();
+        // Prazo pessimista: assume falha até prova em contrário. Se a execução
+        // for bem-sucedida, aplicarResultado() reagenda para o prazo normal
+        // (mais longo) logo abaixo — sem isto, uma falha técnica (timeout do
+        // worker etc.) deixava a guia presa em +24h mesmo com o job de fila
+        // rodando a cada 30 minutos, porque nada reagendava em caso de erro.
+        $guia->forceFill(['unimed_next_check_at' => now()->addHours($this->horasFalha($guia->tenant_id))])->save();
 
         if ($dispatch) {
             ExecutarAutomacaoUnimedJob::dispatch($execucao->id);
@@ -129,7 +134,7 @@ class ConsultarStatusUnimedService
                 'status' => $guiaStatus,
                 'unimed_status' => $portalStatus,
                 'unimed_last_checked_at' => now(),
-                'unimed_next_check_at' => now()->addHours(self::DEFAULT_DUE_HOURS),
+                'unimed_next_check_at' => now()->addHours($this->horasSucesso($guia->tenant_id)),
                 // A operadora pode revisar a quantidade autorizada depois da geração;
                 // só sobrescrevemos quando o portal realmente informou o número.
                 ...$this->quantidadesInformadas($resultado),
@@ -139,6 +144,20 @@ class ConsultarStatusUnimedService
                 $this->solicitacoes->sincronizarStatusComGuias($guia->solicitacao);
             }
         } else {
+            // A execucao rodou de ponta a ponta (chegou aqui, nao explodiu no
+            // catch generico do job) mas nao trouxe novidade — ex.: guia ainda
+            // "em analise" no portal — ou falhou de forma controlada (worker
+            // devolveu status failed/uncertain sem lancar excecao). So no
+            // segundo caso o reagendamento deve ser curto; sucesso sem novidade
+            // usa o prazo normal, para nao martelar o portal a cada 2h a toa.
+            $falhou = in_array($execucao->status, ['failed', 'uncertain', 'needs_attention'], true);
+
+            $guia->forceFill([
+                'unimed_next_check_at' => now()->addHours(
+                    $falhou ? $this->horasFalha($guia->tenant_id) : $this->horasSucesso($guia->tenant_id)
+                ),
+            ])->save();
+
             $this->automacoes->registrarEvento($execucao, 'dados_indisponiveis', $execucao->status, [
                 'mensagem' => $resultado['message'] ?? 'Consulta de status sem resultado conclusivo.',
                 'proxima_consulta' => $guia->unimed_next_check_at?->toISOString(),
@@ -160,6 +179,16 @@ class ConsultarStatusUnimedService
         }
 
         return $quantidades;
+    }
+
+    private function horasSucesso(int $tenantId): int
+    {
+        return ConfiguracaoGlobal::doTenant($tenantId)->unimed_recheck_horas_sucesso ?: 24;
+    }
+
+    private function horasFalha(int $tenantId): int
+    {
+        return ConfiguracaoGlobal::doTenant($tenantId)->unimed_recheck_horas_falha ?: 2;
     }
 
     private function payloadPersistido(Guia $guia): array

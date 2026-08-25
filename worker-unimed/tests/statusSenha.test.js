@@ -43,19 +43,19 @@ async function run(operation, scenario, overrides = {}) {
   }
 }
 
-test('consulta status aprovado usando fixture local', async () => {
+test('consulta status: guia autorizada via busca por numero (s_nr_guia + Button_FIltro)', async () => {
   const result = await run(executarConsultarStatusBatch, 'status-approved')
 
   assert.equal(result.status, 'succeeded')
   assert.equal(result.guia_status, 'approved')
   assert.equal(result.unimed_status, 'Autorizado')
   assert.equal(result.conclusivo, true)
-  // Listagem sem quantidades: não inventa números para a API sobrescrever.
+  // Formulario de execucao sem quantidades preenchidas: nao inventa numeros.
   assert.equal(result.sessoes_autorizadas, undefined)
   assert.equal(result.sessoes_solicitadas, undefined)
 })
 
-test('consulta status captura quantidades quando a listagem traz', async () => {
+test('consulta status captura quantidades quando o formulario de execucao traz', async () => {
   const result = await run(executarConsultarStatusBatch, 'status-approved-com-quantidades')
 
   assert.equal(result.status, 'succeeded')
@@ -63,32 +63,38 @@ test('consulta status captura quantidades quando a listagem traz', async () => {
   assert.equal(result.sessoes_autorizadas, 6)
 })
 
-test('consulta status negado e cancelado mapeia status interno', async () => {
-  const denied = await run(executarConsultarStatusBatch, 'status-denied')
-  const canceled = await run(executarConsultarStatusBatch, 'status-canceled')
+test('consulta status: guia ainda sem autorizacao/senha fica nao conclusiva', async () => {
+  const result = await run(executarConsultarStatusBatch, 'status-em-analise')
 
-  assert.equal(denied.guia_status, 'denied')
-  assert.equal(canceled.guia_status, 'canceled')
-})
-
-test('restricao individual nao marca consulta como conclusiva', async () => {
-  const result = await run(executarConsultarStatusBatch, 'status-restriction')
-
-  assert.equal(result.status, 'failed')
-  assert.equal(result.error_code, 'BENEFICIARY_RESTRICTION')
+  assert.equal(result.status, 'succeeded')
   assert.equal(result.conclusivo, false)
 })
 
-test('captura senha e validade em pagina posterior', async () => {
-  const result = await run(executarCapturarAutorizacaoBatch, 'capture-page-2')
+test('consulta status: guia nao aparece em Exames em aberto', async () => {
+  const result = await run(executarConsultarStatusBatch, 'status-nao-encontrada')
+
+  assert.equal(result.status, 'failed')
+  assert.equal(result.error_code, 'GUIA_NOT_FOUND')
+  assert.equal(result.conclusivo, false)
+})
+
+test('captura senha e validade pela mesma tela de execucao', async () => {
+  const result = await run(executarCapturarAutorizacaoBatch, 'capture-sucesso')
 
   assert.equal(result.status, 'succeeded')
-  assert.equal(result.senha, 'SENHA-321')
-  assert.equal(result.validade_senha, '2026-09-15')
+  assert.equal(result.senha, '9248082')
+  assert.equal(result.validade_senha, '2026-10-24')
+})
+
+test('captura retorna SENHA_NAO_DISPONIVEL quando a guia ainda nao tem senha', async () => {
+  const result = await run(executarCapturarAutorizacaoBatch, 'capture-sem-senha')
+
+  assert.equal(result.status, 'failed')
+  assert.equal(result.error_code, 'SENHA_NAO_DISPONIVEL')
 })
 
 test('captura retorna NOT_FOUND_IN_OPEN_EXAMS quando guia nao aparece', async () => {
-  const result = await run(executarCapturarAutorizacaoBatch, 'capture-not-found')
+  const result = await run(executarCapturarAutorizacaoBatch, 'capture-nao-encontrada')
 
   assert.equal(result.status, 'failed')
   assert.equal(result.error_code, 'NOT_FOUND_IN_OPEN_EXAMS')

@@ -36,6 +36,8 @@ class ConfiguracaoGlobalController extends Controller
             'itens_por_pagina' => $configuracao->itens_por_pagina,
             'auditoria_retencao_meses' => $configuracao->auditoria_retencao_meses,
             'carteirinha_retencao_dias' => $configuracao->carteirinha_retencao_dias,
+            'unimed_recheck_horas_sucesso' => $configuracao->unimed_recheck_horas_sucesso,
+            'unimed_recheck_horas_falha' => $configuracao->unimed_recheck_horas_falha,
         ];
     }
 }

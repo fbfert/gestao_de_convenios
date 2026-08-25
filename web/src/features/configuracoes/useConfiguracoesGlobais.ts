@@ -12,6 +12,10 @@ export type ConfiguracoesGlobais = {
   auditoria_retencao_meses: number
   /** Dias que a imagem da carteirinha fica no servidor antes do expurgo. */
   carteirinha_retencao_dias: number
+  /** Horas até a próxima consulta de status Unimed quando a anterior teve sucesso (sem novidade). */
+  unimed_recheck_horas_sucesso: number
+  /** Horas até a próxima consulta de status Unimed quando a anterior falhou por erro técnico. */
+  unimed_recheck_horas_falha: number
 }
 
 export type ConfiguracoesGlobaisForm = {
@@ -21,6 +25,8 @@ export type ConfiguracoesGlobaisForm = {
   itens_por_pagina: string
   auditoria_retencao_meses: string
   carteirinha_retencao_dias: string
+  unimed_recheck_horas_sucesso: string
+  unimed_recheck_horas_falha: string
 }
 
 const chaveQuery = ['configuracoes', 'globais']
@@ -33,6 +39,8 @@ export function paraFormulario(dados: ConfiguracoesGlobais): ConfiguracoesGlobai
     itens_por_pagina: String(dados.itens_por_pagina),
     auditoria_retencao_meses: String(dados.auditoria_retencao_meses),
     carteirinha_retencao_dias: String(dados.carteirinha_retencao_dias),
+    unimed_recheck_horas_sucesso: String(dados.unimed_recheck_horas_sucesso),
+    unimed_recheck_horas_falha: String(dados.unimed_recheck_horas_falha),
   }
 }
 
@@ -74,6 +82,8 @@ export function useSalvarConfiguracoesGlobais() {
         itens_por_pagina: Number(form.itens_por_pagina),
         auditoria_retencao_meses: Number(form.auditoria_retencao_meses),
         carteirinha_retencao_dias: Number(form.carteirinha_retencao_dias),
+        unimed_recheck_horas_sucesso: Number(form.unimed_recheck_horas_sucesso),
+        unimed_recheck_horas_falha: Number(form.unimed_recheck_horas_falha),
       })
       return data.data
     },

@@ -20,7 +20,8 @@ class GuiaService
     use AppliesOwnScope;
 
     public function __construct(
-        private readonly AntecipacaoService $antecipacaoService
+        private readonly AntecipacaoService $antecipacaoService,
+        private readonly SolicitacaoService $solicitacaoService,
     ) {
     }
 
@@ -208,6 +209,10 @@ class GuiaService
         $guia->save();
 
         $this->antecipacaoService->abrirCiclo($guia);
+
+        if ($guia->solicitacao_id) {
+            $this->solicitacaoService->sincronizarStatusComGuias($guia->solicitacao);
+        }
 
         return $guia->refresh();
     }

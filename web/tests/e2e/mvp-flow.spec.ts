@@ -56,7 +56,7 @@ test('fluxo completo de negocio', async ({ page }, testInfo: TestInfo) => {
 
   const solicitacaoRow = page.locator('[data-testid^="solicitacao-row-"]').first()
   await expect(solicitacaoRow).toBeVisible()
-  await expect(solicitacaoRow).toContainText('Em análise')
+  await expect(solicitacaoRow).toContainText('Análise Interna')
   const solicitacaoId = Number((await solicitacaoRow.getAttribute('data-testid'))?.replace('solicitacao-row-', ''))
   const aprovarResponsePromise = page.waitForResponse((response) => {
     return (
@@ -65,7 +65,8 @@ test('fluxo completo de negocio', async ({ page }, testInfo: TestInfo) => {
     )
   })
   page.once('dialog', (dialog) => dialog.accept())
-  await page.getByTestId(`solicitacao-status-action-approved-${solicitacaoId}`).click()
+  await page.getByTestId(`solicitacao-acoes-${solicitacaoId}`).click()
+  await page.getByTestId(`solicitacao-status-action-ready_for_automation-${solicitacaoId}`).click()
   const aprovarResponse = await aprovarResponsePromise
   const aprovarResponseText = await aprovarResponse.text()
   console.log(
@@ -75,7 +76,9 @@ test('fluxo completo de negocio', async ({ page }, testInfo: TestInfo) => {
     aprovarResponse.status(),
     `PATCH /solicitacoes/${solicitacaoId}/status retornou ${aprovarResponse.status()} com corpo: ${aprovarResponseText}`,
   ).toBe(200)
-  await expect(page.getByTestId(`solicitacao-status-${solicitacaoId}`)).toContainText('Aprovado')
+  await expect(page.getByTestId(`solicitacao-status-${solicitacaoId}`)).toContainText(
+    'Pronto para Automatização',
+  )
 
   await page.reload({ waitUntil: 'domcontentloaded' })
   await expect(page.getByTestId('solicitacoes-page')).toBeVisible()
@@ -363,6 +366,7 @@ test('pedido com duas especialidades recebe anexos por especialidade', async ({ 
   const itens = body.data.itens as Array<{ id: number }>
   expect(itens).toHaveLength(2)
 
+  await page.getByTestId(`solicitacao-acoes-${solicitacaoId}`).click()
   await page.getByTestId(`solicitacao-anexos-${solicitacaoId}`).click()
   await expect(page.getByTestId('solicitacao-anexos')).toBeVisible()
 

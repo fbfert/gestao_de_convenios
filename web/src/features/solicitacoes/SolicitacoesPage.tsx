@@ -23,6 +23,7 @@ import {
 } from '../../lib/queries/useReferenceData'
 import { formatCarteirinha } from '../../lib/carteirinha'
 import { SolicitacaoGuiaModal } from './SolicitacaoGuiaModal'
+import { AutomacaoProgressoModal } from './AutomacaoProgressoModal'
 import { CidCampo } from '../cids/CidCampo'
 import { SolicitacaoItensFields } from './SolicitacaoItensFields'
 import { emptyItem, itensEstaoCompletos } from './solicitacaoItens'
@@ -52,6 +53,8 @@ const emptyForm: SolicitacaoForm = {
   itens: [{ ...emptyItem }],
 }
 
+// 'approved' fica de fora de propósito: agora é aprovação real da operadora,
+// sincronizada automaticamente a partir da guia — não é mais uma ação manual.
 const statusActions: Array<{
   status: SolicitacaoStatus
   label: string
@@ -60,15 +63,15 @@ const statusActions: Array<{
 }> = [
   {
     status: 'under_review',
-    label: 'Em análise',
+    label: 'Análise Interna',
     dotClassName: 'bg-cyan-300',
     textClassName: 'text-cyan-100',
   },
   {
-    status: 'approved',
-    label: 'Aprovado',
-    dotClassName: 'bg-emerald-300',
-    textClassName: 'text-emerald-100',
+    status: 'ready_for_automation',
+    label: 'Pronto para Automatização',
+    dotClassName: 'bg-amber-300',
+    textClassName: 'text-amber-100',
   },
   {
     status: 'denied',
@@ -82,6 +85,8 @@ function statusTone(status: string): NonNullable<BadgeProps['tone']> {
   switch (status) {
     case 'approved':
       return 'sucesso'
+    case 'ready_for_automation':
+      return 'alerta'
     case 'canceled':
     case 'denied':
       return 'perigo'
@@ -106,6 +111,7 @@ export function SolicitacoesPage() {
   const [page, setPage] = useState(1)
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [selectedSolicitacaoId, setSelectedSolicitacaoId] = useState<number | null>(null)
+  const [progressoExecucaoId, setProgressoExecucaoId] = useState<number | null>(null)
   const [form, setForm] = useState<SolicitacaoForm>(emptyForm)
   const [formError, setFormError] = useState<string | null>(null)
 
@@ -293,7 +299,8 @@ export function SolicitacoesPage() {
 
   const handleEnviarItemUnimed = async (itemId: number) => {
     try {
-      await enviarItemUnimed.mutateAsync(itemId)
+      const execucao = await enviarItemUnimed.mutateAsync(itemId)
+      setProgressoExecucaoId(execucao.id)
     } catch (error) {
       window.alert(getHttpErrorMessage(error, 'Não foi possível enviar o item para a Unimed.'))
     }
@@ -312,8 +319,8 @@ export function SolicitacoesPage() {
                 <p className="font-semibold text-white">O pedido de autorização</p>
                 <p className="mt-1">
                   É o primeiro passo do atendimento: registra o pedido médico enviado ao convênio,
-                  com uma ou mais especialidades. Depois de aprovada, cada especialidade vira uma
-                  Guia. Cadastre o paciente antes, em Pacientes.
+                  com uma ou mais especialidades. Depois de ficar pronta para automatização, cada
+                  especialidade vira uma Guia. Cadastre o paciente antes, em Pacientes.
                 </p>
               </Tooltip>
             </h2>
@@ -598,7 +605,8 @@ export function SolicitacoesPage() {
               >
                 <option value="">Todos</option>
                 <option value="registered">Cadastrado</option>
-                <option value="under_review">Em análise</option>
+                <option value="under_review">Análise Interna</option>
+                <option value="ready_for_automation">Pronto para Automatização</option>
                 <option value="approved">Aprovado</option>
                 <option value="canceled">Cancelado</option>
                 <option value="denied">Negado</option>
@@ -715,7 +723,7 @@ export function SolicitacoesPage() {
                             const hasActiveExecution = item.automacao_execucao_ativa !== null
                             const canSend =
                               isUnimedRda &&
-                              solicitacao.status === 'approved' &&
+                              solicitacao.status === 'ready_for_automation' &&
                               !item.guia_id &&
                               !hasActiveExecution
 
@@ -739,12 +747,27 @@ export function SolicitacoesPage() {
                                       Guia #{item.guia_id}
                                     </span>
                                   ) : null}
-                                  {item.automacao_execucao_ativa ? (
-                                    <span className="rounded-full border border-amber-400/20 bg-amber-400/10 px-2.5 py-1 text-xs font-semibold text-amber-100">
-                                      {item.automacao_execucao_ativa.status}
+                                  {isUnimedRda && item.guia_id ? (
+                                    <span
+                                      className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1.5 text-xs font-semibold text-emerald-100"
+                                      data-testid={`solicitacao-item-guia-gerada-${item.id}`}
+                                    >
+                                      Guia gerada
                                     </span>
                                   ) : null}
-                                  {isUnimedRda ? (
+                                  {item.automacao_execucao_ativa ? (
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setProgressoExecucaoId(item.automacao_execucao_ativa!.id)
+                                      }
+                                      className="rounded-full border border-amber-400/20 bg-amber-400/10 px-2.5 py-1 text-xs font-semibold text-amber-100 transition hover:bg-amber-400/20"
+                                      data-testid={`solicitacao-item-execucao-ativa-${item.id}`}
+                                    >
+                                      {item.automacao_execucao_ativa.status} · ver andamento
+                                    </button>
+                                  ) : null}
+                                  {isUnimedRda && !item.guia_id ? (
                                     <>
                                       <button
                                         type="button"
@@ -757,9 +780,9 @@ export function SolicitacoesPage() {
                                       </button>
                                       <Tooltip rotulo="Quando este botão funciona">
                                         Dispara o robô da Unimed para gerar a guia sozinho (ver
-                                        Automações). Só fica ativo com a solicitação aprovada, sem
-                                        guia gerada ainda e sem outra execução em andamento para
-                                        este item.
+                                        Automações). Só fica ativo com a solicitação pronta para
+                                        automatização, sem guia gerada ainda e sem outra execução em
+                                        andamento para este item.
                                       </Tooltip>
                                     </>
                                   ) : null}
@@ -893,6 +916,11 @@ export function SolicitacoesPage() {
       <SolicitacaoGuiaModal
         solicitacao={selectedSolicitacao}
         onClose={() => setSelectedSolicitacaoId(null)}
+      />
+
+      <AutomacaoProgressoModal
+        execucaoId={progressoExecucaoId}
+        onClose={() => setProgressoExecucaoId(null)}
       />
     </div>
   )

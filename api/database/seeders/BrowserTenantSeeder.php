@@ -111,7 +111,7 @@ class BrowserTenantSeeder extends Seeder
                 'solicitado_em' => '2026-07-10',
             ],
             [
-                'status' => 'approved',
+                'status' => 'ready_for_automation',
                 'observacoes' => 'Registro isolado do tenant beta.',
             ],
         );

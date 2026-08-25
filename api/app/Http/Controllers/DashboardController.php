@@ -39,7 +39,7 @@ class DashboardController extends Controller
                 'label' => 'Solicitações',
                 'href' => '/solicitacoes',
                 'value' => Solicitacao::query()->where('status', 'under_review')->count(),
-                'detail' => Solicitacao::query()->where('status', 'approved')->count().' aprovadas',
+                'detail' => Solicitacao::query()->where('status', 'ready_for_automation')->count().' prontas para automação',
             ],
             [
                 'key' => 'guias',

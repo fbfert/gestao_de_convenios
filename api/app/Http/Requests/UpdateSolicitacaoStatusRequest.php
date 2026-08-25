@@ -15,7 +15,9 @@ class UpdateSolicitacaoStatusRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status' => ['required', Rule::in(['under_review', 'approved', 'denied'])],
+            // 'approved' fica de fora de propósito: só o sistema grava esse valor
+            // (aprovação real da operadora), ver SolicitacaoService::sincronizarStatusComGuias.
+            'status' => ['required', Rule::in(['under_review', 'ready_for_automation', 'denied'])],
         ];
     }
 }

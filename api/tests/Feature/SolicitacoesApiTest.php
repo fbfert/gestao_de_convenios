@@ -201,7 +201,7 @@ class SolicitacoesApiTest extends TestCase
             ]);
     }
 
-    public function test_altera_status_entre_em_analise_aprovado_e_negado(): void
+    public function test_altera_status_entre_em_analise_pronta_para_automatizacao_e_negada(): void
     {
         $this->autenticar();
 
@@ -218,7 +218,7 @@ class SolicitacoesApiTest extends TestCase
 
         $this->patchJson("/api/solicitacoes/{$aprovada}/aprovar")
             ->assertOk()
-            ->assertJsonPath('data.status', 'approved');
+            ->assertJsonPath('data.status', 'ready_for_automation');
 
         $guia = Guia::query()->where('solicitacao_id', $aprovada)->firstOrFail();
         $this->assertSame("GUIA-SOLICITACAO-{$aprovada}", $guia->numero_guia);
@@ -234,9 +234,9 @@ class SolicitacoesApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.status', 'denied');
 
-        $this->patchJson("/api/solicitacoes/{$negada}/status", ['status' => 'approved'])
+        $this->patchJson("/api/solicitacoes/{$negada}/status", ['status' => 'ready_for_automation'])
             ->assertOk()
-            ->assertJsonPath('data.status', 'approved');
+            ->assertJsonPath('data.status', 'ready_for_automation');
 
         $this->assertDatabaseHas('guias', [
             'solicitacao_id' => $negada,
@@ -248,9 +248,64 @@ class SolicitacoesApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.status', 'under_review');
 
+        // 'approved' agora é aprovação real (sincronizada a partir da guia) —
+        // não é mais um destino que o usuário escolhe manualmente.
+        $this->patchJson("/api/solicitacoes/{$negada}/status", ['status' => 'approved'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['status']);
+
         $this->patchJson("/api/solicitacoes/{$negada}/status", ['status' => 'canceled'])
             ->assertStatus(422)
             ->assertJsonValidationErrors(['status']);
+    }
+
+    public function test_solicitacao_vira_aprovada_quando_todas_as_guias_dos_itens_sao_finalizadas(): void
+    {
+        $this->autenticar();
+        $payload = $this->payloadSolicitacao('SC Saúde');
+        $primeiraEspecialidade = $payload['especialidade_id'];
+        $primeiroProfissional = $payload['profissional_id'];
+        $outraEspecialidade = Especialidade::query()->where('nome', '!=', 'Fisioterapia')->firstOrFail();
+        $outroProfissional = Profissional::query()->where('especialidade_id', $outraEspecialidade->id)->firstOrFail();
+
+        unset($payload['especialidade_id'], $payload['profissional_id']);
+        $payload['itens'] = [
+            ['especialidade_id' => $primeiraEspecialidade, 'profissional_id' => $primeiroProfissional, 'quantidade' => 5],
+            ['especialidade_id' => $outraEspecialidade->id, 'profissional_id' => $outroProfissional->id, 'quantidade' => 5],
+        ];
+
+        $id = $this->postJson('/api/solicitacoes', $payload)->assertCreated()->json('data.id');
+
+        $this->patchJson("/api/solicitacoes/{$id}/aprovar")
+            ->assertOk()
+            ->assertJsonPath('data.status', 'ready_for_automation');
+
+        // Fluxo legado só cria guia pro primeiro item — reproduz manualmente
+        // a guia do segundo item, que na prática viria de outro cadastro.
+        $solicitacao = Solicitacao::query()->with('itens')->findOrFail($id);
+        $itens = $solicitacao->itens;
+        $guiaItem1 = Guia::query()->where('solicitacao_item_id', $itens[0]->id)->firstOrFail();
+        $guiaItem2 = Guia::query()->create([
+            'tenant_id' => $solicitacao->tenant_id,
+            'solicitacao_id' => $solicitacao->id,
+            'solicitacao_item_id' => $itens[1]->id,
+            'convenio_id' => $solicitacao->convenio_id,
+            'paciente_id' => $solicitacao->paciente_id,
+            'profissional_id' => $itens[1]->profissional_id,
+            'especialidade_id' => $itens[1]->especialidade_id,
+            'numero_guia' => 'GUIA-ITEM-2-'.$id,
+            'tipo_terapia' => 'especializada',
+            'status' => 'under_review',
+            'data_solicitacao' => today(),
+        ]);
+
+        app(\App\Services\GuiaService::class)->finalizar($guiaItem1, ['senha' => 'SENHA-1']);
+
+        $this->assertSame('ready_for_automation', $solicitacao->refresh()->status);
+
+        app(\App\Services\GuiaService::class)->finalizar($guiaItem2, ['senha' => 'SENHA-2']);
+
+        $this->assertSame('approved', $solicitacao->refresh()->status);
     }
 
     public function test_admin_edita_solicitacao_e_fica_registrado_na_auditoria(): void

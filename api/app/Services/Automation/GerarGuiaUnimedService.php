@@ -10,6 +10,7 @@ use App\Models\ConvenioProfissionalMapeamento;
 use App\Models\Guia;
 use App\Models\SolicitacaoItem;
 use App\Models\UnimedRdaCredential;
+use App\Services\SolicitacaoService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -18,8 +19,10 @@ class GerarGuiaUnimedService
 {
     private const ACTIVE_STATUSES = ['queued', 'running', 'uncertain'];
 
-    public function __construct(private readonly AutomacaoService $automacoes)
-    {
+    public function __construct(
+        private readonly AutomacaoService $automacoes,
+        private readonly SolicitacaoService $solicitacoes,
+    ) {
     }
 
     public function avaliar(SolicitacaoItem $item): array
@@ -41,8 +44,8 @@ class GerarGuiaUnimedService
             ->where('ativo', true)
             ->first();
 
-        if ($solicitacao?->status !== 'approved') {
-            $motivos[] = 'A Solicitação precisa estar aprovada.';
+        if ($solicitacao?->status !== 'ready_for_automation') {
+            $motivos[] = 'A Solicitação precisa estar pronta para automatização.';
         }
 
         if ($solicitacao?->convenio?->connector_driver !== 'unimed_rda') {
@@ -140,7 +143,8 @@ class GerarGuiaUnimedService
             $execucao = $this->automacoes->concluir($execucao, $resultado);
 
             if ($execucao->status === 'succeeded') {
-                $this->criarOuAtualizarGuia($execucao, $resultado);
+                $guia = $this->criarOuAtualizarGuia($execucao, $resultado);
+                $this->solicitacoes->sincronizarStatusComGuias($guia->solicitacao);
             }
 
             return $execucao->refresh();

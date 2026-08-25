@@ -15,7 +15,16 @@ use RuntimeException;
 
 class SolicitacaoService
 {
-    private const STATUS_PERMITIDOS = ['under_review', 'approved', 'denied'];
+    /**
+     * Transições que um humano pode disparar manualmente (botões da tela).
+     * 'approved' fica de fora de propósito: agora só o sistema grava esse
+     * valor, quando confirma que a operadora aprovou a(s) guia(s) — ver
+     * sincronizarStatusComGuias().
+     */
+    private const STATUS_PERMITIDOS = ['under_review', 'ready_for_automation', 'denied'];
+
+    /** Status de Guia que contam como "aprovada pela operadora" pro sync. */
+    private const GUIA_STATUS_APROVADA = ['approved', 'finalized'];
 
     public function listar(array $filtros = [], int $perPage = 15): LengthAwarePaginator
     {
@@ -209,7 +218,7 @@ class SolicitacaoService
 
     public function aprovar(Solicitacao $solicitacao): Solicitacao
     {
-        return $this->alterarStatus($solicitacao, 'approved');
+        return $this->alterarStatus($solicitacao, 'ready_for_automation');
     }
 
     public function negar(Solicitacao $solicitacao): Solicitacao
@@ -226,12 +235,40 @@ class SolicitacaoService
         return DB::transaction(function () use ($solicitacao, $destino) {
             $solicitacao->update(['status' => $destino]);
 
-            if ($destino === 'approved') {
+            if ($destino === 'ready_for_automation') {
                 $this->sincronizarGuiaDaSolicitacao($solicitacao->refresh());
             }
 
             return $solicitacao->refresh();
         });
+    }
+
+    /**
+     * Promove a Solicitação pra 'approved' (aprovação real da operadora)
+     * quando TODAS as guias dos seus itens já chegaram em status aprovado —
+     * chamada depois de qualquer escrita em Guia.status (finalizar manual,
+     * ou o job automático de consulta na Unimed). Só evolui a partir de
+     * 'ready_for_automation': nunca pula 'under_review' nem reabre 'denied'.
+     */
+    public function sincronizarStatusComGuias(Solicitacao $solicitacao): void
+    {
+        if ($solicitacao->status !== 'ready_for_automation') {
+            return;
+        }
+
+        $itens = $solicitacao->itens()->with('guia')->get();
+
+        if ($itens->isEmpty()) {
+            return;
+        }
+
+        $todasAprovadas = $itens->every(
+            fn ($item) => $item->guia !== null && in_array($item->guia->status, self::GUIA_STATUS_APROVADA, true),
+        );
+
+        if ($todasAprovadas) {
+            $solicitacao->update(['status' => 'approved']);
+        }
     }
 
     private function sincronizarGuiaDaSolicitacao(Solicitacao $solicitacao): void

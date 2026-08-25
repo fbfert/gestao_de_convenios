@@ -21,7 +21,11 @@ export function useAutomacoes(filters: AutomacaoFilters, page: number) {
   })
 }
 
-export function useAutomacao(id: number | null) {
+const STATUS_EM_ANDAMENTO = ['queued', 'running']
+
+export function useAutomacao(id: number | null, options: { acompanharProgresso?: boolean } = {}) {
+  const { acompanharProgresso = false } = options
+
   return useQuery({
     queryKey: ['automacoes', id],
     enabled: id !== null,
@@ -29,6 +33,11 @@ export function useAutomacao(id: number | null) {
       const { data } = await apiClient.get<{ data: AutomacaoExecucao }>(`/automacoes/${id}`)
       return data.data
     },
+    // Sem WebSocket no projeto: "tempo real" aqui é poll curto enquanto a
+    // execução ainda não chegou a um status terminal.
+    refetchInterval: acompanharProgresso
+      ? (query) => (STATUS_EM_ANDAMENTO.includes(query.state.data?.status ?? '') ? 2500 : false)
+      : false,
   })
 }
 

@@ -8,6 +8,7 @@ use App\Models\AutomacaoExecucao;
 use App\Models\Guia;
 use App\Models\UnimedRdaCredential;
 use App\Services\GuiaService;
+use App\Services\SolicitacaoService;
 use Illuminate\Validation\ValidationException;
 
 class ConsultarStatusUnimedService
@@ -19,6 +20,7 @@ class ConsultarStatusUnimedService
     public function __construct(
         private readonly AutomacaoService $automacoes,
         private readonly GuiaService $guiaService,
+        private readonly SolicitacaoService $solicitacoes,
     ) {
     }
 
@@ -132,6 +134,10 @@ class ConsultarStatusUnimedService
                 // só sobrescrevemos quando o portal realmente informou o número.
                 ...$this->quantidadesInformadas($resultado),
             ])->save();
+
+            if ($guia->solicitacao_id) {
+                $this->solicitacoes->sincronizarStatusComGuias($guia->solicitacao);
+            }
         } else {
             $this->automacoes->registrarEvento($execucao, 'dados_indisponiveis', $execucao->status, [
                 'mensagem' => $resultado['message'] ?? 'Consulta de status sem resultado conclusivo.',

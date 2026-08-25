@@ -654,7 +654,7 @@ class GerarGuiaUnimedApiTest extends TestCase
             'especialidade_id' => $especialidade->id,
             'convenio_id' => $convenio->id,
             'medico_id' => $medico->id,
-            'status' => 'approved',
+            'status' => 'ready_for_automation',
             'solicitado_em' => today(),
             'observacoes' => null,
             'pedido_medico_path' => $comPedidoMedico ? 'pedidos-medicos/teste.pdf' : null,

@@ -8,7 +8,8 @@ export type StatusEntidade =
 const statusLabels: Record<StatusEntidade, Record<string, string>> = {
   solicitacoes: {
     registered: 'Cadastrado',
-    under_review: 'Em análise',
+    under_review: 'Análise Interna',
+    ready_for_automation: 'Pronto para Automatização',
     approved: 'Aprovado',
     canceled: 'Cancelado',
     denied: 'Negado',

@@ -92,6 +92,7 @@ function statusTone(status: string): NonNullable<BadgeProps['tone']> {
       return 'perigo'
     case 'expired':
       return 'alerta'
+    case 'guia_gerada':
     case 'registered':
     default:
       return 'acento'
@@ -607,6 +608,7 @@ export function SolicitacoesPage() {
                 <option value="registered">Cadastrado</option>
                 <option value="under_review">Análise Interna</option>
                 <option value="ready_for_automation">Pronto para Automatização</option>
+                <option value="guia_gerada">Guia Gerada</option>
                 <option value="approved">Aprovado</option>
                 <option value="canceled">Cancelado</option>
                 <option value="denied">Negado</option>

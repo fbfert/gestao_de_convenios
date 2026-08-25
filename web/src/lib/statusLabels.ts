@@ -10,6 +10,7 @@ const statusLabels: Record<StatusEntidade, Record<string, string>> = {
     registered: 'Cadastrado',
     under_review: 'Análise Interna',
     ready_for_automation: 'Pronto para Automatização',
+    guia_gerada: 'Guia Gerada',
     approved: 'Aprovado',
     canceled: 'Cancelado',
     denied: 'Negado',

@@ -244,30 +244,34 @@ class SolicitacaoService
     }
 
     /**
-     * Promove a Solicitação pra 'approved' (aprovação real da operadora)
-     * quando TODAS as guias dos seus itens já chegaram em status aprovado —
-     * chamada depois de qualquer escrita em Guia.status (finalizar manual,
-     * ou o job automático de consulta na Unimed). Só evolui a partir de
-     * 'ready_for_automation': nunca pula 'under_review' nem reabre 'denied'.
+     * Evolui a Solicitação em cima do que já aconteceu com as guias dos seus
+     * itens — chamada depois de qualquer escrita em Guia.status (criação,
+     * finalizar manual, ou o job automático de consulta na Unimed):
+     *   - Todo item já tem guia, mas nem todas aprovadas -> 'guia_gerada'.
+     *   - Todo item com guia aprovada/finalizada pela operadora -> 'approved'.
+     * Só evolui a partir de 'ready_for_automation'/'guia_gerada': nunca pula
+     * 'under_review' nem reabre 'denied'.
      */
     public function sincronizarStatusComGuias(Solicitacao $solicitacao): void
     {
-        if ($solicitacao->status !== 'ready_for_automation') {
+        if (! in_array($solicitacao->status, ['ready_for_automation', 'guia_gerada'], true)) {
             return;
         }
 
         $itens = $solicitacao->itens()->with('guia')->get();
 
-        if ($itens->isEmpty()) {
+        if ($itens->isEmpty() || $itens->contains(fn ($item) => $item->guia === null)) {
             return;
         }
 
         $todasAprovadas = $itens->every(
-            fn ($item) => $item->guia !== null && in_array($item->guia->status, self::GUIA_STATUS_APROVADA, true),
+            fn ($item) => in_array($item->guia->status, self::GUIA_STATUS_APROVADA, true),
         );
 
-        if ($todasAprovadas) {
-            $solicitacao->update(['status' => 'approved']);
+        $destino = $todasAprovadas ? 'approved' : 'guia_gerada';
+
+        if ($solicitacao->status !== $destino) {
+            $solicitacao->update(['status' => $destino]);
         }
     }
 

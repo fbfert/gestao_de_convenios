@@ -301,11 +301,45 @@ class SolicitacoesApiTest extends TestCase
 
         app(\App\Services\GuiaService::class)->finalizar($guiaItem1, ['senha' => 'SENHA-1']);
 
-        $this->assertSame('ready_for_automation', $solicitacao->refresh()->status);
+        // Item 2 já tem guia (ainda under_review) — todo item já com guia,
+        // mas nem todas aprovadas: vira 'guia_gerada', não mais
+        // 'ready_for_automation' (senão a tela fica presa dizendo "pronta
+        // pra automatizar" com a automação já concluída pros dois itens).
+        $this->assertSame('guia_gerada', $solicitacao->refresh()->status);
 
         app(\App\Services\GuiaService::class)->finalizar($guiaItem2, ['senha' => 'SENHA-2']);
 
         $this->assertSame('approved', $solicitacao->refresh()->status);
+    }
+
+    public function test_solicitacao_vira_guia_gerada_so_quando_todos_os_itens_tem_guia(): void
+    {
+        $this->autenticar();
+        $payload = $this->payloadSolicitacao('SC Saúde');
+        $primeiraEspecialidade = $payload['especialidade_id'];
+        $primeiroProfissional = $payload['profissional_id'];
+        $outraEspecialidade = Especialidade::query()->where('nome', '!=', 'Fisioterapia')->firstOrFail();
+        $outroProfissional = Profissional::query()->where('especialidade_id', $outraEspecialidade->id)->firstOrFail();
+
+        unset($payload['especialidade_id'], $payload['profissional_id']);
+        $payload['itens'] = [
+            ['especialidade_id' => $primeiraEspecialidade, 'profissional_id' => $primeiroProfissional, 'quantidade' => 5],
+            ['especialidade_id' => $outraEspecialidade->id, 'profissional_id' => $outroProfissional->id, 'quantidade' => 5],
+        ];
+
+        $id = $this->postJson('/api/solicitacoes', $payload)->assertCreated()->json('data.id');
+        $this->patchJson("/api/solicitacoes/{$id}/aprovar")->assertOk();
+
+        $solicitacao = Solicitacao::query()->with('itens')->findOrFail($id);
+        $itens = $solicitacao->itens;
+        $guiaItem1 = Guia::query()->where('solicitacao_item_id', $itens[0]->id)->firstOrFail();
+
+        app(\App\Services\GuiaService::class)->finalizar($guiaItem1, ['senha' => 'SENHA-1']);
+
+        // Item 2 nunca teve guia gerada: mesmo com o item 1 finalizado, a
+        // solicitação inteira fica em 'ready_for_automation' — ainda falta
+        // enviar o segundo item.
+        $this->assertSame('ready_for_automation', $solicitacao->refresh()->status);
     }
 
     public function test_admin_edita_solicitacao_e_fica_registrado_na_auditoria(): void

@@ -1,6 +1,11 @@
 import type { Guia } from '../guias/types'
 
-export type SolicitacaoStatus = 'under_review' | 'ready_for_automation' | 'approved' | 'denied'
+export type SolicitacaoStatus =
+  | 'under_review'
+  | 'ready_for_automation'
+  | 'guia_gerada'
+  | 'approved'
+  | 'denied'
 
 export type Solicitacao = {
   id: number

@@ -367,7 +367,8 @@ export function GuiaDetalheResumo({ guia }: { guia: Guia }) {
                 : '-'}
             </DetailItem>
             <DetailItem label="Erro recente">
-              {guia.ultima_automacao_unimed?.erro_codigo
+              {guia.ultima_automacao_unimed?.erro_codigo &&
+              guia.ultima_automacao_unimed.status !== 'succeeded'
                 ? `${guia.ultima_automacao_unimed.erro_codigo}: ${guia.ultima_automacao_unimed.erro_mensagem ?? '-'}`
                 : '-'}
             </DetailItem>

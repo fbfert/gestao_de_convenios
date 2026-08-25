@@ -622,7 +622,8 @@ export function GuiasPage() {
                                 {guia.ultima_automacao_unimed.operacao} · {guia.ultima_automacao_unimed.status}
                               </p>
                             ) : null}
-                            {guia.ultima_automacao_unimed?.erro_codigo ? (
+                            {guia.ultima_automacao_unimed?.erro_codigo &&
+                            guia.ultima_automacao_unimed.status !== 'succeeded' ? (
                               <p className="text-xs text-rose-200">
                                 {guia.ultima_automacao_unimed.erro_codigo}
                               </p>

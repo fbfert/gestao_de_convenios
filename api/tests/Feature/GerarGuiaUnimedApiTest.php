@@ -94,6 +94,13 @@ class GerarGuiaUnimedApiTest extends TestCase
         $this->assertSame($execucao->id, $guia->automacao_execucao_id);
         $this->assertSame('guia_generated', $item->refresh()->status_operacional);
         $this->assertSame('senha-unimed', $worker->calls[0]['payload']['credential']['password']);
+
+        // A guia nasce 'under_review' (a operadora ainda não decidiu) — a
+        // Solicitação (item único) tem que refletir isso como 'guia_gerada',
+        // não mais 'ready_for_automation' (senão a tela mostra "pronta pra
+        // automatizar" com a guia já gerada de verdade).
+        $this->assertSame('under_review', $guia->status);
+        $this->assertSame('guia_gerada', $item->solicitacao->refresh()->status);
     }
 
     public function test_payload_para_worker_inclui_medico_mapeamentos_e_documentos(): void

@@ -45,6 +45,19 @@ class SolicitacaoService
             ->when(Arr::get($filtros, 'status'), fn ($query, $status) => $query->where('status', $status))
             ->when(Arr::get($filtros, 'convenio_id'), fn ($query, $convenioId) => $query->where('convenio_id', $convenioId))
             ->when(Arr::get($filtros, 'medico_id'), fn ($query, $medicoId) => $query->where('medico_id', $medicoId))
+            ->when(Arr::get($filtros, 'paciente'), fn ($query, $nome) => $query->whereHas(
+                'paciente',
+                fn ($q) => $q->where('nome', 'like', $this->curingaLike($nome)),
+            ))
+            ->when(Arr::get($filtros, 'medico'), fn ($query, $nome) => $query->whereHas(
+                'medico',
+                fn ($q) => $q->where('nome', 'like', $this->curingaLike($nome)),
+            ))
+            ->when(Arr::get($filtros, 'profissional'), fn ($query, $nome) => $query->where(
+                fn ($q) => $q
+                    ->whereHas('itens.profissional', fn ($qq) => $qq->where('nome', 'like', $this->curingaLike($nome)))
+                    ->orWhereHas('profissional', fn ($qq) => $qq->where('nome', 'like', $this->curingaLike($nome))),
+            ))
             ->tap(fn ($query) => OrdenaListagem::aplicar(
                 $query->select('solicitacoes.*'),
                 $filtros,
@@ -66,6 +79,12 @@ class SolicitacaoService
                 desempate: 'solicitacoes.id',
             ))
             ->paginate($perPage);
+    }
+
+    /** Escapa `%` e `_` do termo digitado antes de envolvê-lo em curingas de LIKE. */
+    private function curingaLike(string $termo): string
+    {
+        return '%'.addcslashes($termo, '%_\\').'%';
     }
 
     public function criar(array $dados): Solicitacao

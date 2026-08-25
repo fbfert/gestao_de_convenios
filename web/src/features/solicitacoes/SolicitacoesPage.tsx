@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { MoreVertical } from 'lucide-react'
+import { DropdownMenu } from 'radix-ui'
 import { ColunaOrdenavel } from '../../components/ui/ColunaOrdenavel'
 import { useOrdenacao } from '../../lib/useOrdenacao'
 import { Link, useMatch, useNavigate } from 'react-router-dom'
@@ -35,6 +37,9 @@ const emptyArray: never[] = []
 const defaultFilters: SolicitacaoFilters = {
   status: '',
   convenio_id: '',
+  paciente: '',
+  profissional: '',
+  medico: '',
 }
 
 const emptyForm: SolicitacaoForm = {
@@ -47,24 +52,29 @@ const emptyForm: SolicitacaoForm = {
   itens: [{ ...emptyItem }],
 }
 
-const statusActions: Array<{ status: SolicitacaoStatus; label: string; className: string }> = [
+const statusActions: Array<{
+  status: SolicitacaoStatus
+  label: string
+  dotClassName: string
+  textClassName: string
+}> = [
   {
     status: 'under_review',
     label: 'Em análise',
-    className:
-      'border-cyan-400/30 bg-cyan-400/10 text-cyan-100 hover:bg-cyan-400/20 disabled:hover:bg-cyan-400/10',
+    dotClassName: 'bg-cyan-300',
+    textClassName: 'text-cyan-100',
   },
   {
     status: 'approved',
     label: 'Aprovado',
-    className:
-      'border-emerald-400/30 bg-emerald-400/10 text-emerald-100 hover:bg-emerald-400/20 disabled:hover:bg-emerald-400/10',
+    dotClassName: 'bg-emerald-300',
+    textClassName: 'text-emerald-100',
   },
   {
     status: 'denied',
     label: 'Negado',
-    className:
-      'border-rose-400/30 bg-rose-400/10 text-rose-100 hover:bg-rose-400/20 disabled:hover:bg-rose-400/10',
+    dotClassName: 'bg-rose-300',
+    textClassName: 'text-rose-100',
   },
 ]
 
@@ -521,6 +531,59 @@ export function SolicitacoesPage() {
 
           <form className="flex flex-wrap gap-3" onSubmit={handleFilterSubmit}>
             <label className="min-w-40 flex-1 space-y-2">
+              <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Paciente</span>
+              <input
+                type="text"
+                value={draftFilters.paciente}
+                onChange={(event) =>
+                  setDraftFilters((current) => ({
+                    ...current,
+                    paciente: event.target.value,
+                  }))
+                }
+                placeholder="Buscar por nome"
+                className={selectClasses()}
+                data-testid="solicitacao-filtro-paciente"
+              />
+            </label>
+
+            <label className="min-w-40 flex-1 space-y-2">
+              <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Profissional</span>
+              <input
+                type="text"
+                value={draftFilters.profissional}
+                onChange={(event) =>
+                  setDraftFilters((current) => ({
+                    ...current,
+                    profissional: event.target.value,
+                  }))
+                }
+                placeholder="Buscar por nome"
+                className={selectClasses()}
+                data-testid="solicitacao-filtro-profissional"
+              />
+            </label>
+
+            <label className="min-w-40 flex-1 space-y-2">
+              <span className="text-xs uppercase tracking-[0.25em] text-slate-400">
+                Médico solicitante
+              </span>
+              <input
+                type="text"
+                value={draftFilters.medico}
+                onChange={(event) =>
+                  setDraftFilters((current) => ({
+                    ...current,
+                    medico: event.target.value,
+                  }))
+                }
+                placeholder="Buscar por nome"
+                className={selectClasses()}
+                data-testid="solicitacao-filtro-medico"
+              />
+            </label>
+
+            <label className="min-w-40 flex-1 space-y-2">
               <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Status</span>
               <Select
                 value={draftFilters.status}
@@ -581,7 +644,7 @@ export function SolicitacoesPage() {
           </div>
         ) : (
           <div className="overflow-x-auto rounded-superficie border border-linha">
-            <table className="w-full border-collapse text-left text-sm">
+            <table className="w-full table-fixed border-collapse text-left text-sm">
               <thead className="bg-fundo text-xs uppercase tracking-[0.25em] text-texto-suave">
                 <tr>
                   <ColunaOrdenavel
@@ -589,41 +652,45 @@ export function SolicitacoesPage() {
                     coluna="id"
                     ordenacao={ordenacao}
                     onOrdenar={ordenarPor}
+                    className="w-[5%] px-4 py-3"
                   />
                   <ColunaOrdenavel
                     titulo="Paciente"
                     coluna="paciente"
                     ordenacao={ordenacao}
                     onOrdenar={ordenarPor}
-                    className="w-full px-4 py-3"
+                    className="w-[8%] px-4 py-3"
                   />
                   <ColunaOrdenavel
                     titulo="Convênio"
                     coluna="convenio"
                     ordenacao={ordenacao}
                     onOrdenar={ordenarPor}
+                    className="w-[10%] px-4 py-3"
                   />
-                  <ColunaOrdenavel titulo="Itens" />
+                  <ColunaOrdenavel titulo="Itens" className="w-[45%] px-4 py-3" />
                   <ColunaOrdenavel
                     titulo="Status"
                     coluna="status"
                     ordenacao={ordenacao}
                     onOrdenar={ordenarPor}
+                    className="w-[9%] px-4 py-3"
                   />
                   <ColunaOrdenavel
                     titulo="Médico solicitante"
                     coluna="medico"
                     ordenacao={ordenacao}
                     onOrdenar={ordenarPor}
+                    className="w-[15%] px-4 py-3"
                   />
-                  <ColunaOrdenavel titulo="Ações" className="w-px px-4 py-3" />
+                  <ColunaOrdenavel titulo="Ações" className="w-[8%] px-4 py-3 text-center" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-linha bg-superficie">
                 {solicitacoes.map((solicitacao) => (
                   <tr key={solicitacao.id} data-testid={`solicitacao-row-${solicitacao.id}`}>
                     <td className="px-4 py-4 font-medium text-white">#{solicitacao.id}</td>
-                    <td className="px-4 py-4 text-slate-200">
+                    <td className="break-words px-4 py-4 text-slate-200">
                       <button
                         type="button"
                         className="text-left font-medium text-cyan-100 underline decoration-cyan-400/40 underline-offset-4 transition hover:text-cyan-50"
@@ -713,41 +780,73 @@ export function SolicitacoesPage() {
                     <td className="px-4 py-4 text-slate-200">
                       {solicitacao.medico?.nome ?? solicitacao.medico_id}
                     </td>
-                    <td className="w-px whitespace-nowrap px-4 py-4">
-                      <div className="flex flex-nowrap gap-2">
-                        {statusActions.map((action) => (
+                    <td className="px-4 py-4 text-center">
+                      <DropdownMenu.Root>
+                        <DropdownMenu.Trigger asChild>
                           <button
-                            key={action.status}
                             type="button"
-                            className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${action.className}`}
-                            onClick={() => void handleStatusChange(solicitacao, action.status)}
-                            disabled={
-                              atualizarStatusSolicitacao.isPending ||
-                              solicitacao.status === action.status
-                            }
-                            data-testid={`solicitacao-status-action-${action.status}-${solicitacao.id}`}
+                            className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 p-2 text-slate-200 transition hover:bg-white/10"
+                            aria-label={`Ações da solicitação #${solicitacao.id}`}
+                            data-testid={`solicitacao-acoes-${solicitacao.id}`}
                           >
-                            {action.label}
+                            <MoreVertical className="size-4" aria-hidden="true" />
                           </button>
-                        ))}
-                        <button
-                          type="button"
-                          onClick={() => setSelectedSolicitacaoId(solicitacao.id)}
-                          className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/10"
-                          data-testid={`solicitacao-anexos-${solicitacao.id}`}
-                        >
-                          Anexos ({solicitacao.documentos?.length ?? 0})
-                        </button>
-                        {pode('solicitacoes.manage') ? (
-                          <Link
-                            to={`/solicitacoes/${solicitacao.id}/editar`}
-                            className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/10"
-                            data-testid={`solicitacao-editar-${solicitacao.id}`}
+                        </DropdownMenu.Trigger>
+
+                        <DropdownMenu.Portal>
+                          <DropdownMenu.Content
+                            align="end"
+                            sideOffset={6}
+                            className="z-50 min-w-56 rounded-2xl border border-linha bg-superficie-elevada p-1.5 text-sm text-white shadow-e2"
                           >
-                            Editar
-                          </Link>
-                        ) : null}
-                      </div>
+                            {statusActions.map((action) => (
+                              <DropdownMenu.Item
+                                key={action.status}
+                                disabled={
+                                  atualizarStatusSolicitacao.isPending ||
+                                  solicitacao.status === action.status
+                                }
+                                onSelect={() => void handleStatusChange(solicitacao, action.status)}
+                                className={`flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 outline-none transition data-[disabled]:cursor-not-allowed data-[disabled]:opacity-40 data-[highlighted]:bg-white/10 ${action.textClassName}`}
+                                data-testid={`solicitacao-status-action-${action.status}-${solicitacao.id}`}
+                              >
+                                <span
+                                  className={`size-2 shrink-0 rounded-full ${action.dotClassName}`}
+                                  aria-hidden="true"
+                                />
+                                {action.label}
+                              </DropdownMenu.Item>
+                            ))}
+
+                            <DropdownMenu.Separator className="my-1.5 h-px bg-white/10" />
+
+                            <DropdownMenu.Item
+                              onSelect={() => setSelectedSolicitacaoId(solicitacao.id)}
+                              className="flex cursor-pointer items-center justify-between gap-2 rounded-xl px-3 py-2 text-slate-100 outline-none transition data-[highlighted]:bg-white/10"
+                              data-testid={`solicitacao-anexos-${solicitacao.id}`}
+                            >
+                              Anexos
+                              <span className="text-xs text-slate-400">
+                                {solicitacao.documentos?.length ?? 0}
+                              </span>
+                            </DropdownMenu.Item>
+
+                            {pode('solicitacoes.manage') ? (
+                              <DropdownMenu.Item
+                                asChild
+                                className="flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-slate-100 outline-none transition data-[highlighted]:bg-white/10"
+                              >
+                                <Link
+                                  to={`/solicitacoes/${solicitacao.id}/editar`}
+                                  data-testid={`solicitacao-editar-${solicitacao.id}`}
+                                >
+                                  Editar
+                                </Link>
+                              </DropdownMenu.Item>
+                            ) : null}
+                          </DropdownMenu.Content>
+                        </DropdownMenu.Portal>
+                      </DropdownMenu.Root>
                     </td>
                   </tr>
                 ))}

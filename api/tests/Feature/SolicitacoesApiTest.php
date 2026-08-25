@@ -74,6 +74,38 @@ class SolicitacoesApiTest extends TestCase
             ->assertJsonPath('data.guia.id', $guia->id);
     }
 
+    public function test_filtra_solicitacoes_por_nome_de_paciente_profissional_e_medico(): void
+    {
+        $this->autenticar();
+        $payload = $this->payloadSolicitacao('Unimed');
+        $create = $this->postJson('/api/solicitacoes', $payload);
+        $create->assertCreated();
+        $id = $create->json('data.id');
+
+        $paciente = Paciente::query()->findOrFail($payload['paciente_id']);
+        $profissional = Profissional::query()->findOrFail($payload['profissional_id']);
+        $medico = Medico::query()->findOrFail($payload['medico_id']);
+
+        $trechoPaciente = mb_strtolower(mb_substr($paciente->nome, 0, 4));
+        $this->getJson('/api/solicitacoes?paciente='.urlencode($trechoPaciente))
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $id);
+
+        $trechoProfissional = mb_strtolower(mb_substr($profissional->nome, 0, 4));
+        $this->getJson('/api/solicitacoes?profissional='.urlencode($trechoProfissional))
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $id);
+
+        $trechoMedico = mb_strtolower(mb_substr($medico->nome, 0, 4));
+        $this->getJson('/api/solicitacoes?medico='.urlencode($trechoMedico))
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $id);
+
+        $this->getJson('/api/solicitacoes?paciente=NomeQueNaoExiste12345')
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
+    }
+
     public function test_cria_solicitacao_com_multiplos_itens(): void
     {
         $this->autenticar();

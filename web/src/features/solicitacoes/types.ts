@@ -130,6 +130,9 @@ export type PaginatedResponse<T> = {
 export type SolicitacaoFilters = {
   status: string
   convenio_id: string
+  paciente: string
+  profissional: string
+  medico: string
 }
 
 export type SolicitacaoForm = {

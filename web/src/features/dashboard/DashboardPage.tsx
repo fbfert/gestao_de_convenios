@@ -42,6 +42,12 @@ export function DashboardPage() {
   const dashboardQuery = useQuery({
     queryKey: ['dashboard'],
     queryFn: async () => (await apiClient.get<{ data: DashboardResponse }>('/dashboard')).data.data,
+    // O app desliga refetchOnWindowFocus globalmente (App.tsx) — sem isso os
+    // números deste painel ficam parados até um F5 manual. Aqui religamos e
+    // ainda somamos um polling curto, já que é uma tela de visão geral que
+    // as pessoas costumam deixar aberta.
+    refetchOnWindowFocus: true,
+    refetchInterval: 30000,
   })
 
   /*

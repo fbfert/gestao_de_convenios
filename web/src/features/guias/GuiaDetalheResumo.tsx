@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useEffect, useState, type ReactNode } from 'react'
+import { Badge } from '../../components/ui/Badge'
 import { Botao } from '../../components/ui/Botao'
 import { Select } from '../../components/ui/Select'
 import { usePode } from '../../lib/permissoes'
@@ -8,6 +9,7 @@ import { translateStatus } from '../../lib/statusLabels'
 import { formatCarteirinha } from '../../lib/carteirinha'
 import { isSenhaVencendo } from './senhaValidade'
 import { getHttpErrorMessage, useAtualizarGuia, type GuiaEditForm } from './useGuias'
+import { statusTone } from './statusTone'
 import type { Guia } from './types'
 
 function DetailItem({ label, children }: { label: string; children: ReactNode }) {
@@ -95,9 +97,9 @@ export function GuiaDetalheResumo({ guia }: { guia: Guia }) {
           <p className="mt-2 text-sm text-slate-300">{guia.tipo_terapia}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex w-fit rounded-full border border-cyan-400/20 bg-cyan-400/15 px-3 py-1 text-xs font-semibold text-cyan-100">
+          <Badge tone={statusTone(guia.status)} className="w-fit">
             {translateStatus('guias', guia.status)}
-          </span>
+          </Badge>
           {pode('guias.manage') && !editando ? (
             <button
               type="button"

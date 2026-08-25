@@ -16,6 +16,7 @@ import {
 } from './useGuias'
 import type { GuiaFilters, GuiaForm } from './types'
 import { GuiaStatusActions } from './GuiaStatusActions'
+import { statusTone } from './statusTone'
 import { SENHA_VENCENDO_EM_DIAS } from './senhaValidade'
 import { Indicadores } from '../../components/ui/Indicadores'
 import { Tooltip } from '../../components/ui/Tooltip'
@@ -41,25 +42,6 @@ const emptyForm: GuiaForm = {
 
 function selectClasses() {
   return 'w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20'
-}
-
-function statusTone(status: string): 'acento' | 'sucesso' | 'alerta' | 'perigo' {
-  switch (status) {
-    case 'registered':
-      return 'acento'
-    case 'approved':
-    case 'finalized':
-      return 'sucesso'
-    case 'needs_verification':
-      return 'alerta'
-    case 'canceled':
-    case 'denied':
-      return 'perigo'
-    case 'expired':
-      return 'alerta'
-    default:
-      return 'acento'
-  }
 }
 
 export function GuiasPage() {

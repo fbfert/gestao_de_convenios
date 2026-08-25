@@ -106,10 +106,17 @@ class AutomacaoService
     public function concluir(AutomacaoExecucao $execucao, array $resultado = []): AutomacaoExecucao
     {
         $status = $resultado['status'] ?? 'succeeded';
+        // O worker às vezes devolve a falha de forma "controlada" (status 'failed'/
+        // 'uncertain' no corpo da resposta, sem lançar exceção) — sem isto o
+        // erro_codigo/erro_mensagem ficavam vazios aqui (só a falhar() os grava),
+        // mesmo com a mensagem real disponível dentro de `resultado`.
+        $falhou = in_array($status, ['failed', 'uncertain', 'needs_attention'], true);
 
         $execucao->fill([
             'status' => $status,
             'resultado' => $this->redactor->redact($resultado),
+            'erro_codigo' => $falhou ? ($resultado['error_code'] ?? null) : $execucao->erro_codigo,
+            'erro_mensagem' => $falhou ? ($resultado['message'] ?? null) : $execucao->erro_mensagem,
             'finished_at' => now(),
         ])->save();
 

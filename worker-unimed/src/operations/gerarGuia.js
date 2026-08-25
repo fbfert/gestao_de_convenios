@@ -92,7 +92,7 @@ export async function gerarGuia(page, request) {
  * navegado ate a listagem de exames), navegando ela ate o formulario. Como
  * isso alterna, checamos qual das duas sobrou de pe depois do clique.
  */
-async function abrirSpSadt(page, mainPage) {
+export async function abrirSpSadt(page, mainPage) {
   await page.getByText('Digitação de guia SP/SADT').click({ timeout: DEFAULT_TIMEOUT })
   await waitProcessing(page)
   await page.waitForLoadState('domcontentloaded', { timeout: DEFAULT_TIMEOUT })
@@ -114,7 +114,7 @@ async function abrirSpSadt(page, mainPage) {
   return page
 }
 
-async function preencherFormularioPrincipal(page, payload) {
+export async function preencherFormularioPrincipal(page, payload) {
   await fillIfVisible(page, '[name="DT_EMISSAO_GUIA"], #DT_EMISSAO_GUIA', formatPortalDate(new Date()))
   await selectIfVisible(page, '[name="FG_ATENDIMENTO_RN"], #FG_ATENDIMENTO_RN', 'N')
   await selectIfVisible(page, '[name="DM_CARATER_SOLIC"], #DM_CARATER_SOLIC', '1')
@@ -131,7 +131,7 @@ async function preencherFormularioPrincipal(page, payload) {
  * a pagina depois, ja que o worker so espera pelo `#resultado-guia` e
  * silenciosamente retorna 'uncertain' quando essa validacao barra o envio.
  */
-async function selecionarContratado(page, nomeContratado) {
+export async function selecionarContratado(page, nomeContratado) {
   const nome = String(nomeContratado ?? '').trim()
   if (!nome) {
     throw new WorkerResultError({

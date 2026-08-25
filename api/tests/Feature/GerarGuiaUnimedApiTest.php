@@ -476,6 +476,12 @@ class GerarGuiaUnimedApiTest extends TestCase
         $this->assertFalse($credential->ativo);
         $this->assertSame('PORTAL_STRUCTURE_CHANGED', $credential->automation_paused_reason);
         $this->assertNotNull($credential->automation_paused_at);
+
+        // O worker devolveu a falha "de forma controlada" (sem lançar exceção) —
+        // erro_codigo/erro_mensagem têm que vir preenchidos mesmo assim, senão a
+        // tela de Automações mostra "-" onde deveria mostrar o motivo real.
+        $this->assertSame('PORTAL_STRUCTURE_CHANGED', $execucao->refresh()->erro_codigo);
+        $this->assertSame('layout alterado', $execucao->erro_mensagem);
         $this->assertSame(1, AuditLog::query()->where('acao', 'unimed_rda.automation_paused')->count());
     }
 

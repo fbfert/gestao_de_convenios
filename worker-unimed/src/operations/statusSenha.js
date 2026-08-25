@@ -220,7 +220,7 @@ async function abrirLocalizarGuia(page) {
   }
 }
 
-async function abrirExamesAbertos(page) {
+export async function abrirExamesAbertos(page) {
   const link = page.locator('#exames-abertos, a:has-text("Exames em aberto")').first()
   await link.click({ timeout: DEFAULT_TIMEOUT })
   await waitProcessing(page)

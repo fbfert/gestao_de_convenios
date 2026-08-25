@@ -46,8 +46,11 @@ class DashboardController extends Controller
                 'permission' => 'dashboard.guias',
                 'label' => 'Guias',
                 'href' => '/guias',
-                'value' => Guia::query()->where('status', 'under_review')->count(),
-                'detail' => Guia::query()->where('status', 'finalized')->count().' finalizadas',
+                // O fluxo manual (não-Unimed) usa under_review/finalized; o fluxo
+                // automático Unimed usa under_review/needs_verification/approved.
+                // Conta os dois: senão a clínica 100% Unimed via aqui sempre "0/0".
+                'value' => Guia::query()->whereIn('status', ['under_review', 'needs_verification'])->count(),
+                'detail' => Guia::query()->whereIn('status', ['finalized', 'approved'])->count().' aprovadas',
             ],
             [
                 'key' => 'antecipacoes',

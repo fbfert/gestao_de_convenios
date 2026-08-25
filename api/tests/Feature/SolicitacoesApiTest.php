@@ -196,7 +196,7 @@ class SolicitacoesApiTest extends TestCase
                 'especialidade_id',
                 'convenio_id',
                 'medico_id',
-                'cid_id',
+                'cid_ids',
                 'solicitado_em',
             ]);
     }
@@ -353,12 +353,12 @@ class SolicitacoesApiTest extends TestCase
 
         $this->patchJson("/api/solicitacoes/{$id}", [
             'medico_id' => $outroMedico->id,
-            'cid_id' => $outroCid->id,
+            'cid_ids' => [$outroCid->id],
             'observacoes' => 'Corrigido pelo admin',
         ])
             ->assertOk()
             ->assertJsonPath('data.medico_id', $outroMedico->id)
-            ->assertJsonPath('data.cid.codigo', 'F80.1')
+            ->assertJsonPath('data.cids.0.codigo', 'F80.1')
             // paciente_id/convenio_id nao fazem parte do payload aceito: continuam os mesmos.
             ->assertJsonPath('data.paciente_id', $payload['paciente_id'])
             ->assertJsonPath('data.convenio_id', $payload['convenio_id']);
@@ -370,9 +370,16 @@ class SolicitacoesApiTest extends TestCase
             ->latest('id')
             ->firstOrFail();
 
+        // CID agora e N-pra-N via tabela pivo (cid_solicitacao) — nao e mais
+        // coluna do model, entao o Auditable (que so ve getChanges() do
+        // proprio model) nao registra essa troca aqui. So medico_id continua
+        // sendo coluna de verdade.
         $this->assertSame($payload['medico_id'], $evento->payload['antes']['medico_id']);
         $this->assertSame($outroMedico->id, $evento->payload['depois']['medico_id']);
-        $this->assertSame($outroCid->id, $evento->payload['depois']['cid_id']);
+        $this->assertTrue(
+            $outroCid->solicitacoes()->where('solicitacoes.id', $id)->exists(),
+            'esperava a solicitacao vinculada ao novo CID via pivo',
+        );
     }
 
     public function test_funcionario_nao_pode_editar_solicitacao(): void
@@ -385,7 +392,7 @@ class SolicitacoesApiTest extends TestCase
         $funcionario = User::query()->where('email', 'funcionario@clinica-exemplo.test')->firstOrFail();
         Sanctum::actingAs($funcionario);
 
-        $this->patchJson("/api/solicitacoes/{$id}", ['cid_id' => Cid::query()->where('codigo', 'F84.0')->firstOrFail()->id])->assertForbidden();
+        $this->patchJson("/api/solicitacoes/{$id}", ['cid_ids' => [Cid::query()->where('codigo', 'F84.0')->firstOrFail()->id]])->assertForbidden();
     }
 
     public function test_usuariode_um_tenant_nao_enxerga_solicitacao_de_outro_tenant_via_http(): void
@@ -417,7 +424,7 @@ class SolicitacoesApiTest extends TestCase
             'especialidade_id' => $especialidade->id,
             'convenio_id' => $convenio->id,
             'medico_id' => $medico->id,
-            'cid_id' => Cid::query()->where('codigo', 'F84.0')->firstOrFail()->id,
+            'cid_ids' => [Cid::query()->where('codigo', 'F84.0')->firstOrFail()->id],
             'solicitado_em' => today()->toDateString(),
         ];
     }

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\AiOpenaiSetting;
 use App\Models\AiPromptTemplate;
+use App\Models\Cid;
 use App\Models\Especialidade;
 use App\Models\Medico;
 use App\Models\Paciente;
@@ -72,7 +73,7 @@ class PedidoMedicoAiService
                   acabavam descritas em `observacoes` — visíveis para o
                   operador, mas fora dos campos do formulário.
                 */
-                'text' => $prompt->user_prompt."\n\nRetorne somente JSON com as chaves: paciente_nome, medico_nome, especialidades (array com o nome de cada especialidade citada no pedido, uma por item, mesmo que seja só uma), solicitado_em no formato YYYY-MM-DD quando possível, observacoes para informações incertas ou não entendidas. Não repita em observacoes as especialidades já listadas em especialidades.",
+                'text' => $prompt->user_prompt."\n\nRetorne somente JSON com as chaves: paciente_nome, medico_nome, medico_crm (CRM do médico solicitante, só o registro, ex. \"12345\" ou \"CRM/SC 12345\" se a UF estiver explícita; null se não identificável), medico_especialidade (especialidade médica do profissional solicitante, ex. \"Pediatria\", \"Neurologia\"; null se não identificável — não confundir com a especialidade/terapia do pedido, que vai em especialidades), especialidades (array com o nome de cada especialidade citada no pedido, uma por item, mesmo que seja só uma), cids (array com cada CID citado no pedido, um por item, no formato \"CÓDIGO\" ou \"CÓDIGO - descrição\" quando a descrição também aparecer no documento; vazio se nenhum CID for identificável), solicitado_em no formato YYYY-MM-DD quando possível, observacoes para informações incertas ou não entendidas. Não repita em observacoes as especialidades ou CIDs já listados em especialidades/cids.",
             ],
         ];
 
@@ -143,6 +144,7 @@ class PedidoMedicoAiService
                 'pacientes' => $this->sugerirPacientes($tenantId, (string) ($dados['paciente_nome'] ?? '')),
                 'medicos' => $this->sugerirMedicos($tenantId, (string) ($dados['medico_nome'] ?? '')),
                 'especialidades' => $this->sugerirEspecialidadesLidas($tenantId, $dados),
+                'cids' => $this->sugerirCidsLidos($tenantId, $dados),
             ],
         ];
     }
@@ -258,6 +260,81 @@ class PedidoMedicoAiService
             ->map(fn ($nome) => trim((string) $nome))
             ->filter(fn (string $nome) => $nome !== '')
             ->unique(fn (string $nome) => mb_strtolower($nome))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Uma entrada por CID lido, cada uma com os cadastros parecidos no
+     * catálogo do tenant — mesma ideia de `sugerirEspecialidadesLidas`.
+     *
+     * @return array<int, array{termo: string, matches: array, sugere_cadastro: bool}>
+     */
+    private function sugerirCidsLidos(int $tenantId, array $dados): array
+    {
+        $cadastrados = Cid::query()->where('tenant_id', $tenantId)->get(['id', 'codigo', 'descricao']);
+
+        return collect($this->cidsLidos($dados))
+            ->map(function (string $termo) use ($cadastrados) {
+                $matches = $this->rankByCidTexto($cadastrados, $termo);
+
+                return [
+                    'termo' => $termo,
+                    'matches' => $matches,
+                    'sugere_cadastro' => ($matches[0]['similaridade'] ?? 0) < self::CONFIANCA_MINIMA,
+                ];
+            })
+            ->all();
+    }
+
+    /**
+     * CIDs lidos do documento, sem repetição — cada item pode vir só como
+     * código ("F84.0") ou "código - descrição".
+     *
+     * @return string[]
+     */
+    private function cidsLidos(array $dados): array
+    {
+        $brutos = $dados['cids'] ?? [];
+
+        return collect(is_array($brutos) ? $brutos : [$brutos])
+            ->map(fn ($valor) => trim((string) $valor))
+            ->filter(fn (string $valor) => $valor !== '')
+            ->unique(fn (string $valor) => mb_strtolower($valor))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Casa o termo lido contra código+descrição cadastrados. Código exato
+     * (ignorando caixa) vale 100% direto — pro operador, o "nome" de um CID
+     * é o código, não a frase da descrição, então similaridade de texto pura
+     * sozinha erraria esse caso óbvio.
+     */
+    private function rankByCidTexto($cadastrados, string $termo): array
+    {
+        $needle = mb_strtolower(trim($termo));
+        $codigoLido = trim(explode(' - ', $termo, 2)[0] ?? $termo);
+
+        return $cadastrados
+            ->map(function ($cid) use ($needle, $codigoLido) {
+                $candidato = mb_strtolower($cid->codigo.' '.$cid->descricao);
+                similar_text($needle, $candidato, $percent);
+
+                if ($codigoLido !== '' && mb_strtolower($cid->codigo) === mb_strtolower($codigoLido)) {
+                    $percent = 100;
+                }
+
+                return [
+                    'id' => $cid->id,
+                    'codigo' => $cid->codigo,
+                    'descricao' => $cid->descricao,
+                    'similaridade' => round($percent, 2),
+                ];
+            })
+            ->filter(fn ($item) => $needle === '' || $item['similaridade'] > 20)
+            ->sortByDesc('similaridade')
+            ->take(5)
             ->values()
             ->all();
     }

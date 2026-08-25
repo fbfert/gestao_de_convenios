@@ -16,12 +16,11 @@ class SolicitacaoResource extends JsonResource
             'especialidade_id' => $this->especialidade_id,
             'convenio_id' => $this->convenio_id,
             'medico_id' => $this->medico_id,
-            'cid_id' => $this->cid_id,
-            'cid' => $this->whenLoaded('cidCadastro', fn () => $this->cidCadastro ? [
-                'id' => $this->cidCadastro->id,
-                'codigo' => $this->cidCadastro->codigo,
-                'descricao' => $this->cidCadastro->descricao,
-            ] : null),
+            'cids' => $this->whenLoaded('cidCadastros', fn () => $this->cidCadastros->map(fn ($cid) => [
+                'id' => $cid->id,
+                'codigo' => $cid->codigo,
+                'descricao' => $cid->descricao,
+            ])->values()),
             'medico' => $this->whenLoaded('medico', fn () => [
                 'id' => $this->medico->id,
                 'nome' => $this->medico->nome,

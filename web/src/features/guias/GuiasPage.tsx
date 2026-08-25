@@ -10,6 +10,7 @@ import { formatCarteirinha } from '../../lib/carteirinha'
 import { useConvenios, useEspecialidades, usePacientes, useProfissionais } from '../../lib/queries/useReferenceData'
 import {
   getHttpErrorMessage,
+  useConsultarGuiaUnimed,
   useGerarConciliacao,
   useCriarGuia,
   useGuias,
@@ -19,8 +20,11 @@ import { GuiaStatusActions } from './GuiaStatusActions'
 import { statusTone } from './statusTone'
 import { SENHA_VENCENDO_EM_DIAS } from './senhaValidade'
 import { Indicadores } from '../../components/ui/Indicadores'
-import { Tooltip } from '../../components/ui/Tooltip'
+import { Tooltip, iconeLupa } from '../../components/ui/Tooltip'
 import { usePode } from '../../lib/permissoes'
+import { useConfirm } from '../../components/ui/ConfirmDialog'
+import { DropdownMenu } from '../../components/ui/DropdownMenu'
+import { AutomacaoProgressoModal } from '../automacoes/AutomacaoProgressoModal'
 
 const defaultFilters: GuiaFilters = {
   status: '',
@@ -55,6 +59,7 @@ export function GuiasPage() {
   const [form, setForm] = useState<GuiaForm>(emptyForm)
   const [formError, setFormError] = useState<string | null>(null)
   const [conciliacaoError, setConciliacaoError] = useState<string | null>(null)
+  const [progressoExecucaoId, setProgressoExecucaoId] = useState<number | null>(null)
 
   const { ordenacao, ordenarPor } = useOrdenacao({
     ordenar_por: 'numero_guia',
@@ -68,6 +73,8 @@ export function GuiasPage() {
   const guiasQuery = useGuias({ ...filters, ...ordenacao }, page)
   const criarGuia = useCriarGuia()
   const gerarConciliacao = useGerarConciliacao()
+  const consultarGuiaUnimed = useConsultarGuiaUnimed()
+  const confirmar = useConfirm()
 
   const convenios = useMemo(() => conveniosQuery.data ?? [], [conveniosQuery.data])
   const especialidades = useMemo(() => especialidadesQuery.data ?? [], [especialidadesQuery.data])
@@ -174,10 +181,41 @@ export function GuiasPage() {
   const handleGerarConciliacao = async (guideId: number) => {
     setConciliacaoError(null)
 
+    const ok = await confirmar({
+      titulo: 'Gerar conciliação',
+      descricao: 'Cria a linha de fechamento financeiro desta guia na tela de Conciliação. Confirma?',
+      confirmarTexto: 'Gerar conciliação',
+      variante: 'primario',
+    })
+
+    if (!ok) {
+      return
+    }
+
     try {
       await gerarConciliacao.mutateAsync(guideId)
     } catch (error) {
       setConciliacaoError(getHttpErrorMessage(error, 'Não foi possível gerar a conciliação.'))
+    }
+  }
+
+  const handleVerificarStatus = async (guiaId: number) => {
+    const ok = await confirmar({
+      titulo: 'Verificar status na Unimed',
+      descricao: 'Consulta o status atual desta guia no portal da Unimed agora, fora do agendamento automático. Confirma?',
+      confirmarTexto: 'Verificar status',
+      variante: 'primario',
+    })
+
+    if (!ok) {
+      return
+    }
+
+    try {
+      const execucao = await consultarGuiaUnimed.mutateAsync(guiaId)
+      setProgressoExecucaoId(execucao.id)
+    } catch (error) {
+      window.alert(getHttpErrorMessage(error, 'Não foi possível consultar a Unimed.'))
     }
   }
 
@@ -589,7 +627,19 @@ export function GuiasPage() {
                             <Badge tone={statusTone(guia.status)} data-testid={`guia-status-${guia.id}`}>
                               {translateStatus('guias', guia.status)}
                             </Badge>
-                            {guia.automacao_execucao ? (
+                            {guia.status === 'under_review' &&
+                            guia.convenio?.connector_driver === 'unimed_rda' &&
+                            guia.numero_guia ? (
+                              <button
+                                type="button"
+                                onClick={() => handleVerificarStatus(guia.id)}
+                                disabled={consultarGuiaUnimed.isPending}
+                                className="inline-flex w-fit rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-400/20 disabled:opacity-50"
+                                data-testid={`guia-verificar-status-${guia.id}`}
+                              >
+                                Verificar status
+                              </button>
+                            ) : guia.automacao_execucao ? (
                               <span className="inline-flex w-fit rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-100">
                                 Unimed · {guia.automacao_execucao.status}
                               </span>
@@ -614,48 +664,57 @@ export function GuiasPage() {
                         </td>
                         <td className="px-4 py-4 text-slate-200">{guia.senha ?? '-'}</td>
                         <td className="px-4 py-4 text-slate-200">{guia.validade_senha ?? '-'}</td>
-                        <td className="px-4 py-4 text-slate-200">
-                          <div className="space-y-1">
-                            <p>{guia.unimed_last_checked_at ?? '-'}</p>
-                            {guia.ultima_automacao_unimed ? (
-                              <p className="text-xs text-slate-400">
-                                {guia.ultima_automacao_unimed.operacao} · {guia.ultima_automacao_unimed.status}
+                        <td className="px-4 py-4 text-center text-slate-200">
+                          {guia.unimed_last_checked_at || guia.ultima_automacao_unimed ? (
+                            <Tooltip rotulo="Ver última consulta Unimed" icone={iconeLupa}>
+                              <p className="font-semibold text-white">
+                                {guia.unimed_last_checked_at ?? 'Sem data de consulta'}
                               </p>
-                            ) : null}
-                            {guia.ultima_automacao_unimed?.erro_codigo &&
-                            guia.ultima_automacao_unimed.status !== 'succeeded' ? (
-                              <p className="text-xs text-rose-200">
-                                {guia.ultima_automacao_unimed.erro_codigo}
-                              </p>
-                            ) : null}
-                          </div>
+                              {guia.ultima_automacao_unimed ? (
+                                <p className="mt-1">
+                                  {guia.ultima_automacao_unimed.operacao} ·{' '}
+                                  {guia.ultima_automacao_unimed.status}
+                                </p>
+                              ) : null}
+                              {guia.ultima_automacao_unimed?.erro_codigo &&
+                              guia.ultima_automacao_unimed.status !== 'succeeded' ? (
+                                <p className="mt-1 text-rose-200">
+                                  {guia.ultima_automacao_unimed.erro_codigo}
+                                </p>
+                              ) : null}
+                            </Tooltip>
+                          ) : (
+                            <span className="text-slate-500">-</span>
+                          )}
                         </td>
                         <td className="w-px whitespace-nowrap px-4 py-4">
-                          <div className="flex flex-nowrap items-center gap-2">
+                          <DropdownMenu rotulo="Ações da guia" testId={`guia-acoes-${guia.id}`}>
                             <GuiaStatusActions guia={guia} />
-                          <button
-                            type="button"
-                            className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1.5 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-400/20 disabled:opacity-50"
-                            onClick={() => handleGerarConciliacao(guia.id)}
-                            disabled={gerarConciliacao.isPending || (guia.status !== 'finalized' && guia.status !== 'approved')}
-                            data-testid={`guia-gerar-conciliacao-${guia.id}`}
-                          >
-                            Gerar conciliação
-                          </button>
-                          <Tooltip rotulo="O que este botão faz">
-                            Cria a linha de fechamento financeiro desta guia na tela de Conciliação.
-                            Só fica disponível quando a guia está aprovada/finalizada.
-                          </Tooltip>
-                          {pode('guias.manage') ? (
-                            <Link
-                              to={`/guias/${guia.id}/editar`}
-                              className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/10"
-                              data-testid={`guia-editar-${guia.id}`}
-                            >
-                              Editar
-                            </Link>
-                          ) : null}
-                          </div>
+                            <div className="flex w-full items-center gap-2">
+                              <button
+                                type="button"
+                                className="flex-1 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1.5 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-400/20 disabled:opacity-50"
+                                onClick={() => handleGerarConciliacao(guia.id)}
+                                disabled={gerarConciliacao.isPending || (guia.status !== 'finalized' && guia.status !== 'approved')}
+                                data-testid={`guia-gerar-conciliacao-${guia.id}`}
+                              >
+                                Gerar conciliação
+                              </button>
+                              <Tooltip rotulo="O que este botão faz">
+                                Cria a linha de fechamento financeiro desta guia na tela de Conciliação.
+                                Só fica disponível quando a guia está aprovada/finalizada.
+                              </Tooltip>
+                            </div>
+                            {pode('guias.manage') ? (
+                              <Link
+                                to={`/guias/${guia.id}/editar`}
+                                className="block w-full rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-center text-xs font-semibold text-white transition hover:bg-white/10"
+                                data-testid={`guia-editar-${guia.id}`}
+                              >
+                                Editar
+                              </Link>
+                            ) : null}
+                          </DropdownMenu>
                         </td>
                     </tr>
                   ))}
@@ -697,6 +756,15 @@ export function GuiasPage() {
         </div>
       </section>
       ) : null}
+
+      <AutomacaoProgressoModal
+        execucaoId={progressoExecucaoId}
+        onClose={() => setProgressoExecucaoId(null)}
+        titulo="Verificando status na Unimed"
+        descricao="Acompanhe a consulta de status desta guia no portal da Unimed."
+        mensagemExecutando="O robô está consultando o status desta guia no portal da Unimed..."
+        queryKeysInvalidar={[['guias']]}
+      />
     </div>
   )
 }

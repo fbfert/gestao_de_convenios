@@ -193,7 +193,7 @@ class GerarGuiaUnimedService
             'solicitacao.paciente',
             'solicitacao.convenio',
             'solicitacao.medico',
-            'solicitacao.cidCadastro',
+            'solicitacao.cidCadastros',
             'solicitacao.documentos',
             'documentos',
             'especialidade',
@@ -207,7 +207,13 @@ class GerarGuiaUnimedService
         return [
             'solicitacao_id' => $item->solicitacao_id,
             'solicitacao_item_id' => $item->id,
-            'cid' => $item->solicitacao->cid_id ? $item->solicitacao->cidCadastro?->codigo : $item->solicitacao->cid,
+            // O portal Unimed só tem um campo de texto pra indicação clínica
+            // (DS_INDIC_CLINICA) — sem lugar pra N CIDs separados. Concatena
+            // os códigos numa string só; cai no texto livre legado quando a
+            // solicitação não tem nenhum CID cadastrado (dado antigo).
+            'cid' => $item->solicitacao->cidCadastros->isNotEmpty()
+                ? $item->solicitacao->cidCadastros->pluck('codigo')->implode(', ')
+                : $item->solicitacao->cid,
             'medico' => [
                 'id' => $item->solicitacao->medico_id,
                 'nome' => $item->solicitacao->medico?->nome,

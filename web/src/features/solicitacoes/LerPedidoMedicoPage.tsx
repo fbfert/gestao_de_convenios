@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Select } from '../../components/ui/Select'
 import {
+  useCids,
   useConvenios,
   useEspecialidades,
   useMedicos,
@@ -31,7 +32,7 @@ import type {
   SolicitacaoFormItem,
 } from './types'
 import { Botao } from '../../components/ui/Botao'
-import { CidCampo } from '../cids/CidCampo'
+import { CidsCampo } from '../cids/CidsCampo'
 
 const emptyArray: never[] = []
 
@@ -39,11 +40,20 @@ const emptyForm: SolicitacaoForm = {
   paciente_id: '',
   convenio_id: '',
   medico_id: '',
-  cid_id: '',
+  cid_ids: [],
   solicitado_em: new Date().toISOString().slice(0, 10),
   observacoes: '',
   itens: [{ ...emptyItem }],
 }
+
+const ETAPAS = [
+  'Upload',
+  'Convênio',
+  'Paciente',
+  'Médico solicitante',
+  'Especialidades',
+  'Revisão',
+] as const
 
 /**
  * Acrescenta uma linha de item para a especialidade, se ela ainda nao estiver
@@ -70,8 +80,6 @@ function comEspecialidadeAdicionada(
   return [...itens, { ...emptyItem, especialidade_id: especialidadeId }]
 }
 
-type QuickModalKind = 'paciente' | 'especialidade' | 'medico'
-
 function selectClasses() {
   return 'w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20'
 }
@@ -92,55 +100,38 @@ function suggestionTitle(suggestion: PedidoMedicoSuggestion) {
   return extra ? `${suggestion.nome} · ${extra}` : suggestion.nome
 }
 
-function QuickCreateModal({
-  kind,
-  initialName,
-  isSaving,
-  error,
-  blocos,
+/** Cadastro rápido de especialidade — a única criação que ainda faz sentido
+ *  num modal simples, já que não escolhe entre "existente vs novo" (o passo
+ *  de Especialidades já lista os cadastros; isto é só um atalho pontual). */
+function NovaEspecialidadeModal({
+  aberto,
+  nomeInicial,
+  salvando,
+  erro,
   onClose,
   onSubmit,
 }: {
-  kind: QuickModalKind | null
-  initialName: string
-  isSaving: boolean
-  error: string | null
-  /** Formato da carteirinha do convenio, ou null para texto livre. */
-  blocos: number[] | null
+  aberto: boolean
+  nomeInicial: string
+  salvando: boolean
+  erro: string | null
   onClose: () => void
-  onSubmit: (nome: string, carteirinha: string) => void
+  onSubmit: (nome: string) => void
 }) {
-  const [nome, setNome] = useState(initialName)
-  const [carteirinha, setCarteirinha] = useState('')
-  const [blocks, setBlocks] = useState<string[]>([])
-  const labels = {
-    paciente: 'Novo paciente',
-    especialidade: 'Nova especialidade',
-    medico: 'Novo médico',
-  }
+  const [nome, setNome] = useState(nomeInicial)
 
   useEffect(() => {
-    setNome(initialName)
-    setCarteirinha('')
-    setBlocks([])
-  }, [initialName, kind])
-
-  if (!kind) {
-    return null
-  }
-
-  const exigeCarteirinha = kind === 'paciente'
-  const carteirinhaOk = !exigeCarteirinha
-    || (blocos ? isCarteirinhaCompleta(blocks, blocos) : carteirinha.trim() !== '')
+    setNome(nomeInicial)
+  }, [nomeInicial, aberto])
 
   return (
-    <Dialog open={kind !== null} onClose={onClose} className="relative z-50">
+    <Dialog open={aberto} onClose={onClose} className="relative z-50">
       <DialogBackdrop className="fixed inset-0 bg-slate-950/75 backdrop-blur-sm" />
       <div className="fixed inset-0 overflow-y-auto p-4 sm:p-6">
         <div className="flex min-h-full items-center justify-center">
           <DialogPanel className="w-full max-w-lg rounded-[2rem] border border-white/10 bg-slate-950 p-6 text-white shadow-2xl shadow-black/60">
             <div className="flex items-start justify-between gap-4">
-              <DialogTitle className="text-xl font-semibold">{labels[kind]}</DialogTitle>
+              <DialogTitle className="text-xl font-semibold">Nova especialidade</DialogTitle>
               <button
                 type="button"
                 onClick={onClose}
@@ -154,7 +145,7 @@ function QuickCreateModal({
               className="mt-6 space-y-4"
               onSubmit={(event) => {
                 event.preventDefault()
-                onSubmit(nome, carteirinha)
+                onSubmit(nome)
               }}
             >
               <label className="block space-y-2">
@@ -164,36 +155,13 @@ function QuickCreateModal({
                   onChange={(event) => setNome(event.target.value)}
                   className={selectClasses()}
                   autoFocus
+                  data-testid="pedido-medico-nova-especialidade-nome"
                 />
               </label>
 
-              {exigeCarteirinha ? (
-                <div className="space-y-2">
-                  <span className="text-sm font-medium text-slate-200">Carteirinha</span>
-                  {blocos ? (
-                    <CarteirinhaBlocosInput
-                      blocos={blocos}
-                      blocks={blocks}
-                      onChange={(next, valor) => {
-                        setBlocks(next)
-                        setCarteirinha(valor)
-                      }}
-                      testIdPrefix="pedido-medico-carteirinha-blocos"
-                    />
-                  ) : (
-                    <input
-                      value={carteirinha}
-                      onChange={(event) => setCarteirinha(event.target.value)}
-                      className={selectClasses()}
-                      data-testid="pedido-medico-carteirinha"
-                    />
-                  )}
-                </div>
-              ) : null}
-
-              {error ? (
+              {erro ? (
                 <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
-                  {error}
+                  {erro}
                 </p>
               ) : null}
 
@@ -201,9 +169,10 @@ function QuickCreateModal({
                 type="submit"
                 variante="primario"
                 className="w-full"
-                disabled={isSaving || nome.trim() === '' || !carteirinhaOk}
+                disabled={salvando || nome.trim() === ''}
+                data-testid="pedido-medico-nova-especialidade-salvar"
               >
-                {isSaving ? 'Salvando...' : 'Salvar'}
+                {salvando ? 'Salvando...' : 'Salvar'}
               </Botao>
             </form>
           </DialogPanel>
@@ -213,20 +182,130 @@ function QuickCreateModal({
   )
 }
 
+/** Duas opções de mesmo peso — nenhuma delas some meio-oculta atrás da outra
+ *  como "selecionar existente" (um select) vs "novo" (um botão pequeno) hoje. */
+function SeletorModo({
+  modo,
+  onSelecionar,
+  rotuloExistente,
+  rotuloNovo,
+  testIdPrefix,
+}: {
+  modo: 'existente' | 'novo'
+  onSelecionar: (modo: 'existente' | 'novo') => void
+  rotuloExistente: string
+  rotuloNovo: string
+  testIdPrefix: string
+}) {
+  return (
+    <div className="grid gap-3 sm:grid-cols-2">
+      {(
+        [
+          ['existente', rotuloExistente],
+          ['novo', rotuloNovo],
+        ] as const
+      ).map(([valor, rotulo]) => (
+        <button
+          key={valor}
+          type="button"
+          onClick={() => onSelecionar(valor)}
+          className={`rounded-2xl border px-5 py-4 text-left text-sm font-semibold transition ${
+            modo === valor
+              ? 'border-cyan-300/60 bg-cyan-400/15 text-cyan-50'
+              : 'border-white/10 bg-white/5 text-slate-200 hover:border-white/20 hover:bg-white/10'
+          }`}
+          data-testid={`${testIdPrefix}-${valor}`}
+        >
+          {rotulo}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+/** Barra de progresso das 6 etapas: clica pra voltar em qualquer uma já
+ *  concluída; etapas futuras ficam desabilitadas até a atual estar completa. */
+function Etapas({
+  passoAtual,
+  maxAlcancavel,
+  onIr,
+}: {
+  passoAtual: number
+  maxAlcancavel: number
+  onIr: (indice: number) => void
+}) {
+  return (
+    <ol className="flex flex-wrap items-center gap-2" data-testid="pedido-medico-etapas">
+      {ETAPAS.map((rotulo, indice) => {
+        const concluida = indice < passoAtual
+        const ativa = indice === passoAtual
+        const alcancavel = indice <= maxAlcancavel
+
+        return (
+          <li key={rotulo} className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => alcancavel && onIr(indice)}
+              disabled={!alcancavel}
+              className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                ativa
+                  ? 'border-cyan-300/60 bg-cyan-400/15 text-cyan-50'
+                  : concluida
+                    ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-100 hover:bg-emerald-400/20'
+                    : 'border-white/10 bg-white/5 text-slate-500'
+              } ${alcancavel ? 'cursor-pointer' : 'cursor-not-allowed'}`}
+              data-testid={`pedido-medico-etapa-${indice}`}
+            >
+              <span
+                className={`flex size-5 items-center justify-center rounded-full text-[11px] ${
+                  concluida ? 'bg-emerald-400/30' : ativa ? 'bg-cyan-400/30' : 'bg-white/10'
+                }`}
+              >
+                {concluida ? '✓' : indice + 1}
+              </span>
+              {rotulo}
+            </button>
+            {indice < ETAPAS.length - 1 ? <span className="h-px w-4 bg-white/10" aria-hidden="true" /> : null}
+          </li>
+        )
+      })}
+    </ol>
+  )
+}
+
 export function LerPedidoMedicoPage() {
   const navigate = useNavigate()
+  const [passo, setPasso] = useState(0)
   const [arquivo, setArquivo] = useState<File | null>(null)
   const [resultado, setResultado] = useState<PedidoMedicoAiResult | null>(null)
   const [form, setForm] = useState<SolicitacaoForm>(emptyForm)
   const [createdPacientes, setCreatedPacientes] = useState<PacienteRef[]>([])
   const [createdEspecialidades, setCreatedEspecialidades] = useState<EspecialidadeRef[]>([])
   const [createdMedicos, setCreatedMedicos] = useState<MedicoRef[]>([])
-  const [quickModal, setQuickModal] = useState<QuickModalKind | null>(null)
-  const [quickInitialName, setQuickInitialName] = useState('')
-  const [quickError, setQuickError] = useState<string | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
 
+  const [pacienteModo, setPacienteModo] = useState<'existente' | 'novo'>('existente')
+  const [novoPacienteNome, setNovoPacienteNome] = useState('')
+  const [novoPacienteBlocks, setNovoPacienteBlocks] = useState<string[]>([])
+  const [novoPacienteCarteirinha, setNovoPacienteCarteirinha] = useState('')
+  const [novoPacienteError, setNovoPacienteError] = useState<string | null>(null)
+
+  const [medicoModo, setMedicoModo] = useState<'existente' | 'novo'>('existente')
+  const [novoMedicoNome, setNovoMedicoNome] = useState('')
+  const [novoMedicoCrm, setNovoMedicoCrm] = useState('')
+  const [novoMedicoEspecialidade, setNovoMedicoEspecialidade] = useState('')
+  const [novoMedicoError, setNovoMedicoError] = useState<string | null>(null)
+
+  const [especialidadeModalAberto, setEspecialidadeModalAberto] = useState(false)
+  const [especialidadeNomeInicial, setEspecialidadeNomeInicial] = useState('')
+  const [especialidadeError, setEspecialidadeError] = useState<string | null>(null)
+
+  /** Termo de CID sem cadastro parecido que o operador clicou pra cadastrar —
+   *  ver CidsCampo. */
+  const [cidNovoTermo, setCidNovoTermo] = useState<string | null>(null)
+
   const conveniosQuery = useConvenios()
+  const cidsQuery = useCids()
   const especialidadesQuery = useEspecialidades({ convenio_id: form.convenio_id })
   const medicosQuery = useMedicos()
   const pacientesQuery = usePacientes({ convenio_id: form.convenio_id })
@@ -242,6 +321,7 @@ export function LerPedidoMedicoPage() {
     () => convenios.find((item) => String(item.id) === form.convenio_id),
     [convenios, form.convenio_id],
   )
+  const blocosCarteirinha = convenioSelecionado?.carteirinha_blocos ?? null
   const pacientesBase = useMemo(() => pacientesQuery.data ?? emptyArray, [pacientesQuery.data])
   const especialidadesBase = useMemo(
     () => especialidadesQuery.data ?? emptyArray,
@@ -300,20 +380,40 @@ export function LerPedidoMedicoPage() {
     [createdMedicos, medicosBase, medicosSugeridos],
   )
 
-  const formIsComplete =
-    form.convenio_id !== '' &&
-    form.paciente_id !== '' &&
-    form.medico_id !== '' &&
-    form.cid_id !== '' &&
-    form.solicitado_em !== '' &&
-    itensEstaoCompletos(form.itens) &&
-    resultado !== null
+  const pacienteEscolhido = pacientes.find((item) => String(item.id) === form.paciente_id)
+  const medicoEscolhido = medicos.find((item) => String(item.id) === form.medico_id)
+  const convenioEscolhido = convenios.find((item) => String(item.id) === form.convenio_id)
+  const cidsEscolhidos = (cidsQuery.data ?? []).filter((cid) => form.cid_ids.includes(String(cid.id)))
+  const itensPreenchidos = form.itens.filter(
+    (item) => item.especialidade_id !== '' && item.profissional_id !== '',
+  )
 
-  const openQuickModal = (kind: QuickModalKind, initialName = '') => {
-    setQuickError(null)
-    setQuickInitialName(initialName)
-    setQuickModal(kind)
+  // Uma etapa só libera a próxima quando o que ela pede está decidido — mas
+  // dá pra voltar pra qualquer etapa já concluída a qualquer momento.
+  const etapaCompleta = [
+    resultado !== null,
+    form.convenio_id !== '',
+    form.paciente_id !== '',
+    form.medico_id !== '',
+    itensEstaoCompletos(form.itens),
+    form.cid_ids.length > 0 && form.solicitado_em !== '',
+  ]
+  const maxAlcancavel = (() => {
+    const primeiraIncompleta = etapaCompleta.findIndex((ok) => !ok)
+    return primeiraIncompleta === -1 ? ETAPAS.length - 1 : primeiraIncompleta
+  })()
+
+  const extractedPaciente = resultado?.dados.paciente_nome?.trim() ?? ''
+  const especialidadesLidas = resultado?.sugestoes.especialidades ?? []
+  const extractedMedico = resultado?.dados.medico_nome?.trim() ?? ''
+
+  const irParaEtapa = (indice: number) => {
+    if (indice <= maxAlcancavel) {
+      setPasso(indice)
+    }
   }
+
+  const avancar = () => setPasso((atual) => Math.min(ETAPAS.length - 1, atual + 1))
 
   const handleAnalyze = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -350,6 +450,8 @@ export function LerPedidoMedicoPage() {
       setResultado(data)
       setForm((current) => ({
         ...current,
+        // Pré-seleciona quando a IA achou um cadastro com boa similaridade —
+        // o operador só confirma na etapa (ou troca) em vez de escolher do zero.
         paciente_id: topPaciente ? String(topPaciente.id) : '',
         itens: itensLidos,
         medico_id: topMedico ? String(topMedico.id) : '',
@@ -360,48 +462,78 @@ export function LerPedidoMedicoPage() {
         pedido_medico_mime: data.arquivo.mime,
         pedido_medico_ai_result: data,
       }))
+      setPasso(1)
     } catch (error) {
       setFormError(getHttpErrorMessage(error, 'Não foi possível ler o pedido médico.'))
     }
   }
 
-  const handleQuickSubmit = async (nome: string, carteirinha: string) => {
-    const trimmed = nome.trim()
-    setQuickError(null)
+  const handleCriarPaciente = async () => {
+    setNovoPacienteError(null)
+
+    if (!form.convenio_id) {
+      setNovoPacienteError('Selecione um convênio antes de cadastrar o paciente.')
+      return
+    }
 
     try {
-      if (quickModal === 'paciente') {
-        if (!form.convenio_id) {
-          setQuickError('Selecione um convênio antes de criar o paciente.')
-          return
-        }
-        const paciente = await criarPaciente.mutateAsync({
-          nome: trimmed,
-          convenio_id: Number(form.convenio_id),
-          carteirinha: carteirinha.trim(),
-        })
-        setCreatedPacientes((current) => [...current, paciente])
-        setForm((current) => ({ ...current, paciente_id: String(paciente.id) }))
-      }
-
-      if (quickModal === 'especialidade') {
-        const especialidade = await criarEspecialidade.mutateAsync({ nome: trimmed })
-        setCreatedEspecialidades((current) => [...current, especialidade])
-        setForm((current) => ({
-          ...current,
-          itens: comEspecialidadeAdicionada(current.itens, String(especialidade.id)),
-        }))
-      }
-
-      if (quickModal === 'medico') {
-        const medico = await criarMedico.mutateAsync({ nome: trimmed })
-        setCreatedMedicos((current) => [...current, medico])
-        setForm((current) => ({ ...current, medico_id: String(medico.id) }))
-      }
-
-      setQuickModal(null)
+      const paciente = await criarPaciente.mutateAsync({
+        nome: novoPacienteNome.trim(),
+        convenio_id: Number(form.convenio_id),
+        carteirinha: novoPacienteCarteirinha.trim(),
+      })
+      setCreatedPacientes((current) => [...current, paciente])
+      setForm((current) => ({ ...current, paciente_id: String(paciente.id) }))
+      setNovoPacienteNome('')
+      setNovoPacienteBlocks([])
+      setNovoPacienteCarteirinha('')
+      setPacienteModo('existente')
+      avancar()
     } catch (error) {
-      setQuickError(getHttpErrorMessage(error, 'Não foi possível salvar o cadastro rápido.'))
+      setNovoPacienteError(getHttpErrorMessage(error, 'Não foi possível cadastrar o paciente.'))
+    }
+  }
+
+  const handleCriarMedico = async () => {
+    setNovoMedicoError(null)
+
+    try {
+      const medico = await criarMedico.mutateAsync({
+        nome: novoMedicoNome.trim(),
+        crm: novoMedicoCrm.trim() || undefined,
+        especialidade_medica: novoMedicoEspecialidade.trim() || undefined,
+      })
+      setCreatedMedicos((current) => [...current, medico])
+      setForm((current) => ({ ...current, medico_id: String(medico.id) }))
+      setNovoMedicoNome('')
+      setNovoMedicoCrm('')
+      setNovoMedicoEspecialidade('')
+      setMedicoModo('existente')
+      avancar()
+    } catch (error) {
+      setNovoMedicoError(getHttpErrorMessage(error, 'Não foi possível cadastrar o médico.'))
+    }
+  }
+
+  const abrirNovaEspecialidade = (nomeInicial: string) => {
+    setEspecialidadeError(null)
+    setEspecialidadeNomeInicial(nomeInicial)
+    setEspecialidadeModalAberto(true)
+  }
+
+  const handleCriarEspecialidade = async (nome: string) => {
+    setEspecialidadeError(null)
+
+    try {
+      const especialidade = await criarEspecialidade.mutateAsync({ nome: nome.trim() })
+      setCreatedEspecialidades((current) => [...current, especialidade])
+      setForm((current) => ({
+        ...current,
+        itens: comEspecialidadeAdicionada(current.itens, String(especialidade.id)),
+      }))
+      setEspecialidadeModalAberto(false)
+    } catch (error) {
+      setEspecialidadeError(getHttpErrorMessage(error, 'Não foi possível salvar a especialidade.'))
     }
   }
 
@@ -417,10 +549,6 @@ export function LerPedidoMedicoPage() {
     }
   }
 
-  const extractedPaciente = resultado?.dados.paciente_nome?.trim() ?? ''
-  const especialidadesLidas = resultado?.sugestoes.especialidades ?? []
-  const extractedMedico = resultado?.dados.medico_nome?.trim() ?? ''
-
   return (
     <div className="space-y-8" data-testid="ler-pedido-medico-page">
       <section className="space-y-4">
@@ -433,76 +561,123 @@ export function LerPedidoMedicoPage() {
             Voltar
           </Botao>
         </div>
+
+        {resultado ? <Etapas passoAtual={passo} maxAlcancavel={maxAlcancavel} onIr={irParaEtapa} /> : null}
       </section>
 
-      <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
-        <form onSubmit={handleAnalyze} className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
-          <label className="block space-y-2">
-            <span className="text-sm font-medium text-slate-200">Arquivo do pedido médico</span>
-            <input
-              type="file"
-              accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
-              onChange={(event) => setArquivo(event.target.files?.[0] ?? null)}
-              className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white file:mr-4 file:rounded-xl file:border-0 file:bg-cyan-400 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-slate-950"
-              data-testid="pedido-medico-arquivo"
-            />
-          </label>
-          <Botao
-            type="submit"
-            variante="primario"
-            disabled={analisarPedido.isPending}
-            data-testid="pedido-medico-analisar"
-          >
-            {analisarPedido.isPending ? 'Lendo...' : 'Ler pedido'}
-          </Botao>
-        </form>
-      </section>
-
-      {resultado ? (
+      {/* Etapa 0 — Upload */}
+      {passo === 0 ? (
         <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
-          <form onSubmit={handleSubmit} className="space-y-5" data-testid="pedido-medico-form">
-            <div>
-              <h3 className="text-lg font-semibold text-white">Revisar nova solicitação</h3>
-              <p className="mt-1 text-sm text-slate-300">
-                Arquivo: {resultado.arquivo.nome_original} · Modelo: {resultado.model}
-              </p>
-            </div>
-
+          <h3 className="text-lg font-semibold text-white">Envie o pedido médico</h3>
+          <p className="mt-1 text-sm text-slate-300">
+            PDF, JPG ou PNG. A IA lê o documento e já sugere paciente, médico e especialidades nas
+            próximas etapas.
+          </p>
+          <form onSubmit={handleAnalyze} className="mt-4 grid gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Convênio</span>
-              <Select
-                value={form.convenio_id}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    convenio_id: event.target.value,
-                    paciente_id: '',
-                  }))
-                }
-                className={selectClasses()}
-                disabled={conveniosQuery.isLoading}
-                data-testid="pedido-medico-convenio"
-              >
-                <option value="" disabled>
-                  Selecione
-                </option>
-                {convenios.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.nome}
-                  </option>
-                ))}
-              </Select>
+              <span className="text-sm font-medium text-slate-200">Arquivo do pedido médico</span>
+              <input
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+                onChange={(event) => setArquivo(event.target.files?.[0] ?? null)}
+                className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white file:mr-4 file:rounded-xl file:border-0 file:bg-cyan-400 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-slate-950"
+                data-testid="pedido-medico-arquivo"
+              />
             </label>
+            <Botao
+              type="submit"
+              variante="primario"
+              disabled={analisarPedido.isPending}
+              data-testid="pedido-medico-analisar"
+            >
+              {analisarPedido.isPending ? 'Lendo...' : 'Ler pedido'}
+            </Botao>
+          </form>
 
+          {formError ? (
+            <p className="mt-4 rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+              {formError}
+            </p>
+          ) : null}
+        </section>
+      ) : null}
+
+      {/* Etapa 1 — Convênio */}
+      {passo === 1 && resultado ? (
+        <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
+          <h3 className="text-lg font-semibold text-white">Qual convênio?</h3>
+          <p className="mt-1 text-sm text-slate-300">
+            Define o formato da carteirinha e as regras de autorização das próximas etapas.
+          </p>
+
+          <label className="mt-4 block space-y-2">
+            <span className="text-sm font-medium text-slate-200">Convênio</span>
+            <Select
+              value={form.convenio_id}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, convenio_id: event.target.value, paciente_id: '' }))
+              }
+              className={selectClasses()}
+              disabled={conveniosQuery.isLoading}
+              data-testid="pedido-medico-convenio"
+            >
+              <option value="" disabled>
+                Selecione
+              </option>
+              {convenios.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.nome}
+                </option>
+              ))}
+            </Select>
+          </label>
+
+          <div className="mt-6 flex justify-end">
+            <Botao
+              type="button"
+              variante="primario"
+              disabled={!etapaCompleta[1]}
+              onClick={avancar}
+              data-testid="pedido-medico-etapa1-continuar"
+            >
+              Continuar
+            </Botao>
+          </div>
+        </section>
+      ) : null}
+
+      {/* Etapa 2 — Paciente */}
+      {passo === 2 && resultado ? (
+        <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6 space-y-4">
+          <div>
+            <h3 className="text-lg font-semibold text-white">Paciente</h3>
+            {extractedPaciente ? (
+              <p className="mt-2 text-sm text-slate-300">
+                Nome lido no documento:{' '}
+                <span className="text-xl font-bold text-white">{extractedPaciente}</span>
+              </p>
+            ) : (
+              <p className="mt-1 text-sm text-slate-300">
+                Nenhum nome de paciente identificado no documento.
+              </p>
+            )}
+          </div>
+
+          <SeletorModo
+            modo={pacienteModo}
+            onSelecionar={(modo) => {
+              setPacienteModo(modo)
+              if (modo === 'novo' && novoPacienteNome.trim() === '') {
+                setNovoPacienteNome(extractedPaciente)
+              }
+            }}
+            rotuloExistente="Selecionar paciente existente"
+            rotuloNovo="Cadastrar novo paciente"
+            testIdPrefix="pedido-medico-paciente-modo"
+          />
+
+          {pacienteModo === 'existente' ? (
             <div className="space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <p className="text-sm font-medium text-slate-200">
-                  Paciente {extractedPaciente ? `lido: ${extractedPaciente}` : ''}
-                </p>
-                <Botao type="button" variante="secundario" tamanho="sm" onClick={() => openQuickModal('paciente', extractedPaciente)}>
-                  Novo paciente
-                </Botao>
-              </div>
               {resultado.sugestoes.pacientes.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {resultado.sugestoes.pacientes.map((item) => (
@@ -510,13 +685,18 @@ export function LerPedidoMedicoPage() {
                       key={item.id}
                       type="button"
                       onClick={() => setForm((current) => ({ ...current, paciente_id: String(item.id) }))}
-                      className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1.5 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-400/20"
+                      className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                        form.paciente_id === String(item.id)
+                          ? 'border-cyan-300/60 bg-cyan-400/25 text-cyan-50'
+                          : 'border-cyan-400/30 bg-cyan-400/10 text-cyan-100 hover:bg-cyan-400/20'
+                      }`}
                     >
                       {suggestionTitle(item)} · {item.similaridade}%
                     </button>
                   ))}
                 </div>
               ) : null}
+
               <Select
                 value={form.paciente_id}
                 onChange={(event) => setForm((current) => ({ ...current, paciente_id: event.target.value }))}
@@ -534,17 +714,120 @@ export function LerPedidoMedicoPage() {
                   </option>
                 ))}
               </Select>
-            </div>
 
-            <div className="space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <p className="text-sm font-medium text-slate-200">
-                  Médico solicitante {extractedMedico ? `lido: ${extractedMedico}` : ''}
-                </p>
-                <Botao type="button" variante="secundario" tamanho="sm" onClick={() => openQuickModal('medico', extractedMedico)}>
-                  Novo médico
-                </Botao>
+              {pacienteEscolhido ? (
+                <p className="text-xs text-emerald-300">Selecionado: {pacienteEscolhido.nome}</p>
+              ) : null}
+            </div>
+          ) : (
+            <div className="space-y-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+              <label className="block space-y-2">
+                <span className="text-sm font-medium text-slate-200">Nome</span>
+                <input
+                  value={novoPacienteNome}
+                  onChange={(event) => setNovoPacienteNome(event.target.value)}
+                  className={selectClasses()}
+                  data-testid="pedido-medico-novo-paciente-nome"
+                />
+              </label>
+
+              <div className="space-y-2">
+                <span className="text-sm font-medium text-slate-200">Carteirinha</span>
+                {blocosCarteirinha ? (
+                  <CarteirinhaBlocosInput
+                    blocos={blocosCarteirinha}
+                    blocks={novoPacienteBlocks}
+                    onChange={(blocks, carteirinha) => {
+                      setNovoPacienteBlocks(blocks)
+                      setNovoPacienteCarteirinha(carteirinha)
+                    }}
+                    testIdPrefix="pedido-medico-novo-paciente-carteirinha-blocos"
+                  />
+                ) : (
+                  <input
+                    value={novoPacienteCarteirinha}
+                    onChange={(event) => setNovoPacienteCarteirinha(event.target.value)}
+                    className={selectClasses()}
+                    data-testid="pedido-medico-novo-paciente-carteirinha"
+                  />
+                )}
               </div>
+
+              {novoPacienteError ? (
+                <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+                  {novoPacienteError}
+                </p>
+              ) : null}
+
+              <Botao
+                type="button"
+                variante="primario"
+                className="w-full"
+                disabled={
+                  criarPaciente.isPending ||
+                  novoPacienteNome.trim() === '' ||
+                  (blocosCarteirinha
+                    ? !isCarteirinhaCompleta(novoPacienteBlocks, blocosCarteirinha)
+                    : novoPacienteCarteirinha.trim() === '')
+                }
+                onClick={() => void handleCriarPaciente()}
+                data-testid="pedido-medico-novo-paciente-salvar"
+              >
+                {criarPaciente.isPending ? 'Salvando...' : 'Criar e continuar'}
+              </Botao>
+            </div>
+          )}
+
+          {pacienteModo === 'existente' ? (
+            <div className="flex justify-end">
+              <Botao
+                type="button"
+                variante="primario"
+                disabled={!etapaCompleta[2]}
+                onClick={avancar}
+                data-testid="pedido-medico-etapa2-continuar"
+              >
+                Confirmar e continuar
+              </Botao>
+            </div>
+          ) : null}
+        </section>
+      ) : null}
+
+      {/* Etapa 3 — Médico solicitante */}
+      {passo === 3 && resultado ? (
+        <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6 space-y-4">
+          <div>
+            <h3 className="text-lg font-semibold text-white">Médico solicitante</h3>
+            {extractedMedico ? (
+              <p className="mt-2 text-sm text-slate-300">
+                Nome lido no documento:{' '}
+                <span className="text-xl font-bold text-white">{extractedMedico}</span>
+              </p>
+            ) : (
+              <p className="mt-1 text-sm text-slate-300">
+                Nenhum nome de médico identificado no documento.
+              </p>
+            )}
+          </div>
+
+          <SeletorModo
+            modo={medicoModo}
+            onSelecionar={(modo) => {
+              setMedicoModo(modo)
+              if (modo === 'novo' && novoMedicoNome.trim() === '') {
+                setNovoMedicoNome(extractedMedico)
+                setNovoMedicoCrm(resultado.dados.medico_crm?.trim() ?? '')
+                setNovoMedicoEspecialidade(resultado.dados.medico_especialidade?.trim() ?? '')
+              }
+            }}
+            rotuloExistente="Selecionar médico existente"
+            rotuloNovo="Cadastrar novo médico"
+            testIdPrefix="pedido-medico-medico-modo"
+          />
+
+          {medicoModo === 'existente' ? (
+            <div className="space-y-3">
               {resultado.sugestoes.medicos.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {resultado.sugestoes.medicos.map((item) => (
@@ -552,13 +835,18 @@ export function LerPedidoMedicoPage() {
                       key={item.id}
                       type="button"
                       onClick={() => setForm((current) => ({ ...current, medico_id: String(item.id) }))}
-                      className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1.5 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-400/20"
+                      className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                        form.medico_id === String(item.id)
+                          ? 'border-cyan-300/60 bg-cyan-400/25 text-cyan-50'
+                          : 'border-cyan-400/30 bg-cyan-400/10 text-cyan-100 hover:bg-cyan-400/20'
+                      }`}
                     >
                       {suggestionTitle(item)} · {item.similaridade}%
                     </button>
                   ))}
                 </div>
               ) : null}
+
               <Select
                 value={form.medico_id}
                 onChange={(event) => setForm((current) => ({ ...current, medico_id: event.target.value }))}
@@ -576,73 +864,241 @@ export function LerPedidoMedicoPage() {
                   </option>
                 ))}
               </Select>
+
+              {medicoEscolhido ? (
+                <p className="text-xs text-emerald-300">Selecionado: {medicoEscolhido.nome}</p>
+              ) : null}
+            </div>
+          ) : (
+            <div className="space-y-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+              <label className="block space-y-2">
+                <span className="text-sm font-medium text-slate-200">Nome</span>
+                <input
+                  value={novoMedicoNome}
+                  onChange={(event) => setNovoMedicoNome(event.target.value)}
+                  className={selectClasses()}
+                  data-testid="pedido-medico-novo-medico-nome"
+                />
+              </label>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="block space-y-2">
+                  <span className="text-sm font-medium text-slate-200">CRM</span>
+                  <input
+                    value={novoMedicoCrm}
+                    onChange={(event) => setNovoMedicoCrm(event.target.value)}
+                    placeholder="12345/SC"
+                    className={selectClasses()}
+                    data-testid="pedido-medico-novo-medico-crm"
+                  />
+                  <span className="block text-xs text-slate-400">
+                    Opcional aqui — dá pra completar depois em Cadastros → Médicos.
+                  </span>
+                </label>
+                <label className="block space-y-2">
+                  <span className="text-sm font-medium text-slate-200">Especialidade médica</span>
+                  <input
+                    value={novoMedicoEspecialidade}
+                    onChange={(event) => setNovoMedicoEspecialidade(event.target.value)}
+                    placeholder="Pediatria"
+                    className={selectClasses()}
+                    data-testid="pedido-medico-novo-medico-especialidade"
+                  />
+                </label>
+              </div>
+
+              {novoMedicoError ? (
+                <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+                  {novoMedicoError}
+                </p>
+              ) : null}
+
+              <Botao
+                type="button"
+                variante="primario"
+                className="w-full"
+                disabled={criarMedico.isPending || novoMedicoNome.trim() === ''}
+                onClick={() => void handleCriarMedico()}
+                data-testid="pedido-medico-novo-medico-salvar"
+              >
+                {criarMedico.isPending ? 'Salvando...' : 'Criar e continuar'}
+              </Botao>
+            </div>
+          )}
+
+          {medicoModo === 'existente' ? (
+            <div className="flex justify-end">
+              <Botao
+                type="button"
+                variante="primario"
+                disabled={!etapaCompleta[3]}
+                onClick={avancar}
+                data-testid="pedido-medico-etapa3-continuar"
+              >
+                Confirmar e continuar
+              </Botao>
+            </div>
+          ) : null}
+        </section>
+      ) : null}
+
+      {/* Etapa 4 — Especialidades / Itens */}
+      {passo === 4 && resultado ? (
+        <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6 space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className="text-lg font-semibold text-white">Especialidades do pedido</h3>
+              <p className="mt-1 text-sm text-slate-300">
+                {especialidadesLidas.length > 0
+                  ? `${especialidadesLidas.length} lida${especialidadesLidas.length > 1 ? 's' : ''} no documento`
+                  : 'Nenhuma especialidade identificada no documento — acrescente manualmente abaixo.'}
+              </p>
+            </div>
+            <Botao
+              type="button"
+              variante="secundario"
+              tamanho="sm"
+              onClick={() => abrirNovaEspecialidade('')}
+            >
+              Nova especialidade
+            </Botao>
+          </div>
+
+          {especialidadesLidas.length > 0 ? (
+            <div className="space-y-2 rounded-2xl border border-white/10 bg-white/5 p-3">
+              {especialidadesLidas.map((lida) => {
+                const jaNoPedido = lida.matches.some((match) =>
+                  form.itens.some((item) => item.especialidade_id === String(match.id)),
+                )
+
+                return (
+                  <div
+                    key={lida.termo}
+                    className="flex flex-wrap items-center gap-2"
+                    data-testid={`pedido-medico-especialidade-lida-${lida.termo}`}
+                  >
+                    <span className="text-xs text-slate-300">
+                      {lida.termo}
+                      {jaNoPedido ? <span className="ml-1 text-emerald-300">no pedido</span> : null}
+                    </span>
+
+                    {lida.sugere_cadastro ? (
+                      <button
+                        type="button"
+                        onClick={() => abrirNovaEspecialidade(lida.termo)}
+                        className="rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1.5 text-xs font-semibold text-amber-100 transition hover:bg-amber-400/20"
+                        data-testid={`pedido-medico-criar-especialidade-${lida.termo}`}
+                      >
+                        cadastrar "{lida.termo}"
+                      </button>
+                    ) : null}
+
+                    {lida.matches.length > 0
+                      ? lida.matches.map((match) => (
+                          <button
+                            key={match.id}
+                            type="button"
+                            onClick={() =>
+                              setForm((current) => ({
+                                ...current,
+                                itens: comEspecialidadeAdicionada(current.itens, String(match.id)),
+                              }))
+                            }
+                            className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1.5 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-400/20"
+                            title="Acrescenta esta especialidade ao pedido"
+                          >
+                            {match.nome} · {match.similaridade}%
+                          </button>
+                        ))
+                      : null}
+                  </div>
+                )
+              })}
+            </div>
+          ) : null}
+
+          <SolicitacaoItensFields
+            itens={form.itens}
+            onChange={(itens) => setForm((current) => ({ ...current, itens }))}
+            especialidades={especialidades}
+            profissionais={profissionais}
+            disabled={especialidadesQuery.isLoading || profissionaisQuery.isLoading}
+          />
+
+          <div className="flex justify-end">
+            <Botao
+              type="button"
+              variante="primario"
+              disabled={!etapaCompleta[4]}
+              onClick={avancar}
+              data-testid="pedido-medico-etapa4-continuar"
+            >
+              Continuar
+            </Botao>
+          </div>
+        </section>
+      ) : null}
+
+      {/* Etapa 5 — CID, Data, Observações e Revisão final */}
+      {passo === 5 && resultado ? (
+        <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
+          <form onSubmit={handleSubmit} className="space-y-5" data-testid="pedido-medico-form">
+            <div>
+              <h3 className="text-lg font-semibold text-white">Últimos dados e revisão</h3>
+              <p className="mt-1 text-sm text-slate-300">
+                Arquivo: {resultado.arquivo.nome_original} · Modelo: {resultado.model}
+              </p>
             </div>
 
             <div className="space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <p className="text-sm font-medium text-slate-200">
-                  Especialidades do pedido
-                  {especialidadesLidas.length > 0
-                    ? ` · ${especialidadesLidas.length} lida${especialidadesLidas.length > 1 ? 's' : ''} no documento`
-                    : ''}
-                </p>
-                <Botao type="button" variante="secundario" tamanho="sm" onClick={() => openQuickModal('especialidade', '')}>
-                  Nova especialidade
-                </Botao>
-              </div>
+              <span className="block text-sm font-medium text-slate-200">CID</span>
 
-              {/*
-                Um bloco por especialidade lida. Quem casou com cadastro vira
-                atalho para aplicar; quem nao casou vira convite a cadastrar,
-                que e o caso de um pedido com terapia que a clinica ainda nao
-                tem registrada.
-              */}
-              {especialidadesLidas.length > 0 ? (
+              {resultado.sugestoes.cids.length > 0 ? (
                 <div className="space-y-2 rounded-2xl border border-white/10 bg-white/5 p-3">
-                  {especialidadesLidas.map((lida) => {
-                    const jaNoPedido = lida.matches.some((match) =>
-                      form.itens.some((item) => item.especialidade_id === String(match.id)),
+                  {resultado.sugestoes.cids.map((lido) => {
+                    const jaNoPedido = lido.matches.some((match) =>
+                      form.cid_ids.includes(String(match.id)),
                     )
 
                     return (
                       <div
-                        key={lida.termo}
+                        key={lido.termo}
                         className="flex flex-wrap items-center gap-2"
-                        data-testid={`pedido-medico-especialidade-lida-${lida.termo}`}
+                        data-testid={`pedido-medico-cid-lido-${lido.termo}`}
                       >
                         <span className="text-xs text-slate-300">
-                          {lida.termo}
-                          {jaNoPedido ? (
-                            <span className="ml-1 text-emerald-300">no pedido</span>
-                          ) : null}
+                          {lido.termo}
+                          {jaNoPedido ? <span className="ml-1 text-emerald-300">no pedido</span> : null}
                         </span>
 
-                        {lida.sugere_cadastro ? (
+                        {lido.sugere_cadastro ? (
                           <button
                             type="button"
-                            onClick={() => openQuickModal('especialidade', lida.termo)}
+                            onClick={() => setCidNovoTermo(lido.termo)}
                             className="rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1.5 text-xs font-semibold text-amber-100 transition hover:bg-amber-400/20"
-                            data-testid={`pedido-medico-criar-especialidade-${lida.termo}`}
+                            data-testid={`pedido-medico-criar-cid-${lido.termo}`}
                           >
-                            cadastrar "{lida.termo}"
+                            cadastrar "{lido.termo}"
                           </button>
                         ) : null}
 
-                        {lida.matches.length > 0
-                          ? lida.matches.map((match) => (
-                            <button
-                              key={match.id}
-                              type="button"
-                              onClick={() =>
-                                setForm((current) => ({
-                                  ...current,
-                                  itens: comEspecialidadeAdicionada(current.itens, String(match.id)),
-                                }))
-                              }
-                              className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1.5 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-400/20"
-                              title="Acrescenta esta especialidade ao pedido"
-                            >
-                                {match.nome} · {match.similaridade}%
+                        {lido.matches.length > 0
+                          ? lido.matches.map((match) => (
+                              <button
+                                key={match.id}
+                                type="button"
+                                onClick={() =>
+                                  setForm((current) => ({
+                                    ...current,
+                                    cid_ids: current.cid_ids.includes(String(match.id))
+                                      ? current.cid_ids
+                                      : [...current.cid_ids, String(match.id)],
+                                  }))
+                                }
+                                className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1.5 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-400/20"
+                                title="Acrescenta este CID ao pedido"
+                              >
+                                {match.codigo} · {match.similaridade}%
                               </button>
                             ))
                           : null}
@@ -652,23 +1108,14 @@ export function LerPedidoMedicoPage() {
                 </div>
               ) : null}
 
-              <SolicitacaoItensFields
-                itens={form.itens}
-                onChange={(itens) => setForm((current) => ({ ...current, itens }))}
-                especialidades={especialidades}
-                profissionais={profissionais}
-                disabled={especialidadesQuery.isLoading || profissionaisQuery.isLoading}
+              <CidsCampo
+                value={form.cid_ids}
+                onChange={(cidIds) => setForm((current) => ({ ...current, cid_ids: cidIds }))}
+                testIdPrefix="pedido-medico-cid"
+                abrirNovoComTermo={cidNovoTermo}
+                onTermoConsumido={() => setCidNovoTermo(null)}
               />
             </div>
-
-            <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">CID</span>
-              <CidCampo
-                value={form.cid_id}
-                onChange={(cidId) => setForm((current) => ({ ...current, cid_id: cidId }))}
-                testIdPrefix="pedido-medico-cid"
-              />
-            </label>
 
             <label className="block space-y-2">
               <span className="text-sm font-medium text-slate-200">Data da solicitação</span>
@@ -691,6 +1138,107 @@ export function LerPedidoMedicoPage() {
               />
             </label>
 
+            {/*
+              Pré-visualização de verdade, não só uma contagem: mostra cada
+              dado exatamente como vai ficar gravado, pra revisar antes de
+              criar a solicitação de fato — inclusive o que ainda falta
+              (itens sem profissional, por exemplo) fica visível aqui. Fica
+              por último, logo antes do botão, porque só faz sentido depois
+              de CID/Data/Observações já preenchidos acima.
+            */}
+            <div
+              className="space-y-4 rounded-2xl border border-cyan-300/20 bg-cyan-400/5 p-5"
+              data-testid="pedido-medico-preview"
+            >
+              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-cyan-300/80">
+                Pré-visualização da solicitação
+              </p>
+
+              <div className="grid gap-3 text-sm text-slate-200 sm:grid-cols-2">
+                <p>
+                  <span className="block text-xs uppercase tracking-wide text-slate-400">Convênio</span>
+                  {convenioEscolhido?.nome ?? '—'}
+                </p>
+                <p>
+                  <span className="block text-xs uppercase tracking-wide text-slate-400">Paciente</span>
+                  {pacienteEscolhido?.nome ?? '—'}
+                  {pacienteEscolhido?.carteirinha ? ` · ${formatCarteirinha(pacienteEscolhido.carteirinha)}` : ''}
+                </p>
+                <p>
+                  <span className="block text-xs uppercase tracking-wide text-slate-400">
+                    Médico solicitante
+                  </span>
+                  {medicoEscolhido?.nome ?? '—'}
+                  {medicoEscolhido?.crm && medicoEscolhido.crm !== 'PENDENTE' ? ` · CRM ${medicoEscolhido.crm}` : ''}
+                </p>
+                <p>
+                  <span className="block text-xs uppercase tracking-wide text-slate-400">
+                    Data da solicitação
+                  </span>
+                  {form.solicitado_em || '—'}
+                </p>
+              </div>
+
+              <div>
+                <span className="block text-xs uppercase tracking-wide text-slate-400">CIDs</span>
+                {cidsEscolhidos.length > 0 ? (
+                  <div className="mt-1 flex flex-wrap gap-2">
+                    {cidsEscolhidos.map((cid) => (
+                      <span
+                        key={cid.id}
+                        className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-100"
+                      >
+                        {cid.codigo} — {cid.descricao}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="mt-1 text-sm text-rose-200">Nenhum CID selecionado ainda.</p>
+                )}
+              </div>
+
+              <div>
+                <span className="block text-xs uppercase tracking-wide text-slate-400">
+                  Especialidades solicitadas
+                </span>
+                {itensPreenchidos.length > 0 ? (
+                  <div className="mt-1 overflow-hidden rounded-2xl border border-white/10">
+                    <table className="w-full border-collapse text-left text-sm">
+                      <thead className="bg-white/5 text-xs uppercase tracking-wide text-slate-400">
+                        <tr>
+                          <th className="px-3 py-2">Especialidade</th>
+                          <th className="px-3 py-2">Profissional</th>
+                          <th className="px-3 py-2">Sessões</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-white/10">
+                        {itensPreenchidos.map((item, index) => (
+                          <tr key={`${item.especialidade_id}-${index}`}>
+                            <td className="px-3 py-2 text-slate-200">
+                              {especialidades.find((esp) => String(esp.id) === item.especialidade_id)?.nome ?? '—'}
+                            </td>
+                            <td className="px-3 py-2 text-slate-200">
+                              {profissionais.find((prof) => String(prof.id) === item.profissional_id)?.nome ?? '—'}
+                            </td>
+                            <td className="px-3 py-2 text-slate-200">{item.quantidade || 10}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="mt-1 text-sm text-rose-200">Nenhuma especialidade completa ainda.</p>
+                )}
+              </div>
+
+              {form.observacoes ? (
+                <div>
+                  <span className="block text-xs uppercase tracking-wide text-slate-400">Observações</span>
+                  <p className="mt-1 whitespace-pre-wrap text-sm text-slate-200">{form.observacoes}</p>
+                </div>
+              ) : null}
+            </div>
+
             {formError ? (
               <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
                 {formError}
@@ -701,7 +1249,7 @@ export function LerPedidoMedicoPage() {
               type="submit"
               variante="primario"
               className="w-full"
-              disabled={criarSolicitacao.isPending || !formIsComplete}
+              disabled={criarSolicitacao.isPending || !etapaCompleta.every(Boolean)}
               data-testid="pedido-medico-submit"
             >
               {criarSolicitacao.isPending ? 'Salvando...' : 'Criar solicitação'}
@@ -710,20 +1258,13 @@ export function LerPedidoMedicoPage() {
         </section>
       ) : null}
 
-      {formError && !resultado ? (
-        <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
-          {formError}
-        </p>
-      ) : null}
-
-      <QuickCreateModal
-        kind={quickModal}
-        initialName={quickInitialName}
-        isSaving={criarPaciente.isPending || criarEspecialidade.isPending || criarMedico.isPending}
-        error={quickError}
-        blocos={convenioSelecionado?.carteirinha_blocos ?? null}
-        onClose={() => setQuickModal(null)}
-        onSubmit={(nome, carteirinha) => void handleQuickSubmit(nome, carteirinha)}
+      <NovaEspecialidadeModal
+        aberto={especialidadeModalAberto}
+        nomeInicial={especialidadeNomeInicial}
+        salvando={criarEspecialidade.isPending}
+        erro={especialidadeError}
+        onClose={() => setEspecialidadeModalAberto(false)}
+        onSubmit={(nome) => void handleCriarEspecialidade(nome)}
       />
     </div>
   )

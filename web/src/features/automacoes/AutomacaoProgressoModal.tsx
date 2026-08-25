@@ -3,12 +3,22 @@ import { useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { LoaderCircle } from 'lucide-react'
-import { useAutomacao } from '../automacoes/useAutomacoes'
-import { getHttpErrorMessage } from './useSolicitacoes'
+import { useAutomacao } from './useAutomacoes'
 
 type AutomacaoProgressoModalProps = {
   execucaoId: number | null
   onClose: () => void
+  /** Título do modal. Padrão cobre o caso original (geração de guia). */
+  titulo?: string
+  descricao?: string
+  /** Texto enquanto o worker está de fato rodando (status running). */
+  mensagemExecutando?: string
+  /**
+   * Query keys para invalidar quando a execução sai de queued/running para um
+   * status terminal — a linha/lista de origem só reflete o resultado depois
+   * disso, sem isso o usuário precisaria de F5 pra ver.
+   */
+  queryKeysInvalidar?: string[][]
 }
 
 const STATUS_EM_ANDAMENTO = ['queued', 'running']
@@ -36,14 +46,14 @@ function resultadoResumo(status: string): { tom: 'sucesso' | 'erro' | 'alerta'; 
     case 'succeeded':
       return {
         tom: 'sucesso',
-        titulo: 'Guia gerada com sucesso',
-        mensagem: 'O robô concluiu o envio e a guia já está vinculada a este item.',
+        titulo: 'Concluído com sucesso',
+        mensagem: 'O robô concluiu a execução.',
       }
     case 'failed':
       return {
         tom: 'erro',
         titulo: 'A automação falhou',
-        mensagem: 'Confira os detalhes e, se for o caso, reprocesse a execução em Automações.',
+        mensagem: 'Confira os detalhes e, se for o caso, tente novamente em Automações.',
       }
     case 'needs_attention':
       return {
@@ -56,7 +66,7 @@ function resultadoResumo(status: string): { tom: 'sucesso' | 'erro' | 'alerta'; 
         tom: 'alerta',
         titulo: 'Resultado incerto',
         mensagem:
-          'Não foi possível confirmar se a guia foi gerada. Confira em Automações antes de tentar de novo — reenviar sem confirmar pode duplicar a guia.',
+          'Não foi possível confirmar o resultado. Confira em Automações antes de tentar de novo — reenviar sem confirmar pode duplicar a ação.',
       }
     default:
       return {
@@ -73,7 +83,14 @@ const tomClasses: Record<'sucesso' | 'erro' | 'alerta', string> = {
   alerta: 'border-amber-400/20 bg-amber-500/10 text-amber-100',
 }
 
-export function AutomacaoProgressoModal({ execucaoId, onClose }: AutomacaoProgressoModalProps) {
+export function AutomacaoProgressoModal({
+  execucaoId,
+  onClose,
+  titulo = 'Enviando para a Unimed',
+  descricao = 'Acompanhe aqui a evolução do robô que gera a guia no portal da Unimed.',
+  mensagemExecutando = 'O robô está preenchendo e enviando o pedido no portal da Unimed...',
+  queryKeysInvalidar = [],
+}: AutomacaoProgressoModalProps) {
   const open = execucaoId !== null
   const queryClient = useQueryClient()
   const execucaoQuery = useAutomacao(execucaoId, { acompanharProgresso: open })
@@ -91,13 +108,16 @@ export function AutomacaoProgressoModal({ execucaoId, onClose }: AutomacaoProgre
       : true
     statusAnteriorRef.current = execucao.status
 
-    // A guia (ou o "sem novidade") só aparece na listagem depois que a
-    // automação termina — refaz a busca pra não deixar o usuário com F5 na
-    // mão pra ver o resultado.
     if (eraEmAndamento && !STATUS_EM_ANDAMENTO.includes(execucao.status)) {
-      void queryClient.invalidateQueries({ queryKey: ['solicitacoes'] })
+      queryKeysInvalidar.forEach((queryKey) => {
+        void queryClient.invalidateQueries({ queryKey })
+      })
     }
-  }, [execucao, queryClient])
+    // queryKeysInvalidar é passado inline pelos chamadores — comparar pelo
+    // execucaoId evita reexecutar o efeito a cada render por identidade nova
+    // do array.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [execucao, queryClient, execucaoId])
 
   useEffect(() => {
     if (open) {
@@ -120,11 +140,10 @@ export function AutomacaoProgressoModal({ execucaoId, onClose }: AutomacaoProgre
             <div className="flex items-start justify-between gap-4">
               <div>
                 <DialogTitle className="text-xl font-semibold">
-                  Enviando para a Unimed{execucaoId ? ` · execução #${execucaoId}` : ''}
+                  {titulo}
+                  {execucaoId ? ` · execução #${execucaoId}` : ''}
                 </DialogTitle>
-                <p className="mt-1 text-sm text-slate-300">
-                  Acompanhe aqui a evolução do robô que gera a guia no portal da Unimed.
-                </p>
+                <p className="mt-1 text-sm text-slate-300">{descricao}</p>
               </div>
               <button
                 type="button"
@@ -143,7 +162,7 @@ export function AutomacaoProgressoModal({ execucaoId, onClose }: AutomacaoProgre
                 </div>
               ) : execucaoQuery.isError || !execucao ? (
                 <div className="rounded-3xl border border-rose-400/20 bg-rose-500/10 p-5 text-sm text-rose-100">
-                  {getHttpErrorMessage(execucaoQuery.error, 'Não foi possível carregar o andamento da automação.')}
+                  Não foi possível carregar o andamento da automação.
                 </div>
               ) : (
                 <>
@@ -196,8 +215,11 @@ export function AutomacaoProgressoModal({ execucaoId, onClose }: AutomacaoProgre
                     >
                       <p className="font-semibold">{resultado.titulo}</p>
                       <p className="mt-1">{resultado.mensagem}</p>
+                      {execucao.erro_codigo ? (
+                        <p className="mt-2 text-xs font-semibold opacity-90">{execucao.erro_codigo}</p>
+                      ) : null}
                       {execucao.erro_mensagem ? (
-                        <p className="mt-2 text-xs opacity-90">{execucao.erro_mensagem}</p>
+                        <p className="mt-1 text-xs opacity-90">{execucao.erro_mensagem}</p>
                       ) : null}
                       {resultado.tom !== 'sucesso' ? (
                         <Link
@@ -211,9 +233,7 @@ export function AutomacaoProgressoModal({ execucaoId, onClose }: AutomacaoProgre
                   ) : (
                     <div className="flex items-center gap-3 rounded-3xl border border-white/10 bg-white/5 p-5 text-sm text-slate-300">
                       <LoaderCircle className="size-4 shrink-0 animate-spin text-cyan-200" aria-hidden="true" />
-                      {execucao.status === 'running'
-                        ? 'O robô está preenchendo e enviando o pedido no portal da Unimed...'
-                        : 'Aguardando um worker disponível para iniciar...'}
+                      {execucao.status === 'running' ? mensagemExecutando : 'Aguardando um worker disponível para iniciar...'}
                     </div>
                   )}
                 </>
@@ -225,3 +245,5 @@ export function AutomacaoProgressoModal({ execucaoId, onClose }: AutomacaoProgre
     </Dialog>
   )
 }
+
+export type { AutomacaoProgressoModalProps }

@@ -44,6 +44,12 @@ export function CarteirinhaBlocosInput({
               next[index] = event.target.value.replace(/\D/g, '').slice(0, size)
               onChange(next, joinCarteirinha(next))
             }}
+            // Sem isto, um bloco já preenchido (ex.: editar um paciente
+            // existente) bloqueia a digitação: com maxLength no limite, o
+            // navegador recusa o caractere novo até o texto atual ser
+            // selecionado. Mais crítico no bloco de 1 dígito (dígito
+            // verificador) — é onde menos sobra espaço pra digitar por cima.
+            onFocus={(event) => event.target.select()}
             inputMode="numeric"
             maxLength={size}
             disabled={disabled}

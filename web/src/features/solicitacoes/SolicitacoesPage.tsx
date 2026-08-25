@@ -23,8 +23,8 @@ import {
 } from '../../lib/queries/useReferenceData'
 import { formatCarteirinha } from '../../lib/carteirinha'
 import { SolicitacaoGuiaModal } from './SolicitacaoGuiaModal'
-import { AutomacaoProgressoModal } from './AutomacaoProgressoModal'
-import { CidCampo } from '../cids/CidCampo'
+import { AutomacaoProgressoModal } from '../automacoes/AutomacaoProgressoModal'
+import { CidsCampo } from '../cids/CidsCampo'
 import { SolicitacaoItensFields } from './SolicitacaoItensFields'
 import { emptyItem, itensEstaoCompletos } from './solicitacaoItens'
 import { Indicadores } from '../../components/ui/Indicadores'
@@ -47,7 +47,7 @@ const emptyForm: SolicitacaoForm = {
   paciente_id: '',
   convenio_id: '',
   medico_id: '',
-  cid_id: '',
+  cid_ids: [],
   solicitado_em: new Date().toISOString().slice(0, 10),
   observacoes: '',
   itens: [{ ...emptyItem }],
@@ -157,7 +157,7 @@ export function SolicitacoesPage() {
     form.convenio_id !== '' &&
     form.paciente_id !== '' &&
     form.medico_id !== '' &&
-    form.cid_id !== '' &&
+    form.cid_ids.length > 0 &&
     itensEstaoCompletos(form.itens)
 
   useEffect(() => {
@@ -237,7 +237,7 @@ export function SolicitacoesPage() {
       convenio_id: current.convenio_id,
       paciente_id: current.paciente_id,
       medico_id: current.medico_id,
-      cid_id: current.cid_id,
+      cid_ids: current.cid_ids,
       itens: [{ ...emptyItem }],
     }))
     setFormError(null)
@@ -264,7 +264,7 @@ export function SolicitacoesPage() {
         convenio_id: current.convenio_id,
         paciente_id: current.paciente_id,
         medico_id: current.medico_id,
-        cid_id: current.cid_id,
+        cid_ids: current.cid_ids,
         itens: [{ ...emptyItem }],
       }))
       if (isCreateRoute) {
@@ -491,9 +491,9 @@ export function SolicitacoesPage() {
 
             <label className="block space-y-2">
               <span className="text-sm font-medium text-slate-200">CID</span>
-              <CidCampo
-                value={form.cid_id}
-                onChange={(cidId) => setForm((current) => ({ ...current, cid_id: cidId }))}
+              <CidsCampo
+                value={form.cid_ids}
+                onChange={(cidIds) => setForm((current) => ({ ...current, cid_ids: cidIds }))}
                 testIdPrefix="solicitacao-cid"
               />
             </label>
@@ -923,6 +923,7 @@ export function SolicitacoesPage() {
       <AutomacaoProgressoModal
         execucaoId={progressoExecucaoId}
         onClose={() => setProgressoExecucaoId(null)}
+        queryKeysInvalidar={[['solicitacoes']]}
       />
     </div>
   )

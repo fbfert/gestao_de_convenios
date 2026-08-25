@@ -53,7 +53,9 @@ class AntecipacaoService
 
     public function buscar(int $id): Antecipacao
     {
-        return Antecipacao::query()->with(['guia.especialidade', 'paciente', 'convenio', 'lancamentos'])->findOrFail($id);
+        return Antecipacao::query()
+            ->with(['guia.especialidade', 'paciente', 'convenio', 'lancamentos.profissional'])
+            ->findOrFail($id);
     }
 
     /**

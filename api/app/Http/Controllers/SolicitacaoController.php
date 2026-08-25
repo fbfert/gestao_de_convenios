@@ -41,29 +41,29 @@ class SolicitacaoController extends Controller
 
     public function store(StoreSolicitacaoRequest $request): JsonResponse
     {
-        return (new SolicitacaoResource($this->service->criar($request->validated())->load(['paciente', 'profissional', 'especialidade', 'convenio', 'medico', 'cidCadastro', 'itens.especialidade.convenioMapeamentos', 'itens.profissional', 'itens.documentos', 'itens.guia', 'itens.automacaoExecucoes', 'documentos', 'guia'])))
+        return (new SolicitacaoResource($this->service->criar($request->validated())->load(['paciente', 'profissional', 'especialidade', 'convenio', 'medico', 'cidCadastros', 'itens.especialidade.convenioMapeamentos', 'itens.profissional', 'itens.documentos', 'itens.guia', 'itens.automacaoExecucoes', 'documentos', 'guia'])))
             ->response()
             ->setStatusCode(201);
     }
 
     public function show(Solicitacao $solicitacao): SolicitacaoResource
     {
-        return new SolicitacaoResource($solicitacao->load(['paciente', 'profissional', 'especialidade', 'convenio', 'medico', 'cidCadastro', 'itens.especialidade.convenioMapeamentos', 'itens.profissional', 'itens.documentos', 'itens.guia', 'itens.automacaoExecucoes', 'documentos', 'guia.paciente', 'guia.convenio', 'guia.profissional', 'guia.especialidade', 'guia.solicitacaoItem.especialidade', 'guia.solicitacaoItem.profissional', 'guia.antecipacoes', 'guia.conciliacoes']));
+        return new SolicitacaoResource($solicitacao->load(['paciente', 'profissional', 'especialidade', 'convenio', 'medico', 'cidCadastros', 'itens.especialidade.convenioMapeamentos', 'itens.profissional', 'itens.documentos', 'itens.guia', 'itens.automacaoExecucoes', 'documentos', 'guia.paciente', 'guia.convenio', 'guia.profissional', 'guia.especialidade', 'guia.solicitacaoItem.especialidade', 'guia.solicitacaoItem.profissional', 'guia.antecipacoes', 'guia.conciliacoes']));
     }
 
     public function update(UpdateSolicitacaoRequest $request, Solicitacao $solicitacao): SolicitacaoResource
     {
-        return new SolicitacaoResource($this->service->atualizar($solicitacao, $request->validated())->load(['paciente', 'profissional', 'especialidade', 'convenio', 'medico', 'cidCadastro', 'itens.especialidade.convenioMapeamentos', 'itens.profissional', 'itens.documentos', 'itens.guia', 'itens.automacaoExecucoes', 'documentos', 'guia']));
+        return new SolicitacaoResource($this->service->atualizar($solicitacao, $request->validated())->load(['paciente', 'profissional', 'especialidade', 'convenio', 'medico', 'cidCadastros', 'itens.especialidade.convenioMapeamentos', 'itens.profissional', 'itens.documentos', 'itens.guia', 'itens.automacaoExecucoes', 'documentos', 'guia']));
     }
 
     public function aprovar(MutateSolicitacaoStatusRequest $request, Solicitacao $solicitacao): SolicitacaoResource
     {
-        return new SolicitacaoResource($this->service->aprovar($solicitacao)->load(['paciente', 'profissional', 'especialidade', 'convenio', 'medico', 'cidCadastro', 'itens.especialidade.convenioMapeamentos', 'itens.profissional', 'itens.documentos', 'itens.guia', 'itens.automacaoExecucoes', 'documentos', 'guia']));
+        return new SolicitacaoResource($this->service->aprovar($solicitacao)->load(['paciente', 'profissional', 'especialidade', 'convenio', 'medico', 'cidCadastros', 'itens.especialidade.convenioMapeamentos', 'itens.profissional', 'itens.documentos', 'itens.guia', 'itens.automacaoExecucoes', 'documentos', 'guia']));
     }
 
     public function negar(MutateSolicitacaoStatusRequest $request, Solicitacao $solicitacao): SolicitacaoResource
     {
-        return new SolicitacaoResource($this->service->negar($solicitacao)->load(['paciente', 'profissional', 'especialidade', 'convenio', 'medico', 'cidCadastro', 'itens.especialidade.convenioMapeamentos', 'itens.profissional', 'itens.documentos', 'itens.guia', 'itens.automacaoExecucoes', 'documentos', 'guia']));
+        return new SolicitacaoResource($this->service->negar($solicitacao)->load(['paciente', 'profissional', 'especialidade', 'convenio', 'medico', 'cidCadastros', 'itens.especialidade.convenioMapeamentos', 'itens.profissional', 'itens.documentos', 'itens.guia', 'itens.automacaoExecucoes', 'documentos', 'guia']));
     }
 
     public function enviarItemUnimed(
@@ -86,7 +86,7 @@ class SolicitacaoController extends Controller
 
     public function updateStatus(UpdateSolicitacaoStatusRequest $request, Solicitacao $solicitacao): SolicitacaoResource
     {
-        return new SolicitacaoResource($this->service->alterarStatus($solicitacao, $request->validated('status'))->load(['paciente', 'profissional', 'especialidade', 'convenio', 'medico', 'cidCadastro', 'itens.especialidade.convenioMapeamentos', 'itens.profissional', 'itens.documentos', 'itens.guia', 'itens.automacaoExecucoes', 'documentos', 'guia']));
+        return new SolicitacaoResource($this->service->alterarStatus($solicitacao, $request->validated('status'))->load(['paciente', 'profissional', 'especialidade', 'convenio', 'medico', 'cidCadastros', 'itens.especialidade.convenioMapeamentos', 'itens.profissional', 'itens.documentos', 'itens.guia', 'itens.automacaoExecucoes', 'documentos', 'guia']));
     }
 
     public function analisarPedidoMedico(AnalyzePedidoMedicoRequest $request, PedidoMedicoAiService $pedidoMedicoAi): JsonResponse
@@ -176,13 +176,22 @@ class SolicitacaoController extends Controller
     {
         $validated = $request->validate([
             'nome' => ['required', 'string', 'max:255'],
+            // CRM e especialidade ficam opcionais aqui de proposito: e um
+            // cadastro rapido, feito no meio da leitura de um pedido medico.
+            // Quando a IA achou (ou o operador digitou), usa o valor real;
+            // senao cai no mesmo placeholder de sempre, corrigivel depois na
+            // tela Medicos.
+            'crm' => ['nullable', 'string', 'max:255'],
+            'especialidade_medica' => ['nullable', 'string', 'max:255'],
         ]);
 
         $medico = Medico::query()->create([
             'tenant_id' => $request->user()->tenant_id,
             'nome' => $validated['nome'],
-            'crm' => 'PENDENTE',
-            'especialidade_medica' => 'Pendente',
+            'crm' => filled($validated['crm'] ?? null) ? trim($validated['crm']) : 'PENDENTE',
+            'especialidade_medica' => filled($validated['especialidade_medica'] ?? null)
+                ? trim($validated['especialidade_medica'])
+                : 'Pendente',
             'telefone' => 'Pendente',
             'ativo' => true,
         ]);

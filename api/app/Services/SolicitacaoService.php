@@ -35,7 +35,7 @@ class SolicitacaoService
                 'especialidade',
                 'convenio',
                 'medico',
-                'cidCadastro',
+                'cidCadastros',
                 'itens.especialidade.convenioMapeamentos',
                 'itens.profissional',
                 'itens.documentos',
@@ -112,11 +112,12 @@ class SolicitacaoService
                 'especialidade_id' => $dados['especialidade_id'] ?? $primeiroItem['especialidade_id'],
                 'convenio_id' => $dados['convenio_id'],
                 'medico_id' => $dados['medico_id'],
-                'cid_id' => $dados['cid_id'] ?? null,
                 'status' => 'under_review',
                 'solicitado_em' => $dados['solicitado_em'],
                 'observacoes' => $dados['observacoes'] ?? null,
             ] + $pedidoMedico['campos']);
+
+            $solicitacao->cidCadastros()->sync($dados['cid_ids'] ?? []);
 
             foreach ($itens as $item) {
                 $solicitacao->itens()->create([
@@ -206,12 +207,15 @@ class SolicitacaoService
     {
         $solicitacao->fill(array_filter([
             'medico_id' => $dados['medico_id'] ?? null,
-            'cid_id' => $dados['cid_id'] ?? null,
             'solicitado_em' => $dados['solicitado_em'] ?? null,
             'observacoes' => array_key_exists('observacoes', $dados) ? $dados['observacoes'] : null,
         ], fn ($value) => $value !== null));
 
         $solicitacao->save();
+
+        if (array_key_exists('cid_ids', $dados)) {
+            $solicitacao->cidCadastros()->sync($dados['cid_ids']);
+        }
 
         return $solicitacao->refresh();
     }

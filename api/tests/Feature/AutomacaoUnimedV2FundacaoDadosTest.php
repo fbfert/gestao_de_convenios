@@ -36,14 +36,14 @@ class AutomacaoUnimedV2FundacaoDadosTest extends TestCase
             'especialidade_id' => $especialidade->id,
             'convenio_id' => $convenio->id,
             'medico_id' => \App\Models\Medico::query()->firstOrFail()->id,
-            'cid_id' => Cid::query()->where('codigo', 'F84.0')->firstOrFail()->id,
+            'cid_ids' => [Cid::query()->where('codigo', 'F84.0')->firstOrFail()->id],
             'solicitado_em' => today()->toDateString(),
             'itens' => [[
                 'especialidade_id' => $especialidade->id,
                 'profissional_id' => $profissional->id,
                 'quantidade' => 10,
             ]],
-        ])->assertCreated()->assertJsonPath('data.cid.codigo', 'F84.0');
+        ])->assertCreated()->assertJsonPath('data.cids.0.codigo', 'F84.0');
     }
 
     public function test_cria_mapeamentos_e_bloqueia_duplicidade(): void

@@ -39,7 +39,7 @@ export function useCriarSolicitacao() {
         paciente_id: Number(payload.paciente_id),
         convenio_id: Number(payload.convenio_id),
         medico_id: Number(payload.medico_id),
-        cid_id: Number(payload.cid_id),
+        cid_ids: payload.cid_ids.map(Number),
         itens: payload.itens.map((item) => ({
           especialidade_id: Number(item.especialidade_id),
           profissional_id: Number(item.profissional_id),
@@ -69,7 +69,7 @@ export function useSolicitacao(id: number | null) {
 
 export type SolicitacaoEditForm = {
   medico_id: string
-  cid_id: string
+  cid_ids: string[]
   solicitado_em: string
   observacoes: string
 }
@@ -81,7 +81,7 @@ export function useAtualizarSolicitacao() {
     mutationFn: async ({ id, payload }: { id: number; payload: SolicitacaoEditForm }) => {
       const { data } = await apiClient.patch<{ data: Solicitacao }>(`/solicitacoes/${id}`, {
         medico_id: Number(payload.medico_id),
-        cid_id: Number(payload.cid_id),
+        cid_ids: payload.cid_ids.map(Number),
         solicitado_em: payload.solicitado_em,
         observacoes: payload.observacoes || null,
       })
@@ -151,7 +151,7 @@ export function useCriarMedicoRapido() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (payload: { nome: string }) => {
+    mutationFn: async (payload: { nome: string; crm?: string; especialidade_medica?: string }) => {
       const { data } = await apiClient.post<{ data: MedicoRef }>(
         '/solicitacoes/medicos-rapido',
         payload,

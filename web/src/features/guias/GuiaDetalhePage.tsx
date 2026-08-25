@@ -1,7 +1,14 @@
+import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { GuiaDetalheResumo } from './GuiaDetalheResumo'
 import { GuiaStatusActions } from './GuiaStatusActions'
 import { getHttpErrorMessage, useBuscarSenhaValidadeGuiaUnimed, useConsultarGuiaUnimed, useGuia } from './useGuias'
+import { useAuthStore } from '../../stores/authStore'
+import { useLancamentoPrintTemplate } from '../lancamentos/useLancamentos'
+import { buildGuiaTemplateData, renderLancamentoPrintTemplate } from '../lancamentos/printTemplate'
+import { Botao } from '../../components/ui/Botao'
+import { useConfirm } from '../../components/ui/ConfirmDialog'
+import { AutomacaoProgressoModal } from '../automacoes/AutomacaoProgressoModal'
 
 export function GuiaDetalhePage() {
   const { id } = useParams()
@@ -9,6 +16,21 @@ export function GuiaDetalhePage() {
   const guiaQuery = useGuia(guiaId)
   const consultarGuiaUnimed = useConsultarGuiaUnimed()
   const buscarSenhaValidadeUnimed = useBuscarSenhaValidadeGuiaUnimed()
+  const confirmar = useConfirm()
+  const [progresso, setProgresso] = useState<{ id: number; tipo: 'status' | 'senha' } | null>(null)
+  const printTemplateQuery = useLancamentoPrintTemplate()
+  const clinica = useAuthStore((state) => state.tenant)?.nome ?? ''
+
+  const printHtml = useMemo(() => {
+    if (!guiaQuery.data || !printTemplateQuery.data?.html) {
+      return ''
+    }
+
+    return renderLancamentoPrintTemplate(
+      printTemplateQuery.data.html,
+      buildGuiaTemplateData(guiaQuery.data, clinica),
+    )
+  }, [guiaQuery.data, printTemplateQuery.data?.html, clinica])
 
   if (guiaId === null) {
     return (
@@ -42,29 +64,62 @@ export function GuiaDetalhePage() {
   const canBuscarSenhaValidade = isUnimed && guia.status === 'approved' && Boolean(guia.numero_guia) && (!guia.senha || !guia.validade_senha)
 
   const handleConsultarUnimed = async () => {
+    const ok = await confirmar({
+      titulo: 'Verificar status na Unimed',
+      descricao: 'Consulta o status atual desta guia no portal da Unimed agora, fora do agendamento automático. Confirma?',
+      confirmarTexto: 'Verificar status',
+      variante: 'primario',
+    })
+
+    if (!ok) {
+      return
+    }
+
     try {
-      await consultarGuiaUnimed.mutateAsync(guia.id)
+      const execucao = await consultarGuiaUnimed.mutateAsync(guia.id)
+      setProgresso({ id: execucao.id, tipo: 'status' })
     } catch (error) {
       window.alert(getHttpErrorMessage(error, 'Não foi possível consultar a Unimed.'))
     }
   }
 
   const handleBuscarSenhaValidade = async () => {
+    const ok = await confirmar({
+      titulo: 'Buscar senha e validade na Unimed',
+      descricao: 'Consulta o portal da Unimed para capturar a senha e a validade de autorização desta guia. Confirma?',
+      confirmarTexto: 'Buscar senha/validade',
+      variante: 'primario',
+    })
+
+    if (!ok) {
+      return
+    }
+
     try {
-      await buscarSenhaValidadeUnimed.mutateAsync(guia.id)
+      const execucao = await buscarSenhaValidadeUnimed.mutateAsync(guia.id)
+      setProgresso({ id: execucao.id, tipo: 'senha' })
     } catch (error) {
       window.alert(getHttpErrorMessage(error, 'Não foi possível buscar senha e validade na Unimed.'))
     }
   }
 
   return (
-    <div className="space-y-8" data-testid="guia-detalhe-page">
+    <>
+    <div className="space-y-8 print:hidden" data-testid="guia-detalhe-page">
       <section className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <Link to="/guias" className="text-sm font-semibold text-cyan-200 transition hover:text-cyan-100">
             ← Voltar para guias
           </Link>
         </div>
+        <Botao
+          variante="secundario"
+          onClick={() => window.print()}
+          data-testid="guia-imprimir"
+          disabled={printTemplateQuery.isLoading || printHtml.trim() === ''}
+        >
+          {printTemplateQuery.isLoading ? 'Carregando modelo...' : 'Imprimir guia'}
+        </Botao>
       </section>
 
       <GuiaDetalheResumo guia={guia} />
@@ -95,5 +150,28 @@ export function GuiaDetalhePage() {
         </div>
       </section>
     </div>
+
+    <section
+      className="hidden print:block bg-white p-8 text-slate-950"
+      dangerouslySetInnerHTML={{ __html: printHtml }}
+    />
+
+    <AutomacaoProgressoModal
+      execucaoId={progresso?.id ?? null}
+      onClose={() => setProgresso(null)}
+      titulo={progresso?.tipo === 'senha' ? 'Buscando senha e validade na Unimed' : 'Verificando status na Unimed'}
+      descricao={
+        progresso?.tipo === 'senha'
+          ? 'Acompanhe a captura de senha e validade desta guia no portal da Unimed.'
+          : 'Acompanhe a consulta de status desta guia no portal da Unimed.'
+      }
+      mensagemExecutando={
+        progresso?.tipo === 'senha'
+          ? 'O robô está buscando a senha e a validade desta guia no portal da Unimed...'
+          : 'O robô está consultando o status desta guia no portal da Unimed...'
+      }
+      queryKeysInvalidar={[['guias']]}
+    />
+    </>
   )
 }

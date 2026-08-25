@@ -3,6 +3,7 @@ import { getHttpErrorMessage, useFinalizarGuia, useNegarGuia } from './useGuias'
 import type { Guia, GuiaFinalizarForm } from './types'
 import { Botao } from '../../components/ui/Botao'
 import { Tooltip } from '../../components/ui/Tooltip'
+import { useConfirm } from '../../components/ui/ConfirmDialog'
 
 const emptyFinalizeForm: GuiaFinalizarForm = {
   senha: '',
@@ -19,9 +20,21 @@ export function GuiaStatusActions({ guia }: { guia: Guia }) {
   const [actionError, setActionError] = useState<string | null>(null)
   const finalizarGuia = useFinalizarGuia()
   const negarGuia = useNegarGuia()
+  const confirmar = useConfirm()
 
   const handleFinalize = async () => {
     setActionError(null)
+
+    const ok = await confirmar({
+      titulo: 'Finalizar guia',
+      descricao: 'A guia passa para Aprovada com a senha e validade informadas. Confirma?',
+      confirmarTexto: 'Finalizar',
+      variante: 'primario',
+    })
+
+    if (!ok) {
+      return
+    }
 
     try {
       await finalizarGuia.mutateAsync({
@@ -40,6 +53,16 @@ export function GuiaStatusActions({ guia }: { guia: Guia }) {
 
   const handleNegar = async () => {
     setActionError(null)
+
+    const ok = await confirmar({
+      titulo: 'Negar guia',
+      descricao: `Guia #${guia.id}${guia.numero_guia ? ` (${guia.numero_guia})` : ''} será marcada como negada. Essa ação não fica pendente de revisão. Confirma?`,
+      confirmarTexto: 'Negar guia',
+    })
+
+    if (!ok) {
+      return
+    }
 
     try {
       await negarGuia.mutateAsync(guia.id)

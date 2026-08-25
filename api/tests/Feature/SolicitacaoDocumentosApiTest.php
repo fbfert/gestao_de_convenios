@@ -287,7 +287,7 @@ class SolicitacaoDocumentosApiTest extends TestCase
             'paciente_id' => $paciente->id,
             'convenio_id' => $convenio->id,
             'medico_id' => $medico->id,
-            'cid_id' => Cid::query()->where('codigo', 'F84.0')->firstOrFail()->id,
+            'cid_ids' => [Cid::query()->where('codigo', 'F84.0')->firstOrFail()->id],
             'solicitado_em' => '2026-08-06',
         ] + $extra;
     }

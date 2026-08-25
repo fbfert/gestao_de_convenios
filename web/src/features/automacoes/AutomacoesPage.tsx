@@ -4,11 +4,14 @@ import { getHttpErrorMessage, useAutomacao, useAutomacoes, useReprocessarAutomac
 import type { AutomacaoFilters } from './types'
 import { Botao } from '../../components/ui/Botao'
 import { Badge, type BadgeProps } from '../../components/ui/Badge'
+import { useConfirm } from '../../components/ui/ConfirmDialog'
+import { AutomacaoProgressoModal } from './AutomacaoProgressoModal'
 
 const defaultFilters: AutomacaoFilters = {
   status: '',
   operacao: '',
   needs_attention: '',
+  numero_guia: '',
 }
 
 function inputClasses() {
@@ -40,9 +43,11 @@ export function AutomacoesPage() {
   const automacoesQuery = useAutomacoes(filters, page)
   const detalheQuery = useAutomacao(detalheId)
   const reprocessar = useReprocessarAutomacao()
+  const confirmar = useConfirm()
+  const [progressoExecucaoId, setProgressoExecucaoId] = useState<number | null>(null)
   const automacoes = automacoesQuery.data?.data ?? []
   const totalPages = automacoesQuery.data?.meta?.last_page ?? 1
-  const attentionCount = automacoes.filter((item) => attention(item.status)).length
+  const attentionCount = automacoes.filter((item) => item.precisa_atencao).length
 
   const handleFilterSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -51,8 +56,20 @@ export function AutomacoesPage() {
   }
 
   const handleReprocessar = async (execucaoId: number) => {
+    const ok = await confirmar({
+      titulo: 'Tentar novamente',
+      descricao: `Reenfileira a execução #${execucaoId} para rodar de novo. Confirma?`,
+      confirmarTexto: 'Tentar novamente',
+      variante: 'primario',
+    })
+
+    if (!ok) {
+      return
+    }
+
     try {
-      await reprocessar.mutateAsync(execucaoId)
+      const nova = await reprocessar.mutateAsync(execucaoId)
+      setProgressoExecucaoId(nova.id)
     } catch (error) {
       window.alert(getHttpErrorMessage(error, 'Não foi possível reprocessar a execução.'))
     }
@@ -62,6 +79,7 @@ export function AutomacoesPage() {
     const execucao = detalheQuery.data
 
     return (
+      <>
       <div className="space-y-6" data-testid="automacao-detalhe-page">
         <Link to="/automacoes" className="text-sm font-semibold text-cyan-200 hover:text-cyan-100">
           ← Voltar para automações
@@ -89,9 +107,14 @@ export function AutomacoesPage() {
                 </Badge>
               </div>
 
-              {attention(execucao.status) ? (
+              {execucao.precisa_atencao ? (
                 <div className="mt-4 rounded-2xl border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-100">
                   Esta execução precisa de atenção operacional.
+                </div>
+              ) : attention(execucao.status) ? (
+                <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
+                  Esta execução falhou, mas uma execução mais recente desta guia já teve sucesso — não
+                  há mais atenção pendente aqui.
                 </div>
               ) : null}
 
@@ -139,10 +162,21 @@ export function AutomacoesPage() {
           </>
         )}
       </div>
+
+      <AutomacaoProgressoModal
+        execucaoId={progressoExecucaoId}
+        onClose={() => setProgressoExecucaoId(null)}
+        titulo="Tentando novamente"
+        descricao="Acompanhe a nova tentativa desta automação."
+        mensagemExecutando="O robô está rodando a automação de novo..."
+        queryKeysInvalidar={[['automacoes']]}
+      />
+      </>
     )
   }
 
   return (
+    <>
     <div className="space-y-6" data-testid="automacoes-page">
       <section>
         <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Automações</p>
@@ -152,11 +186,19 @@ export function AutomacoesPage() {
       <section className="grid gap-4 md:grid-cols-3">
         <Summary label="Na página" value={String(automacoes.length)} />
         <Summary label="Atenção" value={String(attentionCount)} tone="attention" />
-        <Summary label="Filtro" value={filters.status || filters.operacao || 'Todos'} />
+        <Summary label="Filtro" value={filters.numero_guia || filters.status || filters.operacao || 'Todos'} />
       </section>
 
       <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
-        <form className="grid gap-3 md:grid-cols-4" onSubmit={handleFilterSubmit}>
+        <form className="grid gap-3 md:grid-cols-5" onSubmit={handleFilterSubmit}>
+          <input
+            type="text"
+            value={draftFilters.numero_guia}
+            onChange={(event) => setDraftFilters((current) => ({ ...current, numero_guia: event.target.value }))}
+            placeholder="Buscar por nº da guia"
+            className={inputClasses()}
+            data-testid="automacao-filtro-numero-guia"
+          />
           <select
             value={draftFilters.status}
             onChange={(event) => setDraftFilters((current) => ({ ...current, status: event.target.value }))}
@@ -218,7 +260,20 @@ export function AutomacoesPage() {
                   </td>
                   <td className="px-4 py-4 text-slate-200">{execucao.operacao}</td>
                   <td className="px-4 py-4">
-                    <Badge tone={statusTone(execucao.status)}>{execucao.status}</Badge>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge tone={statusTone(execucao.status)}>{execucao.status}</Badge>
+                      {['failed', 'needs_attention'].includes(execucao.status) ? (
+                        <button
+                          type="button"
+                          onClick={() => void handleReprocessar(execucao.id)}
+                          disabled={reprocessar.isPending}
+                          className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-400/20 disabled:cursor-not-allowed disabled:opacity-50"
+                          data-testid={`automacao-tentar-novamente-${execucao.id}`}
+                        >
+                          Tentar novamente
+                        </button>
+                      ) : null}
+                    </div>
                   </td>
                   <td className="px-4 py-4 text-slate-200">{execucao.guia?.numero_guia ?? execucao.guia_id ?? '-'}</td>
                   <td className="px-4 py-4 text-slate-200">{execucao.queued_at ?? '-'}</td>
@@ -244,6 +299,16 @@ export function AutomacoesPage() {
         </div>
       </section>
     </div>
+
+    <AutomacaoProgressoModal
+      execucaoId={progressoExecucaoId}
+      onClose={() => setProgressoExecucaoId(null)}
+      titulo="Tentando novamente"
+      descricao="Acompanhe a nova tentativa desta automação."
+      mensagemExecutando="O robô está rodando a automação de novo..."
+      queryKeysInvalidar={[['automacoes']]}
+    />
+    </>
   )
 }
 

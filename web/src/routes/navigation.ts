@@ -218,6 +218,27 @@ export const configuracoesItems: NavLeaf[] = [
   },
 ]
 
+export const automacoesItems: NavLeaf[] = [
+  {
+    to: '/automacoes',
+    label: 'Execuções',
+    descricao: 'Histórico de execuções automáticas no portal do convênio, com reprocessamento das que falharam.',
+  },
+  {
+    to: '/automacoes/configuracoes',
+    label: 'Configurações',
+    descricao: 'Prazos de reconsulta do status Unimed — normal e após falha técnica.',
+    permissao: 'configuracoes.manage',
+  },
+]
+
+export const automacoesGroup: NavGroup = {
+  to: '/automacoes',
+  label: 'Automações',
+  descricao: 'Execuções automáticas no portal do convênio.',
+  children: automacoesItems,
+}
+
 export const configuracoesGroup: NavGroup = {
   to: '/configuracoes',
   label: 'Configurações',
@@ -250,7 +271,7 @@ export const navEntries: NavEntry[] = [
   },
   cadastrosGroup,
   operacaoGroup,
-  { to: '/automacoes', label: 'Automações', descricao: 'Execuções automáticas no portal do convênio.' },
+  automacoesGroup,
   configuracoesGroup,
   { to: '/manual', label: 'Manual', descricao: 'Documentação de uso do sistema.' },
 ]

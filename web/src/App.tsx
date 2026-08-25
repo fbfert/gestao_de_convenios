@@ -3,6 +3,7 @@ import { BrowserRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AppRoutes } from './routes/AppRoutes'
 import { AuthNavigationBridge } from './routes/AuthNavigationBridge'
+import { ConfirmDialogProvider } from './components/ui/ConfirmDialog'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -23,10 +24,12 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <AuthNavigationBridge />
-        <AppRoutes />
-      </BrowserRouter>
+      <ConfirmDialogProvider>
+        <BrowserRouter>
+          <AuthNavigationBridge />
+          <AppRoutes />
+        </BrowserRouter>
+      </ConfirmDialogProvider>
     </QueryClientProvider>
   )
 }

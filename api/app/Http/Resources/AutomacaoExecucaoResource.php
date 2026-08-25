@@ -13,6 +13,11 @@ class AutomacaoExecucaoResource extends JsonResource
             'id' => $this->id,
             'operacao' => $this->operacao,
             'status' => $this->status,
+            // A "atenção" some quando uma execução mais recente da MESMA guia já
+            // teve sucesso — a guia se recuperou, e falhas antigas viram ruído
+            // histórico, não algo que o operador ainda precisa tratar.
+            'precisa_atencao' => in_array($this->status, ['failed', 'uncertain', 'needs_attention'], true)
+                && ! ($this->guia_id && $this->guia_ultima_execucao_status === 'succeeded'),
             'solicitacao_item_id' => $this->solicitacao_item_id,
             'guia_id' => $this->guia_id,
             'parent_id' => $this->parent_id,

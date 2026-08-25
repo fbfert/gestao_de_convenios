@@ -200,7 +200,82 @@ class PedidoMedicoSolicitacaoApiTest extends TestCase
             'nome' => 'Dra. Nova IA',
         ])
             ->assertCreated()
-            ->assertJsonPath('data.nome', 'Dra. Nova IA');
+            ->assertJsonPath('data.nome', 'Dra. Nova IA')
+            ->assertJsonPath('data.crm', 'PENDENTE')
+            ->assertJsonPath('data.especialidade_medica', 'Pendente');
+    }
+
+    public function test_cadastro_rapido_de_medico_aceita_crm_e_especialidade(): void
+    {
+        $this->autenticar();
+
+        $this->postJson('/api/solicitacoes/medicos-rapido', [
+            'nome' => 'Dr. Extraido Pela IA',
+            'crm' => '12345/SC',
+            'especialidade_medica' => 'Pediatria',
+        ])
+            ->assertCreated()
+            ->assertJsonPath('data.nome', 'Dr. Extraido Pela IA')
+            ->assertJsonPath('data.crm', '12345/SC')
+            ->assertJsonPath('data.especialidade_medica', 'Pediatria');
+    }
+
+    public function test_analise_extrai_crm_especialidade_do_medico_e_casa_cid_com_catalogo(): void
+    {
+        Storage::fake('local');
+        $user = $this->autenticar();
+        $this->configurarIa($user->tenant_id);
+        $cidCatalogado = Cid::query()->where('codigo', 'F84.0')->firstOrFail();
+
+        Http::fake([
+            'api.openai.com/v1/responses' => Http::response([
+                'output' => [
+                    [
+                        'content' => [
+                            [
+                                'type' => 'output_text',
+                                'text' => json_encode([
+                                    'paciente_nome' => 'Ana Paula Ribeiro',
+                                    'medico_nome' => 'Carlos Almeida',
+                                    'medico_crm' => '54321/SC',
+                                    'medico_especialidade' => 'Neurologia',
+                                    'especialidades' => ['Fisioterapia'],
+                                    // Descricao ligeiramente diferente do cadastro, so pra
+                                    // confirmar que o casamento e por similaridade/codigo,
+                                    // nao por igualdade exata de string.
+                                    'cids' => ['F84.0 - Autismo infantil (leve)', 'Z99.9 - Sem cadastro parecido'],
+                                    'solicitado_em' => '2026-07-22',
+                                ]),
+                            ],
+                        ],
+                    ],
+                ],
+            ]),
+        ]);
+
+        $analisar = $this->postJson('/api/solicitacoes/ler-pedido-medico', [
+            'arquivo' => UploadedFile::fake()->create('pedido-medico.jpg', 128, 'image/jpeg'),
+        ])->assertOk();
+
+        $analisar
+            ->assertJsonPath('data.dados.medico_crm', '54321/SC')
+            ->assertJsonPath('data.dados.medico_especialidade', 'Neurologia');
+
+        $cids = $analisar->json('data.sugestoes.cids');
+        $this->assertCount(2, $cids);
+
+        $lidoComCadastro = collect($cids)->firstWhere('termo', 'F84.0 - Autismo infantil (leve)');
+        $this->assertNotNull($lidoComCadastro);
+        $this->assertFalse($lidoComCadastro['sugere_cadastro']);
+        $this->assertSame($cidCatalogado->id, $lidoComCadastro['matches'][0]['id']);
+        // json_encode(100.0) vira "100" (sem casa decimal), e volta como int
+        // no decode — assertEquals em vez de assertSame evita falso negativo
+        // por causa disso.
+        $this->assertEquals(100, $lidoComCadastro['matches'][0]['similaridade']);
+
+        $lidoSemCadastro = collect($cids)->firstWhere('termo', 'Z99.9 - Sem cadastro parecido');
+        $this->assertNotNull($lidoSemCadastro);
+        $this->assertTrue($lidoSemCadastro['sugere_cadastro']);
     }
 
     private function autenticar(): User
@@ -245,7 +320,7 @@ class PedidoMedicoSolicitacaoApiTest extends TestCase
             'especialidade_id' => $especialidade->id,
             'convenio_id' => $convenio->id,
             'medico_id' => $medico->id,
-            'cid_id' => Cid::query()->where('codigo', 'F84.0')->firstOrFail()->id,
+            'cid_ids' => [Cid::query()->where('codigo', 'F84.0')->firstOrFail()->id],
             'solicitado_em' => '2026-07-22',
             'observacoes' => 'Pedido com assinatura ilegível.',
         ] + $extra;

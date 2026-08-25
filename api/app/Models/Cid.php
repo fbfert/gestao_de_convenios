@@ -21,6 +21,6 @@ class Cid extends Model
 
     public function solicitacoes()
     {
-        return $this->hasMany(Solicitacao::class);
+        return $this->belongsToMany(Solicitacao::class, 'cid_solicitacao');
     }
 }

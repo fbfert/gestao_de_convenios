@@ -15,7 +15,7 @@ class Solicitacao extends Model
 
     protected $fillable = [
         'tenant_id', 'paciente_id', 'profissional_id', 'especialidade_id',
-        'convenio_id', 'medico_id', 'cid', 'cid_id', 'status', 'solicitado_em', 'observacoes',
+        'convenio_id', 'medico_id', 'cid', 'status', 'solicitado_em', 'observacoes',
         'pedido_medico_path', 'pedido_medico_nome_original', 'pedido_medico_mime',
         'pedido_medico_ai_result',
     ];
@@ -52,14 +52,16 @@ class Solicitacao extends Model
     }
 
     /**
-     * Nao pode se chamar `cid()`: a coluna legada `cid` (texto livre, ver
-     * migration antiga) ja existe em `$attributes`, e o Eloquent sempre
-     * prioriza um atributo hidratado sobre um metodo de relacao de mesmo
-     * nome — `$model->cid` nunca chegaria a resolver esta relacao.
+     * N-pra-N desde 25/08/2026 (antes era `cid_id`, 1-pra-1) — uma
+     * solicitação pode citar mais de um CID (comorbidades). Não pode se
+     * chamar `cid()`: a coluna legada `cid` (texto livre, ver migration
+     * antiga) já existe em `$attributes`, e o Eloquent sempre prioriza um
+     * atributo hidratado sobre um método de relação de mesmo nome —
+     * `$model->cid` nunca chegaria a resolver esta relação.
      */
-    public function cidCadastro()
+    public function cidCadastros()
     {
-        return $this->belongsTo(Cid::class, 'cid_id');
+        return $this->belongsToMany(Cid::class, 'cid_solicitacao');
     }
 
     public function guia()

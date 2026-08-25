@@ -8,12 +8,30 @@ import { useId, type ReactNode } from 'react'
  * dentro do mesmo elemento `group` do botao, entao continua aberto enquanto o
  * mouse passa por cima do texto — necessario para dicas de mais de uma linha.
  */
+const iconeAjuda = (
+  <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3 w-3">
+    <circle cx="7" cy="7" r="4.25" fill="none" stroke="currentColor" strokeWidth="1.6" />
+    <path d="M10.2 10.2 14 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+  </svg>
+)
+
+/** Lupa: usada quando o tooltip revela um dado (ex.: resultado de uma consulta) em vez de explicar um campo. */
+export const iconeLupa = (
+  <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3 w-3">
+    <circle cx="6.5" cy="6.5" r="4" fill="none" stroke="currentColor" strokeWidth="1.6" />
+    <path d="M9.5 9.5 14 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+  </svg>
+)
+
 export function Tooltip({
   children,
   rotulo = 'O que significa este campo?',
+  icone = iconeAjuda,
 }: {
   children: ReactNode
   rotulo?: string
+  /** Ícone do gatilho — "?" por padrão (explica um campo); passe `iconeLupa` para revelar um dado. */
+  icone?: ReactNode
 }) {
   const id = useId()
 
@@ -25,23 +43,7 @@ export function Tooltip({
         aria-describedby={id}
         className="flex h-5 w-5 items-center justify-center rounded-full border border-white/15 bg-white/5 text-slate-300 transition hover:border-cyan-300/50 hover:bg-cyan-400/10 hover:text-cyan-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40"
       >
-        <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3 w-3">
-          <circle
-            cx="7"
-            cy="7"
-            r="4.25"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-          />
-          <path
-            d="M10.2 10.2 14 14"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-            strokeLinecap="round"
-          />
-        </svg>
+        {icone}
       </button>
 
       <span

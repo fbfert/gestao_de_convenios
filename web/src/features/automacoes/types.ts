@@ -2,6 +2,13 @@ export type AutomacaoExecucao = {
   id: number
   operacao: string
   status: string
+  /**
+   * Falso quando a execução mais recente da mesma guia já teve sucesso — a
+   * guia se recuperou e esta falha antiga vira ruído histórico, não algo
+   * pendente de ação. Use este campo (não `status` diretamente) para decidir
+   * o que conta como "Atenção".
+   */
+  precisa_atencao: boolean
   solicitacao_item_id: number | null
   guia_id: number | null
   parent_id: number | null
@@ -39,6 +46,7 @@ export type AutomacaoFilters = {
   status: string
   operacao: string
   needs_attention: string
+  numero_guia: string
 }
 
 export type PaginatedResponse<T> = {

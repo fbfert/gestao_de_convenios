@@ -14,12 +14,12 @@ export type Solicitacao = {
   especialidade_id: number
   convenio_id: number
   medico_id: number
-  cid_id: number | null
-  cid: {
+  /** N-pra-N desde 25/08/2026 — uma solicitação pode citar mais de um CID. */
+  cids?: Array<{
     id: number
     codigo: string
     descricao: string
-  } | null
+  }>
   medico?: {
     id: number
     nome: string
@@ -144,7 +144,7 @@ export type SolicitacaoForm = {
   paciente_id: string
   convenio_id: string
   medico_id: string
-  cid_id: string
+  cid_ids: string[]
   solicitado_em: string
   observacoes: string
   pedido_medico_upload_id?: string
@@ -172,10 +172,17 @@ export type PedidoMedicoSuggestion = {
 export type PedidoMedicoAiDados = {
   paciente_nome?: string | null
   medico_nome?: string | null
+  /** CRM do médico solicitante lido no documento, se identificável. */
+  medico_crm?: string | null
+  /** Especialidade médica do profissional solicitante (ex. "Pediatria") — não
+   *  confundir com `especialidades`, que é a terapia pedida para o paciente. */
+  medico_especialidade?: string | null
   /** Uma entrada por especialidade citada no pedido. */
   especialidades?: string[] | null
   /** Chave antiga, no singular. Mantida para leituras já gravadas. */
   especialidade_nome?: string | null
+  /** Um item por CID citado no pedido, como "F84.0" ou "F84.0 - descrição". */
+  cids?: string[] | null
   solicitado_em?: string | null
   observacoes?: string | null
 }
@@ -185,6 +192,21 @@ export type PedidoMedicoEspecialidadeLida = {
   termo: string
   matches: PedidoMedicoSuggestion[]
   /** Nenhum cadastro parecido o bastante: a tela oferece criar o termo lido. */
+  sugere_cadastro: boolean
+}
+
+export type PedidoMedicoCidSuggestion = {
+  id: number
+  codigo: string
+  descricao: string
+  similaridade: number
+}
+
+/** CID lido do documento e os cadastros do catálogo parecidos com ele. */
+export type PedidoMedicoCidLido = {
+  termo: string
+  matches: PedidoMedicoCidSuggestion[]
+  /** Nenhum cadastro parecido o bastante: a tela oferece criar o CID lido. */
   sugere_cadastro: boolean
 }
 
@@ -201,5 +223,6 @@ export type PedidoMedicoAiResult = {
     pacientes: PedidoMedicoSuggestion[]
     medicos: PedidoMedicoSuggestion[]
     especialidades: PedidoMedicoEspecialidadeLida[]
+    cids: PedidoMedicoCidLido[]
   }
 }

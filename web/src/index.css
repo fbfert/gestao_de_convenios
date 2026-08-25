@@ -229,11 +229,6 @@
     background-color: var(--fundo);
   }
 
-  @media print {
-    html {
-      background: #fff;
-    }
-  }
 
   #root {
     min-height: 100vh;
@@ -268,4 +263,55 @@
   * {
     box-sizing: border-box;
   }
+}
+
+/*
+ * Impressão — DELIBERADAMENTE fora de `@layer base` (e com `!important`).
+ *
+ * O Tailwind v4 declara as camadas na ordem `theme, base, components,
+ * utilities`: essa ordem é quem manda no empate, não a ordem das regras no
+ * arquivo nem a especificidade do seletor. `bg-fundo` no ShellLayout é uma
+ * classe utilitária (camada `utilities`) — ela sempre vencia um
+ * `@media print { [data-testid='shell-layout'] { background: #fff } }`
+ * que estivesse dentro de `@layer base`, MESMO a página não estando em tela
+ * nenhuma (a condição do media query não muda a prioridade da camada). Por
+ * isso a impressão continuava saindo com o fundo escuro do app depois da
+ * primeira tentativa de corrigir isso. Regra sem `@layer` fica fora de todas
+ * as camadas nomeadas, e estilo sem camada sempre vence estilo em camada —
+ * daí o `!important` também, como reforço, caso alguma outra classe
+ * utilitária mais específica apareça em algum wrapper que ainda não mapeei.
+ *
+ * `@page` global (não mais página nomeada): a versão anterior usava
+ * `@page pagina-paisagem` + `page: pagina-paisagem` só no conteúdo da guia,
+ * mas CSS Paged Media com página nomeada tem suporte inconsistente entre
+ * motores de impressão/minificadores — não pegou na prática. `@page` sem
+ * nome é sintaxe básica, sempre suportada, e vale pra qualquer impressão do
+ * app (guia, modelo de sessões, antecipação) — tabelas largas também saem
+ * melhor deitadas nessas telas, então não é uma perda pras outras.
+ */
+@media print {
+  html,
+  body,
+  #root,
+  [data-testid='shell-layout'] {
+    background: #fff !important;
+    background-image: none !important;
+    color-scheme: light !important;
+  }
+
+  [data-testid='shell-layout'] > header {
+    display: none !important;
+  }
+
+  [data-testid='shell-layout'] > main {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: none !important;
+    background: #fff !important;
+  }
+}
+
+@page {
+  size: landscape;
+  margin: 10mm;
 }

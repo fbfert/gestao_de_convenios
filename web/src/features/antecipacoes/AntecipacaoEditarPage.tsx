@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   getHttpErrorMessage,
@@ -7,6 +7,9 @@ import {
   type AntecipacaoEditForm,
 } from './useAntecipacoes'
 import { Botao } from '../../components/ui/Botao'
+import { useAuthStore } from '../../stores/authStore'
+import { useLancamentoPrintTemplate } from '../lancamentos/useLancamentos'
+import { buildFilledTemplateData, renderLancamentoPrintTemplate } from '../lancamentos/printTemplate'
 
 function fieldClasses() {
   return 'w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20'
@@ -25,6 +28,8 @@ export function AntecipacaoEditarPage() {
 
   const antecipacaoQuery = useAntecipacao(antecipacaoId)
   const atualizar = useAtualizarAntecipacao()
+  const printTemplateQuery = useLancamentoPrintTemplate()
+  const clinica = useAuthStore((state) => state.tenant)?.nome ?? ''
 
   const [form, setForm] = useState<AntecipacaoEditForm>(formVazio)
   const [erro, setErro] = useState<string | null>(null)
@@ -60,20 +65,45 @@ export function AntecipacaoEditarPage() {
 
   const antecipacao = antecipacaoQuery.data
 
+  const printHtml = useMemo(() => {
+    if (!antecipacao || !printTemplateQuery.data?.html) {
+      return ''
+    }
+
+    return renderLancamentoPrintTemplate(
+      printTemplateQuery.data.html,
+      buildFilledTemplateData(antecipacao, clinica),
+    )
+  }, [antecipacao, printTemplateQuery.data?.html, clinica])
+
   return (
-    <div className="space-y-6" data-testid="antecipacao-editar-page">
+    <>
+    <div className="space-y-6 print:hidden" data-testid="antecipacao-editar-page">
       <Link to="/antecipacoes" className="text-sm font-semibold text-cyan-200 hover:text-cyan-100">
         ← Voltar para antecipações
       </Link>
 
-      <div>
-        <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Antecipações</p>
-        <h2 className="mt-2 text-3xl font-semibold text-white">
-          Editar antecipação {antecipacaoId ? `#${antecipacaoId}` : ''}
-        </h2>
-        <p className="mt-2 text-sm text-slate-400">
-          Toda alteração fica registrada nos Logs de Auditoria, com o valor anterior e o novo.
-        </p>
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Antecipações</p>
+          <h2 className="mt-2 text-3xl font-semibold text-white">
+            Editar antecipação {antecipacaoId ? `#${antecipacaoId}` : ''}
+          </h2>
+          <p className="mt-2 text-sm text-slate-400">
+            Toda alteração fica registrada nos Logs de Auditoria, com o valor anterior e o novo.
+          </p>
+        </div>
+
+        {antecipacao ? (
+          <Botao
+            variante="secundario"
+            onClick={() => window.print()}
+            data-testid="antecipacao-imprimir-preenchido"
+            disabled={printTemplateQuery.isLoading || printHtml.trim() === ''}
+          >
+            {printTemplateQuery.isLoading ? 'Carregando modelo...' : 'Imprimir preenchido'}
+          </Botao>
+        ) : null}
       </div>
 
       {antecipacaoQuery.isLoading ? (
@@ -154,5 +184,11 @@ export function AntecipacaoEditarPage() {
         </form>
       )}
     </div>
+
+    <section
+      className="hidden print:block bg-white p-8 text-slate-950"
+      dangerouslySetInnerHTML={{ __html: printHtml }}
+    />
+    </>
   )
 }

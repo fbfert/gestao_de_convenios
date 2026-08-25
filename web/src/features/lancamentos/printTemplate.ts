@@ -124,6 +124,114 @@ export function renderLancamentoPrintTemplate(html: string, data: TemplateData) 
   })
 }
 
+const BLANK_FIELD = '__________________'
+
+export type TemplateGuiaOrigin = {
+  numero_guia: string | null
+  tipo_terapia: string
+  paciente?: { nome: string; carteirinha: string } | null
+  especialidade?: { nome: string } | null
+  /** "Profissional executante" escolhido na criação da guia. */
+  profissional?: { nome: string } | null
+}
+
+/**
+ * Monta o modelo de impressão com os dados da guia já conhecidos antes de
+ * qualquer sessão existir (guia, paciente, cartão, terapia, profissional
+ * executante) — só a tabela de sessões (datas/horas) ainda não existe nesse
+ * momento, e fica em branco para preencher à mão, igual ao modelo em branco
+ * puro.
+ */
+export function buildGuiaTemplateData(guia: TemplateGuiaOrigin, clinica: string): TemplateData {
+  return {
+    guia_numero: guia.numero_guia || BLANK_FIELD,
+    clinica: clinica || BLANK_FIELD,
+    paciente: guia.paciente?.nome || BLANK_FIELD,
+    numero_cartao: guia.paciente?.carteirinha || BLANK_FIELD,
+    profissional_executante: guia.profissional?.nome || BLANK_FIELD,
+    // "Terapia aplicada" é a especialidade (ex.: Fisioterapia) — `tipo_terapia`
+    // é só a classificação administrativa da guia (especializada/convencional).
+    terapia_aplicada: guia.especialidade?.nome || BLANK_FIELD,
+    data_impressao: new Date().toLocaleDateString('pt-BR'),
+    sessoes: defaultBlankTemplateData.sessoes,
+  }
+}
+
+export type TemplateAntecipacaoOrigin = {
+  paciente?: { nome: string; carteirinha?: string | null } | null
+  guia?: { numero_guia: string | null; tipo_terapia: string | null } | null
+  especialidade?: { nome: string } | null
+  lancamentos?: Array<{
+    data_sessao: string | null
+    hora_inicio: string | null
+    hora_fim: string | null
+    acompanhante?: string | null
+    resumo_atividades?: string | null
+    profissional?: { nome: string } | null
+  }>
+}
+
+function formatDataSessao(value: string | null | undefined) {
+  if (!value) {
+    return '—'
+  }
+
+  const [ano, mes, dia] = value.split('-')
+  return dia && mes && ano ? `${dia}/${mes}/${ano}` : value
+}
+
+/**
+ * Monta o modelo de impressão já preenchido com os dados reais da
+ * antecipação (guia, paciente, sessões já lançadas) — em vez do modelo em
+ * branco (`defaultBlankTemplateData`), que é só um formulário para o
+ * profissional preencher à mão.
+ */
+export function buildFilledTemplateData(
+  antecipacao: TemplateAntecipacaoOrigin,
+  clinica: string,
+): TemplateData {
+  const lancamentos = [...(antecipacao.lancamentos ?? [])].sort((a, b) =>
+    (a.data_sessao ?? '').localeCompare(b.data_sessao ?? ''),
+  )
+
+  const profissionais = Array.from(
+    new Set(
+      lancamentos
+        .map((lancamento) => lancamento.profissional?.nome)
+        .filter((nome): nome is string => Boolean(nome)),
+    ),
+  )
+
+  return {
+    guia_numero: antecipacao.guia?.numero_guia || '—',
+    clinica: clinica || '—',
+    paciente: antecipacao.paciente?.nome || '—',
+    numero_cartao: antecipacao.paciente?.carteirinha || '—',
+    profissional_executante: profissionais.join(', ') || '—',
+    terapia_aplicada: antecipacao.guia?.tipo_terapia || antecipacao.especialidade?.nome || '—',
+    data_impressao: new Date().toLocaleDateString('pt-BR'),
+    sessoes: lancamentos.length
+      ? lancamentos.map((lancamento, index) => ({
+          numero: String(index + 1),
+          data_sessao: formatDataSessao(lancamento.data_sessao),
+          hora_inicio: lancamento.hora_inicio || '—',
+          hora_fim: lancamento.hora_fim || '—',
+          acompanhante: lancamento.acompanhante || '—',
+          resumo_atividades: lancamento.resumo_atividades || '—',
+        }))
+      : [
+          {
+            numero: '—',
+            data_sessao: '—',
+            hora_inicio: '—',
+            hora_fim: '—',
+            acompanhante: '—',
+            resumo_atividades: 'Nenhuma sessão registrada nesta antecipação ainda.',
+          },
+        ],
+  }
+}
+
 export function asPreviewDocument(bodyHtml: string) {
   return `<!doctype html><html><head><meta charset="utf-8"><style>body{margin:24px;background:#fff}</style></head><body>${bodyHtml}</body></html>`
 }

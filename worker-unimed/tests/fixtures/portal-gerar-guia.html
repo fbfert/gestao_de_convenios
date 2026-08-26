@@ -123,6 +123,15 @@
           app.insertAdjacentHTML('beforeend', '<div>Processando, por favor aguarde...</div>')
           return
         }
+        // Campo real do portal (achado ao vivo em 26/08/2026): sem
+        // preencher, o Finalizar barra com erro de validacao e NAO navega
+        // pra confirmacao — mesmo comportamento aqui, pra pegar regressao
+        // se o worker parar de preencher.
+        const liminar = document.querySelector('[name="FG_LIMINAR_JUDICIAL"]')?.value
+        if (!liminar) {
+          html('<table><tr><td>O valor do campo Liminar judicial é obrigatório.</td></tr></table>')
+          return
+        }
         processing(showResult)
       })
     }
@@ -175,6 +184,11 @@
         <select id="DM_CARATER_SOLIC" name="DM_CARATER_SOLIC"><option value="1">Eletivo</option></select>
         <select id="DM_TP_ATEND_SADT" name="DM_TP_ATEND_SADT"><option value="03">Outras Terapias</option></select>
         <select id="DM_TP_ACIDENTE" name="DM_TP_ACIDENTE"><option value="9">Não acidente</option></select>
+        <select id="FG_LIMINAR_JUDICIAL" name="FG_LIMINAR_JUDICIAL">
+          <option value="">Selecione</option>
+          <option value="S">Sim</option>
+          <option value="N">Não</option>
+        </select>
         <textarea id="DS_INDIC_CLINICA" name="DS_INDIC_CLINICA"></textarea>
         <input id="NM_CONTRATADO" name="NM_CONTRATADO" readonly>
         <a href="#" id="link_busca_contrt">Buscar contratado</a>
@@ -298,9 +312,16 @@
     // Reproduz a pagina real de confirmacao (lista_impressao.do): sem
     // id/data-attr nenhum, so uma tabela comum com cabecalho por texto.
     function showResult() {
+      // 'protocolo-vazio' reproduz o portal real (achado ao vivo em
+      // 26/08/2026, guia 50144044209): protocolo em branco, seguido em
+      // outra linha por "Total de registros: 1" — regressao pro bug em que
+      // o parser pulava a quebra de linha e capturava essa palavra seguinte
+      // como se fosse o protocolo.
+      const protocolo = scenario === 'protocolo-vazio' ? '' : 'PROTO-77'
       html(\`
         <p>Operação realizada com sucesso!</p>
-        <p>Número do Protocolo de Atendimento: PROTO-77</p>
+        <p>Número do Protocolo de Atendimento: \${protocolo}</p>
+        <p>Total de registros:  1</p>
         <table>
           <tr><th>Data Solicitação</th><th>Nº Guia</th><th>Situação</th><th>Tipo</th><th>Senha de Autorização</th><th>Procedimentos</th></tr>
           <tr><td>24/08/2026 19:18</td><td>GUIA-8899</td><td>Autorizado</td><td>SP/SADT</td><td>SENHA-ABC</td><td>50000470 - Qtd: 10 - Qtd Aut: 8</td></tr>

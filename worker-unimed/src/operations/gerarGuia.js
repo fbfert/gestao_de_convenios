@@ -71,9 +71,17 @@ export async function gerarGuia(page, request) {
 
   await atualizarCadastroSeNecessario(page)
   page = await abrirSpSadt(page, mainPage)
-  await preencherFormularioPrincipal(page, payload)
   await selecionarContratado(page, credential.nome_contratado)
   const estrategiaMedico = await selecionarPrestador(page, medico)
+  // Preenchido so agora, depois de contratado/prestador: selecionar o
+  // prestador solicitante recarrega esse formulario (achado ao vivo em
+  // 26/08/2026, guia de Laura de Faveri/Greice Silva Pereira) e apaga
+  // qualquer campo preenchido antes disso — inclusive Data de emissao,
+  // Atendimento a RN, Carater da solicitacao e Indicacao de acidente, nao
+  // so o campo novo de Liminar judicial. Preencher cedo (como era antes)
+  // fazia o Finalizar barrar silenciosamente, sem sinal nenhum pro worker,
+  // e a automacao voltava 'uncertain' sem nunca ter sido de fato submetida.
+  await preencherFormularioPrincipal(page, payload)
   await preencherProcedimento(page, payload)
   await enviarAnexos(page, payload)
   await selecionarProfissionalExecutante(page, payload)
@@ -120,6 +128,9 @@ export async function preencherFormularioPrincipal(page, payload) {
   await selectIfVisible(page, '[name="DM_CARATER_SOLIC"], #DM_CARATER_SOLIC', '1')
   await selectIfVisible(page, '[name="DM_TP_ATEND_SADT"], #DM_TP_ATEND_SADT', '03')
   await selectIfVisible(page, '[name="DM_TP_ACIDENTE"], #DM_TP_ACIDENTE', '9')
+  // Campo novo no portal (achado ao vivo em 26/08/2026): solicitação de
+  // terapia nunca é liminar judicial.
+  await selectIfVisible(page, '[name="FG_LIMINAR_JUDICIAL"], #FG_LIMINAR_JUDICIAL', 'N')
   await fillIfVisible(page, '[name="DS_INDIC_CLINICA"], #DS_INDIC_CLINICA', String(payload.cid ?? ''))
 }
 
@@ -291,6 +302,13 @@ async function selecionarProfissionalExecutante(page, payload) {
 }
 
 async function finalizar(page, request, estrategiaMedico) {
+  // Reforco defensivo: preencherFormularioPrincipal ja preenche este campo,
+  // mas so por seguranca contra qualquer outro postback entre ela e aqui
+  // que ainda nao tenhamos mapeado — a mesma classe de bug (form inteiro
+  // resetado por um postback do meio do fluxo) ja apareceu duas vezes
+  // seguidas ao vivo em 26/08/2026.
+  await selectIfVisible(page, '[name="FG_LIMINAR_JUDICIAL"], #FG_LIMINAR_JUDICIAL', 'N')
+
   const finalize = page.locator('[name="Button_Finalizar"]')
   await finalize.click({ timeout: DEFAULT_TIMEOUT })
   await waitProcessing(page)
@@ -354,7 +372,13 @@ async function parseResultado(page) {
 
       return {
         numero_guia: numeroGuia,
-        protocolo_operadora: pickValue(bodyText, /Protocolo de Atendimento:\s*([A-Za-z0-9.-]+)/i),
+        // \s inclui quebra de linha: quando o portal deixa o protocolo vazio
+        // (achado ao vivo em 26/08/2026, guia 50144044209), o regex pulava a
+        // linha em branco e capturava a palavra seguinte ("Total", de "Total
+        // de registros: 1") como se fosse o protocolo. So espaco/tab depois
+        // dos dois-pontos: sem valor na mesma linha, nao casa, e o campo
+        // fica null de verdade em vez de inventar dado.
+        protocolo_operadora: pickValue(bodyText, /Protocolo de Atendimento:[ \t]*([A-Za-z0-9.-]+)/i),
         sessoes_solicitadas: parseNumber(pickValue(procedimentosTexto, /Qtd:\s*(\d+)/i)),
         sessoes_autorizadas: parseNumber(pickValue(procedimentosTexto, /Qtd Aut:\s*(\d+)/i)),
         senha: senhaIdx >= 0 ? (cells[senhaIdx] ?? '').trim() || null : null,

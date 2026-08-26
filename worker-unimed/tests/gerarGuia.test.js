@@ -70,6 +70,14 @@ test('gera guia com sucesso usando fixture local', async () => {
   assert.equal(result.medico_strategy, 'crm')
 })
 
+test('protocolo em branco no portal nao vira "Total" (regex nao cruza linha)', async () => {
+  const result = await runScenario('protocolo-vazio')
+
+  assert.equal(result.status, 'succeeded')
+  assert.equal(result.numero_guia, 'GUIA-8899')
+  assert.equal(result.protocolo_operadora, null)
+})
+
 test('restricao administrativa retorna needs_verification sem numero', async () => {
   const result = await runScenario('restriction')
 

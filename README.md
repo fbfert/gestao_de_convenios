@@ -70,6 +70,14 @@ Contas: `admin@`, `funcionario@`, `profissional@` e `superadmin@clinica-exemplo.
 > `php -d display_errors=0 -d error_reporting="E_ALL & ~E_DEPRECATED" -S 127.0.0.1:8000 -t . ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php`
 > a partir de `api/public`, ou use `php@8.4`.
 
+## Temas
+
+Dois: **Padrão** (o design system do xiax-agenda) e **Alto contraste**, este por requisito de
+acessibilidade de um profissional com deficiência de visão de cor. O botão fica na barra superior.
+
+O tema de alto contraste não é o padrão com borda mais grossa: a paleta de feedback foi redesenhada
+porque, na padrão, "Aprovado" e "Negado" ficam quase idênticos sob deuteranopia. Ver ADR-23.
+
 ## Contrato de design
 
 ```bash

@@ -91,6 +91,7 @@
   --azul-texto: #1D5C96;    --azul-suave: #EBF3FB;
 
   /* ── Escalas fisicas ── */
+  --espessura-linha: 1px;
   --raio-controle: 6px; --raio-campo: 8px; --raio-superficie: 12px;
   --raio-janela: 16px;  --raio-pilula: 999px;
   --sombra-e1: 0 1px 2px 0 rgb(33 31 27 / 0.05);
@@ -136,6 +137,16 @@
      nos dois temas. Nao e `--superficie`, que acompanha o tema. */
   --papel: #FFFFFF;
   --sobre-papel: var(--neutro-900);
+
+  /* Borda cromatica de cada papel de feedback. No tema claro ela apenas
+     acompanha o texto; no tema de contraste ela e o canal que carrega a
+     identidade da cor, porque o texto precisa ficar escuro para o piso de
+     legibilidade e nao pode variar de matiz livremente. */
+  --acento-borda: var(--acento);
+  --perigo-borda: var(--perigo-texto);
+  --sucesso-borda: var(--sucesso-texto);
+  --alerta-borda: var(--alerta-texto);
+  --info-borda: var(--info-texto);
 
 }
 
@@ -205,6 +216,119 @@
     --color-amber-500: var(--ambar-texto);
   }
 
+  /*
+   * Tema "Alto contraste" — desenhado para visao com deficiencia de cor
+   * ------------------------------------------------------------------
+   * Nao e o tema claro com a borda mais grossa. Duas mudancas de fundo:
+   *
+   * 1. AS CORES DE FEEDBACK FORAM REDESENHADAS. Na paleta padrao, simulando
+   *    deuteranopia, "sucesso" e "perigo" ficam a distancia perceptual 18 (e 14
+   *    em protanopia) — ou seja, "Aprovado" e "Negado" sao praticamente a mesma
+   *    cor. Aqui a oposicao virou azul/laranja, que e a que sobrevive ao
+   *    daltonismo vermelho-verde, e `info` virou neutro para liberar matiz.
+   *    Os dez pares semanticos foram medidos nas tres formas (deuteranopia,
+   *    protanopia, tritanopia) e nenhum colapsa.
+   *
+   * 2. O CANAL CROMATICO E A BORDA, NAO O TEXTO. O texto precisa ficar escuro
+   *    para cumprir 4,5:1 sobre o preenchimento, o que limita a variacao de
+   *    matiz. A borda nao tem essa amarra (piso 3:1), entao e ela que carrega a
+   *    identidade — e por isso ela e grossa aqui. Foi o que o profissional
+   *    pediu, e tambem o que resolve a restricao tecnica.
+   *
+   * A borda de 2px e aplicada por regra propria, mais abaixo: espessura nao e
+   * cor, entao nao cabe em token de paleta.
+   */
+  :root[data-theme='contraste'] {
+    --espessura-linha: 2px;
+
+    --fundo: var(--neutro-100);
+    --superficie: var(--neutro-0);
+    --superficie-elevada: var(--neutro-0);
+    --texto: #17150F;
+    --texto-suave: #453F36;
+    --texto-desativado: #6E675C;
+    --neutro-desativado: var(--neutro-200);
+
+    /* Linhas bem mais escuras: no tema padrao elas sao decorativas, aqui sao o
+       que delimita cada cartao. 8,7:1 sobre a superficie. */
+    --linha: #494540;
+    --linha-forte: #17150F;
+    --borda-campo: #17150F;
+
+    --acento: #0E2A3D;
+    --acento-intenso: #061A28;
+    --sobre-acento: var(--neutro-0);
+    --acento-suave: #E6EDF2;
+    --acento-borda: #0E2A3D;
+    --selecao: #D6E3EC;
+    --foco: #0069B0;
+
+    --perigo: #7F2B00;
+    --perigo-intenso: #5E1F00;
+    --sobre-perigo: var(--neutro-0);
+    --perigo-texto: #7F2B00;
+    --perigo-suave: #FBEDE5;
+    --perigo-borda: #7F2B00;
+
+    --sucesso-texto: #00456F;
+    --sucesso-suave: #E7F0F8;
+    --sucesso-borda: #0069B0;
+
+    --alerta-texto: #6E4E00;
+    --alerta-suave: #FDF6E4;
+    --alerta-borda: #A87900;
+
+    --info-texto: #4A4540;
+    --info-suave: #EFEDEA;
+    --info-borda: #605A50;
+
+    --tooltip: #17150F;
+    --sobre-tooltip: var(--neutro-0);
+
+    /* Espelho da paleta nativa, como nos demais temas. */
+    --color-white: #17150F;
+    --color-slate-50: #17150F;
+    --color-slate-100: #17150F;
+    --color-slate-200: #17150F;
+    --color-slate-300: #453F36;
+    --color-slate-400: #453F36;
+    --color-slate-500: #6E675C;
+    --color-slate-600: #6E675C;
+    --color-slate-700: #494540;
+    --color-slate-800: #494540;
+    --color-slate-900: var(--neutro-100);
+    --color-slate-950: var(--neutro-0);
+
+    --color-cyan-50: #061A28;
+    --color-cyan-100: #0E2A3D;
+    --color-cyan-200: #0E2A3D;
+    --color-cyan-300: #0E2A3D;
+    --color-cyan-400: #0E2A3D;
+    --color-cyan-500: #0069B0;
+    --color-cyan-600: #061A28;
+    --color-cyan-950: #E6EDF2;
+
+    --color-rose-50: #7F2B00;
+    --color-rose-100: #7F2B00;
+    --color-rose-200: #7F2B00;
+    --color-rose-300: #7F2B00;
+    --color-rose-400: #7F2B00;
+    --color-rose-500: #7F2B00;
+
+    --color-emerald-50: #00456F;
+    --color-emerald-100: #00456F;
+    --color-emerald-200: #00456F;
+    --color-emerald-300: #0069B0;
+    --color-emerald-400: #0069B0;
+    --color-emerald-500: #0069B0;
+
+    --color-amber-50: #6E4E00;
+    --color-amber-100: #6E4E00;
+    --color-amber-200: #6E4E00;
+    --color-amber-300: #A87900;
+    --color-amber-400: #A87900;
+    --color-amber-500: #A87900;
+  }
 }
 
 /* Ponte Tailwind v4 — cada semantico vira utilitario com o NOME DO PAPEL. */
@@ -336,6 +460,52 @@
   * {
     box-sizing: border-box;
   }
+}
+
+/*
+ * Tema de alto contraste — espessura e delimitacao
+ * ------------------------------------------------
+ * Espessura nao e cor, entao nao cabe em token de paleta: precisa de regra.
+ *
+ * FORA de `@layer` pelo mesmo motivo dos demais blocos deste arquivo: no
+ * Tailwind v4 quem vence empate e a camada, e as telas carregam `border`
+ * (1px) da camada `utilities` em centenas de lugares. Regra sem camada vence
+ * qualquer regra em camada, e e o que permite engrossar tudo de uma vez sem
+ * tocar em JSX nenhum.
+ *
+ * O seletor pega quem JA tem borda — `[class*="border"]` — em vez de dar borda
+ * a quem nao tem: a intencao e reforcar a delimitacao existente, nao inventar
+ * caixa nova onde o desenho nao previa.
+ */
+:root[data-theme='contraste'] [class*="border"]:not([class*="border-0"]) {
+  border-width: var(--espessura-linha);
+}
+
+/* Divisorias de tabela e de lista acompanham. */
+:root[data-theme='contraste'] [class*="divide-"] > * + * {
+  border-top-width: var(--espessura-linha);
+}
+
+:root[data-theme='contraste'] table thead th {
+  border-bottom-width: calc(var(--espessura-linha) + 1px);
+}
+
+/*
+ * Chip de status: no tema padrao ele e so preenchimento suave; aqui ganha
+ * borda propria na cor do papel. E a borda que carrega a distincao entre
+ * "Aprovado" e "Negado" — o texto tem de ficar escuro para ser legivel, e por
+ * isso nao pode variar de matiz o bastante sozinho.
+ */
+:root[data-theme='contraste'] .bg-sucesso-suave { border: var(--espessura-linha) solid var(--sucesso-borda); }
+:root[data-theme='contraste'] .bg-perigo-suave  { border: var(--espessura-linha) solid var(--perigo-borda); }
+:root[data-theme='contraste'] .bg-alerta-suave  { border: var(--espessura-linha) solid var(--alerta-borda); }
+:root[data-theme='contraste'] .bg-info-suave    { border: var(--espessura-linha) solid var(--info-borda); }
+:root[data-theme='contraste'] .bg-acento-suave  { border: var(--espessura-linha) solid var(--acento-borda); }
+
+/* Anel de foco mais espesso: mesma logica da borda. */
+:root[data-theme='contraste'] :focus-visible {
+  outline-width: 3px;
+  outline-offset: 2px;
 }
 
 /*

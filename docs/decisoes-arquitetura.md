@@ -82,8 +82,19 @@ Carteirinha, pedido médico e registro de sessões são lidos pela OpenAI com pr
 ADR-16 — A pele do produto é a do xiax-agenda, e é contrato fiscalizado
 O gescon e o clinica.gestaonossa.com.br são sistemas irmãos da mesma clínica; parecer produtos de empresas diferentes é defeito, não liberdade. Os tokens vêm de `design-system-xiax-agenda.md` (raiz) copiados verbatim — não se ajusta tom "só um pouquinho", porque os neutros quentes e o verde-petróleo são a identidade. A adoção não exigiu reescrever telas: as ~1.500 ocorrências de utilitário cru (`text-slate-200`, `bg-cyan-400/10`) continuam onde estavam, e é a **paleta nativa do Tailwind** que foi reapontada para os primitivos do design system. O reaponte vive em `@media screen` porque a impressão precisa de `bg-white` branco de verdade.
 
-ADR-17 — Tema único
-Existe uma aparência, como no irmão. O tema escuro foi removido — store, seletor, bootstrap e bloco CSS — em vez de mantido desligado: tema sem uso é pele morta que ninguém testa e que diverge a cada mudança de token. A arquitetura de dois níveis continua de pé; se um segundo tema entrar, ele redefine apenas os papéis semânticos e o produto inteiro acompanha.
+ADR-17 — Tema entra por necessidade, não por preferência
+O tema escuro foi removido em 26/08/2026 — store, seletor, bootstrap e bloco CSS — em vez de mantido desligado: tema sem uso é pele morta que ninguém testa e que diverge a cada mudança de token. No mesmo dia entrou um segundo tema, "Alto contraste", por requisito de acessibilidade de um profissional da clínica com deficiência de visão de cor. A diferença entre os dois casos é o critério: preferência estética não paga o custo de manutenção, necessidade de uso paga.
+
+O tema novo redefine apenas os papéis semânticos, como a arquitetura de dois níveis previa (ADR-16) — e é isso que fez o custo caber num bloco de CSS em vez de numa varredura por telas.
+
+ADR-23 — No tema de alto contraste, o canal cromático é a borda
+"Alto contraste" não é o tema padrão com a borda mais grossa. Medindo a paleta padrão sob deuteranopia, `sucesso` e `perigo` ficam a distância perceptual 18 — e 14 sob protanopia. Ou seja: "Aprovado" e "Negado" são praticamente a mesma cor para quem tem a forma mais comum de daltonismo. Borda grossa não resolveria isso.
+
+A paleta do tema foi redesenhada com a oposição azul/laranja, que é a que sobrevive ao daltonismo vermelho-verde, e `info` virou neutro para liberar orçamento de matiz. Os dez pares semânticos foram medidos nas três formas (deuteranopia, protanopia, tritanopia) e nenhum colapsa.
+
+A decisão menos óbvia é a separação de canais. O texto precisa cumprir 4,5:1 sobre o preenchimento, o que o obriga a ser escuro e limita a variação de matiz — foi por isso que a primeira tentativa de separar `perigo` de `alerta` só passava num dos dois critérios de cada vez. A borda não tem essa amarra (piso 3:1, WCAG 1.4.11), então é ela que carrega a identidade da cor. O pedido do profissional — "bordas bem marcadas" — e a restrição técnica apontavam para a mesma solução.
+
+A espessura mora em regra própria, fora de `@layer`, e não em token de paleta: espessura não é cor. O seletor pega quem já tem borda (`[class*="border"]`) em vez de dar borda a quem não tem — a intenção é reforçar a delimitação existente, não inventar caixa onde o desenho não previa.
 
 ADR-18 — Tamanho de texto só por papel
 Sete papéis (`display`, `titulo`, `subtitulo`, `corpo-lg`, `corpo`, `rotulo`, `meta`), cada um com entrelinha e peso próprios. A escala crua do framework está banida e é reprovada pelo contrato. Não é purismo: `text-sm` traz entrelinha 1,43 e `text-corpo` traz 1,5, então uma área escrita com a escala crua desalinha o ritmo vertical do produto **por construção**, sem erro visível. A migração revelou o sintoma: `text-4xl` e `text-3xl` conviviam como dois tamanhos para o mesmo papel — título de página.

@@ -4,6 +4,7 @@ import { useLogout, useSessaoAtual } from '../features/auth'
 import { usePode } from '../lib/permissoes'
 import { useAuthStore } from '../stores/authStore'
 import { Botao } from '../components/ui/Botao'
+import { BotaoTema } from '../components/ui/BotaoTema'
 import { isGroup, montarMenu, type NavGroup } from './navigation'
 
 const linkBase = 'rounded-pilula px-3 py-2 text-corpo font-medium transition'
@@ -360,6 +361,9 @@ export function ShellLayout() {
                 )}
 
                 <div className="mt-2 border-t border-linha pt-3">
+                  <div className="px-3 pb-3">
+                    <BotaoTema className="w-full justify-center" />
+                  </div>
                   <p className="px-3 text-meta text-texto-suave">
                     {tenant?.nome} · {tenant?.slug}
                   </p>
@@ -404,7 +408,8 @@ export function ShellLayout() {
           </nav>
 
           {/* Bloco de usuario do desktop — no mobile ele vive dentro do painel. */}
-          <div className="hidden items-center gap-4 self-end lg:flex lg:self-auto">
+          <div className="hidden items-center gap-3 self-end lg:flex lg:self-auto">
+            <BotaoTema />
             <div className="text-right">
               <p className="text-corpo font-medium text-texto">{user?.name}</p>
               <p className="text-meta text-texto-suave">

@@ -8,6 +8,16 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Gestão de Convênios</title>
+    <script>
+      // Aplica o tema antes da primeira pintura para não piscar o tema errado.
+      // A chave precisa acompanhar `temaStorageKey` em src/stores/temaStore.ts.
+      try {
+        var tema = localStorage.getItem('gestao-convenios-tema')
+        document.documentElement.dataset.theme = tema === 'contraste' ? 'contraste' : 'claro'
+      } catch (erro) {
+        document.documentElement.dataset.theme = 'claro'
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

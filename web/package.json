@@ -9,7 +9,8 @@
     "lint": "oxlint && node scripts/verificar-design-system.mjs",
     "preview": "vite preview",
     "test:e2e": "php ../api/artisan migrate:fresh --seed --env=testing --force && playwright test",
-    "ds:check": "node scripts/verificar-design-system.mjs"
+    "ds:check": "node scripts/verificar-design-system.mjs",
+    "ds:daltonismo": "node scripts/simulacao-daltonismo/verificar-paleta.mjs"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.10",

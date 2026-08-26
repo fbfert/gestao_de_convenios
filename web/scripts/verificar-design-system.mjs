@@ -98,7 +98,14 @@ const PARES_45 = [
   ['sucesso-texto', 'sucesso-suave'], ['alerta-texto', 'alerta-suave'],
   ['info-texto', 'info-suave'], ['sobre-tooltip', 'tooltip'],
 ]
-const PARES_3 = [['foco', 'superficie'], ['borda-campo', 'fundo']]
+const PARES_3 = [
+  ['foco', 'superficie'], ['borda-campo', 'fundo'],
+  // A borda carrega a distincao de cor no tema de alto contraste; ela e
+  // elemento nao textual, entao o piso e 3:1 (WCAG 1.4.11).
+  ['acento-borda', 'superficie'], ['perigo-borda', 'superficie'],
+  ['sucesso-borda', 'superficie'], ['alerta-borda', 'superficie'],
+  ['info-borda', 'superficie'],
+]
 
 function conferirContraste(nomeTema, mapa) {
   const checar = (pares, piso) => {
@@ -122,10 +129,14 @@ function conferirContraste(nomeTema, mapa) {
   checar(PARES_3, 3)
 }
 
+// Um tema por bloco `[data-theme]`, sempre partindo do `:root` — cada tema
+// redefine so o nivel 2, entao o que ele nao declara herda do padrao.
 const base = tokensDoBloco(css, ':root {')
-const escuro = new Map([...base, ...tokensDoBloco(css, ":root[data-theme='escuro']")])
 conferirContraste('claro', base)
-conferirContraste('escuro', escuro)
+for (const m of css.matchAll(/:root\[data-theme='([\w-]+)'\]\s*{/g)) {
+  const tema = m[1]
+  conferirContraste(tema, new Map([...base, ...tokensDoBloco(css, `:root[data-theme='${tema}']`)]))
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // §11.2 — nenhum valor mágico

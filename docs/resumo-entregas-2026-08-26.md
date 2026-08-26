@@ -71,6 +71,22 @@ O auditor tinha três falsos positivos próprios, corrigidos no caminho: conteú
 (1px por construção), caixa de seleção medida sem o rótulo que a envolve, e contraste de componente
 desabilitado — que a WCAG 1.4.3 isenta.
 
+## Tema de alto contraste
+
+Entrou por requisito de um profissional da clínica com deficiência de visão de cor, que pediu bordas
+marcadas em cada cartão. O botão fica na barra superior, e no celular dentro do painel de menu.
+
+A medição mostrou um problema maior que o pedido: na paleta padrão, sob deuteranopia, `sucesso` e
+`perigo` ficam a distância perceptual **18** (e **14** sob protanopia) — "Aprovado" e "Negado" são
+quase a mesma cor. O tema redesenha a paleta com a oposição azul/laranja e deixa `info` neutro; os
+dez pares foram medidos nas três formas de daltonismo e nenhum colapsa.
+
+O texto de cada chip fica escuro (4,5:1 sobre o preenchimento) e é a **borda** que carrega a cor —
+ela tem piso de 3:1, então pode variar de matiz o quanto for preciso. O pedido e a restrição técnica
+levavam à mesma solução. Ver ADR-23.
+
+O contrato da §11 passou a fiscalizar todo bloco `[data-theme]` que existir, não uma lista fixa.
+
 ## Pendências registradas
 
 - **Senha de administrador estava em constante no fonte** (`2026_08_07_100000_create_admin_inicial_

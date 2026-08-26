@@ -73,9 +73,11 @@ desabilitado — que a WCAG 1.4.3 isenta.
 
 ## Pendências registradas
 
-- **Senha em texto no fonte.** A migration `2026_08_07_100000_create_admin_inicial_fbfert` traz
-  `polenta22POLENTA@@` como constante. O `UserSeeder`, no mesmo repositório, comenta que "a senha
-  nunca fica no código-fonte" e a lê de env — os dois se contradizem.
+- **Senha de administrador estava em constante no fonte** (`2026_08_07_100000_create_admin_inicial_
+  fbfert`), num repositório **público**, desde 11/08/2026. Corrigido em 26/08: a senha da primeira
+  criação vem de `SEED_ADMIN_PASSWORD` e, sem a variável, a conta não é criada — mesma regra que o
+  `UserSeeder` já aplicava. **Remover do fonte não remove do histórico:** a senha continua legível
+  em quatro commits antigos, então ela precisa ser trocada no servidor, e não apenas no código.
 - **`npm run test:e2e` apaga o banco de desenvolvimento.** Roda `migrate:fresh --seed
   --env=testing` e não existe `.env.testing`, então cai no `.env`.
 - **`UsuariosApiTest` falha (pré-existente).** Espera 4 usuários; a migration do admin inicial só

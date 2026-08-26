@@ -19,6 +19,11 @@ use Spatie\Permission\PermissionRegistrar;
  * tenant, papel `admin` e `ativo`. Assim uma troca de senha feita pelo proprio
  * usuario nao e revertida por um `migrate` posterior.
  *
+ * A senha da PRIMEIRA criacao vem de `SEED_ADMIN_PASSWORD`, nunca do codigo:
+ * este repositorio e publico, e constante em fonte fica legivel por qualquer
+ * um — e continua legivel no historico do git mesmo depois de removida. Sem a
+ * variavel definida, a conta nao e criada e a migration avisa no console.
+ *
  * O papel `admin` e por tenant (Spatie em modo teams, team_foreign_key =
  * tenant_id). Os roles sao consultados por `tenant_id` explicito em vez de
  * `Role::findOrCreate` para nao reabrir o defeito corrigido na migration
@@ -30,7 +35,6 @@ return new class extends Migration
 
     private const NOME = 'Felipe B. Fert';
 
-    private const SENHA_INICIAL = 'polenta22POLENTA@@';
 
     public function up(): void
     {
@@ -65,11 +69,39 @@ return new class extends Migration
             $user->tenant_id = $user->tenant_id ?: $tenant->id;
             $user->save();
         } else {
+            $senha = env('SEED_ADMIN_PASSWORD');
+
+            if (blank($senha)) {
+                /*
+                  Sem a senha em `SEED_ADMIN_PASSWORD`, a conta NAO e criada —
+                  mesma regra do UserSeeder. Senha em constante ficava legivel
+                  por qualquer pessoa que abrisse o repositorio, e continuava
+                  legivel no historico do git depois de removida.
+
+                  Num servidor novo isso significa ficar sem conta para o
+                  primeiro login: defina a variavel no ambiente e rode
+                  `php artisan migrate` de novo, ou crie a conta pelo
+                  `db:seed --class=UserSeeder`.
+                */
+                if (app()->runningInConsole()) {
+                    fwrite(STDERR, PHP_EOL
+                        .'  [admin inicial] SEED_ADMIN_PASSWORD nao definida: a conta '
+                        .self::EMAIL.' NAO foi criada.'.PHP_EOL
+                        .'  Defina a variavel no ambiente e rode `php artisan migrate` novamente.'
+                        .PHP_EOL.PHP_EOL);
+                }
+
+                $registrar->setPermissionsTeamId(null);
+                $registrar->forgetCachedPermissions();
+
+                return;
+            }
+
             $user = User::query()->create([
                 'tenant_id' => $tenant->id,
                 'name' => self::NOME,
                 'email' => self::EMAIL,
-                'password' => self::SENHA_INICIAL,
+                'password' => $senha,
                 'ativo' => true,
             ]);
         }

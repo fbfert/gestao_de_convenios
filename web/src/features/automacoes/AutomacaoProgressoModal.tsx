@@ -23,6 +23,56 @@ type AutomacaoProgressoModalProps = {
 
 const STATUS_EM_ANDAMENTO = ['queued', 'running']
 
+/**
+ * Passos reais que o worker segue no portal, por operação — não temos como
+ * saber ao vivo em qual deles a execução está agora (worker não reporta
+ * progresso incremental, só o resultado final), então isto é uma lista
+ * informativa da sequência, não um rastreador passo-a-passo de verdade.
+ */
+const PASSOS_POR_OPERACAO: Record<string, string[]> = {
+  gerar_guia: [
+    'Login no portal da Unimed',
+    'Localizar o beneficiário pela carteirinha',
+    'Abrir a digitação de guia SP/SADT',
+    'Selecionar o contratado (clínica)',
+    'Buscar o profissional solicitante (CRM, nome ou fallback)',
+    'Preencher os dados principais, procedimento e quantidade',
+    'Anexar o pedido médico e demais documentos',
+    'Selecionar o profissional executante',
+    'Finalizar e confirmar o resultado',
+  ],
+  confirmar_guia_incerta: [
+    'Login no portal da Unimed',
+    'Abrir "Exames em aberto"',
+    'Procurar o paciente pela carteirinha nas páginas listadas',
+    'Confirmar se a guia foi criada ou não',
+  ],
+  consult_status_batch: [
+    'Login no portal da Unimed',
+    'Abrir "Exames em aberto" e localizar a guia pelo número',
+    'Ler o status atual da guia',
+  ],
+  capture_authorization_data_batch: [
+    'Login no portal da Unimed',
+    'Abrir "Exames em aberto" e localizar a guia pelo número',
+    'Capturar senha e validade de autorização',
+  ],
+}
+
+function contextoExecucao(payload: Record<string, unknown> | null | undefined): {
+  paciente: string | null
+  especialidade: string | null
+  profissional: string | null
+} {
+  const paciente = payload?.paciente as { nome?: string } | undefined
+
+  return {
+    paciente: paciente?.nome ?? null,
+    especialidade: typeof payload?.especialidade === 'string' ? payload.especialidade : null,
+    profissional: typeof payload?.profissional === 'string' ? payload.profissional : null,
+  }
+}
+
 const ETAPAS = [
   { chave: 'queued', rotulo: 'Na fila' },
   { chave: 'running', rotulo: 'Em execução' },
@@ -127,6 +177,11 @@ export function AutomacaoProgressoModal({
 
   const passoAtual = etapaAtual(execucao?.status)
   const resultado = execucao && !emAndamento ? resultadoResumo(execucao.status) : null
+  const contexto = contextoExecucao(execucao?.payload)
+  const contextoTexto = [contexto.paciente, contexto.especialidade, contexto.profissional]
+    .filter(Boolean)
+    .join(' · ')
+  const passos = execucao ? PASSOS_POR_OPERACAO[execucao.operacao] : undefined
 
   return (
     <Dialog open={open} onClose={onClose} className="relative z-(--z-dialogo)">
@@ -143,6 +198,14 @@ export function AutomacaoProgressoModal({
                   {titulo}
                   {execucaoId ? ` · execução #${execucaoId}` : ''}
                 </DialogTitle>
+                {contextoTexto ? (
+                  <p
+                    className="mt-1 text-meta font-medium text-cyan-100"
+                    data-testid="automacao-progresso-contexto"
+                  >
+                    {contextoTexto}
+                  </p>
+                ) : null}
                 <p className="mt-1 text-corpo text-slate-300">{descricao}</p>
               </div>
               <button
@@ -231,9 +294,34 @@ export function AutomacaoProgressoModal({
                       ) : null}
                     </div>
                   ) : (
-                    <div className="flex items-center gap-3 rounded-superficie border border-linha bg-fundo p-5 shadow-e1 text-corpo text-slate-300">
-                      <LoaderCircle className="size-4 shrink-0 animate-spin text-cyan-200" aria-hidden="true" />
-                      {execucao.status === 'running' ? mensagemExecutando : 'Aguardando um worker disponível para iniciar...'}
+                    <div
+                      className="rounded-superficie border border-linha bg-fundo p-5 shadow-e1"
+                      data-testid="automacao-progresso-execucao"
+                    >
+                      <div className="flex items-center gap-3 text-corpo text-slate-300">
+                        <LoaderCircle className="size-4 shrink-0 animate-spin text-cyan-200" aria-hidden="true" />
+                        {execucao.status === 'running' ? mensagemExecutando : 'Aguardando um worker disponível para iniciar...'}
+                      </div>
+
+                      {execucao.status === 'running' && passos ? (
+                        <>
+                          <p className="mt-4 text-meta text-slate-400">
+                            Passos que o robô costuma seguir aqui — não é possível saber em tempo
+                            real em qual deles a execução está agora:
+                          </p>
+                          <ol className="mt-2 space-y-1.5" data-testid="automacao-progresso-passos">
+                            {passos.map((passo, index) => (
+                              <li
+                                key={passo}
+                                className="flex items-start gap-2 text-meta text-slate-300"
+                              >
+                                <span className="mt-0.5 text-slate-500">{index + 1}.</span>
+                                <span>{passo}</span>
+                              </li>
+                            ))}
+                          </ol>
+                        </>
+                      ) : null}
                     </div>
                   )}
                 </>

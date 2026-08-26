@@ -159,10 +159,10 @@ export function MedicosPage() {
     <div className="space-y-8" data-testid="medicos-page">
       {!isFormRoute ? (
       <section className="space-y-4">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex flex-col gap-4 sm:items-start lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Médicos</p>
-            <h2 className="mt-2 text-3xl font-semibold text-white">
+            <p className="text-meta uppercase tracking-[0.3em] text-cyan-300/80">Médicos</p>
+            <h2 className="mt-2 text-display font-semibold text-white">
               Cadastro e referência de médicos
             </h2>
           </div>
@@ -189,19 +189,19 @@ export function MedicosPage() {
           <form onSubmit={handleSubmit} className="space-y-4" data-testid="medico-form">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h3 className="text-lg font-semibold text-white">
+                <h3 className="text-subtitulo font-semibold text-white">
                   {editingId ? 'Editar médico solicitante' : 'Novo médico solicitante'}
                 </h3>
               </div>
               {editingId ? (
-                <span className="rounded-full border border-cyan-300/20 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-100">
+                <span className="rounded-full border border-cyan-300/20 bg-cyan-400/10 px-3 py-1 text-meta font-semibold text-cyan-100">
                   Editando #{editingId}
                 </span>
               ) : null}
             </div>
 
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Nome</span>
+              <span className="text-corpo font-medium text-slate-200">Nome</span>
               <input
                 value={form.nome}
                 onChange={(event) => setForm((current) => ({ ...current, nome: event.target.value }))}
@@ -211,7 +211,7 @@ export function MedicosPage() {
             </label>
 
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">CRM</span>
+              <span className="text-corpo font-medium text-slate-200">CRM</span>
               <input
                 value={form.crm}
                 onChange={(event) => setForm((current) => ({ ...current, crm: event.target.value }))}
@@ -221,7 +221,7 @@ export function MedicosPage() {
             </label>
 
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Especialidade médica</span>
+              <span className="text-corpo font-medium text-slate-200">Especialidade médica</span>
               <input
                 value={form.especialidade_medica}
                 onChange={(event) =>
@@ -233,7 +233,7 @@ export function MedicosPage() {
             </label>
 
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Telefone</span>
+              <span className="text-corpo font-medium text-slate-200">Telefone</span>
               <input
                 value={form.telefone}
                 onChange={(event) =>
@@ -245,7 +245,7 @@ export function MedicosPage() {
             </label>
 
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">E-mail</span>
+              <span className="text-corpo font-medium text-slate-200">E-mail</span>
               <input
                 value={form.email}
                 onChange={(event) =>
@@ -266,11 +266,11 @@ export function MedicosPage() {
                 className="h-4 w-4 rounded border-white/20 bg-white/10 text-cyan-300 focus:ring-cyan-300/20"
                 data-testid="medico-ativo"
               />
-              <span className="text-sm font-medium text-slate-200">Ativo</span>
+              <span className="text-corpo font-medium text-slate-200">Ativo</span>
             </label>
 
             {formError ? (
-              <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+              <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-corpo text-rose-100">
                 {formError}
               </p>
             ) : null}
@@ -307,11 +307,11 @@ export function MedicosPage() {
 
       {!isFormRoute ? (
       <section className="space-y-4 rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex flex-col gap-4 sm:items-start lg:flex-row lg:items-end lg:justify-between">
 
           <form className="flex gap-3" onSubmit={handleFilterSubmit}>
             <label className="min-w-56 space-y-2">
-              <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Busca</span>
+              <span className="text-meta uppercase tracking-[0.25em] text-slate-400">Busca</span>
               <input
                 value={draftBusca}
                 onChange={(event) => setDraftBusca(event.target.value)}
@@ -327,17 +327,17 @@ export function MedicosPage() {
         </div>
 
         {medicosQuery.isLoading ? (
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
+          <div className="rounded-superficie border border-linha bg-fundo p-4 shadow-e1 text-corpo text-slate-300">
             Carregando médicos...
           </div>
         ) : medicosQuery.isError ? (
-          <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-100">
+          <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 p-4 text-corpo text-rose-100">
             Não foi possível carregar os médicos.
           </div>
         ) : (
           <div className="overflow-x-auto rounded-superficie border border-linha">
-            <table className="w-full border-collapse text-left text-sm">
-              <thead className="bg-fundo text-xs uppercase tracking-[0.25em] text-texto-suave">
+            <table className="w-full border-collapse text-left text-corpo" data-cartoes="lg">
+              <thead className="bg-fundo text-meta uppercase tracking-[0.25em] text-texto-suave">
                 <tr>
                   <ColunaOrdenavel
                     titulo="Nome"
@@ -371,27 +371,27 @@ export function MedicosPage() {
               <tbody className="divide-y divide-linha bg-superficie">
                 {medicos.map((medico) => (
                   <tr key={medico.id} data-testid={`medico-row-${medico.id}`}>
-                    <td className="px-4 py-4 text-slate-100">
+                    <td data-rotulo="Nome" className="px-4 py-4 text-slate-100">
                       <div className="font-medium">{medico.nome}</div>
-                      <div className="text-xs text-slate-400">#{medico.id}</div>
+                      <div className="text-meta text-slate-400">#{medico.id}</div>
                     </td>
-                    <td className="px-4 py-4 text-slate-200">{medico.crm}</td>
-                    <td className="px-4 py-4 text-slate-200">{medico.especialidade_medica}</td>
-                    <td className="px-4 py-4 text-slate-200">
+                    <td data-rotulo="CRM" className="px-4 py-4 text-slate-200">{medico.crm}</td>
+                    <td data-rotulo="Especialidade" className="px-4 py-4 text-slate-200">{medico.especialidade_medica}</td>
+                    <td data-rotulo="Contato" className="px-4 py-4 text-slate-200">
                       <div>{medico.telefone}</div>
-                      <div className="text-xs text-slate-400">{medico.email ?? '-'}</div>
+                      <div className="text-meta text-slate-400">{medico.email ?? '-'}</div>
                     </td>
-                    <td className="px-4 py-4">
+                    <td data-rotulo="Status" className="px-4 py-4">
                       <Badge tone={statusTone(medico.ativo)} data-testid={`medico-status-${medico.id}`}>
                         {medico.ativo ? 'Ativo' : 'Inativo'}
                       </Badge>
                     </td>
-                    <td className="w-px whitespace-nowrap px-4 py-4">
+                    <td data-rotulo="Ações" data-rotulo-bloco className="w-px whitespace-nowrap px-4 py-4">
                       <div className="flex flex-nowrap gap-2">
                         <button
                           type="button"
                           onClick={() => handleEdit(medico)}
-                          className="rounded-full border border-cyan-300/30 bg-cyan-400/10 px-3 py-1.5 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-400/20"
+                          className="rounded-full border border-cyan-300/30 bg-cyan-400/10 px-3 py-1.5 text-meta font-semibold text-cyan-100 transition hover:bg-cyan-400/20"
                           data-testid={`medico-editar-${medico.id}`}
                         >
                           Editar
@@ -399,7 +399,7 @@ export function MedicosPage() {
                         <button
                           type="button"
                           onClick={() => handleToggleAtivo(medico)}
-                          className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/10 disabled:opacity-60"
+                          className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-meta font-semibold text-white transition hover:bg-white/10 disabled:opacity-60"
                           disabled={atualizarMedico.isPending}
                           data-testid={`medico-toggle-${medico.id}`}
                         >

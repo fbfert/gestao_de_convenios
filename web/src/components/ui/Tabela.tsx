@@ -40,7 +40,7 @@ function TabelaRaiz({
   return (
     <ContextoTabela.Provider value={{ densidade, cabecalhoFixo }}>
       <div className="w-full overflow-x-auto rounded-superficie border border-linha-forte bg-superficie">
-        <table className={cn('w-full border-collapse text-sm text-texto', className)} {...props}>
+        <table className={cn('w-full border-collapse text-corpo text-texto', className)} {...props}>
           <caption className="sr-only">{legenda}</caption>
           {children}
         </table>
@@ -103,7 +103,7 @@ function CelulaCabecalho({ className, ...props }: ThHTMLAttributes<HTMLTableCell
     <th
       scope="col"
       className={cn(
-        'border-b border-linha-forte bg-fundo text-left text-xs font-medium uppercase tracking-[0.25em] text-texto-suave',
+        'border-b border-linha-forte bg-fundo text-left text-meta font-medium uppercase tracking-[0.25em] text-texto-suave',
         densidade === 'compacta' ? 'px-3 py-2' : 'px-4 py-3',
         cabecalhoFixo && 'sticky top-0 z-(--z-fixo)',
         className,

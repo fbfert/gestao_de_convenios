@@ -187,10 +187,10 @@ export function ProfissionaisPage() {
     <div className="space-y-8" data-testid="profissionais-page">
       {!isFormRoute ? (
       <section className="space-y-4">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex flex-col gap-4 sm:items-start lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Profissionais</p>
-            <h2 className="mt-2 text-3xl font-semibold text-white">
+            <p className="text-meta uppercase tracking-[0.3em] text-cyan-300/80">Profissionais</p>
+            <h2 className="mt-2 text-display font-semibold text-white">
               Cadastro e referência de profissionais executantes
             </h2>
           </div>
@@ -217,19 +217,19 @@ export function ProfissionaisPage() {
           <form onSubmit={handleSubmit} className="space-y-4" data-testid="profissional-form">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h3 className="text-lg font-semibold text-white">
+                <h3 className="text-subtitulo font-semibold text-white">
                   {editingId ? 'Editar profissional' : 'Novo profissional'}
                 </h3>
               </div>
               {editingId ? (
-                <span className="rounded-full border border-cyan-300/20 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-100">
+                <span className="rounded-full border border-cyan-300/20 bg-cyan-400/10 px-3 py-1 text-meta font-semibold text-cyan-100">
                   Editando #{editingId}
                 </span>
               ) : null}
             </div>
 
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Nome</span>
+              <span className="text-corpo font-medium text-slate-200">Nome</span>
               <input
                 value={form.nome}
                 onChange={(event) => setForm((current) => ({ ...current, nome: event.target.value }))}
@@ -240,7 +240,7 @@ export function ProfissionaisPage() {
             </label>
 
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Especialidade</span>
+              <span className="text-corpo font-medium text-slate-200">Especialidade</span>
               <select
                 value={form.especialidade_id}
                 onChange={(event) =>
@@ -257,13 +257,13 @@ export function ProfissionaisPage() {
                   </option>
                 ))}
               </select>
-              <span className="block text-xs text-slate-400">
+              <span className="block text-meta text-slate-400">
                 A de registro no conselho. Ela entra automaticamente na lista abaixo.
               </span>
             </label>
 
             <div className="space-y-2">
-              <span className="text-sm font-medium text-slate-200">Atende também em</span>
+              <span className="text-corpo font-medium text-slate-200">Atende também em</span>
               <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 {especialidades.map((especialidade) => {
                   const ehPrincipal = String(especialidade.id) === form.especialidade_id
@@ -272,7 +272,7 @@ export function ProfissionaisPage() {
                   return (
                     <label
                       key={especialidade.id}
-                      className={`flex items-center gap-2 rounded-2xl border px-3 py-2 text-sm transition ${
+                      className={`flex items-center gap-2 rounded-2xl border px-3 py-2 text-corpo transition ${
                         marcada
                           ? 'border-cyan-300/40 bg-cyan-400/10 text-cyan-50'
                           : 'border-white/10 bg-white/5 text-slate-200'
@@ -297,7 +297,7 @@ export function ProfissionaisPage() {
                         data-testid={`profissional-especialidade-${especialidade.id}`}
                       />
                       {especialidade.nome}
-                      {ehPrincipal ? <span className="text-xs text-cyan-200">principal</span> : null}
+                      {ehPrincipal ? <span className="text-meta text-cyan-200">principal</span> : null}
                     </label>
                   )
                 })}
@@ -305,7 +305,7 @@ export function ProfissionaisPage() {
             </div>
 
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Conselho / registro</span>
+              <span className="text-corpo font-medium text-slate-200">Conselho / registro</span>
               <input
                 value={form.conselho_registro}
                 onChange={(event) =>
@@ -317,7 +317,7 @@ export function ProfissionaisPage() {
             </label>
 
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Percentual de repasse</span>
+              <span className="text-corpo font-medium text-slate-200">Percentual de repasse</span>
               <input
                 value={form.percentual_repasse}
                 onChange={(event) =>
@@ -340,11 +340,11 @@ export function ProfissionaisPage() {
                 className="h-4 w-4 rounded border-white/20 bg-white/10 text-cyan-300 focus:ring-cyan-300/20"
                 data-testid="profissional-ativo"
               />
-              <span className="text-sm font-medium text-slate-200">Ativo</span>
+              <span className="text-corpo font-medium text-slate-200">Ativo</span>
             </label>
 
             {formError ? (
-              <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+              <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-corpo text-rose-100">
                 {formError}
               </p>
             ) : null}
@@ -395,10 +395,10 @@ export function ProfissionaisPage() {
           data-testid="profissional-edicao-indisponivel"
         >
           {profissionaisQuery.isLoading ? (
-            <p className="text-sm text-slate-300">Carregando profissional...</p>
+            <p className="inline-flex min-h-6 items-center text-corpo text-slate-300">Carregando profissional...</p>
           ) : (
             <div className="space-y-4">
-              <p className="text-sm text-rose-100">
+              <p className="text-corpo text-rose-100">
                 Profissional não encontrado. Ele pode ter sido removido ou o endereço está incorreto.
               </p>
               <Botao type="button" variante="secundario" onClick={handleCancel} data-testid="profissional-voltar">
@@ -411,11 +411,11 @@ export function ProfissionaisPage() {
 
       {!isFormRoute ? (
       <section className="space-y-4 rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex flex-col gap-4 sm:items-start lg:flex-row lg:items-end lg:justify-between">
 
           <form className="flex flex-wrap gap-3" onSubmit={handleFilterSubmit}>
             <label className="min-w-56 space-y-2">
-              <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Busca</span>
+              <span className="text-meta uppercase tracking-[0.25em] text-slate-400">Busca</span>
               <input
                 value={draftBusca}
                 onChange={(event) => setDraftBusca(event.target.value)}
@@ -425,7 +425,7 @@ export function ProfissionaisPage() {
               />
             </label>
             <label className="min-w-56 space-y-2">
-              <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Especialidade</span>
+              <span className="text-meta uppercase tracking-[0.25em] text-slate-400">Especialidade</span>
               <select
                 value={draftEspecialidadeFiltro}
                 onChange={(event) => setDraftEspecialidadeFiltro(event.target.value)}
@@ -447,17 +447,17 @@ export function ProfissionaisPage() {
         </div>
 
         {profissionaisQuery.isLoading ? (
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
+          <div className="rounded-superficie border border-linha bg-fundo p-4 shadow-e1 text-corpo text-slate-300">
             Carregando profissionais...
           </div>
         ) : profissionaisQuery.isError ? (
-          <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-100">
+          <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 p-4 text-corpo text-rose-100">
             Não foi possível carregar os profissionais.
           </div>
         ) : (
           <div className="overflow-x-auto rounded-superficie border border-linha">
-            <table className="w-full border-collapse text-left text-sm">
-              <thead className="bg-fundo text-xs uppercase tracking-[0.25em] text-texto-suave">
+            <table className="w-full border-collapse text-left text-corpo" data-cartoes="lg">
+              <thead className="bg-fundo text-meta uppercase tracking-[0.25em] text-texto-suave">
                 <tr>
                   <ColunaOrdenavel
                     titulo="Nome"
@@ -491,18 +491,18 @@ export function ProfissionaisPage() {
               <tbody className="divide-y divide-linha bg-superficie">
                 {profissionais.map((profissional) => (
                   <tr key={profissional.id} data-testid={`profissional-row-${profissional.id}`}>
-                    <td className="px-4 py-4 text-slate-100">
+                    <td data-rotulo="Nome" className="px-4 py-4 text-slate-100">
                       <div className="font-medium">{profissional.nome}</div>
-                      <div className="text-xs text-slate-400">#{profissional.id}</div>
+                      <div className="text-meta text-slate-400">#{profissional.id}</div>
                     </td>
-                    <td className="px-4 py-4 text-slate-200">
+                    <td data-rotulo="Especialidade" className="px-4 py-4 text-slate-200">
                       {profissional.especialidade?.nome ?? '—'}
                     </td>
-                    <td className="px-4 py-4 text-slate-200">{profissional.conselho_registro ?? '—'}</td>
-                    <td className="px-4 py-4 text-slate-200">
+                    <td data-rotulo="Conselho" className="px-4 py-4 text-slate-200">{profissional.conselho_registro ?? '—'}</td>
+                    <td data-rotulo="Repasse" className="px-4 py-4 text-slate-200">
                       {profissional.percentual_repasse ? `${profissional.percentual_repasse}%` : '—'}
                     </td>
-                    <td className="px-4 py-4">
+                    <td data-rotulo="Status" className="px-4 py-4">
                       <Badge
                         tone={profissional.ativo ? 'sucesso' : 'perigo'}
                         data-testid={`profissional-status-${profissional.id}`}
@@ -510,12 +510,12 @@ export function ProfissionaisPage() {
                         {profissional.ativo ? 'Ativo' : 'Inativo'}
                       </Badge>
                     </td>
-                    <td className="w-px whitespace-nowrap px-4 py-4">
+                    <td data-rotulo="Ações" data-rotulo-bloco className="w-px whitespace-nowrap px-4 py-4">
                       <div className="flex flex-nowrap gap-2">
                         <button
                           type="button"
                           onClick={() => handleEdit(profissional)}
-                          className="rounded-full border border-cyan-300/30 bg-cyan-400/10 px-3 py-1.5 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-400/20"
+                          className="rounded-full border border-cyan-300/30 bg-cyan-400/10 px-3 py-1.5 text-meta font-semibold text-cyan-100 transition hover:bg-cyan-400/20"
                           data-testid={`profissional-editar-${profissional.id}`}
                         >
                           Editar
@@ -523,7 +523,7 @@ export function ProfissionaisPage() {
                         <button
                           type="button"
                           onClick={() => handleToggleAtivo(profissional)}
-                          className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/10 disabled:opacity-60"
+                          className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-meta font-semibold text-white transition hover:bg-white/10 disabled:opacity-60"
                           disabled={atualizarProfissional.isPending}
                           data-testid={`profissional-toggle-${profissional.id}`}
                         >

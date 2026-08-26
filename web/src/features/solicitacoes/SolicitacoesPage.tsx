@@ -95,7 +95,7 @@ function statusTone(status: string): NonNullable<BadgeProps['tone']> {
     case 'guia_gerada':
     case 'registered':
     default:
-      return 'acento'
+      return 'info'
   }
 }
 
@@ -311,10 +311,10 @@ export function SolicitacoesPage() {
     <div className="space-y-8" data-testid="solicitacoes-page">
       {!isCreateRoute ? (
       <section className="space-y-4">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex flex-col gap-4 sm:items-start lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Solicitações</p>
-            <h2 className="mt-2 flex items-center gap-2 text-3xl font-semibold text-white">
+            <p className="text-meta uppercase tracking-[0.3em] text-cyan-300/80">Solicitações</p>
+            <h2 className="mt-2 flex items-center gap-2 text-display font-semibold text-white">
               Primeiro contato do fluxo de convênios
               <Tooltip rotulo="O que é uma solicitação">
                 <p className="font-semibold text-white">O pedido de autorização</p>
@@ -331,7 +331,7 @@ export function SolicitacoesPage() {
             <button
               type="button"
               onClick={() => navigate('/solicitacoes/ler-pedido-medico')}
-              className="rounded-2xl border border-cyan-300/30 bg-cyan-400/10 px-4 py-3 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-400/20"
+              className="inline-flex items-center justify-center rounded-2xl border border-cyan-300/30 bg-cyan-400/10 h-10 px-4 text-corpo font-semibold text-cyan-100 transition hover:bg-cyan-400/20"
               data-testid="solicitacao-ler-pedido-medico"
             >
               Ler pedido médico
@@ -364,7 +364,7 @@ export function SolicitacoesPage() {
           <form onSubmit={handleFormSubmit} className="space-y-4" data-testid="solicitacao-form">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h3 className="text-lg font-semibold text-white">Nova solicitação</h3>
+                <h3 className="text-subtitulo font-semibold text-white">Nova solicitação</h3>
               </div>
               <Botao type="button" variante="secundario" onClick={handleCancel} data-testid="solicitacao-fechar">
                 Fechar
@@ -372,13 +372,13 @@ export function SolicitacoesPage() {
             </div>
 
             {!formReady ? (
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
+              <div className="rounded-superficie border border-linha bg-fundo p-4 shadow-e1 text-corpo text-slate-300">
                 Carregando dados de referência...
               </div>
             ) : null}
 
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Convênio</span>
+              <span className="text-corpo font-medium text-slate-200">Convênio</span>
               <Select
                 value={form.convenio_id}
                 onChange={(event) =>
@@ -403,7 +403,7 @@ export function SolicitacoesPage() {
               </Select>
 
               {pacienteSelecionado?.carteirinha_vencida ? (
-                <span className="block rounded-2xl border border-amber-300/20 bg-amber-400/10 px-3 py-2 text-xs text-amber-100">
+                <span className="block rounded-2xl border border-amber-300/20 bg-amber-400/10 px-3 py-2 text-meta text-amber-100">
                   A carteirinha deste paciente está vencida
                   {pacienteSelecionado.validade_carteirinha
                     ? ` desde ${new Date(`${pacienteSelecionado.validade_carteirinha}T12:00:00`).toLocaleDateString('pt-BR')}`
@@ -415,7 +415,7 @@ export function SolicitacoesPage() {
             </label>
 
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Paciente</span>
+              <span className="text-corpo font-medium text-slate-200">Paciente</span>
               <Select
                 value={form.paciente_id}
                 onChange={(event) =>
@@ -449,7 +449,7 @@ export function SolicitacoesPage() {
             />
 
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Médico solicitante</span>
+              <span className="text-corpo font-medium text-slate-200">Médico solicitante</span>
               <Select
                 value={form.medico_id}
                 onChange={(event) =>
@@ -474,7 +474,7 @@ export function SolicitacoesPage() {
             </label>
 
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Data</span>
+              <span className="text-corpo font-medium text-slate-200">Data</span>
               <input
                 type="date"
                 value={form.solicitado_em}
@@ -490,7 +490,7 @@ export function SolicitacoesPage() {
             </label>
 
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">CID</span>
+              <span className="text-corpo font-medium text-slate-200">CID</span>
               <CidsCampo
                 value={form.cid_ids}
                 onChange={(cidIds) => setForm((current) => ({ ...current, cid_ids: cidIds }))}
@@ -499,7 +499,7 @@ export function SolicitacoesPage() {
             </label>
 
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Observações</span>
+              <span className="text-corpo font-medium text-slate-200">Observações</span>
               <textarea
                 value={form.observacoes}
                 onChange={(event) =>
@@ -515,7 +515,7 @@ export function SolicitacoesPage() {
             </label>
 
             {formError ? (
-              <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+              <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-corpo text-rose-100">
                 {formError}
               </p>
             ) : null}
@@ -535,11 +535,11 @@ export function SolicitacoesPage() {
 
       {!isCreateRoute ? (
       <section className="space-y-4 rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex flex-col gap-4 sm:items-start lg:flex-row lg:items-end lg:justify-between">
 
           <form className="flex flex-wrap gap-3" onSubmit={handleFilterSubmit}>
             <label className="min-w-40 flex-1 space-y-2">
-              <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Paciente</span>
+              <span className="text-meta uppercase tracking-[0.25em] text-slate-400">Paciente</span>
               <input
                 type="text"
                 value={draftFilters.paciente}
@@ -556,7 +556,7 @@ export function SolicitacoesPage() {
             </label>
 
             <label className="min-w-40 flex-1 space-y-2">
-              <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Profissional</span>
+              <span className="text-meta uppercase tracking-[0.25em] text-slate-400">Profissional</span>
               <input
                 type="text"
                 value={draftFilters.profissional}
@@ -573,7 +573,7 @@ export function SolicitacoesPage() {
             </label>
 
             <label className="min-w-40 flex-1 space-y-2">
-              <span className="text-xs uppercase tracking-[0.25em] text-slate-400">
+              <span className="text-meta uppercase tracking-[0.25em] text-slate-400">
                 Médico solicitante
               </span>
               <input
@@ -592,7 +592,7 @@ export function SolicitacoesPage() {
             </label>
 
             <label className="min-w-40 flex-1 space-y-2">
-              <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Status</span>
+              <span className="text-meta uppercase tracking-[0.25em] text-slate-400">Status</span>
               <Select
                 value={draftFilters.status}
                 onChange={(event) =>
@@ -617,7 +617,7 @@ export function SolicitacoesPage() {
             </label>
 
             <label className="min-w-40 flex-1 space-y-2">
-              <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Convênio</span>
+              <span className="text-meta uppercase tracking-[0.25em] text-slate-400">Convênio</span>
               <Select
                 value={draftFilters.convenio_id}
                 onChange={(event) =>
@@ -645,17 +645,17 @@ export function SolicitacoesPage() {
         </div>
 
         {solicitacoesQuery.isLoading ? (
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
+          <div className="rounded-superficie border border-linha bg-fundo p-4 shadow-e1 text-corpo text-slate-300">
             Carregando solicitações...
           </div>
         ) : solicitacoesQuery.isError ? (
-          <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-100">
+          <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 p-4 text-corpo text-rose-100">
             Não foi possível carregar a lista.
           </div>
         ) : (
           <div className="overflow-x-auto rounded-superficie border border-linha">
-            <table className="w-full table-fixed border-collapse text-left text-sm">
-              <thead className="bg-fundo text-xs uppercase tracking-[0.25em] text-texto-suave">
+            <table className="w-full table-fixed border-collapse text-left text-corpo" data-cartoes="lg">
+              <thead className="bg-fundo text-meta uppercase tracking-[0.25em] text-texto-suave">
                 <tr>
                   <ColunaOrdenavel
                     titulo="ID"
@@ -669,7 +669,7 @@ export function SolicitacoesPage() {
                     coluna="paciente"
                     ordenacao={ordenacao}
                     onOrdenar={ordenarPor}
-                    className="w-[8%] px-4 py-3"
+                    className="w-[16%] px-4 py-3"
                   />
                   <ColunaOrdenavel
                     titulo="Convênio"
@@ -678,13 +678,13 @@ export function SolicitacoesPage() {
                     onOrdenar={ordenarPor}
                     className="w-[10%] px-4 py-3"
                   />
-                  <ColunaOrdenavel titulo="Itens" className="w-[45%] px-4 py-3" />
+                  <ColunaOrdenavel titulo="Itens" className="w-[35%] px-4 py-3" />
                   <ColunaOrdenavel
                     titulo="Status"
                     coluna="status"
                     ordenacao={ordenacao}
                     onOrdenar={ordenarPor}
-                    className="w-[9%] px-4 py-3"
+                    className="w-[11%] px-4 py-3"
                   />
                   <ColunaOrdenavel
                     titulo="Médico solicitante"
@@ -699,11 +699,11 @@ export function SolicitacoesPage() {
               <tbody className="divide-y divide-linha bg-superficie">
                 {solicitacoes.map((solicitacao) => (
                   <tr key={solicitacao.id} data-testid={`solicitacao-row-${solicitacao.id}`}>
-                    <td className="px-4 py-4 font-medium text-white">#{solicitacao.id}</td>
-                    <td className="break-words px-4 py-4 text-slate-200">
+                    <td data-rotulo="ID" className="px-4 py-4 font-medium text-white">#{solicitacao.id}</td>
+                    <td data-rotulo="Paciente" className="break-words px-4 py-4 text-slate-200">
                       <button
                         type="button"
-                        className="text-left font-medium text-cyan-100 underline decoration-cyan-400/40 underline-offset-4 transition hover:text-cyan-50"
+                        className="inline-flex min-h-6 items-center text-left font-semibold text-texto decoration-acento/60 underline-offset-4 transition hover:underline hover:text-acento-intenso"
                         onClick={() => setSelectedSolicitacaoId(solicitacao.id)}
                         data-testid={`solicitacao-paciente-${solicitacao.id}`}
                       >
@@ -712,11 +712,11 @@ export function SolicitacoesPage() {
                           solicitacao.paciente_id}
                       </button>
                     </td>
-                    <td className="px-4 py-4 text-slate-200">
+                    <td data-rotulo="Convênio" className="px-4 py-4 text-slate-200">
                       {convenios.find((item) => item.id === solicitacao.convenio_id)?.nome ??
                         solicitacao.convenio_id}
                     </td>
-                    <td className="px-4 py-4 text-slate-200">
+                    <td data-rotulo="Itens" data-rotulo-bloco className="px-4 py-4 text-slate-200">
                       {solicitacao.itens?.length ? (
                         <div className="space-y-1">
                           {solicitacao.itens.map((item) => {
@@ -732,7 +732,7 @@ export function SolicitacoesPage() {
                             return (
                               <div
                                 key={item.id}
-                                className="flex flex-col gap-2 rounded-2xl border border-white/10 bg-white/5 p-3"
+                                className="flex flex-col gap-2 rounded-superficie border border-linha bg-fundo p-3 shadow-e1"
                               >
                                 <p>
                                   {item.especialidade?.nome ?? item.especialidade_id}
@@ -745,13 +745,13 @@ export function SolicitacoesPage() {
                                 </p>
                                 <div className="flex flex-wrap items-center gap-2">
                                   {item.guia_id ? (
-                                    <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1 text-xs font-semibold text-emerald-100">
+                                    <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1 text-meta font-semibold text-emerald-100">
                                       Guia #{item.guia_id}
                                     </span>
                                   ) : null}
                                   {isUnimedRda && item.guia_id ? (
                                     <span
-                                      className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1.5 text-xs font-semibold text-emerald-100"
+                                      className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1.5 text-meta font-semibold text-emerald-100"
                                       data-testid={`solicitacao-item-guia-gerada-${item.id}`}
                                     >
                                       Guia gerada
@@ -763,7 +763,7 @@ export function SolicitacoesPage() {
                                       onClick={() =>
                                         setProgressoExecucaoId(item.automacao_execucao_ativa!.id)
                                       }
-                                      className="rounded-full border border-amber-400/20 bg-amber-400/10 px-2.5 py-1 text-xs font-semibold text-amber-100 transition hover:bg-amber-400/20"
+                                      className="rounded-full border border-amber-400/20 bg-amber-400/10 px-2.5 py-1 text-meta font-semibold text-amber-100 transition hover:bg-amber-400/20"
                                       data-testid={`solicitacao-item-execucao-ativa-${item.id}`}
                                     >
                                       {item.automacao_execucao_ativa.status} · ver andamento
@@ -775,7 +775,7 @@ export function SolicitacoesPage() {
                                         type="button"
                                         onClick={() => void handleEnviarItemUnimed(item.id)}
                                         disabled={!canSend || enviarItemUnimed.isPending}
-                                        className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1.5 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-400/20 disabled:cursor-not-allowed disabled:opacity-50"
+                                        className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1.5 text-meta font-semibold text-cyan-100 transition hover:bg-cyan-400/20 disabled:cursor-not-allowed disabled:opacity-50"
                                         data-testid={`solicitacao-item-enviar-unimed-${item.id}`}
                                       >
                                         Enviar para Unimed
@@ -797,15 +797,15 @@ export function SolicitacoesPage() {
                         <span className="text-slate-400">Item legado</span>
                       )}
                     </td>
-                    <td className="px-4 py-4">
+                    <td data-rotulo="Status" className="px-4 py-4">
                       <Badge tone={statusTone(solicitacao.status)} data-testid={`solicitacao-status-${solicitacao.id}`}>
                         {translateStatus('solicitacoes', solicitacao.status)}
                       </Badge>
                     </td>
-                    <td className="px-4 py-4 text-slate-200">
+                    <td data-rotulo="Médico solicitante" className="px-4 py-4 text-slate-200">
                       {solicitacao.medico?.nome ?? solicitacao.medico_id}
                     </td>
-                    <td className="px-4 py-4 text-center">
+                    <td data-rotulo="Ações" data-rotulo-bloco className="px-4 py-4 text-center">
                       <DropdownMenu.Root>
                         <DropdownMenu.Trigger asChild>
                           <button
@@ -822,7 +822,7 @@ export function SolicitacoesPage() {
                           <DropdownMenu.Content
                             align="end"
                             sideOffset={6}
-                            className="z-50 min-w-56 rounded-2xl border border-linha bg-superficie-elevada p-1.5 text-sm text-white shadow-e2"
+                            className="z-(--z-dialogo) min-w-56 rounded-2xl border border-linha bg-superficie-elevada p-1.5 text-corpo text-white shadow-e2"
                           >
                             {statusActions.map((action) => (
                               <DropdownMenu.Item
@@ -851,7 +851,7 @@ export function SolicitacoesPage() {
                               data-testid={`solicitacao-anexos-${solicitacao.id}`}
                             >
                               Anexos
-                              <span className="text-xs text-slate-400">
+                              <span className="text-meta text-slate-400">
                                 {solicitacao.documentos?.length ?? 0}
                               </span>
                             </DropdownMenu.Item>
@@ -898,7 +898,7 @@ export function SolicitacoesPage() {
             Anterior
           </Botao>
 
-          <p className="text-sm text-slate-300">
+          <p className="inline-flex min-h-6 items-center text-corpo text-slate-300">
             Página {page} de {totalPages}
           </p>
 

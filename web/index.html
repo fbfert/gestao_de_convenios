@@ -3,18 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>web</title>
-    <script>
-      // Aplica o tema antes da primeira pintura para não piscar o tema errado.
-      // A chave precisa acompanhar `themeStorageKey` em src/stores/themeStore.ts.
-      try {
-        var tema = localStorage.getItem('gestao-convenios-tema')
-        document.documentElement.dataset.theme = tema === 'claro' ? 'claro' : 'escuro'
-      } catch (erro) {
-        document.documentElement.dataset.theme = 'escuro'
-      }
-    </script>
+    <title>Gestão de Convênios</title>
   </head>
   <body>
     <div id="root"></div>

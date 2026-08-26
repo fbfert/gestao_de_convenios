@@ -72,8 +72,8 @@ export function AntecipacoesPage() {
   return (
     <div className="space-y-8" data-testid="antecipacoes-page">
       <section>
-        <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Antecipações</p>
-        <h2 className="mt-2 flex items-center gap-2 text-3xl font-semibold text-white">
+        <p className="text-meta uppercase tracking-[0.3em] text-cyan-300/80">Antecipações</p>
+        <h2 className="mt-2 flex items-center gap-2 text-display font-semibold text-white">
           Painel de agendamento
           <Tooltip rotulo="O que é uma antecipação?">
             <p className="font-semibold text-white">Cota de sessões por ciclo</p>
@@ -90,7 +90,7 @@ export function AntecipacoesPage() {
       <section className="space-y-4 rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
         {alertasContinuidade.length > 0 ? (
           <div
-            className="rounded-3xl border border-amber-400/20 bg-amber-500/10 px-4 py-4 text-sm text-amber-50"
+            className="rounded-3xl border border-amber-400/20 bg-amber-500/10 px-4 py-4 text-corpo text-amber-50"
             data-testid="antecipacao-alerta-continuidade"
           >
             <p className="font-semibold">
@@ -107,7 +107,7 @@ export function AntecipacoesPage() {
 
         <form className="grid gap-3 md:grid-cols-3 xl:grid-cols-4" onSubmit={handleFilterSubmit}>
           <label className="space-y-2">
-            <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Status</span>
+            <span className="text-meta uppercase tracking-[0.25em] text-slate-400">Status</span>
             <Select
               value={draftFilters.status}
               onChange={(event) =>
@@ -123,7 +123,7 @@ export function AntecipacoesPage() {
           </label>
 
           <label className="space-y-2">
-            <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Paciente</span>
+            <span className="text-meta uppercase tracking-[0.25em] text-slate-400">Paciente</span>
             <Select
               value={draftFilters.paciente_id}
               onChange={(event) =>
@@ -142,7 +142,7 @@ export function AntecipacoesPage() {
           </label>
 
           <label className="space-y-2">
-            <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Convênio</span>
+            <span className="text-meta uppercase tracking-[0.25em] text-slate-400">Convênio</span>
             <Select
               value={draftFilters.convenio_id}
               onChange={(event) =>
@@ -162,24 +162,24 @@ export function AntecipacoesPage() {
 
           <button
             type="submit"
-            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+            className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 h-10 px-4 text-corpo font-semibold text-white transition hover:bg-white/10"
           >
             Aplicar
           </button>
         </form>
 
         {antecipacoesQuery.isLoading ? (
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
+          <div className="rounded-superficie border border-linha bg-fundo p-4 shadow-e1 text-corpo text-slate-300">
             Carregando antecipações...
           </div>
         ) : antecipacoesQuery.isError ? (
-          <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-100">
+          <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 p-4 text-corpo text-rose-100">
             Não foi possível carregar a lista.
           </div>
         ) : (
           <div className="overflow-x-auto rounded-superficie border border-linha">
-            <table className="w-full border-collapse text-left text-sm">
-              <thead className="bg-fundo text-xs uppercase tracking-[0.25em] text-texto-suave">
+            <table className="w-full border-collapse text-left text-corpo" data-cartoes="lg">
+              <thead className="bg-fundo text-meta uppercase tracking-[0.25em] text-texto-suave">
                 <tr>
                   <ColunaOrdenavel
                     titulo="ID"
@@ -218,23 +218,23 @@ export function AntecipacoesPage() {
               <tbody className="divide-y divide-linha bg-superficie">
                 {antecipacoes.map((antecipacao) => (
                   <tr key={antecipacao.id} data-testid={`antecipacao-row-${antecipacao.id}`}>
-                    <td className="px-4 py-4 font-medium text-white">#{antecipacao.id}</td>
-                    <td className="px-4 py-4 text-slate-200">
+                    <td data-rotulo="ID" className="px-4 py-4 font-medium text-white">#{antecipacao.id}</td>
+                    <td data-rotulo="Paciente" className="px-4 py-4 text-slate-200">
                       {pacientes.find((item) => item.id === antecipacao.paciente_id)?.nome ??
                         antecipacao.paciente_id}
                     </td>
-                    <td className="px-4 py-4 text-slate-200">
+                    <td data-rotulo="Convênio" className="px-4 py-4 text-slate-200">
                       {convenios.find((item) => item.id === antecipacao.convenio_id)?.nome ??
                         antecipacao.convenio_id}
                     </td>
-                    <td className="px-4 py-4 text-slate-200">
+                    <td data-rotulo="Cota" className="px-4 py-4 text-slate-200">
                       <div className="space-y-2" data-testid={`antecipacao-cota-${antecipacao.id}`}>
-                        <div className="flex items-center justify-between text-xs uppercase tracking-[0.25em] text-slate-400">
+                        <div className="flex items-center justify-between text-meta uppercase tracking-[0.25em] text-slate-400">
                           <span>{antecipacao.qtd_utilizada}</span>
                           <span>{antecipacao.qtd_autorizada}</span>
                         </div>
                         <p
-                          className="flex items-center gap-1 text-sm font-semibold text-white"
+                          className="flex items-center gap-1 text-corpo font-semibold text-white"
                           data-testid={`antecipacao-cota-text-${antecipacao.id}`}
                         >
                           {antecipacao.qtd_utilizada}/{antecipacao.qtd_autorizada}
@@ -257,9 +257,9 @@ export function AntecipacoesPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-4">
+                    <td data-rotulo="Status" className="px-4 py-4">
                       <span
-                        className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${statusTone(
+                        className={`inline-flex rounded-full border px-3 py-1 text-meta font-semibold ${statusTone(
                           antecipacao.status,
                         )}`}
                         data-testid={`antecipacao-status-${antecipacao.id}`}
@@ -268,17 +268,18 @@ export function AntecipacoesPage() {
                       </span>
                       {antecipacao.status === 'open' && !temSessaoFutura(antecipacao) ? (
                         <p
-                          className="mt-2 text-xs font-medium text-amber-100"
+                          className="mt-2 text-meta font-medium text-amber-100"
                           data-testid={`antecipacao-alerta-row-${antecipacao.id}`}
                         >
                           Sem próximos agendamentos
                         </p>
                       ) : null}
                     </td>
-                    <td className="flex w-px flex-nowrap items-center gap-1 whitespace-nowrap px-4 py-4">
+                    <td data-rotulo="Ações" data-rotulo-bloco className="w-px whitespace-nowrap px-4 py-4">
+                      <div className="flex flex-nowrap items-center gap-1">
                       <Link
                         to={`/lancamentos?antecipacao_id=${antecipacao.id}`}
-                        className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/10"
+                        className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-meta font-semibold text-white transition hover:bg-white/10"
                         data-testid={`antecipacao-lancar-${antecipacao.id}`}
                       >
                         Registrar
@@ -290,12 +291,13 @@ export function AntecipacoesPage() {
                       {pode('antecipacoes.manage') ? (
                         <Link
                           to={`/antecipacoes/${antecipacao.id}/editar`}
-                          className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/10"
+                          className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-meta font-semibold text-white transition hover:bg-white/10"
                           data-testid={`antecipacao-editar-${antecipacao.id}`}
                         >
                           Editar
                         </Link>
                       ) : null}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -314,20 +316,20 @@ export function AntecipacoesPage() {
         <div className="flex items-center justify-between gap-3">
           <button
             type="button"
-            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10 disabled:opacity-50"
+            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-corpo font-medium text-white transition hover:bg-white/10 disabled:opacity-50"
             onClick={() => setPage((current) => Math.max(1, current - 1))}
             disabled={page <= 1 || antecipacoesQuery.isFetching}
           >
             Anterior
           </button>
 
-          <p className="text-sm text-slate-300">
+          <p className="inline-flex min-h-6 items-center text-corpo text-slate-300">
             Página {page} de {totalPages}
           </p>
 
           <button
             type="button"
-            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10 disabled:opacity-50"
+            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-corpo font-medium text-white transition hover:bg-white/10 disabled:opacity-50"
             onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
             disabled={page >= totalPages || antecipacoesQuery.isFetching}
           >

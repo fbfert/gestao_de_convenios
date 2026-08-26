@@ -12,11 +12,29 @@ import { getHttpErrorMessage, useAtualizarGuia, type GuiaEditForm } from './useG
 import { statusTone } from './statusTone'
 import type { Guia } from './types'
 
-function DetailItem({ label, children }: { label: string; children: ReactNode }) {
+/**
+ * `span` existe porque as secoes sao grades de 4 colunas com contagem de cards
+ * que nao e multipla de 4: sem isso a ultima fila fica com metade (ou 3/4) da
+ * largura em branco. Os cards que ganham span sao os de texto corrido
+ * (observacoes, mensagem de erro), que aproveitam a largura em vez de espremer
+ * o conteudo numa coluna estreita.
+ */
+function DetailItem({
+  label,
+  children,
+  span,
+}: {
+  label: string
+  children: ReactNode
+  span?: 'duplo' | 'total'
+}) {
+  const classesSpan =
+    span === 'total' ? 'md:col-span-2 xl:col-span-4' : span === 'duplo' ? 'xl:col-span-2' : ''
+
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-      <p className="text-xs uppercase tracking-[0.25em] text-slate-400">{label}</p>
-      <div className="mt-2 text-sm font-medium text-white">{children}</div>
+    <div className={`rounded-superficie border border-linha bg-fundo p-4 shadow-e1 ${classesSpan}`}>
+      <p className="text-meta uppercase tracking-[0.25em] text-slate-400">{label}</p>
+      <div className="mt-2 text-corpo font-medium text-white">{children}</div>
     </div>
   )
 }
@@ -88,13 +106,13 @@ export function GuiaDetalheResumo({ guia }: { guia: Guia }) {
 
   return (
     <div className="space-y-8">
-      <section className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <section className="flex flex-col gap-4 sm:items-start lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Guia</p>
-          <h2 className="mt-2 text-3xl font-semibold text-white">
+          <p className="text-meta uppercase tracking-[0.3em] text-cyan-300/80">Guia</p>
+          <h2 className="mt-2 text-display font-semibold text-white">
             {guia.numero_guia ?? 'Aguardando número'}
           </h2>
-          <p className="mt-2 text-sm text-slate-300">{guia.tipo_terapia}</p>
+          <p className="mt-2 text-corpo text-slate-300">{guia.tipo_terapia}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Badge tone={statusTone(guia.status)} className="w-fit">
@@ -104,7 +122,7 @@ export function GuiaDetalheResumo({ guia }: { guia: Guia }) {
             <button
               type="button"
               onClick={iniciarEdicao}
-              className="rounded-2xl border border-cyan-300/40 bg-cyan-400/15 px-4 py-2 text-sm font-medium text-cyan-50 transition hover:bg-cyan-400/25"
+              className="rounded-2xl border border-cyan-300/40 bg-cyan-400/15 px-4 py-2 text-corpo font-medium text-cyan-50 transition hover:bg-cyan-400/25"
               data-testid="guia-resumo-ativar-edicao"
             >
               Ativar edição
@@ -113,11 +131,13 @@ export function GuiaDetalheResumo({ guia }: { guia: Guia }) {
         </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      {/* 2 cards: a grade para em 2 colunas. Com `xl:grid-cols-4` a fila
+          nascia com metade da largura em branco, logo no topo da tela. */}
+      <section className="grid gap-4 md:grid-cols-2">
         <DetailItem label="Paciente">
           <p>{guia.paciente?.nome ?? guia.paciente_id}</p>
           <p
-            className="mt-1 text-xs font-normal tabular-nums text-slate-300"
+            className="mt-1 text-meta font-normal tabular-nums text-slate-300"
             data-testid="guia-carteirinha"
           >
             Carteirinha: {formatCarteirinha(guia.paciente?.carteirinha) || '-'}
@@ -125,7 +145,7 @@ export function GuiaDetalheResumo({ guia }: { guia: Guia }) {
         </DetailItem>
         <DetailItem label="Convênio">{guia.convenio?.nome ?? guia.convenio_id}</DetailItem>
       </section>
-      <p className="-mt-4 text-xs text-slate-400">
+      <p className="-mt-4 text-meta text-slate-400">
         Paciente, convênio e status não são editáveis aqui: antecipações e conciliações já geradas usam esses
         dados, e o status muda pelos botões Finalizar/Negar.
       </p>
@@ -141,18 +161,18 @@ export function GuiaDetalheResumo({ guia }: { guia: Guia }) {
           <DetailItem label="Senha">{guia.senha ?? '-'}</DetailItem>
           <DetailItem label="Validade da senha">
             <span className={validadeVencendo ? 'text-amber-200' : undefined}>{guia.validade_senha ?? '-'}</span>
-            {validadeVencendo ? <p className="mt-1 text-xs font-normal text-amber-200">Vencendo em até 7 dias</p> : null}
+            {validadeVencendo ? <p className="mt-1 text-meta font-normal text-amber-200">Vencendo em até 7 dias</p> : null}
           </DetailItem>
           <DetailItem label="Sessões solicitadas">{guia.sessoes_solicitadas ?? '-'}</DetailItem>
           <DetailItem label="Sessões autorizadas">{guia.sessoes_autorizadas ?? '-'}</DetailItem>
-          <DetailItem label="Protocolo operadora">{guia.protocolo_operadora ?? '-'}</DetailItem>
-          <DetailItem label="Observações">{guia.observacoes ?? '-'}</DetailItem>
+          <DetailItem label="Protocolo operadora" span="duplo">{guia.protocolo_operadora ?? '-'}</DetailItem>
+          <DetailItem label="Observações" span="duplo">{guia.observacoes ?? '-'}</DetailItem>
         </section>
       ) : (
         <section className="space-y-4 rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
           <div className="grid gap-4 md:grid-cols-2">
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Especialidade</span>
+              <span className="text-corpo font-medium text-slate-200">Especialidade</span>
               <Select
                 value={form.especialidade_id}
                 onChange={(event) => setForm((current) => ({ ...current, especialidade_id: event.target.value }))}
@@ -170,7 +190,7 @@ export function GuiaDetalheResumo({ guia }: { guia: Guia }) {
               </Select>
             </label>
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Profissional executante</span>
+              <span className="text-corpo font-medium text-slate-200">Profissional executante</span>
               <Select
                 value={form.profissional_id}
                 onChange={(event) => setForm((current) => ({ ...current, profissional_id: event.target.value }))}
@@ -191,7 +211,7 @@ export function GuiaDetalheResumo({ guia }: { guia: Guia }) {
 
           <div className="grid gap-4 md:grid-cols-2">
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Número da guia</span>
+              <span className="text-corpo font-medium text-slate-200">Número da guia</span>
               <input
                 value={form.numero_guia}
                 onChange={(event) => setForm((current) => ({ ...current, numero_guia: event.target.value }))}
@@ -200,7 +220,7 @@ export function GuiaDetalheResumo({ guia }: { guia: Guia }) {
               />
             </label>
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Tipo de terapia</span>
+              <span className="text-corpo font-medium text-slate-200">Tipo de terapia</span>
               <Select
                 value={form.tipo_terapia}
                 onChange={(event) => setForm((current) => ({ ...current, tipo_terapia: event.target.value }))}
@@ -216,7 +236,7 @@ export function GuiaDetalheResumo({ guia }: { guia: Guia }) {
 
           <div className="grid gap-4 md:grid-cols-2">
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Data da solicitação</span>
+              <span className="text-corpo font-medium text-slate-200">Data da solicitação</span>
               <input
                 type="date"
                 value={form.data_solicitacao}
@@ -226,7 +246,7 @@ export function GuiaDetalheResumo({ guia }: { guia: Guia }) {
               />
             </label>
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Data de finalização</span>
+              <span className="text-corpo font-medium text-slate-200">Data de finalização</span>
               <input
                 type="date"
                 value={form.data_finalizacao}
@@ -239,7 +259,7 @@ export function GuiaDetalheResumo({ guia }: { guia: Guia }) {
 
           <div className="grid gap-4 md:grid-cols-2">
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Senha</span>
+              <span className="text-corpo font-medium text-slate-200">Senha</span>
               <input
                 value={form.senha}
                 onChange={(event) => setForm((current) => ({ ...current, senha: event.target.value }))}
@@ -248,7 +268,7 @@ export function GuiaDetalheResumo({ guia }: { guia: Guia }) {
               />
             </label>
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Validade da senha</span>
+              <span className="text-corpo font-medium text-slate-200">Validade da senha</span>
               <input
                 type="date"
                 value={form.validade_senha}
@@ -261,7 +281,7 @@ export function GuiaDetalheResumo({ guia }: { guia: Guia }) {
 
           <div className="grid gap-4 md:grid-cols-3">
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Sessões solicitadas</span>
+              <span className="text-corpo font-medium text-slate-200">Sessões solicitadas</span>
               <input
                 type="number"
                 min="1"
@@ -272,7 +292,7 @@ export function GuiaDetalheResumo({ guia }: { guia: Guia }) {
               />
             </label>
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Sessões autorizadas</span>
+              <span className="text-corpo font-medium text-slate-200">Sessões autorizadas</span>
               <input
                 type="number"
                 min="0"
@@ -283,7 +303,7 @@ export function GuiaDetalheResumo({ guia }: { guia: Guia }) {
               />
             </label>
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Protocolo da operadora</span>
+              <span className="text-corpo font-medium text-slate-200">Protocolo da operadora</span>
               <input
                 value={form.protocolo_operadora}
                 onChange={(event) => setForm((current) => ({ ...current, protocolo_operadora: event.target.value }))}
@@ -294,7 +314,7 @@ export function GuiaDetalheResumo({ guia }: { guia: Guia }) {
           </div>
 
           <label className="block space-y-2">
-            <span className="text-sm font-medium text-slate-200">Observações</span>
+            <span className="text-corpo font-medium text-slate-200">Observações</span>
             <textarea
               value={form.observacoes}
               onChange={(event) => setForm((current) => ({ ...current, observacoes: event.target.value }))}
@@ -305,7 +325,7 @@ export function GuiaDetalheResumo({ guia }: { guia: Guia }) {
           </label>
 
           {erro ? (
-            <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">{erro}</p>
+            <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-corpo text-rose-100">{erro}</p>
           ) : null}
 
           <div className="flex gap-2">
@@ -326,7 +346,7 @@ export function GuiaDetalheResumo({ guia }: { guia: Guia }) {
 
       {guia.solicitacao_item || guia.automacao_execucao || guia.ultima_automacao_unimed ? (
         <section className="rounded-janela border border-acento/20 bg-acento-suave p-6">
-          <h3 className="text-lg font-semibold text-white">Operação Unimed</h3>
+          <h3 className="text-subtitulo font-semibold text-white">Operação Unimed</h3>
           <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <DetailItem label="Item da solicitação">
               {guia.solicitacao_item ? `#${guia.solicitacao_item.id}` : '-'}
@@ -366,7 +386,7 @@ export function GuiaDetalheResumo({ guia }: { guia: Guia }) {
                 ? `${guia.ultima_automacao_unimed.operacao} · ${guia.ultima_automacao_unimed.status}`
                 : '-'}
             </DetailItem>
-            <DetailItem label="Erro recente">
+            <DetailItem label="Erro recente" span="total">
               {guia.ultima_automacao_unimed?.erro_codigo &&
               guia.ultima_automacao_unimed.status !== 'succeeded'
                 ? `${guia.ultima_automacao_unimed.erro_codigo}: ${guia.ultima_automacao_unimed.erro_mensagem ?? '-'}`
@@ -375,9 +395,9 @@ export function GuiaDetalheResumo({ guia }: { guia: Guia }) {
           </div>
 
           {(guia.ultima_automacao_unimed?.eventos.length || guia.automacao_execucao?.eventos.length) ? (
-            <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4">
-              <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Eventos</p>
-              <div className="mt-3 space-y-2 text-sm text-slate-200">
+            <div className="mt-4 rounded-superficie border border-linha bg-fundo p-4 shadow-e1">
+              <p className="text-meta uppercase tracking-[0.25em] text-slate-400">Eventos</p>
+              <div className="mt-3 space-y-2 text-corpo text-slate-200">
                 {(guia.ultima_automacao_unimed?.eventos ?? guia.automacao_execucao?.eventos ?? []).map((evento) => (
                   <p key={evento.id}>
                     {evento.registrado_em ?? '-'} · {evento.tipo} · {evento.status ?? '-'}
@@ -392,43 +412,43 @@ export function GuiaDetalheResumo({ guia }: { guia: Guia }) {
       <section className="grid gap-4 xl:grid-cols-2">
         <article className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
           <div className="flex items-center justify-between gap-4">
-            <h3 className="text-lg font-semibold text-white">Antecipações</h3>
-            <Link to="/antecipacoes" className="text-sm font-semibold text-cyan-200 hover:text-cyan-100">
+            <h3 className="text-subtitulo font-semibold text-white">Antecipações</h3>
+            <Link to="/antecipacoes" className="inline-flex min-h-6 items-center text-corpo font-semibold text-cyan-200 hover:text-cyan-100">
               Ver antecipações
             </Link>
           </div>
           {guia.antecipacoes?.length ? (
             <div className="mt-4 space-y-3">
               {guia.antecipacoes.map((antecipacao) => (
-                <div key={antecipacao.id} className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-200">
+                <div key={antecipacao.id} className="rounded-superficie border border-linha bg-fundo p-4 shadow-e1 text-corpo text-slate-200">
                   <p className="font-semibold text-white">Antecipação #{antecipacao.id}</p>
                   <p className="mt-1">Cota: {antecipacao.qtd_utilizada}/{antecipacao.qtd_autorizada}</p>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="mt-4 text-sm text-slate-300">Nenhuma antecipação vinculada.</p>
+            <p className="mt-4 text-corpo text-slate-300">Nenhuma antecipação vinculada.</p>
           )}
         </article>
 
         <article className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
           <div className="flex items-center justify-between gap-4">
-            <h3 className="text-lg font-semibold text-white">Conciliação</h3>
-            <Link to="/conciliacao" className="text-sm font-semibold text-cyan-200 hover:text-cyan-100">
+            <h3 className="text-subtitulo font-semibold text-white">Conciliação</h3>
+            <Link to="/conciliacao" className="inline-flex min-h-6 items-center text-corpo font-semibold text-cyan-200 hover:text-cyan-100">
               Ver conciliação
             </Link>
           </div>
           {guia.conciliacoes?.length ? (
             <div className="mt-4 space-y-3">
               {guia.conciliacoes.map((conciliacao) => (
-                <div key={conciliacao.id} className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-200">
+                <div key={conciliacao.id} className="rounded-superficie border border-linha bg-fundo p-4 shadow-e1 text-corpo text-slate-200">
                   <p className="font-semibold text-white">Conciliação #{conciliacao.id}</p>
                   <p className="mt-1">Status: {translateStatus('conciliacoes', conciliacao.status)}</p>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="mt-4 text-sm text-slate-300">Nenhuma conciliação gerada.</p>
+            <p className="mt-4 text-corpo text-slate-300">Nenhuma conciliação gerada.</p>
           )}
         </article>
       </section>

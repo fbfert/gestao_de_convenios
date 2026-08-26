@@ -105,7 +105,7 @@ export function CidsCampo({
           {selecionados.map((cid) => (
             <span
               key={cid.id}
-              className="inline-flex items-center gap-2 rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1.5 text-xs font-semibold text-cyan-100"
+              className="inline-flex items-center gap-2 rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1.5 text-meta font-semibold text-cyan-100"
             >
               {cid.codigo} — {cid.descricao}
               <button
@@ -152,29 +152,29 @@ export function CidsCampo({
       </div>
 
       {abrirNovo ? (
-        <div className="space-y-2 rounded-2xl border border-white/10 bg-white/5 p-4">
+        <div className="space-y-2 rounded-superficie border border-linha bg-fundo p-4 shadow-e1">
           <label className="block space-y-1">
-            <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Código</span>
+            <span className="text-meta uppercase tracking-[0.25em] text-slate-400">Código</span>
             <input
               value={novoCodigo}
               onChange={(event) => setNovoCodigo(event.target.value)}
-              className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20"
+              className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-corpo text-white outline-none transition placeholder:text-texto-suave focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20"
               placeholder="F84.0"
               data-testid={`${testIdPrefix}-novo-codigo`}
             />
           </label>
           <label className="block space-y-1">
-            <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Descrição</span>
+            <span className="text-meta uppercase tracking-[0.25em] text-slate-400">Descrição</span>
             <input
               value={novaDescricao}
               onChange={(event) => setNovaDescricao(event.target.value)}
-              className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20"
+              className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-corpo text-white outline-none transition placeholder:text-texto-suave focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20"
               placeholder="Autismo infantil"
               data-testid={`${testIdPrefix}-novo-descricao`}
             />
           </label>
 
-          {erro ? <p className="text-xs text-rose-100">{erro}</p> : null}
+          {erro ? <p className="text-meta text-rose-100">{erro}</p> : null}
 
           <div className="flex gap-2">
             <Botao

@@ -80,7 +80,7 @@ export function GuiaStatusActions({ guia }: { guia: Guia }) {
       <div className="flex flex-nowrap items-center gap-2">
         <button
           type="button"
-          className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1.5 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-400/20 disabled:opacity-50"
+          className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1.5 text-meta font-semibold text-emerald-100 transition hover:bg-emerald-400/20 disabled:opacity-50"
           onClick={() => {
             setIsFinalizeOpen(true)
             setActionError(null)
@@ -92,7 +92,7 @@ export function GuiaStatusActions({ guia }: { guia: Guia }) {
         </button>
         <button
           type="button"
-          className="rounded-full border border-rose-400/30 bg-rose-400/10 px-3 py-1.5 text-xs font-semibold text-rose-100 transition hover:bg-rose-400/20 disabled:opacity-50"
+          className="rounded-full border border-rose-400/30 bg-rose-400/10 px-3 py-1.5 text-meta font-semibold text-rose-100 transition hover:bg-rose-400/20 disabled:opacity-50"
           onClick={handleNegar}
           disabled={finalizarGuia.isPending || negarGuia.isPending}
           data-testid={`guia-negar-${guia.id}`}
@@ -104,7 +104,7 @@ export function GuiaStatusActions({ guia }: { guia: Guia }) {
       {isFinalizeOpen ? (
         <div className="grid gap-3 rounded-2xl border border-white/10 bg-slate-950/50 p-4 md:grid-cols-[1fr_1fr_auto] md:items-end">
           <label className="space-y-2">
-            <span className="flex items-center gap-1 text-xs uppercase tracking-[0.25em] text-slate-400">
+            <span className="flex items-center gap-1 text-meta uppercase tracking-[0.25em] text-slate-400">
               Senha
               <Tooltip rotulo="O que é a senha aqui">
                 É o código de autorização que o convênio devolve para a guia — não é senha de login.
@@ -122,7 +122,7 @@ export function GuiaStatusActions({ guia }: { guia: Guia }) {
             />
           </label>
           <label className="space-y-2">
-            <span className="text-xs uppercase tracking-[0.25em] text-slate-400">
+            <span className="text-meta uppercase tracking-[0.25em] text-slate-400">
               Validade senha
             </span>
             <input
@@ -152,7 +152,7 @@ export function GuiaStatusActions({ guia }: { guia: Guia }) {
       ) : null}
 
       {actionError ? (
-        <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+        <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-corpo text-rose-100">
           {actionError}
         </p>
       ) : null}

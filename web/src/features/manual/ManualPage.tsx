@@ -98,7 +98,7 @@ export function ManualPage() {
             type="button"
             onClick={() => trocarAba(item.tipo)}
             className={[
-              'rounded-full border px-4 py-2 text-sm font-medium transition',
+              'rounded-full border px-4 py-2 text-corpo font-medium transition',
               aba === item.tipo
                 ? 'border-cyan-300/40 bg-cyan-400/15 text-cyan-50'
                 : 'border-white/10 bg-white/5 text-slate-200 hover:bg-white/10',
@@ -112,10 +112,10 @@ export function ManualPage() {
 
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-[.3em] text-cyan-300">Manual</p>
-          <h2 className="mt-2 text-3xl font-semibold">{tituloAba}</h2>
+          <p className="text-meta uppercase tracking-[.3em] text-cyan-300">Manual</p>
+          <h2 className="mt-2 text-display font-semibold">{tituloAba}</h2>
           {manual?.atualizado_em && (
-            <p className="mt-2 text-sm text-slate-400">
+            <p className="mt-2 text-corpo text-slate-400">
               Última atualização em {new Date(manual.atualizado_em).toLocaleString('pt-BR')}
               {manual.atualizado_por ? ` por ${manual.atualizado_por}` : ''}
             </p>
@@ -126,7 +126,7 @@ export function ManualPage() {
           <button
             type="button"
             onClick={iniciarEdicao}
-            className="rounded-full border border-cyan-300/40 bg-cyan-400/15 px-5 py-2 text-sm font-medium text-cyan-50 transition hover:bg-cyan-400/25"
+            className="rounded-full border border-cyan-300/40 bg-cyan-400/15 px-5 py-2 text-corpo font-medium text-cyan-50 transition hover:bg-cyan-400/25"
             data-testid="manual-editar"
           >
             Editar {aba === 'mapa-mental' ? 'mapa mental' : 'manual'}
@@ -138,7 +138,7 @@ export function ManualPage() {
             <button
               type="button"
               onClick={cancelarEdicao}
-              className="rounded-full border border-white/15 bg-white/5 px-5 py-2 text-sm font-medium text-white transition hover:bg-white/10"
+              className="rounded-full border border-white/15 bg-white/5 px-5 py-2 text-corpo font-medium text-white transition hover:bg-white/10"
               disabled={updateManual.isPending}
             >
               Cancelar
@@ -146,7 +146,7 @@ export function ManualPage() {
             <button
               type="button"
               onClick={salvar}
-              className="rounded-full border border-emerald-300/40 bg-emerald-400/15 px-5 py-2 text-sm font-medium text-emerald-50 transition hover:bg-emerald-400/25 disabled:opacity-60"
+              className="rounded-full border border-emerald-300/40 bg-emerald-400/15 px-5 py-2 text-corpo font-medium text-emerald-50 transition hover:bg-emerald-400/25 disabled:opacity-60"
               disabled={updateManual.isPending}
               data-testid="manual-salvar"
             >
@@ -157,7 +157,7 @@ export function ManualPage() {
       </div>
 
       {updateManual.isError && (
-        <p className="rounded-2xl border border-rose-400/30 bg-rose-500/10 p-4 text-sm text-rose-100">
+        <p className="rounded-2xl border border-rose-400/30 bg-rose-500/10 p-4 text-corpo text-rose-100">
           Não foi possível salvar. Tente novamente.
         </p>
       )}
@@ -171,7 +171,7 @@ export function ManualPage() {
             value={rascunho}
             onChange={(event) => setRascunho(event.target.value)}
             spellCheck={false}
-            className="h-[65vh] w-full rounded-2xl border border-white/10 bg-slate-950/80 p-4 font-mono text-xs text-slate-100 outline-none focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20"
+            className="h-[65vh] w-full rounded-2xl border border-white/10 bg-slate-950/80 p-4 font-mono text-meta text-slate-100 outline-none focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20"
             data-testid="manual-textarea"
           />
         </div>
@@ -188,7 +188,7 @@ export function ManualPage() {
           style={{ height: altura }}
           /* Branco literal. `bg-white` resolve para --color-white, que no tema
              claro vira tinta escura — o papel do manual ficaria preto. */
-          className="w-full rounded-2xl border border-white/10 bg-[#ffffff]"
+          className="w-full rounded-2xl border border-white/10 bg-papel"
           data-testid="manual-iframe"
         />
       )}

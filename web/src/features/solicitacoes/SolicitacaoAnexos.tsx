@@ -89,25 +89,25 @@ function DocumentoSlot({
 
   return (
     <div
-      className="rounded-2xl border border-white/10 bg-white/5 p-4"
+      className="rounded-superficie border border-linha bg-fundo p-4 shadow-e1"
       data-testid={`anexo-slot-${tipo}${itemId ? `-item-${itemId}` : ''}`}
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm font-semibold text-white">
+        <p className="text-corpo font-semibold text-white">
           {DOCUMENTO_LABELS[tipo]}
           {obrigatorio ? (
-            <span className="ml-2 rounded-full border border-rose-400/30 bg-rose-400/10 px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wider text-rose-100">
+            <span className="ml-2 rounded-full border border-rose-400/30 bg-rose-400/10 px-2 py-0.5 text-meta font-semibold uppercase tracking-wider text-rose-100">
               Obrigatório
             </span>
           ) : (
-            <span className="ml-2 text-xs font-normal text-slate-400">opcional</span>
+            <span className="ml-2 text-meta font-normal text-slate-400">opcional</span>
           )}
         </p>
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
           disabled={ocupado}
-          className="rounded-full border border-cyan-300/30 bg-cyan-400/10 px-3 py-1.5 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-400/20 disabled:opacity-50"
+          className="rounded-full border border-cyan-300/30 bg-cyan-400/10 px-3 py-1.5 text-meta font-semibold text-cyan-100 transition hover:bg-cyan-400/20 disabled:opacity-50"
           data-testid={`anexo-upload-${tipo}${itemId ? `-item-${itemId}` : ''}`}
         >
           {anexar.isPending ? 'Enviando...' : 'Anexar arquivo'}
@@ -122,7 +122,7 @@ function DocumentoSlot({
       </div>
 
       {doTipo.length === 0 ? (
-        <p className="mt-2 text-xs text-slate-400">
+        <p className="mt-2 text-meta text-slate-400">
           Nenhum arquivo anexado. Imagem (JPG, PNG, GIF) ou PDF, até 5 MB.
         </p>
       ) : (
@@ -130,7 +130,7 @@ function DocumentoSlot({
           {doTipo.map((documento) => (
             <li
               key={documento.id}
-              className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/10 bg-slate-950/40 px-3 py-2 text-sm text-slate-200"
+              className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/10 bg-slate-950/40 px-3 py-2 text-corpo text-slate-200"
             >
               <span className="truncate">{documento.nome_original}</span>
               <span className="flex gap-2">
@@ -139,13 +139,13 @@ function DocumentoSlot({
                   onClick={() =>
                     void abrirDocumento(solicitacaoId, documento.id, documento.nome_original)
                   }
-                  className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-white transition hover:bg-white/10"
+                  className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-meta font-semibold text-white transition hover:bg-white/10"
                 >
                   Abrir
                 </button>
                 {travado ? (
                   <span
-                    className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-slate-400"
+                    className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-meta font-semibold text-slate-400"
                     title="Guia já gerada: o anexo é evidência do envio."
                   >
                     Guia gerada
@@ -155,7 +155,7 @@ function DocumentoSlot({
                     type="button"
                     onClick={() => setAExcluir(documento)}
                     disabled={ocupado}
-                    className="rounded-full border border-rose-400/30 bg-rose-400/10 px-3 py-1 text-xs font-semibold text-rose-100 transition hover:bg-rose-400/20 disabled:opacity-50"
+                    className="rounded-full border border-rose-400/30 bg-rose-400/10 px-3 py-1 text-meta font-semibold text-rose-100 transition hover:bg-rose-400/20 disabled:opacity-50"
                   >
                     Remover
                   </button>
@@ -189,17 +189,17 @@ export function SolicitacaoAnexos({ solicitacao }: { solicitacao: Solicitacao })
     Boolean(solicitacao.guia) || (solicitacao.itens ?? []).some((item) => Boolean(item.guia_id))
 
   return (
-    <section className="space-y-4 rounded-3xl border border-white/10 bg-slate-950/40 p-5" data-testid="solicitacao-anexos">
+    <section className="space-y-4 rounded-superficie border border-linha bg-fundo p-5 shadow-e1" data-testid="solicitacao-anexos">
       <div>
-        <h3 className="text-lg font-semibold text-white">Anexos</h3>
-        <p className="mt-1 text-sm text-slate-300">
+        <h3 className="text-subtitulo font-semibold text-white">Anexos</h3>
+        <p className="mt-1 text-corpo text-slate-300">
           O Pedido Médico vale para o pedido inteiro e é exigido no envio à Unimed. Plano
           Individualizado e Relatório de Evolução são anexados por especialidade.
         </p>
       </div>
 
       {erro ? (
-        <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+        <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-corpo text-rose-100">
           {erro}
         </p>
       ) : null}
@@ -219,13 +219,13 @@ export function SolicitacaoAnexos({ solicitacao }: { solicitacao: Solicitacao })
       </div>
 
       {(solicitacao.itens ?? []).map((item) => (
-        <div key={item.id} className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4">
-          <p className="text-sm font-semibold text-white">
+        <div key={item.id} className="space-y-3 rounded-superficie border border-linha bg-fundo p-4 shadow-e1">
+          <p className="text-corpo font-semibold text-white">
             {item.especialidade?.nome ?? `Especialidade #${item.especialidade_id}`}
             {item.especialidade?.mapeamento_convenio?.codigo_procedimento
               ? ` · ${item.especialidade.mapeamento_convenio.codigo_procedimento}`
               : ''}
-            <span className="ml-2 text-xs font-normal text-slate-400">
+            <span className="ml-2 text-meta font-normal text-slate-400">
               {item.profissional?.nome ?? `Profissional #${item.profissional_id}`}
             </span>
           </p>

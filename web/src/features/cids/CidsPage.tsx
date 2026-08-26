@@ -144,10 +144,10 @@ export function CidsPage() {
     <div className="space-y-8" data-testid="cids-page">
       {!isFormRoute ? (
         <section className="space-y-4">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="flex flex-col gap-4 sm:items-start lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">CIDs</p>
-              <h2 className="mt-2 text-3xl font-semibold text-white">
+              <p className="text-meta uppercase tracking-[0.3em] text-cyan-300/80">CIDs</p>
+              <h2 className="mt-2 text-display font-semibold text-white">
                 Códigos CID-10 usados nas solicitações
               </h2>
             </div>
@@ -174,19 +174,19 @@ export function CidsPage() {
           <form onSubmit={handleSubmit} className="space-y-4" data-testid="cid-form">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h3 className="text-lg font-semibold text-white">
+                <h3 className="text-subtitulo font-semibold text-white">
                   {editingId ? 'Editar CID' : 'Novo CID'}
                 </h3>
               </div>
               {editingId ? (
-                <span className="rounded-full border border-cyan-300/20 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-100">
+                <span className="rounded-full border border-cyan-300/20 bg-cyan-400/10 px-3 py-1 text-meta font-semibold text-cyan-100">
                   Editando #{editingId}
                 </span>
               ) : null}
             </div>
 
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Código</span>
+              <span className="text-corpo font-medium text-slate-200">Código</span>
               <input
                 value={form.codigo}
                 onChange={(event) => setForm((current) => ({ ...current, codigo: event.target.value }))}
@@ -198,7 +198,7 @@ export function CidsPage() {
             </label>
 
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Descrição</span>
+              <span className="text-corpo font-medium text-slate-200">Descrição</span>
               <input
                 value={form.descricao}
                 onChange={(event) => setForm((current) => ({ ...current, descricao: event.target.value }))}
@@ -217,11 +217,11 @@ export function CidsPage() {
                 className="h-4 w-4 rounded border-white/20 bg-white/10 text-cyan-300 focus:ring-cyan-300/20"
                 data-testid="cid-ativo"
               />
-              <span className="text-sm font-medium text-slate-200">Ativo</span>
+              <span className="text-corpo font-medium text-slate-200">Ativo</span>
             </label>
 
             {formError ? (
-              <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+              <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-corpo text-rose-100">
                 {formError}
               </p>
             ) : null}
@@ -261,10 +261,10 @@ export function CidsPage() {
           data-testid="cid-edicao-indisponivel"
         >
           {cidsQuery.isLoading ? (
-            <p className="text-sm text-slate-300">Carregando CID...</p>
+            <p className="inline-flex min-h-6 items-center text-corpo text-slate-300">Carregando CID...</p>
           ) : (
             <div className="space-y-4">
-              <p className="text-sm text-rose-100">
+              <p className="text-corpo text-rose-100">
                 CID não encontrado. Ele pode ter sido removido ou o endereço está incorreto.
               </p>
               <Botao type="button" variante="secundario" onClick={handleCancel} data-testid="cid-voltar">
@@ -277,10 +277,10 @@ export function CidsPage() {
 
       {!isFormRoute ? (
         <section className="space-y-4 rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="flex flex-col gap-4 sm:items-start lg:flex-row lg:items-end lg:justify-between">
             <form className="flex flex-wrap gap-3" onSubmit={handleFilterSubmit}>
               <label className="min-w-56 space-y-2">
-                <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Busca</span>
+                <span className="text-meta uppercase tracking-[0.25em] text-slate-400">Busca</span>
                 <input
                   value={draftBusca}
                   onChange={(event) => setDraftBusca(event.target.value)}
@@ -290,7 +290,7 @@ export function CidsPage() {
                 />
               </label>
               <label className="min-w-48 space-y-2">
-                <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Status</span>
+                <span className="text-meta uppercase tracking-[0.25em] text-slate-400">Status</span>
                 <select
                   value={draftStatusFiltro}
                   onChange={(event) => setDraftStatusFiltro(event.target.value as StatusFiltro)}
@@ -309,17 +309,17 @@ export function CidsPage() {
           </div>
 
           {cidsQuery.isLoading ? (
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
+            <div className="rounded-superficie border border-linha bg-fundo p-4 shadow-e1 text-corpo text-slate-300">
               Carregando CIDs...
             </div>
           ) : cidsQuery.isError ? (
-            <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-100">
+            <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 p-4 text-corpo text-rose-100">
               Não foi possível carregar os CIDs.
             </div>
           ) : (
             <div className="overflow-x-auto rounded-superficie border border-linha">
-              <table className="w-full border-collapse text-left text-sm">
-                <thead className="bg-fundo text-xs uppercase tracking-[0.25em] text-texto-suave">
+              <table className="w-full border-collapse text-left text-corpo" data-cartoes="md">
+                <thead className="bg-fundo text-meta uppercase tracking-[0.25em] text-texto-suave">
                   <tr>
                     <ColunaOrdenavel
                       titulo="Código"
@@ -347,19 +347,19 @@ export function CidsPage() {
                 <tbody className="divide-y divide-linha bg-superficie">
                   {cidsFiltrados.map((cid) => (
                     <tr key={cid.id} data-testid={`cid-row-${cid.id}`}>
-                      <td className="px-4 py-4 font-medium text-slate-100">{cid.codigo}</td>
-                      <td className="px-4 py-4 text-slate-100">{cid.descricao}</td>
-                      <td className="px-4 py-4">
+                      <td data-rotulo="Código" className="px-4 py-4 font-medium text-slate-100">{cid.codigo}</td>
+                      <td data-rotulo="Descrição" data-rotulo-bloco className="px-4 py-4 text-slate-100">{cid.descricao}</td>
+                      <td data-rotulo="Status" className="px-4 py-4">
                         <Badge tone={statusTone(cid.ativo)} data-testid={`cid-status-${cid.id}`}>
                           {cid.ativo ? 'Ativo' : 'Inativo'}
                         </Badge>
                       </td>
-                      <td className="w-px whitespace-nowrap px-4 py-4">
+                      <td data-rotulo="Ações" data-rotulo-bloco className="w-px whitespace-nowrap px-4 py-4">
                         <div className="flex flex-nowrap gap-2">
                           <button
                             type="button"
                             onClick={() => handleEdit(cid)}
-                            className="rounded-full border border-cyan-300/30 bg-cyan-400/10 px-3 py-1.5 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-400/20"
+                            className="rounded-full border border-cyan-300/30 bg-cyan-400/10 px-3 py-1.5 text-meta font-semibold text-cyan-100 transition hover:bg-cyan-400/20"
                             data-testid={`cid-editar-${cid.id}`}
                           >
                             Editar
@@ -367,7 +367,7 @@ export function CidsPage() {
                           <button
                             type="button"
                             onClick={() => handleToggleAtivo(cid)}
-                            className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/10 disabled:opacity-60"
+                            className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-meta font-semibold text-white transition hover:bg-white/10 disabled:opacity-60"
                             disabled={atualizarCid.isPending}
                             data-testid={`cid-toggle-${cid.id}`}
                           >

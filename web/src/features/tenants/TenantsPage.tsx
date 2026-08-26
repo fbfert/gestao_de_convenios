@@ -14,7 +14,7 @@ import {
 import { Botao } from '../../components/ui/Botao'
 
 function inputClasses() {
-  return 'w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20'
+  return 'w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-corpo text-white outline-none transition placeholder:text-texto-suave focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20'
 }
 
 /** `null` = nada aberto; `'nova'` = criando; número = editando aquele id. */
@@ -104,7 +104,7 @@ export function TenantsPage() {
     // Guarda de cortesia: a rota é alcançável por URL. A restrição de verdade
     // está no middleware `super-admin`, que devolve 403 em toda chamada.
     return (
-      <div className="rounded-janela border border-perigo/30 bg-perigo-suave p-6 text-sm text-perigo-texto">
+      <div className="rounded-janela border border-perigo/30 bg-perigo-suave p-6 text-corpo text-perigo-texto">
         Esta área é restrita à administração do sistema.
       </div>
     )
@@ -113,9 +113,9 @@ export function TenantsPage() {
   return (
     <div className="space-y-6" data-testid="tenants-page">
       <section className="space-y-2">
-        <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Administração</p>
-        <h2 className="text-3xl font-semibold text-white">Clínicas</h2>
-        <p className="max-w-3xl text-sm leading-6 text-slate-300">
+        <p className="text-meta uppercase tracking-[0.3em] text-cyan-300/80">Administração</p>
+        <h2 className="text-display font-semibold text-white">Clínicas</h2>
+        <p className="max-w-3xl text-corpo leading-6 text-slate-300">
           Cada clínica é um tenant: os dados de uma nunca aparecem na outra. Um usuário pertence a
           uma única clínica — para atender duas, a pessoa precisa de duas contas com e-mails
           diferentes.
@@ -126,19 +126,19 @@ export function TenantsPage() {
         <Botao variante="primario" onClick={abrirNova} data-testid="tenant-nova">
           Nova clínica
         </Botao>
-        <span className="text-xs text-slate-400">
+        <span className="text-meta text-slate-400">
           {tenants.length} {tenants.length === 1 ? 'clínica cadastrada' : 'clínicas cadastradas'}
         </span>
       </div>
 
       {message ? (
-        <p className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+        <p className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-corpo text-emerald-100">
           {message}
         </p>
       ) : null}
 
       {error ? (
-        <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+        <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-corpo text-rose-100">
           {error}
         </p>
       ) : null}
@@ -149,15 +149,15 @@ export function TenantsPage() {
           className="rounded-janela border border-acento/30 bg-superficie-elevada shadow-e2 p-6"
           data-testid="tenant-form"
         >
-          <h3 className="text-lg font-semibold text-white">Nova clínica</h3>
-          <p className="mt-1 text-sm text-slate-300">
+          <h3 className="text-subtitulo font-semibold text-white">Nova clínica</h3>
+          <p className="mt-1 text-corpo text-slate-300">
             A clínica nasce com os papéis <strong>admin</strong>, <strong>funcionário</strong> e{' '}
             <strong>profissional</strong> já criados, com as permissões padrão.
           </p>
 
           <div className="mt-5 grid gap-4 md:grid-cols-2">
             <label className="space-y-2">
-              <span className="text-sm font-medium text-slate-200">Nome</span>
+              <span className="text-corpo font-medium text-slate-200">Nome</span>
               <input
                 value={form.nome}
                 onChange={(event) => alterarNome(event.target.value)}
@@ -168,7 +168,7 @@ export function TenantsPage() {
               />
             </label>
             <label className="space-y-2">
-              <span className="text-sm font-medium text-slate-200">Identificador</span>
+              <span className="text-corpo font-medium text-slate-200">Identificador</span>
               <input
                 value={form.slug}
                 onChange={(event) => {
@@ -180,12 +180,12 @@ export function TenantsPage() {
                 required
                 data-testid="tenant-slug"
               />
-              <span className="block text-xs text-slate-400">
+              <span className="block text-meta text-slate-400">
                 Minúsculas, números e hífen. Não pode ser alterado depois.
               </span>
             </label>
             <label className="space-y-2">
-              <span className="text-sm font-medium text-slate-200">CNPJ</span>
+              <span className="text-corpo font-medium text-slate-200">CNPJ</span>
               <input
                 value={form.cnpj}
                 onChange={(event) => setForm((atual) => ({ ...atual, cnpj: event.target.value }))}
@@ -194,7 +194,7 @@ export function TenantsPage() {
                 data-testid="tenant-cnpj"
               />
             </label>
-            <label className="flex items-center gap-2 text-sm font-medium text-slate-200 md:mt-7">
+            <label className="flex min-h-6 items-center gap-2 text-corpo font-medium text-slate-200 md:mt-7">
               <input
                 type="checkbox"
                 checked={form.ativo}
@@ -206,16 +206,16 @@ export function TenantsPage() {
             </label>
           </div>
 
-          <div className="mt-6 rounded-3xl border border-white/10 bg-white/5 p-4">
-            <h4 className="text-sm font-semibold text-white">Administrador inicial</h4>
-            <p className="mt-1 text-xs text-slate-400">
+          <div className="mt-6 rounded-superficie border border-linha bg-fundo p-4 shadow-e1">
+            <h4 className="text-corpo font-semibold text-white">Administrador inicial</h4>
+            <p className="mt-1 text-meta text-slate-400">
               Obrigatório: sem uma conta, ninguém consegue entrar na clínica nova, e a tela de
               Usuários só cria pessoas na clínica de quem está logado.
             </p>
 
             <div className="mt-4 grid gap-4 md:grid-cols-3">
               <label className="space-y-2">
-                <span className="text-sm font-medium text-slate-200">Nome</span>
+                <span className="text-corpo font-medium text-slate-200">Nome</span>
                 <input
                   value={form.admin.name}
                   onChange={(event) =>
@@ -227,7 +227,7 @@ export function TenantsPage() {
                 />
               </label>
               <label className="space-y-2">
-                <span className="text-sm font-medium text-slate-200">E-mail</span>
+                <span className="text-corpo font-medium text-slate-200">E-mail</span>
                 <input
                   type="email"
                   value={form.admin.email}
@@ -238,12 +238,12 @@ export function TenantsPage() {
                   required
                   data-testid="tenant-admin-email"
                 />
-                <span className="block text-xs text-slate-400">
+                <span className="block text-meta text-slate-400">
                   Único entre todas as clínicas.
                 </span>
               </label>
               <label className="space-y-2">
-                <span className="text-sm font-medium text-slate-200">Senha</span>
+                <span className="text-corpo font-medium text-slate-200">Senha</span>
                 <input
                   type="password"
                   value={form.admin.password}
@@ -258,7 +258,7 @@ export function TenantsPage() {
                   required
                   data-testid="tenant-admin-senha"
                 />
-                <span className="block text-xs text-slate-400">Mínimo de 8 caracteres.</span>
+                <span className="block text-meta text-slate-400">Mínimo de 8 caracteres.</span>
               </label>
             </div>
           </div>
@@ -274,10 +274,10 @@ export function TenantsPage() {
         </form>
       ) : null}
 
-      {tenantsQuery.isPending ? <p className="text-sm text-slate-400">Carregando clínicas...</p> : null}
+      {tenantsQuery.isPending ? <p className="text-corpo text-slate-400">Carregando clínicas...</p> : null}
 
       {tenantsQuery.isError ? (
-        <p className="text-sm text-rose-300">
+        <p className="text-corpo text-rose-300">
           {getHttpErrorMessage(tenantsQuery.error, 'Não foi possível carregar as clínicas.')}
         </p>
       ) : null}
@@ -286,14 +286,14 @@ export function TenantsPage() {
         {tenants.map((tenant) => (
           <article
             key={tenant.id}
-            className="rounded-3xl border border-white/10 bg-white/5 p-5"
+            className="rounded-superficie border border-linha bg-fundo p-5 shadow-e1"
             data-testid={`tenant-item-${tenant.slug}`}
           >
             {edicao === tenant.id ? (
               <form onSubmit={(event) => void handleAtualizar(event, tenant.id)} className="space-y-4">
                 <div className="grid gap-4 md:grid-cols-2">
                   <label className="space-y-2">
-                    <span className="text-sm font-medium text-slate-200">Nome</span>
+                    <span className="text-corpo font-medium text-slate-200">Nome</span>
                     <input
                       value={edicaoForm.nome}
                       onChange={(event) =>
@@ -304,7 +304,7 @@ export function TenantsPage() {
                     />
                   </label>
                   <label className="space-y-2">
-                    <span className="text-sm font-medium text-slate-200">CNPJ</span>
+                    <span className="text-corpo font-medium text-slate-200">CNPJ</span>
                     <input
                       value={edicaoForm.cnpj}
                       onChange={(event) =>
@@ -315,7 +315,7 @@ export function TenantsPage() {
                   </label>
                 </div>
 
-                <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-200">
+                <label className="inline-flex min-h-6 items-center gap-2 text-corpo font-medium text-slate-200">
                   <input
                     type="checkbox"
                     checked={edicaoForm.ativo}
@@ -327,7 +327,7 @@ export function TenantsPage() {
                   />
                   Clínica ativa
                   {tenant.id === tenantAtual?.id ? (
-                    <span className="text-xs font-normal text-slate-400">
+                    <span className="text-meta font-normal text-slate-400">
                       — é a sua própria clínica, não pode ser desativada por aqui
                     </span>
                   ) : null}
@@ -346,21 +346,21 @@ export function TenantsPage() {
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-base font-semibold text-white">{tenant.nome}</p>
+                    <p className="text-corpo-lg font-semibold text-white">{tenant.nome}</p>
                     {tenant.id === tenantAtual?.id ? (
-                      <span className="rounded-full border border-cyan-300/30 bg-cyan-400/10 px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wide text-cyan-100">
+                      <span className="rounded-full border border-cyan-300/30 bg-cyan-400/10 px-2 py-0.5 text-meta font-semibold uppercase tracking-wide text-cyan-100">
                         Sua clínica
                       </span>
                     ) : null}
                     {tenant.ativo ? null : (
-                      <span className="rounded-full border border-white/15 bg-white/5 px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wide text-slate-300">
+                      <span className="rounded-full border border-white/15 bg-white/5 px-2 py-0.5 text-meta font-semibold uppercase tracking-wide text-slate-300">
                         Inativa
                       </span>
                     )}
                   </div>
-                  <p className="font-mono text-xs text-slate-400">{tenant.slug}</p>
-                  <p className="text-sm text-slate-300">{tenant.cnpj || 'CNPJ não informado'}</p>
-                  <p className="text-xs text-slate-400">
+                  <p className="font-mono text-meta text-slate-400">{tenant.slug}</p>
+                  <p className="inline-flex min-h-6 items-center text-corpo text-slate-300">{tenant.cnpj || 'CNPJ não informado'}</p>
+                  <p className="text-meta text-slate-400">
                     {tenant.usuarios_count}{' '}
                     {tenant.usuarios_count === 1 ? 'usuário' : 'usuários'}
                   </p>
@@ -381,7 +381,7 @@ export function TenantsPage() {
         ))}
       </div>
 
-      <p className="rounded-3xl border border-white/10 bg-white/5 p-5 text-sm leading-6 text-slate-300">
+      <p className="rounded-superficie border border-linha bg-fundo p-5 shadow-e1 text-corpo leading-6 text-slate-300">
         <strong className="text-white">Não há exclusão.</strong> Apagar uma clínica levaria junto
         pacientes, guias e lançamentos, ou os deixaria apontando para um tenant inexistente.
         Desativar já impede o login de todos os seus usuários.

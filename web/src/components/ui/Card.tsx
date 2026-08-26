@@ -17,7 +17,7 @@ export interface CardProps extends HTMLAttributes<HTMLDivElement>, VariantProps<
 
 /**
  * Painel/cartão do design system — não existe componente nomeado equivalente
- * no clinica nem no gescon hoje, mas o padrão `rounded-[1.75rem] border
+ * no clinica nem no gescon hoje, mas o padrão `rounded-superficie border
  * border-white/10 bg-slate-950/60 p-6` se repete em quase toda tela do
  * gescon; isso vira um único lugar. Portado em 20/08/2026.
  */

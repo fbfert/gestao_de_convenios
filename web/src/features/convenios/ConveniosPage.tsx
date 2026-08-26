@@ -92,7 +92,7 @@ function CampoCarteirinha({
 }) {
   return (
     <label className="space-y-1 md:col-span-2">
-      <span className="text-xs text-slate-300">Formato da carteirinha</span>
+      <span className="text-meta text-slate-300">Formato da carteirinha</span>
       <div className="flex gap-2">
         <input
           value={valor}
@@ -104,12 +104,12 @@ function CampoCarteirinha({
         <button
           type="button"
           onClick={() => onChange(formatBlocos([...UNIMED_BLOCK_SIZES]))}
-          className="shrink-0 rounded-xl border border-white/10 bg-white/5 px-3 text-xs font-semibold text-slate-200 transition hover:bg-white/10"
+          className="shrink-0 rounded-xl border border-white/10 bg-white/5 px-3 text-meta font-semibold text-slate-200 transition hover:bg-white/10"
         >
           Unimed
         </button>
       </div>
-      <span className="block text-xs text-slate-400">
+      <span className="block text-meta text-slate-400">
         Tamanhos dos blocos separados por hifen, ex.: 4-4-6-2-1. Em branco, a carteirinha e
         digitada em campo unico, sem validacao de tamanho.
       </span>
@@ -137,7 +137,7 @@ type Valor = {
 }
 
 const field = 'w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-2 text-white'
-const card = 'rounded-2xl border border-white/10 bg-white/5 p-5'
+const card = 'rounded-superficie border border-linha bg-fundo p-5 shadow-e1'
 
 export function ConveniosPage() {
   const navigate = useNavigate()
@@ -234,13 +234,13 @@ export function ConveniosPage() {
     if (isEditRoute && !convenioEmEdicao) {
       return (
         <div className="space-y-5">
-          <h2 className="text-3xl font-semibold">Editar convênio</h2>
+          <h2 className="text-display font-semibold">Editar convênio</h2>
           <section className={card}>
             {q.isLoading ? (
-              <p className="text-sm text-slate-300">Carregando convênio…</p>
+              <p className="inline-flex min-h-6 items-center text-corpo text-slate-300">Carregando convênio…</p>
             ) : (
               <>
-                <p className="text-sm text-slate-300">
+                <p className="inline-flex min-h-6 items-center text-corpo text-slate-300">
                   Convênio não encontrado entre os convênios ativos desta clínica.
                 </p>
                 <Link to="/convenios" className="mt-3 inline-block text-cyan-200">
@@ -256,11 +256,11 @@ export function ConveniosPage() {
     return (
       <div className="space-y-5">
         <div>
-          <p className="text-xs uppercase tracking-[.3em] text-cyan-300">Convênios</p>
-          <h2 className="mt-2 text-3xl font-semibold">
+          <p className="text-meta uppercase tracking-[.3em] text-cyan-300">Convênios</p>
+          <h2 className="mt-2 text-display font-semibold">
             {isEditRoute ? 'Editar convênio' : 'Novo convênio'}
           </h2>
-          <p className="mt-2 text-sm text-slate-300">
+          <p className="mt-2 text-corpo text-slate-300">
             {isEditRoute
               ? 'Alterações valem para toda a operação deste convênio. Regras e valores continuam na tela de configuração.'
               : 'Depois de salvar, abra o convênio para configurar regras de autorização e valores.'}
@@ -287,7 +287,7 @@ export function ConveniosPage() {
                 className={field}
               />
               <div className="space-y-1">
-                <span className="flex items-center gap-2 text-xs text-slate-300">
+                <span className="flex items-center gap-2 text-meta text-slate-300">
                   Conector
                   <Tooltip rotulo="O que são Manual, API e Scraping?">
                     <ExplicacaoConector />
@@ -308,7 +308,7 @@ export function ConveniosPage() {
                 valor={form.carteirinha}
                 onChange={(carteirinha) => setForm((atual) => ({ ...atual, carteirinha }))}
               />
-              <label className="flex items-center gap-2">
+              <label className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <input
                   type="checkbox"
                   checked={form.ativo}
@@ -327,7 +327,7 @@ export function ConveniosPage() {
               </button>
             </div>
 
-            {formError ? <p className="mt-3 text-sm text-rose-200">{formError}</p> : null}
+            {formError ? <p className="mt-3 text-corpo text-rose-200">{formError}</p> : null}
           </form>
         </section>
       </div>
@@ -338,9 +338,9 @@ export function ConveniosPage() {
     <div className="space-y-5">
       <div className="flex justify-between">
         <div>
-          <p className="text-xs uppercase tracking-[.3em] text-cyan-300">Convênios</p>
-          <h2 className="mt-2 text-3xl font-semibold">Gestão de convênios</h2>
-          <p className="mt-2 text-sm text-slate-300">
+          <p className="text-meta uppercase tracking-[.3em] text-cyan-300">Convênios</p>
+          <h2 className="mt-2 text-display font-semibold">Gestão de convênios</h2>
+          <p className="mt-2 text-corpo text-slate-300">
             Abra um convênio para configurar regras de autorização e valores de pagamento.
           </p>
         </div>
@@ -357,7 +357,7 @@ export function ConveniosPage() {
         <div key={c.id} className={`${card} flex items-center justify-between`}>
           <Link to={`/convenios/${c.id}`}>
             {c.nome}
-            {c.descricao ? <p className="text-xs text-slate-400">{c.descricao}</p> : null}
+            {c.descricao ? <p className="text-meta text-slate-400">{c.descricao}</p> : null}
           </Link>
           <div className="flex gap-3">
             <span>{c.ativo ? 'Ativo' : 'Inativo'}</span>
@@ -445,16 +445,16 @@ export function ConvenioDetalhePage() {
         </Link>
         <Link
           to="/convenios/ajuda"
-          className="rounded-xl border border-cyan-400/40 px-3 py-1.5 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-400/10"
+          className="rounded-xl border border-cyan-400/40 px-3 py-1.5 text-corpo font-semibold text-cyan-100 transition hover:bg-cyan-400/10"
         >
           Ajuda
         </Link>
       </div>
 
-      <h2 className="text-3xl font-semibold">Configuração do convênio</h2>
+      <h2 className="text-display font-semibold">Configuração do convênio</h2>
 
       <section className={card}>
-        <h3 className="text-lg font-semibold">Nova regra</h3>
+        <h3 className="text-subtitulo font-semibold">Nova regra</h3>
         <form onSubmit={regra} className="mt-3 grid gap-3 md:grid-cols-3">
           <Select value={tipo} onChange={(event) => setTipo(event.target.value)}>
             <option value="especializada">Especializada</option>
@@ -481,7 +481,7 @@ export function ConvenioDetalhePage() {
       </section>
 
       <section className={card}>
-        <h3 className="text-lg font-semibold">Novo valor</h3>
+        <h3 className="text-subtitulo font-semibold">Novo valor</h3>
         <form onSubmit={valor} className="mt-3 grid gap-3 md:grid-cols-3">
           <Select
             value={especialidade}
@@ -537,7 +537,7 @@ function Historico<T extends { id: number; vigente_desde: string; vigente_ate: s
   return (
     <div className="mt-4 space-y-2">
       {items.map((item) => (
-        <div key={item.id} className={item.vigente_ate ? 'text-slate-500 line-through' : 'text-white'}>
+        <div key={item.id} className={item.vigente_ate ? 'text-texto-suave line-through' : 'text-white'}>
           {render(item)} · {item.vigente_desde}
           {item.vigente_ate ? (
             ` até ${item.vigente_ate}`

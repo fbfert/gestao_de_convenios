@@ -62,7 +62,7 @@ const emptyProfissionalMapeamentoForm: UnimedProfissionalMapeamentoForm = {
 }
 
 function inputClasses() {
-  return 'w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20'
+  return 'w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-corpo text-white outline-none transition placeholder:text-texto-suave focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20'
 }
 
 /**
@@ -304,9 +304,9 @@ export function ConfiguracoesPage({ aba }: { aba: ConfiguracoesAba }) {
   return (
     <div className="space-y-6" data-testid="configuracoes-page">
       <section className="space-y-2">
-        <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Configurações</p>
-        <h2 className="text-3xl font-semibold text-white">{cabecalhoPorAba[aba].titulo}</h2>
-        <p className="max-w-3xl text-sm leading-6 text-slate-300">
+        <p className="text-meta uppercase tracking-[0.3em] text-cyan-300/80">Configurações</p>
+        <h2 className="text-display font-semibold text-white">{cabecalhoPorAba[aba].titulo}</h2>
+        <p className="max-w-3xl text-corpo leading-6 text-slate-300">
           {cabecalhoPorAba[aba].descricao}
         </p>
       </section>
@@ -320,12 +320,12 @@ export function ConfiguracoesPage({ aba }: { aba: ConfiguracoesAba }) {
           <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
             <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-white">SMTP</h3>
-                <p className="mt-1 text-sm text-slate-300">
+                <h3 className="text-subtitulo font-semibold text-white">SMTP</h3>
+                <p className="mt-1 text-corpo text-slate-300">
                   Dados usados pelo tenant para autenticar e identificar o remetente dos emails.
                 </p>
               </div>
-              <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-200">
+              <label className="inline-flex min-h-6 items-center gap-2 text-corpo font-medium text-slate-200">
                 <input
                   type="checkbox"
                   checked={form.smtp.ativo}
@@ -343,14 +343,14 @@ export function ConfiguracoesPage({ aba }: { aba: ConfiguracoesAba }) {
             </div>
 
             {emailSettingsQuery.isLoading ? (
-              <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
+              <div className="mt-4 rounded-superficie border border-linha bg-fundo p-4 shadow-e1 text-corpo text-slate-300">
                 Carregando configurações de email...
               </div>
             ) : null}
 
             <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               <label className="space-y-2">
-                <span className="text-sm font-medium text-slate-200">Host SMTP</span>
+                <span className="text-corpo font-medium text-slate-200">Host SMTP</span>
                 <input
                   value={form.smtp.host}
                   onChange={(event) =>
@@ -365,7 +365,7 @@ export function ConfiguracoesPage({ aba }: { aba: ConfiguracoesAba }) {
                 />
               </label>
               <label className="space-y-2">
-                <span className="text-sm font-medium text-slate-200">Porta</span>
+                <span className="text-corpo font-medium text-slate-200">Porta</span>
                 <input
                   type="number"
                   min="1"
@@ -382,7 +382,7 @@ export function ConfiguracoesPage({ aba }: { aba: ConfiguracoesAba }) {
                 />
               </label>
               <label className="space-y-2">
-                <span className="text-sm font-medium text-slate-200">Criptografia</span>
+                <span className="text-corpo font-medium text-slate-200">Criptografia</span>
                 <select
                   value={form.smtp.encryption}
                   onChange={(event) =>
@@ -403,7 +403,7 @@ export function ConfiguracoesPage({ aba }: { aba: ConfiguracoesAba }) {
                 </select>
               </label>
               <label className="space-y-2">
-                <span className="text-sm font-medium text-slate-200">Usuário</span>
+                <span className="text-corpo font-medium text-slate-200">Usuário</span>
                 <input
                   value={form.smtp.username}
                   onChange={(event) =>
@@ -417,7 +417,7 @@ export function ConfiguracoesPage({ aba }: { aba: ConfiguracoesAba }) {
                 />
               </label>
               <label className="space-y-2">
-                <span className="text-sm font-medium text-slate-200">Senha SMTP</span>
+                <span className="text-corpo font-medium text-slate-200">Senha SMTP</span>
                 <input
                   type="password"
                   value={form.smtp.password}
@@ -437,7 +437,7 @@ export function ConfiguracoesPage({ aba }: { aba: ConfiguracoesAba }) {
                 />
               </label>
               <label className="space-y-2">
-                <span className="text-sm font-medium text-slate-200">Email remetente</span>
+                <span className="text-corpo font-medium text-slate-200">Email remetente</span>
                 <input
                   type="email"
                   value={form.smtp.from_email}
@@ -452,7 +452,7 @@ export function ConfiguracoesPage({ aba }: { aba: ConfiguracoesAba }) {
                 />
               </label>
               <label className="space-y-2 md:col-span-2 xl:col-span-3">
-                <span className="text-sm font-medium text-slate-200">Nome remetente</span>
+                <span className="text-corpo font-medium text-slate-200">Nome remetente</span>
                 <input
                   value={form.smtp.from_name}
                   onChange={(event) =>
@@ -469,15 +469,15 @@ export function ConfiguracoesPage({ aba }: { aba: ConfiguracoesAba }) {
           </section>
 
           <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
-            <h3 className="text-lg font-semibold text-white">Enviar e-mail de teste</h3>
-            <p className="mt-1 text-sm text-slate-300">
+            <h3 className="text-subtitulo font-semibold text-white">Enviar e-mail de teste</h3>
+            <p className="mt-1 text-corpo text-slate-300">
               O teste usa o SMTP <strong>já salvo</strong>, não o que está digitado acima. Salve
               antes de testar.
             </p>
 
             <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-start">
               <label className="flex-1 space-y-2">
-                <span className="text-sm font-medium text-slate-200">E-mail de destino</span>
+                <span className="text-corpo font-medium text-slate-200">E-mail de destino</span>
                 <input
                   type="email"
                   value={emailTeste}
@@ -502,7 +502,7 @@ export function ConfiguracoesPage({ aba }: { aba: ConfiguracoesAba }) {
                 type="button"
                 onClick={() => void handleEnviarTeste()}
                 disabled={enviarEmailTeste.isPending || !emailTeste.trim()}
-                className="rounded-2xl border border-cyan-300/40 bg-cyan-400/15 px-4 py-3 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-400/25 disabled:opacity-60 sm:mt-7"
+                className="inline-flex items-center justify-center rounded-2xl border border-cyan-300/40 bg-cyan-400/15 h-10 px-4 text-corpo font-semibold text-cyan-50 transition hover:bg-cyan-400/25 disabled:opacity-60 sm:mt-7"
                 data-testid="email-teste-enviar"
               >
                 {enviarEmailTeste.isPending ? 'Enviando...' : 'Enviar teste'}
@@ -511,13 +511,13 @@ export function ConfiguracoesPage({ aba }: { aba: ConfiguracoesAba }) {
           </section>
 
           {message ? (
-            <p className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+            <p className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-corpo text-emerald-100">
               {message}
             </p>
           ) : null}
 
           {error ? (
-            <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+            <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-corpo text-rose-100">
               {error}
             </p>
           ) : null}
@@ -543,12 +543,12 @@ export function ConfiguracoesPage({ aba }: { aba: ConfiguracoesAba }) {
           <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
             <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-white">Portal Unimed RDA</h3>
-                <p className="mt-1 text-sm text-slate-300">
+                <h3 className="text-subtitulo font-semibold text-white">Portal Unimed RDA</h3>
+                <p className="mt-1 text-corpo text-slate-300">
                   Convênio e credenciais usados pela automação de guias no portal RDA.
                 </p>
               </div>
-              <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-200">
+              <label className="inline-flex min-h-6 items-center gap-2 text-corpo font-medium text-slate-200">
                 <input
                   type="checkbox"
                   checked={unimedForm.credential.ativo}
@@ -567,14 +567,14 @@ export function ConfiguracoesPage({ aba }: { aba: ConfiguracoesAba }) {
             </div>
 
             {unimedSettingsQuery.isLoading ? (
-              <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
+              <div className="mt-4 rounded-superficie border border-linha bg-fundo p-4 shadow-e1 text-corpo text-slate-300">
                 Carregando configurações Unimed...
               </div>
             ) : null}
 
             <div className="mt-5 grid gap-4 md:grid-cols-2">
               <label className="space-y-2">
-                <span className="text-sm font-medium text-slate-200">Convênio Unimed</span>
+                <span className="text-corpo font-medium text-slate-200">Convênio Unimed</span>
                 <select
                   value={unimedForm.convenio_id}
                   onChange={(event) =>
@@ -596,7 +596,7 @@ export function ConfiguracoesPage({ aba }: { aba: ConfiguracoesAba }) {
                 </select>
               </label>
               <label className="space-y-2">
-                <span className="text-sm font-medium text-slate-200">Login</span>
+                <span className="text-corpo font-medium text-slate-200">Login</span>
                 <input
                   value={unimedForm.credential.login}
                   onChange={(event) =>
@@ -611,7 +611,7 @@ export function ConfiguracoesPage({ aba }: { aba: ConfiguracoesAba }) {
                 />
               </label>
               <label className="space-y-2">
-                <span className="text-sm font-medium text-slate-200">Senha</span>
+                <span className="text-corpo font-medium text-slate-200">Senha</span>
                 <input
                   type="password"
                   value={unimedForm.credential.password}
@@ -632,7 +632,7 @@ export function ConfiguracoesPage({ aba }: { aba: ConfiguracoesAba }) {
                 />
               </label>
               <label className="space-y-2">
-                <span className="text-sm font-medium text-slate-200">Base URL</span>
+                <span className="text-corpo font-medium text-slate-200">Base URL</span>
                 <input
                   value={unimedForm.credential.base_url}
                   onChange={(event) =>
@@ -648,7 +648,7 @@ export function ConfiguracoesPage({ aba }: { aba: ConfiguracoesAba }) {
                 />
               </label>
               <label className="space-y-2">
-                <span className="text-sm font-medium text-slate-200">Nome do Contratado</span>
+                <span className="text-corpo font-medium text-slate-200">Nome do Contratado</span>
                 <input
                   value={unimedForm.credential.nome_contratado}
                   onChange={(event) =>
@@ -665,10 +665,10 @@ export function ConfiguracoesPage({ aba }: { aba: ConfiguracoesAba }) {
               </label>
             </div>
 
-            <div className="mt-5 flex flex-wrap items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div className="mt-5 flex flex-wrap items-center gap-3 rounded-superficie border border-linha bg-fundo p-4 shadow-e1">
               <div className="min-w-52 flex-1">
-                <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Worker</p>
-                <p className="mt-1 text-sm font-medium text-white">
+                <p className="text-meta uppercase tracking-[0.25em] text-slate-400">Worker</p>
+                <p className="mt-1 text-corpo font-medium text-white">
                   {unimedWorkerHealth.data?.status ?? 'Não consultado'}
                 </p>
               </div>
@@ -686,14 +686,14 @@ export function ConfiguracoesPage({ aba }: { aba: ConfiguracoesAba }) {
                   type="button"
                   onClick={() => void handleReativarUnimed()}
                   disabled={reativarUnimed.isPending || !canManageUnimed}
-                  className="rounded-2xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 text-sm font-semibold text-emerald-100 transition hover:bg-emerald-400/20 disabled:opacity-60"
+                  className="inline-flex items-center justify-center rounded-2xl border border-emerald-400/30 bg-emerald-400/10 h-10 px-4 text-corpo font-semibold text-emerald-100 transition hover:bg-emerald-400/20 disabled:opacity-60"
                   data-testid="unimed-reativar"
                 >
                   {reativarUnimed.isPending ? 'Reativando...' : 'Reativar automação'}
                 </button>
               ) : null}
               {unimedSettingsQuery.data?.credential?.automation_paused_reason ? (
-                <p className="basis-full text-sm text-amber-100" data-testid="unimed-automation-paused">
+                <p className="basis-full text-corpo text-amber-100" data-testid="unimed-automation-paused">
                   Pausada: {unimedSettingsQuery.data.credential.automation_paused_reason}
                   {unimedSettingsQuery.data.credential.automation_paused_at
                     ? ` · ${unimedSettingsQuery.data.credential.automation_paused_at}`
@@ -717,7 +717,7 @@ export function ConfiguracoesPage({ aba }: { aba: ConfiguracoesAba }) {
           {canManageUnimed ? (
             <section className="grid gap-6 xl:grid-cols-2">
               <div className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
-                <h3 className="text-lg font-semibold text-white">Especialidade x Convênio</h3>
+                <h3 className="text-subtitulo font-semibold text-white">Especialidade x Convênio</h3>
                 <form onSubmit={handleEspecialidadeMapeamentoSubmit} className="mt-4 grid gap-3">
                   <select
                     value={especialidadeMapeamentoForm.especialidade_id}
@@ -782,7 +782,7 @@ export function ConfiguracoesPage({ aba }: { aba: ConfiguracoesAba }) {
                           ativo: mapeamento.ativo,
                         })
                       }}
-                      className="block w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left text-sm text-slate-200"
+                      className="block w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left text-corpo text-slate-200"
                     >
                       {mapeamento.especialidade?.nome ?? mapeamento.especialidade_id} · {mapeamento.codigo_procedimento}
                     </button>
@@ -791,7 +791,7 @@ export function ConfiguracoesPage({ aba }: { aba: ConfiguracoesAba }) {
               </div>
 
               <div className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
-                <h3 className="text-lg font-semibold text-white">Profissional x Convênio</h3>
+                <h3 className="text-subtitulo font-semibold text-white">Profissional x Convênio</h3>
                 <form onSubmit={handleProfissionalMapeamentoSubmit} className="mt-4 grid gap-3">
                   <select
                     value={profissionalMapeamentoForm.profissional_id}
@@ -843,7 +843,7 @@ export function ConfiguracoesPage({ aba }: { aba: ConfiguracoesAba }) {
                           ativo: mapeamento.ativo,
                         })
                       }}
-                      className="block w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left text-sm text-slate-200"
+                      className="block w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left text-corpo text-slate-200"
                     >
                       {mapeamento.profissional?.nome ?? mapeamento.profissional_id} · {mapeamento.codigo_operadora}
                     </button>
@@ -852,19 +852,19 @@ export function ConfiguracoesPage({ aba }: { aba: ConfiguracoesAba }) {
               </div>
             </section>
           ) : (
-            <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6 text-sm text-texto-suave">
+            <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6 text-corpo text-texto-suave">
               Seu usuário não possui permissão para editar configurações Unimed.
             </section>
           )}
 
           {message ? (
-            <p className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+            <p className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-corpo text-emerald-100">
               {message}
             </p>
           ) : null}
 
           {error ? (
-            <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+            <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-corpo text-rose-100">
               {error}
             </p>
           ) : null}

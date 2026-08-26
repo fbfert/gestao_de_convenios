@@ -69,7 +69,7 @@ function Detalhe({ payload }: { payload: AuditPayload | null }) {
     <div className="mt-3 space-y-3">
       {campos.length > 0 ? (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[32rem] text-left text-xs">
+          <table className="w-full min-w-[32rem] text-left text-meta" data-cartoes="md">
             <thead className="text-slate-400">
               <tr>
                 <th className="pb-2 pr-4 font-medium">Campo</th>
@@ -80,9 +80,9 @@ function Detalhe({ payload }: { payload: AuditPayload | null }) {
             <tbody className="align-top">
               {campos.map((nome) => (
                 <tr key={nome} className="border-t border-white/5">
-                  <td className="py-2 pr-4 font-medium text-slate-200">{nome}</td>
-                  <td className="py-2 pr-4 text-rose-200">{formatarValor(antes?.[nome])}</td>
-                  <td className="py-2 text-emerald-200">{formatarValor(depois?.[nome])}</td>
+                  <td data-rotulo="Campo" className="py-2 pr-4 font-medium text-slate-200">{nome}</td>
+                  <td data-rotulo="Antes" className="py-2 pr-4 text-rose-200">{formatarValor(antes?.[nome])}</td>
+                  <td data-rotulo="Depois" className="py-2 text-emerald-200">{formatarValor(depois?.[nome])}</td>
                 </tr>
               ))}
             </tbody>
@@ -91,7 +91,7 @@ function Detalhe({ payload }: { payload: AuditPayload | null }) {
       ) : null}
 
       {extras.length > 0 ? (
-        <dl className="grid gap-1 text-xs sm:grid-cols-2">
+        <dl className="grid gap-1 text-meta sm:grid-cols-2">
           {extras.map(([chave, valor]) => (
             <div key={chave} className="flex gap-2">
               <dt className="text-slate-400">{chave}:</dt>
@@ -102,7 +102,7 @@ function Detalhe({ payload }: { payload: AuditPayload | null }) {
       ) : null}
 
       {ocultos && ocultos.length > 0 ? (
-        <p className="rounded-2xl border border-amber-300/20 bg-amber-400/10 px-3 py-2 text-xs text-amber-100">
+        <p className="rounded-2xl border border-amber-300/20 bg-amber-400/10 px-3 py-2 text-meta text-amber-100">
           Campo sensível alterado, valor não registrado: {ocultos.join(', ')}
         </p>
       ) : null}
@@ -120,24 +120,24 @@ function Evento({ item }: { item: AuditItem }) {
     >
       <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <div>
-          <p className="text-sm font-medium text-white">
+          <p className="text-corpo font-medium text-white">
             {item.usuario ?? 'Sistema'} · {item.acao_label}
           </p>
-          <p className="mt-1 text-sm text-slate-300">
+          <p className="mt-1 text-corpo text-slate-300">
             {item.entidade_label} #{item.entidade_id}
             {item.ip ? <span className="text-slate-400"> · {item.ip}</span> : null}
           </p>
         </div>
 
         <div className="flex items-center gap-3">
-          <p className="text-xs uppercase tracking-[0.25em] text-slate-400">
+          <p className="text-meta uppercase tracking-[0.25em] text-slate-400">
             {formatarData(item.created_at)}
           </p>
           {item.payload ? (
             <button
               type="button"
               onClick={() => setAberto((atual) => !atual)}
-              className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/10"
+              className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-meta font-semibold text-white transition hover:bg-white/10"
               data-testid={`auditoria-detalhe-${item.id}`}
             >
               {aberto ? 'Ocultar' : 'O que mudou'}
@@ -198,10 +198,10 @@ export function AuditoriaPage() {
 
   return (
     <div className="space-y-6" data-testid="auditoria-page">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <div className="flex flex-col gap-4 sm:items-start lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Auditoria</p>
-          <h2 className="mt-2 flex items-center gap-2 text-3xl font-semibold text-white">
+          <p className="text-meta uppercase tracking-[0.3em] text-cyan-300/80">Auditoria</p>
+          <h2 className="mt-2 flex items-center gap-2 text-display font-semibold text-white">
             Logs de auditoria
             {/* A promessa de que credencial nunca e gravada nao pode sumir junto
                 com os textos decorativos: virou dica em vez de paragrafo. */}
@@ -222,7 +222,7 @@ export function AuditoriaPage() {
           type="button"
           onClick={exportar}
           disabled={exportando || eventos.length === 0}
-          className="rounded-2xl border border-cyan-300/30 bg-cyan-400/10 px-4 py-3 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-400/20 disabled:opacity-60"
+          className="inline-flex items-center justify-center rounded-2xl border border-cyan-300/30 bg-cyan-400/10 h-10 px-4 text-corpo font-semibold text-cyan-100 transition hover:bg-cyan-400/20 disabled:opacity-60"
           data-testid="auditoria-exportar"
         >
           {exportando ? 'Exportando...' : 'Exportar CSV'}
@@ -232,7 +232,7 @@ export function AuditoriaPage() {
       <form onSubmit={aplicar} className={`${card} space-y-4`} data-testid="auditoria-filtros">
         <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-4">
           <label className="space-y-1">
-            <span className="text-xs text-slate-300">De</span>
+            <span className="text-meta text-slate-300">De</span>
             <input
               type="date"
               value={rascunho.de}
@@ -243,7 +243,7 @@ export function AuditoriaPage() {
           </label>
 
           <label className="space-y-1">
-            <span className="text-xs text-slate-300">Até</span>
+            <span className="text-meta text-slate-300">Até</span>
             <input
               type="date"
               value={rascunho.ate}
@@ -253,7 +253,7 @@ export function AuditoriaPage() {
           </label>
 
           <label className="space-y-1">
-            <span className="text-xs text-slate-300">Usuário</span>
+            <span className="text-meta text-slate-300">Usuário</span>
             <input
               type="search"
               value={rascunho.usuario}
@@ -267,7 +267,7 @@ export function AuditoriaPage() {
           </label>
 
           <label className="space-y-1">
-            <span className="text-xs text-slate-300">Autor</span>
+            <span className="text-meta text-slate-300">Autor</span>
             <Select
               value={rascunho.autor}
               onChange={(event) => setRascunho((atual) => ({ ...atual, autor: event.target.value }))}
@@ -279,7 +279,7 @@ export function AuditoriaPage() {
           </label>
 
           <label className="space-y-1">
-            <span className="text-xs text-slate-300">Tipo de ação</span>
+            <span className="text-meta text-slate-300">Tipo de ação</span>
             <Select
               value={rascunho.tipo}
               onChange={(event) =>
@@ -299,7 +299,7 @@ export function AuditoriaPage() {
           </label>
 
           <label className="space-y-1">
-            <span className="text-xs text-slate-300">Entidade</span>
+            <span className="text-meta text-slate-300">Entidade</span>
             <Select
               value={rascunho.entidade}
               onChange={(event) =>
@@ -316,7 +316,7 @@ export function AuditoriaPage() {
           </label>
 
           <label className="space-y-1">
-            <span className="text-xs text-slate-300">Ação</span>
+            <span className="text-meta text-slate-300">Ação</span>
             <Select
               value={rascunho.acao}
               onChange={(event) => setRascunho((atual) => ({ ...atual, acao: event.target.value }))}
@@ -333,30 +333,30 @@ export function AuditoriaPage() {
 
         <div className="flex flex-wrap items-center gap-3">
           <Botao type="submit" data-testid="auditoria-filtrar">Filtrar</Botao>
-          <button type="button" onClick={limpar} className="text-sm text-slate-300">
+          <button type="button" onClick={limpar} className="inline-flex min-h-6 items-center text-corpo text-slate-300">
             Limpar
           </button>
-          <span className="text-xs text-slate-400">
+          <span className="text-meta text-slate-400">
             {auditoria.isLoading ? 'Carregando...' : `${total} evento(s)`}
           </span>
         </div>
       </form>
 
       {erro ? (
-        <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+        <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-corpo text-rose-100">
           {erro}
         </p>
       ) : null}
 
       {auditoria.isError ? (
-        <div className="rounded-janela border border-perigo/30 bg-perigo-suave p-6 text-sm text-perigo-texto">
+        <div className="rounded-janela border border-perigo/30 bg-perigo-suave p-6 text-corpo text-perigo-texto">
           Não foi possível carregar a auditoria.
         </div>
       ) : null}
 
       <section className={`${card} space-y-3`}>
         {eventos.length === 0 && !auditoria.isLoading ? (
-          <p className="rounded-2xl border border-white/10 bg-slate-950/50 p-4 text-sm text-slate-300">
+          <p className="rounded-2xl border border-white/10 bg-slate-950/50 p-4 text-corpo text-slate-300">
             Nenhum evento para os filtros escolhidos.
           </p>
         ) : (
@@ -370,12 +370,12 @@ export function AuditoriaPage() {
             type="button"
             onClick={() => setPagina((atual) => Math.max(1, atual - 1))}
             disabled={pagina <= 1}
-            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white transition hover:bg-white/10 disabled:opacity-40"
+            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-corpo text-white transition hover:bg-white/10 disabled:opacity-40"
           >
             Anterior
           </button>
 
-          <span className="text-sm text-slate-300">
+          <span className="inline-flex min-h-6 items-center text-corpo text-slate-300">
             Página {pagina} de {totalPaginas}
           </span>
 
@@ -383,7 +383,7 @@ export function AuditoriaPage() {
             type="button"
             onClick={() => setPagina((atual) => Math.min(totalPaginas, atual + 1))}
             disabled={pagina >= totalPaginas}
-            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white transition hover:bg-white/10 disabled:opacity-40"
+            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-corpo text-white transition hover:bg-white/10 disabled:opacity-40"
           >
             Próxima
           </button>

@@ -9,7 +9,7 @@ import {
 import { Botao } from '../../components/ui/Botao'
 
 function inputClasses() {
-  return 'w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20'
+  return 'w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-corpo text-white outline-none transition placeholder:text-texto-suave focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20'
 }
 
 const formVazio: ConfiguracoesGlobaisForm = {
@@ -64,26 +64,26 @@ export function AutomacoesConfiguracoesPage() {
   return (
     <form onSubmit={handleSubmit} className="space-y-6" data-testid="automacoes-configuracoes-page">
       <section className="space-y-2">
-        <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Automações</p>
-        <h2 className="text-3xl font-semibold text-white">Configurações</h2>
-        <p className="max-w-3xl text-sm leading-6 text-slate-300">
+        <p className="text-meta uppercase tracking-[0.3em] text-cyan-300/80">Automações</p>
+        <h2 className="text-display font-semibold text-white">Configurações</h2>
+        <p className="max-w-3xl text-corpo leading-6 text-slate-300">
           Controla de quanto em quanto tempo o sistema volta a consultar o status de uma guia no
           portal da Unimed (job que roda a cada 30 minutos, o dia inteiro). Os dois prazos abaixo
           só se aplicam a guias de convênio Unimed RDA ainda em análise.
         </p>
       </section>
 
-      {query.isPending ? <p className="text-sm text-slate-400">Carregando...</p> : null}
+      {query.isPending ? <p className="text-corpo text-slate-400">Carregando...</p> : null}
 
       {query.isError ? (
-        <p className="text-sm text-rose-300">
+        <p className="text-corpo text-rose-300">
           {getHttpErrorMessage(query.error, 'Não foi possível carregar as configurações.')}
         </p>
       ) : null}
 
       <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
-        <h3 className="text-lg font-semibold text-white">Reconsulta de status</h3>
-        <p className="mt-1 text-sm text-slate-300">
+        <h3 className="text-subtitulo font-semibold text-white">Reconsulta de status</h3>
+        <p className="mt-1 text-corpo text-slate-300">
           Quando a consulta falha por erro técnico (timeout de automação, portal fora do ar), o
           sistema tenta de novo bem antes do prazo normal — sem isso, uma falha pontual deixava a
           guia parada até 24h, mesmo com o job rodando a cada 30 minutos.
@@ -91,7 +91,7 @@ export function AutomacoesConfiguracoesPage() {
 
         <div className="mt-5 grid gap-4 md:grid-cols-2">
           <label className="space-y-2">
-            <span className="text-sm font-medium text-slate-200">
+            <span className="text-corpo font-medium text-slate-200">
               Prazo normal — consulta OK, sem novidade (horas)
             </span>
             <input
@@ -104,13 +104,13 @@ export function AutomacoesConfiguracoesPage() {
               required
               data-testid="automacoes-config-recheck-sucesso"
             />
-            <span className="block text-xs text-slate-400">
+            <span className="block text-meta text-slate-400">
               A consulta rodou normalmente, mas a guia ainda está em análise no portal. Padrão: 24h.
             </span>
           </label>
 
           <label className="space-y-2">
-            <span className="text-sm font-medium text-slate-200">
+            <span className="text-corpo font-medium text-slate-200">
               Prazo após falha técnica (horas)
             </span>
             <input
@@ -123,7 +123,7 @@ export function AutomacoesConfiguracoesPage() {
               required
               data-testid="automacoes-config-recheck-falha"
             />
-            <span className="block text-xs text-slate-400">
+            <span className="block text-meta text-slate-400">
               A automação quebrou antes de conseguir consultar (timeout, portal indisponível etc.).
               Padrão: 2h.
             </span>
@@ -132,13 +132,13 @@ export function AutomacoesConfiguracoesPage() {
       </section>
 
       {message ? (
-        <p className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+        <p className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-corpo text-emerald-100">
           {message}
         </p>
       ) : null}
 
       {error ? (
-        <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+        <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-corpo text-rose-100">
           {error}
         </p>
       ) : null}

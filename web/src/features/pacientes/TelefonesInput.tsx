@@ -43,10 +43,10 @@ export function TelefonesInput({
 
   return (
     <div className="space-y-3" data-testid="paciente-telefones">
-      <span className="block text-sm font-medium text-slate-200">Telefones</span>
+      <span className="block text-corpo font-medium text-slate-200">Telefones</span>
 
       {telefones.length === 0 ? (
-        <p className="rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-3 text-sm text-slate-400">
+        <p className="rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-3 text-corpo text-slate-400">
           Nenhum telefone cadastrado.
         </p>
       ) : null}
@@ -54,7 +54,7 @@ export function TelefonesInput({
       {telefones.map((telefone, indice) => (
         <div
           key={indice}
-          className="grid gap-3 rounded-2xl border border-white/10 bg-slate-950/40 p-3 md:grid-cols-[1fr_10rem_1fr_auto]"
+          className="grid gap-3 rounded-superficie border border-linha bg-fundo p-3 shadow-e1 md:grid-cols-[1fr_10rem_1fr_auto]"
         >
           <input
             value={formatarTelefone(telefone.numero)}
@@ -88,7 +88,7 @@ export function TelefonesInput({
               type="button"
               onClick={() => marcarPrincipal(indice)}
               className={[
-                'rounded-full border px-3 py-1.5 text-xs font-semibold transition',
+                'rounded-full border px-3 py-1.5 text-meta font-semibold transition',
                 telefone.principal
                   ? 'border-cyan-300/40 bg-cyan-400/15 text-cyan-50'
                   : 'border-white/10 bg-white/5 text-slate-300 hover:bg-white/10',
@@ -102,7 +102,7 @@ export function TelefonesInput({
             <button
               type="button"
               onClick={() => onChange(telefones.filter((_, i) => i !== indice))}
-              className="text-xs font-semibold text-rose-200"
+              className="inline-flex min-h-6 items-center text-meta font-semibold text-rose-200"
               data-testid={`paciente-telefone-remover-${indice}`}
             >
               Remover
@@ -115,7 +115,7 @@ export function TelefonesInput({
       <button
         type="button"
         onClick={() => onChange([...telefones, { ...telefoneVazio }])}
-        className="rounded-full border border-cyan-300/30 bg-cyan-400/10 px-3 py-1.5 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-400/20"
+        className="rounded-full border border-cyan-300/30 bg-cyan-400/10 px-3 py-1.5 text-meta font-semibold text-cyan-100 transition hover:bg-cyan-400/20"
         data-testid="paciente-telefone-adicionar"
       >
         + 1 telefone

@@ -49,7 +49,7 @@ function Erro({ mensagem }: { mensagem: string | null }) {
   }
 
   return (
-    <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+    <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-corpo text-rose-100">
       {mensagem}
     </p>
   )
@@ -85,10 +85,10 @@ function ListaDePapeis() {
 
   return (
     <div className="space-y-8" data-testid="permissoes-page">
-      <section className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <section className="flex flex-col gap-4 sm:items-start lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Perfis e Permissões</p>
-          <h2 className="mt-2 text-3xl font-semibold text-white">Papéis da clínica</h2>
+          <p className="text-meta uppercase tracking-[0.3em] text-cyan-300/80">Perfis e Permissões</p>
+          <h2 className="mt-2 text-display font-semibold text-white">Papéis da clínica</h2>
         </div>
 
         <Botao variante="primario" onClick={() => navigate('/permissoes/novo')} data-testid="papel-novo">
@@ -110,16 +110,16 @@ function ListaDePapeis() {
               data-testid={`papel-${papel.name}`}
             >
               <div className="flex items-center justify-between gap-3">
-                <p className="text-base font-semibold text-white group-hover:text-cyan-50">
+                <p className="text-corpo-lg font-semibold text-white group-hover:text-cyan-50">
                   {papel.name}
                 </p>
                 {papel.sistema ? (
-                  <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs text-slate-300">
+                  <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-meta text-slate-300">
                     Do sistema
                   </span>
                 ) : null}
               </div>
-              <p className="mt-2 text-sm text-slate-300">
+              <p className="mt-2 text-corpo text-slate-300">
                 {papel.permissions_count ?? 0} permissões · {papel.users_count ?? 0} usuários
               </p>
             </Link>
@@ -161,14 +161,14 @@ function NovoPapel() {
   return (
     <div className="space-y-6" data-testid="permissoes-page">
       <div>
-        <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Perfis e Permissões</p>
-        <h2 className="mt-2 text-3xl font-semibold text-white">Novo perfil</h2>
+        <p className="text-meta uppercase tracking-[0.3em] text-cyan-300/80">Perfis e Permissões</p>
+        <h2 className="mt-2 text-display font-semibold text-white">Novo perfil</h2>
       </div>
 
       <section className={card}>
         <form onSubmit={salvar} className="space-y-4" data-testid="papel-form">
           <label className="block space-y-2">
-            <span className="text-sm font-medium text-slate-200">Nome do perfil</span>
+            <span className="text-corpo font-medium text-slate-200">Nome do perfil</span>
             <input
               required
               value={nome}
@@ -177,13 +177,13 @@ function NovoPapel() {
               className={campo}
               data-testid="papel-nome"
             />
-            <span className="block text-xs text-slate-400">
+            <span className="block text-meta text-slate-400">
               Letras minúsculas, números e hífen. O nome aparece no cadastro de usuários.
             </span>
           </label>
 
           <label className="block space-y-2">
-            <span className="text-sm font-medium text-slate-200">Copiar permissões de</span>
+            <span className="text-corpo font-medium text-slate-200">Copiar permissões de</span>
             <Select value={copiarDe} onChange={(event) => setCopiarDe(event.target.value)}>
               <option value="">Começar sem nenhuma permissão</option>
               {papeis.map((papel) => (
@@ -203,7 +203,7 @@ function NovoPapel() {
             <button
               type="button"
               onClick={() => navigate('/permissoes')}
-              className="text-sm text-slate-300"
+              className="inline-flex min-h-6 items-center text-corpo text-slate-300"
               data-testid="papel-fechar"
             >
               Cancelar
@@ -294,25 +294,25 @@ function EditarPapel({ nome }: { nome: string }) {
 
   return (
     <div className="space-y-6" data-testid="permissoes-page">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <div className="flex flex-col gap-4 sm:items-start lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Perfis e Permissões</p>
-          <h2 className="mt-2 text-3xl font-semibold text-white">Editar perfil</h2>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
+          <p className="text-meta uppercase tracking-[0.3em] text-cyan-300/80">Perfis e Permissões</p>
+          <h2 className="mt-2 text-display font-semibold text-white">Editar perfil</h2>
+          <p className="mt-2 max-w-3xl text-corpo leading-6 text-slate-300">
             {papel?.sistema
               ? 'Este é um perfil do sistema: as permissões são editáveis, mas o nome não muda e ele não pode ser excluído.'
               : 'Marque o que este perfil pode fazer. As permissões de acesso definem também o que aparece no menu.'}
           </p>
         </div>
 
-        <Link to="/permissoes" className="text-sm text-cyan-200" data-testid="papel-fechar">
+        <Link to="/permissoes" className="inline-flex min-h-6 items-center text-corpo text-cyan-200" data-testid="papel-fechar">
           ← Voltar aos perfis
         </Link>
       </div>
 
       <section className={card}>
         <label className="block max-w-md space-y-2">
-          <span className="text-sm font-medium text-slate-200">Nome do perfil</span>
+          <span className="text-corpo font-medium text-slate-200">Nome do perfil</span>
           <input
             value={novoNome}
             onChange={(event) => setNovoNome(event.target.value)}
@@ -329,8 +329,8 @@ function EditarPapel({ nome }: { nome: string }) {
 
       <section className={`${card} space-y-4`}>
         <div>
-          <h3 className="text-lg font-semibold text-white">Permissões</h3>
-          <p className="text-sm text-slate-300">
+          <h3 className="text-subtitulo font-semibold text-white">Permissões</h3>
+          <p className="inline-flex min-h-6 items-center text-corpo text-slate-300">
             {rolePermissionsQuery.isLoading
               ? 'Carregando permissões do perfil...'
               : `${selecionadas.length} de ${permissions.length} marcadas.`}
@@ -339,8 +339,8 @@ function EditarPapel({ nome }: { nome: string }) {
 
         <div className="grid gap-4 lg:grid-cols-2">
           {Object.entries(agrupadas).map(([domain, items]) => (
-            <div key={domain} className="rounded-3xl border border-white/10 bg-slate-950/40 p-4">
-              <h4 className="text-sm font-semibold uppercase tracking-[0.25em] text-cyan-100">
+            <div key={domain} className="rounded-superficie border border-linha bg-fundo p-4 shadow-e1">
+              <h4 className="text-corpo font-semibold uppercase tracking-[0.25em] text-cyan-100">
                 {domainLabels[domain] ?? domain}
               </h4>
               <div className="mt-4 space-y-2">
@@ -350,8 +350,8 @@ function EditarPapel({ nome }: { nome: string }) {
                     className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3"
                   >
                     <span>
-                      <span className="block text-sm text-white">{permission.label}</span>
-                      <span className="block text-xs text-slate-400">{permission.name}</span>
+                      <span className="block text-corpo text-white">{permission.label}</span>
+                      <span className="block text-meta text-slate-400">{permission.name}</span>
                     </span>
                     <input
                       type="checkbox"
@@ -384,7 +384,7 @@ function EditarPapel({ nome }: { nome: string }) {
             <button
               type="button"
               onClick={remover}
-              className="rounded-2xl border border-rose-400/30 px-4 py-3 text-sm font-semibold text-rose-100 transition hover:bg-rose-500/10 disabled:opacity-60"
+              className="inline-flex items-center justify-center rounded-2xl border border-rose-400/30 h-10 px-4 text-corpo font-semibold text-rose-100 transition hover:bg-rose-500/10 disabled:opacity-60"
               disabled={excluir.isPending}
               data-testid="papel-excluir"
             >

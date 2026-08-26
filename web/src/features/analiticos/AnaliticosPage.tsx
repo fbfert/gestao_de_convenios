@@ -37,10 +37,10 @@ function AnaliticoTable({ rows }: { rows: AnaliticoUnimedLinha[] }) {
   return (
     <article className="overflow-hidden rounded-3xl border border-white/10 bg-white/5">
       <div className="border-b border-white/10 px-4 py-3">
-        <h4 className="text-sm font-semibold uppercase tracking-[0.25em] text-cyan-100">Analítico</h4>
+        <h4 className="text-corpo font-semibold uppercase tracking-[0.25em] text-cyan-100">Analítico</h4>
       </div>
-      <table className="w-full border-collapse text-left text-sm">
-        <thead className="bg-fundo text-xs uppercase tracking-[0.25em] text-texto-suave">
+      <table className="w-full border-collapse text-left text-corpo" data-cartoes="md">
+        <thead className="bg-fundo text-meta uppercase tracking-[0.25em] text-texto-suave">
           <tr>
             <th className="px-4 py-3">Guia</th>
             <th className="px-4 py-3">Realização</th>
@@ -52,11 +52,11 @@ function AnaliticoTable({ rows }: { rows: AnaliticoUnimedLinha[] }) {
         <tbody className="divide-y divide-linha bg-superficie">
           {rows.map((linha) => (
             <tr key={linha.linha}>
-              <td className="px-4 py-4">{cell(linha.numero_guia_operadora)}</td>
-              <td className="px-4 py-4">{cell(linha.data_realizacao)}</td>
-              <td className="px-4 py-4">{cell(linha.descricao_procedimento)}</td>
-              <td className="px-4 py-4">{cell(linha.qtd)}</td>
-              <td className="px-4 py-4">{cell(linha.valor)}</td>
+              <td data-rotulo="Guia" className="px-4 py-4">{cell(linha.numero_guia_operadora)}</td>
+              <td data-rotulo="Realização" className="px-4 py-4">{cell(linha.data_realizacao)}</td>
+              <td data-rotulo="Descrição" data-rotulo-bloco className="px-4 py-4">{cell(linha.descricao_procedimento)}</td>
+              <td data-rotulo="Qtd." className="px-4 py-4">{cell(linha.qtd)}</td>
+              <td data-rotulo="Valor" className="px-4 py-4">{cell(linha.valor)}</td>
             </tr>
           ))}
           {rows.length === 0 ? (
@@ -76,10 +76,10 @@ function GlosaTable({ rows }: { rows: AnaliticoUnimedGlosaLinha[] }) {
   return (
     <article className="overflow-hidden rounded-3xl border border-white/10 bg-white/5">
       <div className="border-b border-white/10 px-4 py-3">
-        <h4 className="text-sm font-semibold uppercase tracking-[0.25em] text-cyan-100">Glosas</h4>
+        <h4 className="text-corpo font-semibold uppercase tracking-[0.25em] text-cyan-100">Glosas</h4>
       </div>
-      <table className="w-full border-collapse text-left text-sm">
-        <thead className="bg-fundo text-xs uppercase tracking-[0.25em] text-texto-suave">
+      <table className="w-full border-collapse text-left text-corpo" data-cartoes="md">
+        <thead className="bg-fundo text-meta uppercase tracking-[0.25em] text-texto-suave">
           <tr>
             <th className="px-4 py-3">Guia</th>
             <th className="px-4 py-3">Realização</th>
@@ -90,10 +90,10 @@ function GlosaTable({ rows }: { rows: AnaliticoUnimedGlosaLinha[] }) {
         <tbody className="divide-y divide-linha bg-superficie">
           {rows.map((linha) => (
             <tr key={linha.linha}>
-              <td className="px-4 py-4">{cell(linha.numero_guia_operadora)}</td>
-              <td className="px-4 py-4">{cell(linha.data_realizacao)}</td>
-              <td className="px-4 py-4">{cell(linha.motivo)}</td>
-              <td className="px-4 py-4">{cell(linha.valor)}</td>
+              <td data-rotulo="Guia" className="px-4 py-4">{cell(linha.numero_guia_operadora)}</td>
+              <td data-rotulo="Realização" className="px-4 py-4">{cell(linha.data_realizacao)}</td>
+              <td data-rotulo="Motivo" data-rotulo-bloco className="px-4 py-4">{cell(linha.motivo)}</td>
+              <td data-rotulo="Valor" className="px-4 py-4">{cell(linha.valor)}</td>
             </tr>
           ))}
           {rows.length === 0 ? (
@@ -113,12 +113,12 @@ function ConciliacaoTable({ rows }: { rows: AnaliticoUnimedConciliacaoLinha[] })
   return (
     <article className="overflow-hidden rounded-3xl border border-white/10 bg-white/5">
       <div className="border-b border-white/10 px-4 py-3">
-        <h4 className="text-sm font-semibold uppercase tracking-[0.25em] text-cyan-100">
+        <h4 className="text-corpo font-semibold uppercase tracking-[0.25em] text-cyan-100">
           Conciliação
         </h4>
       </div>
-      <table className="w-full border-collapse text-left text-sm">
-        <thead className="bg-fundo text-xs uppercase tracking-[0.25em] text-texto-suave">
+      <table className="w-full border-collapse text-left text-corpo" data-cartoes="md">
+        <thead className="bg-fundo text-meta uppercase tracking-[0.25em] text-texto-suave">
           <tr>
             <th className="px-4 py-3">Origem</th>
             <th className="px-4 py-3">Guia</th>
@@ -129,10 +129,10 @@ function ConciliacaoTable({ rows }: { rows: AnaliticoUnimedConciliacaoLinha[] })
         <tbody className="divide-y divide-linha bg-superficie">
           {rows.map((linha) => (
             <tr key={`${linha.origem}-${linha.linha ?? linha.chave_conciliacao}`}>
-              <td className="px-4 py-4 text-slate-200">{linha.origem}</td>
-              <td className="px-4 py-4 text-slate-200">{cell(linha.numero_guia_operadora)}</td>
-              <td className="px-4 py-4 text-slate-200">{linha.natureza}</td>
-              <td className="px-4 py-4 text-slate-200">{cell(linha.valor_normalizado)}</td>
+              <td data-rotulo="Origem" className="px-4 py-4 text-slate-200">{linha.origem}</td>
+              <td data-rotulo="Guia" className="px-4 py-4 text-slate-200">{cell(linha.numero_guia_operadora)}</td>
+              <td data-rotulo="Natureza" className="px-4 py-4 text-slate-200">{linha.natureza}</td>
+              <td data-rotulo="Valor" className="px-4 py-4 text-slate-200">{cell(linha.valor_normalizado)}</td>
             </tr>
           ))}
           {rows.length === 0 ? (
@@ -178,26 +178,26 @@ function LotesTable({
     <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-white">Lotes importados</h3>
+          <h3 className="text-subtitulo font-semibold text-white">Lotes importados</h3>
         </div>
       </div>
 
       <form
-        className="mt-4 grid gap-4 rounded-3xl border border-white/10 bg-white/5 p-4 xl:grid-cols-4"
+        className="mt-4 grid gap-4 rounded-superficie border border-linha bg-fundo p-4 shadow-e1 xl:grid-cols-4"
         onSubmit={(event) => event.preventDefault()}
       >
         <label className="space-y-2">
-          <span className="text-xs uppercase tracking-[0.2em] text-slate-400">Texto</span>
+          <span className="text-meta uppercase tracking-[0.2em] text-slate-400">Texto</span>
           <input
             type="text"
             value={filtros.busca}
             onChange={(event) => onFiltroChange('busca', event.target.value)}
             placeholder="Nome do arquivo"
-            className="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-3 text-sm text-slate-100 placeholder:text-slate-500"
+            className="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-3 text-corpo text-slate-100 placeholder:text-texto-suave"
           />
         </label>
         <label className="space-y-2">
-          <span className="flex items-center gap-1 text-xs uppercase tracking-[0.2em] text-slate-400">
+          <span className="flex items-center gap-1 text-meta uppercase tracking-[0.2em] text-slate-400">
             Status
             <Tooltip rotulo="Valores aceitos">
               Campo de texto livre, não uma lista. Digite parte do status do lote — por exemplo
@@ -209,25 +209,25 @@ function LotesTable({
             value={filtros.status}
             onChange={(event) => onFiltroChange('status', event.target.value)}
             placeholder="importado"
-            className="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-3 text-sm text-slate-100 placeholder:text-slate-500"
+            className="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-3 text-corpo text-slate-100 placeholder:text-texto-suave"
           />
         </label>
         <label className="space-y-2">
-          <span className="text-xs uppercase tracking-[0.2em] text-slate-400">Importado de</span>
+          <span className="text-meta uppercase tracking-[0.2em] text-slate-400">Importado de</span>
           <input
             type="date"
             value={filtros.importado_de}
             onChange={(event) => onFiltroChange('importado_de', event.target.value)}
-            className="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-3 text-sm text-slate-100"
+            className="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-3 text-corpo text-slate-100"
           />
         </label>
         <label className="space-y-2">
-          <span className="text-xs uppercase tracking-[0.2em] text-slate-400">Importado até</span>
+          <span className="text-meta uppercase tracking-[0.2em] text-slate-400">Importado até</span>
           <input
             type="date"
             value={filtros.importado_ate}
             onChange={(event) => onFiltroChange('importado_ate', event.target.value)}
-            className="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-3 text-sm text-slate-100"
+            className="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-3 text-corpo text-slate-100"
           />
         </label>
         <div className="xl:col-span-4 flex flex-wrap gap-3">
@@ -238,17 +238,17 @@ function LotesTable({
       </form>
 
       {isLoading ? (
-        <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
+        <div className="mt-4 rounded-superficie border border-linha bg-fundo p-4 shadow-e1 text-corpo text-slate-300">
           Carregando lotes salvos...
         </div>
       ) : isError ? (
-        <div className="mt-4 rounded-2xl border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-100">
+        <div className="mt-4 rounded-2xl border border-rose-400/20 bg-rose-500/10 p-4 text-corpo text-rose-100">
           Não foi possível carregar os lotes importados.
         </div>
       ) : (
         <div className="mt-4 overflow-hidden rounded-3xl border border-white/10">
-          <table className="w-full border-collapse text-left text-sm">
-            <thead className="bg-fundo text-xs uppercase tracking-[0.25em] text-texto-suave">
+          <table className="w-full border-collapse text-left text-corpo" data-cartoes="md">
+            <thead className="bg-fundo text-meta uppercase tracking-[0.25em] text-texto-suave">
               <tr>
                 <th className="px-4 py-3">Arquivo</th>
                 <th className="px-4 py-3">Importado em</th>
@@ -260,28 +260,28 @@ function LotesTable({
             <tbody className="divide-y divide-linha bg-superficie">
               {rows.map((lote) => (
                 <tr key={lote.id}>
-                  <td className="px-4 py-4">
+                  <td data-rotulo="Arquivo" className="px-4 py-4">
                     <div className="font-medium text-white">#{lote.id}</div>
-                    <div className="text-xs text-slate-400">{lote.arquivo_nome_original}</div>
-                    <div className="mt-1 text-xs text-slate-500">{lote.status}</div>
+                    <div className="text-meta text-slate-400">{lote.arquivo_nome_original}</div>
+                    <div className="mt-1 text-meta text-texto-suave">{lote.status}</div>
                   </td>
-                  <td className="px-4 py-4 text-slate-200">
+                  <td data-rotulo="Importado em" className="px-4 py-4 text-slate-200">
                     {lote.importado_em ? new Date(lote.importado_em).toLocaleString('pt-BR') : '—'}
                   </td>
-                  <td className="px-4 py-4 text-slate-200">
+                  <td data-rotulo="Linhas" className="px-4 py-4 text-slate-200">
                     <div>Analítico: {lote.total_linhas_analitico}</div>
                     <div>Glosa: {lote.total_linhas_glosa}</div>
                     <div>Conciliação: {lote.total_linhas_conciliacao}</div>
                   </td>
-                  <td className="px-4 py-4 text-slate-200">
+                  <td data-rotulo="Totais" className="px-4 py-4 text-slate-200">
                     <div>Pago: {lote.total_pago}</div>
                     <div>Glosado: {lote.total_glosado}</div>
                     <div>Saldo: {lote.saldo_total}</div>
                   </td>
-                  <td className="px-4 py-4">
+                  <td data-rotulo="Ações" data-rotulo-bloco className="px-4 py-4">
                     <Link
                       to={`/analiticos/${lote.id}`}
-                      className="inline-flex rounded-2xl border border-cyan-300/30 bg-cyan-400/10 px-4 py-2 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-400/20"
+                      className="inline-flex rounded-2xl border border-cyan-300/30 bg-cyan-400/10 px-4 py-2 text-corpo font-semibold text-cyan-100 transition hover:bg-cyan-400/20"
                     >
                       Abrir
                     </Link>
@@ -374,10 +374,10 @@ export function AnaliticosPage() {
   return (
     <div className="space-y-8" data-testid="analiticos-page">
       <section className="space-y-4">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex flex-col gap-4 sm:items-start lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Analíticos</p>
-            <h2 className="mt-2 flex items-center gap-2 text-3xl font-semibold text-white">
+            <p className="text-meta uppercase tracking-[0.3em] text-cyan-300/80">Analíticos</p>
+            <h2 className="mt-2 flex items-center gap-2 text-display font-semibold text-white">
               Importação e conferência
               <Tooltip rotulo="O que é um analítico">
                 É o relatório que o convênio envia com o que foi pago e o que foi glosado (recusado)
@@ -389,25 +389,25 @@ export function AnaliticosPage() {
 
           <Link
             to="/conciliacao"
-            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+            className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 h-10 px-4 text-corpo font-semibold text-white transition hover:bg-white/10"
           >
             Abrir conciliação
           </Link>
         </div>
 
         <div className="grid gap-4 md:grid-cols-3">
-          <article className="rounded-3xl border border-white/10 bg-slate-950/40 p-4">
-            <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Arquivo</p>
-            <p className="mt-2 text-sm font-medium text-white">{arquivo?.name ?? 'Nenhum'}</p>
+          <article className="rounded-superficie border border-linha bg-fundo p-4 shadow-e1">
+            <p className="text-meta uppercase tracking-[0.25em] text-slate-400">Arquivo</p>
+            <p className="mt-2 text-corpo font-medium text-white">{arquivo?.name ?? 'Nenhum'}</p>
           </article>
-          <article className="rounded-3xl border border-white/10 bg-slate-950/40 p-4">
-            <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Planilhas</p>
-            <p className="mt-2 text-2xl font-semibold text-white">{preview?.planilhas.length ?? 0}</p>
+          <article className="rounded-superficie border border-linha bg-fundo p-4 shadow-e1">
+            <p className="text-meta uppercase tracking-[0.25em] text-slate-400">Planilhas</p>
+            <p className="mt-2 text-titulo font-semibold text-white">{preview?.planilhas.length ?? 0}</p>
           </article>
-          <article className="rounded-3xl border border-white/10 bg-slate-950/40 p-4">
-            <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Status</p>
-            <p className="mt-2 text-sm font-medium text-white">{salvo ? 'Lote salvo' : 'Aguardando'}</p>
-            <p className="mt-1 text-xs text-slate-400">
+          <article className="rounded-superficie border border-linha bg-fundo p-4 shadow-e1">
+            <p className="text-meta uppercase tracking-[0.25em] text-slate-400">Status</p>
+            <p className="mt-2 text-corpo font-medium text-white">{salvo ? 'Lote salvo' : 'Aguardando'}</p>
+            <p className="mt-1 text-meta text-slate-400">
               {preview?.lote.importado_em ? formatDateTime(preview.lote.importado_em) : '—'}
             </p>
           </article>
@@ -427,12 +427,12 @@ export function AnaliticosPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h3 className="text-lg font-semibold text-white">Importar analítico</h3>
+              <h3 className="text-subtitulo font-semibold text-white">Importar analítico</h3>
             </div>
           </div>
 
           <label className="block space-y-2">
-            <span className="flex items-center gap-1 text-sm font-medium text-slate-200">
+            <span className="flex items-center gap-1 text-corpo font-medium text-slate-200">
               Arquivo Excel
               <Tooltip rotulo="Formato exigido">
                 Envie o arquivo .xlsx/.xls no formato original exportado pelo convênio, sem colunas
@@ -444,13 +444,13 @@ export function AnaliticosPage() {
               type="file"
               accept=".xlsx,.xls"
               onChange={(event) => setArquivo(event.target.files?.[0] ?? null)}
-              className="block w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200 file:mr-4 file:rounded-full file:border-0 file:bg-cyan-400 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-slate-950"
+              className="inline-flex items-center justify-center block w-full rounded-2xl border border-white/10 bg-white/5 h-10 px-4 text-corpo text-slate-200 file:mr-4 file:rounded-full file:border-0 file:bg-cyan-400 file:px-4 file:py-2 file:text-corpo file:font-semibold file:text-slate-950"
               data-testid="analiticos-arquivo"
             />
           </label>
 
           {error ? (
-            <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+            <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-corpo text-rose-100">
               {error}
             </p>
           ) : null}
@@ -467,75 +467,75 @@ export function AnaliticosPage() {
         {preview ? (
           <div className="mt-6 space-y-6">
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-              <article className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Arquivo</p>
-                <p className="mt-2 text-sm font-medium text-white">{preview.arquivo}</p>
+              <article className="rounded-superficie border border-linha bg-fundo p-4 shadow-e1">
+                <p className="text-meta uppercase tracking-[0.25em] text-slate-400">Arquivo</p>
+                <p className="mt-2 text-corpo font-medium text-white">{preview.arquivo}</p>
               </article>
               {preview.planilhas.map((planilha) => (
                 <article
                   key={planilha.nome}
-                  className="rounded-2xl border border-white/10 bg-white/5 p-4"
+                  className="rounded-superficie border border-linha bg-fundo p-4 shadow-e1"
                 >
-                  <p className="text-xs uppercase tracking-[0.25em] text-slate-400">{planilha.nome}</p>
-                  <p className="mt-2 text-2xl font-semibold text-white">{planilha.linhas}</p>
+                  <p className="text-meta uppercase tracking-[0.25em] text-slate-400">{planilha.nome}</p>
+                  <p className="mt-2 text-titulo font-semibold text-white">{planilha.linhas}</p>
                 </article>
               ))}
             </div>
 
             <div className="grid gap-4 xl:grid-cols-2">
-              <article className="rounded-3xl border border-white/10 bg-white/5 p-4">
-                <h4 className="text-base font-semibold text-white">Cabeçalho</h4>
+              <article className="rounded-superficie border border-linha bg-fundo p-4 shadow-e1">
+                <h4 className="text-corpo-lg font-semibold text-white">Cabeçalho</h4>
                 <div className="mt-4 grid gap-3 md:grid-cols-2">
                   {Object.entries(preview.analitico.cabecalho).map(([key, value]) => (
-                    <div key={key} className="rounded-2xl border border-white/10 bg-slate-950/40 p-3">
-                      <p className="text-[11px] uppercase tracking-[0.25em] text-slate-400">{key}</p>
-                      <p className="mt-2 text-sm text-white">{formatEmpty(value.raw)}</p>
+                    <div key={key} className="rounded-superficie border border-linha bg-fundo p-3 shadow-e1">
+                      <p className="text-meta uppercase tracking-[0.25em] text-slate-400">{key}</p>
+                      <p className="mt-2 text-corpo text-white">{formatEmpty(value.raw)}</p>
                     </div>
                   ))}
                 </div>
                 <div className="mt-4 grid gap-3 md:grid-cols-2">
-                  <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-3">
-                    <p className="text-[11px] uppercase tracking-[0.25em] text-slate-400">
+                  <div className="rounded-superficie border border-linha bg-fundo p-3 shadow-e1">
+                    <p className="text-meta uppercase tracking-[0.25em] text-slate-400">
                       Total prestador
                     </p>
-                    <p className="mt-2 text-sm text-white">
+                    <p className="mt-2 text-corpo text-white">
                       {formatEmpty(preview.analitico.totais.prestador)}
                     </p>
                   </div>
-                  <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-3">
-                    <p className="text-[11px] uppercase tracking-[0.25em] text-slate-400">
+                  <div className="rounded-superficie border border-linha bg-fundo p-3 shadow-e1">
+                    <p className="text-meta uppercase tracking-[0.25em] text-slate-400">
                       Total lote
                     </p>
-                    <p className="mt-2 text-sm text-white">
+                    <p className="mt-2 text-corpo text-white">
                       {formatEmpty(preview.analitico.totais.lote)}
                     </p>
                   </div>
                 </div>
               </article>
 
-              <article className="rounded-3xl border border-white/10 bg-white/5 p-4">
-                <h4 className="text-base font-semibold text-white">Totais</h4>
+              <article className="rounded-superficie border border-linha bg-fundo p-4 shadow-e1">
+                <h4 className="text-corpo-lg font-semibold text-white">Totais</h4>
                 <div className="mt-4 grid gap-3 md:grid-cols-3">
-                  <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-3">
-                    <p className="text-[11px] uppercase tracking-[0.25em] text-slate-400">Pago</p>
-                    <p className="mt-2 text-sm text-white">
+                  <div className="rounded-superficie border border-linha bg-fundo p-3 shadow-e1">
+                    <p className="text-meta uppercase tracking-[0.25em] text-slate-400">Pago</p>
+                    <p className="mt-2 text-corpo text-white">
                       {formatEmpty(preview.conciliacao.totais.pago)}
                     </p>
                   </div>
-                  <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-3">
-                    <p className="text-[11px] uppercase tracking-[0.25em] text-slate-400">Glosado</p>
-                    <p className="mt-2 text-sm text-white">
+                  <div className="rounded-superficie border border-linha bg-fundo p-3 shadow-e1">
+                    <p className="text-meta uppercase tracking-[0.25em] text-slate-400">Glosado</p>
+                    <p className="mt-2 text-corpo text-white">
                       {formatEmpty(preview.conciliacao.totais.glosado)}
                     </p>
                   </div>
-                  <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-3">
-                    <p className="text-[11px] uppercase tracking-[0.25em] text-slate-400">Saldo</p>
-                    <p className="mt-2 text-sm text-white">
+                  <div className="rounded-superficie border border-linha bg-fundo p-3 shadow-e1">
+                    <p className="text-meta uppercase tracking-[0.25em] text-slate-400">Saldo</p>
+                    <p className="mt-2 text-corpo text-white">
                       {formatEmpty(preview.conciliacao.totais.saldo)}
                     </p>
                   </div>
                 </div>
-                <div className="mt-4 rounded-2xl border border-cyan-400/20 bg-cyan-500/10 p-4 text-sm text-cyan-50">
+                <div className="mt-4 rounded-2xl border border-cyan-400/20 bg-cyan-500/10 p-4 text-corpo text-cyan-50">
                   {preview.conciliacao.resumo_por_guia.length} guia(s) normalizada(s) para conferência.
                 </div>
               </article>
@@ -548,9 +548,9 @@ export function AnaliticosPage() {
 
             <div className="grid gap-4 xl:grid-cols-2">
               <ConciliacaoTable rows={conciliacaoRows} />
-              <article className="rounded-3xl border border-white/10 bg-white/5 p-4">
-                <h4 className="text-base font-semibold text-white">Revisão final</h4>
-                <p className="mt-2 flex items-start gap-1 text-sm text-slate-300">
+              <article className="rounded-superficie border border-linha bg-fundo p-4 shadow-e1">
+                <h4 className="text-corpo-lg font-semibold text-white">Revisão final</h4>
+                <p className="mt-2 flex items-start gap-1 text-corpo text-slate-300">
                   <span>
                     Use o botão salvar para manter a revisão atual ou recusar para limpar a
                     visualização e iniciar outra importação.
@@ -566,7 +566,7 @@ export function AnaliticosPage() {
                   <button
                     type="button"
                     onClick={handleSalvar}
-                    className="rounded-2xl bg-emerald-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-emerald-300"
+                    className="inline-flex items-center justify-center rounded-2xl bg-emerald-400 h-10 px-4 text-corpo font-semibold text-slate-950 transition hover:bg-emerald-300"
                     data-testid="analiticos-salvar"
                   >
                     {salvo ? 'Lote salvo' : 'Salvar lote'}
@@ -582,7 +582,7 @@ export function AnaliticosPage() {
                 </div>
 
                 {salvo ? (
-                  <p className="mt-4 rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+                  <p className="mt-4 rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-corpo text-emerald-100">
                     Lote mantido para conferência e conciliação.
                   </p>
                 ) : null}
@@ -590,7 +590,7 @@ export function AnaliticosPage() {
             </div>
           </div>
         ) : (
-          <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
+          <div className="mt-6 rounded-superficie border border-linha bg-fundo p-4 shadow-e1 text-corpo text-slate-300">
             O analítico aparece aqui depois da importação do Excel e segue o modelo da planilha
             item3.3.xlsx.
           </div>

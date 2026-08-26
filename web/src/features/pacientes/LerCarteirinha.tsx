@@ -170,11 +170,11 @@ export function LerCarteirinha({
         </Botao>
 
         {webcamDisponivel() ? (
-          <button
+          <Botao
             type="button"
+            variante="secundario"
             onClick={camera ? fecharCamera : abrirCamera}
             disabled={ler.isPending}
-            className="inline-flex items-center gap-2 rounded-2xl border border-cyan-300/30 bg-cyan-400/10 px-4 py-3 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-400/20 disabled:opacity-60"
             data-testid="paciente-webcam"
           >
             <svg aria-hidden="true" viewBox="0 0 20 20" className="h-4 w-4">
@@ -188,10 +188,10 @@ export function LerCarteirinha({
               <circle cx="10" cy="11" r="3" fill="none" stroke="currentColor" strokeWidth="1.5" />
             </svg>
             {camera ? 'Fechar webcam' : 'Usar webcam'}
-          </button>
+          </Botao>
         ) : null}
 
-        <span className="flex items-center gap-1 text-xs text-slate-400">
+        <span className="flex items-center gap-1 text-meta text-slate-400">
           Foto, arquivo ou webcam. Os dados lidos vêm para conferência antes de salvar.
           <Tooltip rotulo="Como funciona a leitura">
             A IA extrai número da carteirinha, nome, convênio, CPF, validade e data de nascimento.
@@ -227,10 +227,10 @@ export function LerCarteirinha({
             <Botao variante="primario" onClick={capturar} data-testid="paciente-webcam-capturar">
               Tirar foto e ler
             </Botao>
-            <button type="button" onClick={fecharCamera} className="text-sm text-slate-300">
+            <button type="button" onClick={fecharCamera} className="inline-flex min-h-6 items-center text-corpo text-slate-300">
               Cancelar
             </button>
-            <span className="text-xs text-slate-400">
+            <span className="text-meta text-slate-400">
               Encoste o cartão no quadro, sem reflexo, e mantenha o número legível.
             </span>
           </div>
@@ -244,7 +244,7 @@ export function LerCarteirinha({
       */}
       {ler.isPending ? (
         <div
-          className="flex items-center gap-3 rounded-2xl border border-cyan-300/30 bg-cyan-400/10 px-4 py-3 text-sm text-cyan-50"
+          className="flex items-center gap-3 rounded-2xl border border-cyan-300/30 bg-cyan-400/10 px-4 py-3 text-corpo text-cyan-50"
           role="status"
           aria-live="polite"
           data-testid="paciente-carteirinha-lendo"
@@ -262,7 +262,7 @@ export function LerCarteirinha({
           className="space-y-3 rounded-2xl border border-white/10 bg-slate-950/60 p-4"
           data-testid="paciente-convenio-lido"
         >
-          <p className="text-sm text-slate-200">
+          <p className="text-corpo text-slate-200">
             Operadora lida no cartão: <strong className="text-white">{convenioLido.lido}</strong>
             {convenioLido.id ? (
               <span className="text-emerald-200"> · convênio preenchido automaticamente</span>
@@ -273,7 +273,7 @@ export function LerCarteirinha({
 
           {convenioLido.candidatos.length > 0 ? (
             <div className="space-y-2">
-              <p className="text-xs uppercase tracking-[0.25em] text-slate-400">
+              <p className="text-meta uppercase tracking-[0.25em] text-slate-400">
                 Proximidade com os convênios cadastrados
               </p>
 
@@ -282,7 +282,7 @@ export function LerCarteirinha({
                   key={candidato.id}
                   className="flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2"
                 >
-                  <span className="min-w-32 text-sm text-white">{candidato.nome}</span>
+                  <span className="min-w-32 text-corpo text-white">{candidato.nome}</span>
 
                   <span className="h-2 w-24 overflow-hidden rounded-full bg-white/10">
                     <span
@@ -291,14 +291,14 @@ export function LerCarteirinha({
                     />
                   </span>
 
-                  <span className="text-xs font-semibold text-slate-200">
+                  <span className="text-meta font-semibold text-slate-200">
                     {candidato.similaridade.toFixed(0)}%
                   </span>
 
                   <button
                     type="button"
                     onClick={() => onEscolherConvenio(candidato.id)}
-                    className="ml-auto rounded-full border border-cyan-300/30 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-400/20"
+                    className="ml-auto rounded-full border border-cyan-300/30 bg-cyan-400/10 px-3 py-1 text-meta font-semibold text-cyan-100 transition hover:bg-cyan-400/20"
                     data-testid={`paciente-convenio-usar-${candidato.id}`}
                   >
                     Usar este
@@ -317,12 +317,12 @@ export function LerCarteirinha({
               to="/convenios/novo"
               target="_blank"
               rel="noreferrer"
-              className="rounded-2xl border border-cyan-300/30 bg-cyan-400/10 px-4 py-2 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-400/20"
+              className="rounded-2xl border border-cyan-300/30 bg-cyan-400/10 px-4 py-2 text-corpo font-semibold text-cyan-100 transition hover:bg-cyan-400/20"
               data-testid="paciente-convenio-cadastrar"
             >
               Cadastrar novo convênio
             </Link>
-            <span className="text-xs text-slate-400">
+            <span className="text-meta text-slate-400">
               Abre em outra aba. Ao voltar, a lista de convênios se atualiza sozinha.
             </span>
           </div>
@@ -330,13 +330,13 @@ export function LerCarteirinha({
       ) : null}
 
       {aviso ? (
-        <p className="rounded-2xl border border-amber-300/20 bg-amber-400/10 px-4 py-3 text-sm text-amber-100">
+        <p className="rounded-2xl border border-amber-300/20 bg-amber-400/10 px-4 py-3 text-corpo text-amber-100">
           {aviso}
         </p>
       ) : null}
 
       {erro ? (
-        <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+        <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-corpo text-rose-100">
           {erro}
         </p>
       ) : null}

@@ -68,16 +68,16 @@ export function ConfirmarExclusao({
         className="w-full max-w-lg space-y-4 rounded-janela border border-perigo/30 bg-superficie-elevada p-6 shadow-e3"
       >
         <div>
-          <h3 className="text-lg font-semibold text-texto">{titulo}</h3>
-          <p className="mt-2 text-sm leading-6 text-texto-suave">{descricao}</p>
+          <h3 className="text-subtitulo font-semibold text-texto">{titulo}</h3>
+          <p className="mt-2 text-corpo leading-6 text-texto-suave">{descricao}</p>
         </div>
 
-        <p className="rounded-campo border border-linha bg-fundo px-4 py-3 text-sm text-texto">
+        <p className="rounded-campo border border-linha bg-fundo px-4 py-3 text-corpo text-texto">
           {alvo}
         </p>
 
         <label className="block space-y-2">
-          <span className="text-sm text-texto">
+          <span className="text-corpo text-texto">
             Para confirmar, digite <strong className="text-perigo-texto">{PALAVRA}</strong>
           </span>
           <input

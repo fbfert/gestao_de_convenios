@@ -10,7 +10,7 @@ import {
 import { Botao } from '../../components/ui/Botao'
 
 function inputClasses() {
-  return 'w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20'
+  return 'w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-corpo text-white outline-none transition placeholder:text-texto-suave focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20'
 }
 
 const openaiVazio: AiOpenaiForm = {
@@ -74,9 +74,9 @@ export function ConfiguracoesIaPage() {
   return (
     <form onSubmit={handleSubmit} className="space-y-6" data-testid="configuracoes-ia-page">
       <section className="space-y-2">
-        <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Configurações</p>
-        <h2 className="text-3xl font-semibold text-white">Configurações de IA</h2>
-        <p className="max-w-3xl text-sm leading-6 text-slate-300">
+        <p className="text-meta uppercase tracking-[0.3em] text-cyan-300/80">Configurações</p>
+        <h2 className="text-display font-semibold text-white">Configurações de IA</h2>
+        <p className="max-w-3xl text-corpo leading-6 text-slate-300">
           Credenciais da OpenAI usadas na leitura automática de documentos. O texto que a IA
           recebe fica em{' '}
           <Link to="/configuracoes/ia/prompts" className="text-cyan-200 underline">
@@ -89,12 +89,12 @@ export function ConfiguracoesIaPage() {
       <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
         <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-white">OpenAI</h3>
-            <p className="mt-1 text-sm text-slate-300">
+            <h3 className="text-subtitulo font-semibold text-white">OpenAI</h3>
+            <p className="mt-1 text-corpo text-slate-300">
               Enquanto estiver inativa, nenhuma leitura automática é executada.
             </p>
           </div>
-          <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-200">
+          <label className="inline-flex min-h-6 items-center gap-2 text-corpo font-medium text-slate-200">
             <input
               type="checkbox"
               checked={form.ativo}
@@ -107,14 +107,14 @@ export function ConfiguracoesIaPage() {
         </div>
 
         {settingsQuery.isLoading ? (
-          <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
+          <div className="mt-4 rounded-superficie border border-linha bg-fundo p-4 shadow-e1 text-corpo text-slate-300">
             Carregando configurações de IA...
           </div>
         ) : null}
 
         <div className="mt-5 grid gap-4 md:grid-cols-2">
           <label className="space-y-2">
-            <span className="text-sm font-medium text-slate-200">API key</span>
+            <span className="text-corpo font-medium text-slate-200">API key</span>
             <input
               type="password"
               value={form.api_key}
@@ -129,7 +129,7 @@ export function ConfiguracoesIaPage() {
             />
           </label>
           <label className="space-y-2">
-            <span className="text-sm font-medium text-slate-200">Base URL</span>
+            <span className="text-corpo font-medium text-slate-200">Base URL</span>
             <input
               value={form.base_url}
               onChange={(event) => alterar('base_url', event.target.value)}
@@ -144,7 +144,7 @@ export function ConfiguracoesIaPage() {
             de "deixe em branco", que e o caso certo para chaves sk-proj-*.
           */}
           <label className="space-y-2">
-            <span className="text-sm font-medium text-slate-200">Organização</span>
+            <span className="text-corpo font-medium text-slate-200">Organização</span>
             <input
               value={form.organization_id}
               onChange={(event) => alterar('organization_id', event.target.value)}
@@ -152,12 +152,12 @@ export function ConfiguracoesIaPage() {
               placeholder="org_... (opcional)"
               data-testid="ia-openai-organization"
             />
-            <span className="block text-xs text-slate-400">
+            <span className="block text-meta text-slate-400">
               O identificador, começando por <code>org_</code> — não o nome da organização.
             </span>
           </label>
           <label className="space-y-2">
-            <span className="text-sm font-medium text-slate-200">Projeto</span>
+            <span className="text-corpo font-medium text-slate-200">Projeto</span>
             <input
               value={form.project_id}
               onChange={(event) => alterar('project_id', event.target.value)}
@@ -165,7 +165,7 @@ export function ConfiguracoesIaPage() {
               placeholder="proj_... (opcional)"
               data-testid="ia-openai-project"
             />
-            <span className="block text-xs text-slate-400">
+            <span className="block text-meta text-slate-400">
               O identificador, começando por <code>proj_</code> — não o nome do projeto. Chaves{' '}
               <code>sk-proj-*</code> já vêm presas a um projeto: deixe em branco.
             </span>
@@ -173,7 +173,7 @@ export function ConfiguracoesIaPage() {
         </div>
 
         <label className="mt-4 block space-y-2">
-          <span className="text-sm font-medium text-slate-200">Modelo padrão</span>
+          <span className="text-corpo font-medium text-slate-200">Modelo padrão</span>
           <input
             value={form.model_id}
             onChange={(event) => alterar('model_id', event.target.value)}
@@ -182,7 +182,7 @@ export function ConfiguracoesIaPage() {
             list="ia-modelos-disponiveis"
             data-testid="ia-openai-model"
           />
-          <span className="block text-xs text-slate-400">
+          <span className="block text-meta text-slate-400">
             Usado quando o prompt não define um modelo próprio. Digite, escolha na lista do campo
             ou clique num modelo abaixo depois de listar.
           </span>
@@ -198,22 +198,22 @@ export function ConfiguracoesIaPage() {
           >
             {modelosQuery.isFetching ? 'Listando modelos...' : 'Listar modelos'}
           </Botao>
-          <span className="text-xs text-slate-400">
+          <span className="text-meta text-slate-400">
             Usa a chave já salva. Salve antes de listar.
           </span>
           {modelosQuery.isError ? (
-            <span className="text-sm text-rose-100">
+            <span className="text-corpo text-rose-100">
               {getHttpErrorMessage(modelosQuery.error, 'Não foi possível listar modelos.')}
             </span>
           ) : null}
         </div>
 
         {modelosQuery.data && modelosQuery.data.length > 0 ? (
-          <div className="mt-5 rounded-3xl border border-white/10 bg-white/5 p-4">
-            <p className="text-xs uppercase tracking-[0.25em] text-slate-400">
+          <div className="mt-5 rounded-superficie border border-linha bg-fundo p-4 shadow-e1">
+            <p className="text-meta uppercase tracking-[0.25em] text-slate-400">
               Modelos disponíveis
             </p>
-            <p className="mt-1 text-xs text-slate-400">
+            <p className="mt-1 text-meta text-slate-400">
               Clique num modelo para usá-lo como padrão. Lembre de salvar depois.
             </p>
             <div className="mt-3 flex max-h-44 flex-wrap gap-2 overflow-y-auto">
@@ -226,7 +226,7 @@ export function ConfiguracoesIaPage() {
                     type="button"
                     onClick={() => alterar('model_id', model.id)}
                     aria-pressed={selecionado}
-                    className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                    className={`rounded-full border px-3 py-1.5 text-meta font-semibold transition ${
                       selecionado
                         ? 'border-cyan-300/70 bg-cyan-400/30 text-cyan-50 ring-2 ring-cyan-300/20'
                         : 'border-cyan-400/20 bg-cyan-400/10 text-cyan-100 hover:bg-cyan-400/20'
@@ -244,13 +244,13 @@ export function ConfiguracoesIaPage() {
       </section>
 
       {message ? (
-        <p className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+        <p className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-corpo text-emerald-100">
           {message}
         </p>
       ) : null}
 
       {error ? (
-        <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+        <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-corpo text-rose-100">
           {error}
         </p>
       ) : null}

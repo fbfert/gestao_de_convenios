@@ -14,7 +14,7 @@ import {
 import { Botao } from '../../components/ui/Botao'
 
 function inputClasses() {
-  return 'w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20'
+  return 'w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-corpo text-white outline-none transition placeholder:text-texto-suave focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20'
 }
 
 function paraFormulario(prompt: AiPrompt): AiPromptForm {
@@ -170,9 +170,9 @@ export function PromptsOperacionaisPage() {
   return (
     <div className="space-y-6" data-testid="prompts-operacionais-page">
       <section className="space-y-2">
-        <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Configurações</p>
-        <h2 className="text-3xl font-semibold text-white">Prompts Operacionais</h2>
-        <p className="max-w-3xl text-sm leading-6 text-slate-300">
+        <p className="text-meta uppercase tracking-[0.3em] text-cyan-300/80">Configurações</p>
+        <h2 className="text-display font-semibold text-white">Prompts Operacionais</h2>
+        <p className="max-w-3xl text-corpo leading-6 text-slate-300">
           Cada prompt define como a IA transforma um documento em dados estruturados. A credencial
           usada no envio fica em{' '}
           <Link to="/configuracoes/ia" className="text-cyan-200 underline">
@@ -186,19 +186,19 @@ export function PromptsOperacionaisPage() {
         <Botao type="button" onClick={abrirNovo} data-testid="prompt-novo">
           Novo prompt
         </Botao>
-        <span className="text-xs text-slate-400">
+        <span className="text-meta text-slate-400">
           {prompts.length} {prompts.length === 1 ? 'prompt cadastrado' : 'prompts cadastrados'}
         </span>
       </div>
 
       {message ? (
-        <p className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+        <p className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-corpo text-emerald-100">
           {message}
         </p>
       ) : null}
 
       {error ? (
-        <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+        <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-corpo text-rose-100">
           {error}
         </p>
       ) : null}
@@ -209,13 +209,13 @@ export function PromptsOperacionaisPage() {
           className="rounded-janela border border-acento/30 bg-superficie-elevada shadow-e2 p-6"
           data-testid="prompt-form"
         >
-          <h3 className="text-lg font-semibold text-white">
+          <h3 className="text-subtitulo font-semibold text-white">
             {edicao === 'novo' ? 'Novo prompt' : `Editando: ${form.nome || form.chave}`}
           </h3>
 
           <div className="mt-5 grid gap-4 md:grid-cols-2">
             <label className="space-y-2">
-              <span className="text-sm font-medium text-slate-200">Chave</span>
+              <span className="text-corpo font-medium text-slate-200">Chave</span>
               <input
                 value={form.chave}
                 onChange={(event) => alterar('chave', event.target.value)}
@@ -225,14 +225,14 @@ export function PromptsOperacionaisPage() {
                 required
                 data-testid="prompt-chave"
               />
-              <span className="block text-xs text-slate-400">
+              <span className="block text-meta text-slate-400">
                 {editandoSistema
                   ? 'Prompt usado pelo sistema: a chave não pode ser alterada.'
                   : 'Identificador interno. Minúsculas, números e underscore.'}
               </span>
             </label>
             <label className="space-y-2">
-              <span className="text-sm font-medium text-slate-200">Nome</span>
+              <span className="text-corpo font-medium text-slate-200">Nome</span>
               <input
                 value={form.nome}
                 onChange={(event) => alterar('nome', event.target.value)}
@@ -242,7 +242,7 @@ export function PromptsOperacionaisPage() {
               />
             </label>
             <label className="space-y-2 md:col-span-2">
-              <span className="text-sm font-medium text-slate-200">Descrição</span>
+              <span className="text-corpo font-medium text-slate-200">Descrição</span>
               <input
                 value={form.descricao}
                 onChange={(event) => alterar('descricao', event.target.value)}
@@ -251,7 +251,7 @@ export function PromptsOperacionaisPage() {
               />
             </label>
             <label className="space-y-2 md:col-span-2">
-              <span className="text-sm font-medium text-slate-200">Modelo</span>
+              <span className="text-corpo font-medium text-slate-200">Modelo</span>
               <input
                 value={form.model_id}
                 onChange={(event) => alterar('model_id', event.target.value)}
@@ -260,7 +260,7 @@ export function PromptsOperacionaisPage() {
                 list="ia-modelos-disponiveis"
                 data-testid="prompt-modelo"
               />
-              <span className="block text-xs text-slate-400">
+              <span className="block text-meta text-slate-400">
                 {modelosQuery.isFetching
                   ? 'Carregando os modelos disponíveis...'
                   : modelosQuery.data?.length
@@ -272,7 +272,7 @@ export function PromptsOperacionaisPage() {
 
           <div className="mt-4 grid gap-4 xl:grid-cols-2">
             <label className="space-y-2">
-              <span className="text-sm font-medium text-slate-200">Prompt de sistema</span>
+              <span className="text-corpo font-medium text-slate-200">Prompt de sistema</span>
               <textarea
                 value={form.system_prompt}
                 onChange={(event) => alterar('system_prompt', event.target.value)}
@@ -282,7 +282,7 @@ export function PromptsOperacionaisPage() {
               />
             </label>
             <label className="space-y-2">
-              <span className="text-sm font-medium text-slate-200">Prompt do usuário</span>
+              <span className="text-corpo font-medium text-slate-200">Prompt do usuário</span>
               <textarea
                 value={form.user_prompt}
                 onChange={(event) => alterar('user_prompt', event.target.value)}
@@ -293,7 +293,7 @@ export function PromptsOperacionaisPage() {
             </label>
           </div>
 
-          <label className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-slate-200">
+          <label className="mt-4 inline-flex min-h-6 items-center gap-2 text-corpo font-medium text-slate-200">
             <input
               type="checkbox"
               checked={form.ativo}
@@ -316,11 +316,11 @@ export function PromptsOperacionaisPage() {
       ) : null}
 
       {promptsQuery.isPending ? (
-        <p className="text-sm text-slate-400">Carregando prompts...</p>
+        <p className="text-corpo text-slate-400">Carregando prompts...</p>
       ) : null}
 
       {promptsQuery.isError ? (
-        <p className="text-sm text-rose-300">
+        <p className="text-corpo text-rose-300">
           {getHttpErrorMessage(promptsQuery.error, 'Não foi possível carregar os prompts.')}
         </p>
       ) : null}
@@ -329,29 +329,29 @@ export function PromptsOperacionaisPage() {
         {prompts.map((prompt) => (
           <article
             key={prompt.id}
-            className="rounded-3xl border border-white/10 bg-white/5 p-5"
+            className="rounded-superficie border border-linha bg-fundo p-5 shadow-e1"
             data-testid={`prompt-item-${prompt.chave}`}
           >
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <p className="text-base font-semibold text-white">{prompt.nome}</p>
+                  <p className="text-corpo-lg font-semibold text-white">{prompt.nome}</p>
                   {prompt.sistema ? (
-                    <span className="rounded-full border border-cyan-300/30 bg-cyan-400/10 px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wide text-cyan-100">
+                    <span className="rounded-full border border-cyan-300/30 bg-cyan-400/10 px-2 py-0.5 text-meta font-semibold uppercase tracking-wide text-cyan-100">
                       Sistema
                     </span>
                   ) : null}
                   {prompt.ativo ? null : (
-                    <span className="rounded-full border border-white/15 bg-white/5 px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wide text-slate-300">
+                    <span className="rounded-full border border-white/15 bg-white/5 px-2 py-0.5 text-meta font-semibold uppercase tracking-wide text-slate-300">
                       Inativo
                     </span>
                   )}
                 </div>
-                <p className="font-mono text-xs text-slate-400">{prompt.chave}</p>
+                <p className="font-mono text-meta text-slate-400">{prompt.chave}</p>
                 {prompt.descricao ? (
-                  <p className="text-sm text-slate-300">{prompt.descricao}</p>
+                  <p className="inline-flex min-h-6 items-center text-corpo text-slate-300">{prompt.descricao}</p>
                 ) : null}
-                <p className="text-xs text-slate-400">
+                <p className="text-meta text-slate-400">
                   Modelo: {prompt.model_id || 'padrão do backend'}
                 </p>
               </div>
@@ -360,7 +360,7 @@ export function PromptsOperacionaisPage() {
                 <button
                   type="button"
                   onClick={() => abrirEdicao(prompt)}
-                  className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
+                  className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-corpo font-semibold text-white transition hover:bg-white/10"
                   data-testid={`prompt-editar-${prompt.chave}`}
                 >
                   Editar
@@ -373,7 +373,7 @@ export function PromptsOperacionaisPage() {
                       type="button"
                       onClick={() => void handleExcluir(prompt)}
                       disabled={excluir.isPending}
-                      className="rounded-2xl bg-rose-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-400 disabled:opacity-60"
+                      className="rounded-2xl bg-rose-500 px-4 py-2 text-corpo font-semibold text-white transition hover:bg-rose-400 disabled:opacity-60"
                       data-testid={`prompt-confirmar-exclusao-${prompt.chave}`}
                     >
                       {excluir.isPending ? 'Excluindo...' : 'Confirmar'}
@@ -381,7 +381,7 @@ export function PromptsOperacionaisPage() {
                     <button
                       type="button"
                       onClick={() => setConfirmandoExclusao(null)}
-                      className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
+                      className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-corpo font-semibold text-white transition hover:bg-white/10"
                     >
                       Cancelar
                     </button>
@@ -390,7 +390,7 @@ export function PromptsOperacionaisPage() {
                   <button
                     type="button"
                     onClick={() => setConfirmandoExclusao(prompt.id)}
-                    className="rounded-2xl border border-rose-400/30 bg-rose-500/10 px-4 py-2 text-sm font-semibold text-rose-100 transition hover:bg-rose-500/20"
+                    className="rounded-2xl border border-rose-400/30 bg-rose-500/10 px-4 py-2 text-corpo font-semibold text-rose-100 transition hover:bg-rose-500/20"
                     data-testid={`prompt-excluir-${prompt.chave}`}
                   >
                     Excluir
@@ -402,7 +402,7 @@ export function PromptsOperacionaisPage() {
         ))}
 
         {!promptsQuery.isPending && prompts.length === 0 ? (
-          <p className="rounded-3xl border border-white/10 bg-white/5 p-5 text-sm text-slate-300">
+          <p className="rounded-superficie border border-linha bg-fundo p-5 shadow-e1 text-corpo text-slate-300">
             Nenhum prompt cadastrado.
           </p>
         ) : null}

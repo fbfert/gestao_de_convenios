@@ -9,6 +9,7 @@ import { buildGuiaTemplateData, renderLancamentoPrintTemplate } from '../lancame
 import { Botao } from '../../components/ui/Botao'
 import { useConfirm } from '../../components/ui/ConfirmDialog'
 import { AutomacaoProgressoModal } from '../automacoes/AutomacaoProgressoModal'
+import { HtmlIsolado } from '../../components/ui/HtmlIsolado'
 
 export function GuiaDetalhePage() {
   const { id } = useParams()
@@ -41,17 +42,17 @@ export function GuiaDetalhePage() {
   }
 
   if (guiaQuery.isLoading) {
-    return <div className="rounded-3xl border border-white/10 bg-white/5 p-6 text-slate-300">Carregando guia...</div>
+    return <div className="rounded-superficie border border-linha bg-fundo p-6 shadow-e1 text-slate-300">Carregando guia...</div>
   }
 
   if (guiaQuery.isError || !guiaQuery.data) {
     return (
       <div className="space-y-4 rounded-3xl border border-rose-400/20 bg-rose-500/10 p-6 text-rose-100">
         <p>Não foi possível encontrar esta guia.</p>
-        <p className="text-sm text-rose-100/80">
+        <p className="text-corpo text-rose-100/80">
           {getHttpErrorMessage(guiaQuery.error, 'Confira o número informado e tente novamente.')}
         </p>
-        <Link to="/guias" className="inline-flex rounded-2xl border border-rose-200/30 px-4 py-2 text-sm font-semibold">
+        <Link to="/guias" className="inline-flex rounded-2xl border border-rose-200/30 px-4 py-2 text-corpo font-semibold">
           Voltar para guias
         </Link>
       </div>
@@ -106,9 +107,9 @@ export function GuiaDetalhePage() {
   return (
     <>
     <div className="space-y-8 print:hidden" data-testid="guia-detalhe-page">
-      <section className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <section className="flex flex-col gap-4 sm:items-start lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <Link to="/guias" className="text-sm font-semibold text-cyan-200 transition hover:text-cyan-100">
+          <Link to="/guias" className="text-corpo font-semibold text-cyan-200 transition hover:text-cyan-100">
             ← Voltar para guias
           </Link>
         </div>
@@ -125,15 +126,15 @@ export function GuiaDetalhePage() {
       <GuiaDetalheResumo guia={guia} />
 
       <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
-        <h3 className="text-lg font-semibold text-white">Ações da guia</h3>
-        <p className="mt-1 text-sm text-slate-300">Finalize com senha e validade ou negue enquanto estiver em análise.</p>
+        <h3 className="text-subtitulo font-semibold text-white">Ações da guia</h3>
+        <p className="mt-1 text-corpo text-slate-300">Finalize com senha e validade ou negue enquanto estiver em análise.</p>
         <div className="mt-4 flex flex-wrap gap-2">
           <GuiaStatusActions guia={guia} />
           <button
             type="button"
             onClick={() => void handleConsultarUnimed()}
             disabled={!canConsultarUnimed || consultarGuiaUnimed.isPending}
-            className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1.5 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-400/20 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1.5 text-meta font-semibold text-cyan-100 transition hover:bg-cyan-400/20 disabled:cursor-not-allowed disabled:opacity-50"
             data-testid="guia-consultar-unimed"
           >
             {consultarGuiaUnimed.isPending ? 'Consultando...' : 'Consultar Unimed'}
@@ -142,7 +143,7 @@ export function GuiaDetalhePage() {
             type="button"
             onClick={() => void handleBuscarSenhaValidade()}
             disabled={!canBuscarSenhaValidade || buscarSenhaValidadeUnimed.isPending}
-            className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1.5 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-400/20 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1.5 text-meta font-semibold text-emerald-100 transition hover:bg-emerald-400/20 disabled:cursor-not-allowed disabled:opacity-50"
             data-testid="guia-buscar-senha-validade-unimed"
           >
             {buscarSenhaValidadeUnimed.isPending ? 'Buscando...' : 'Buscar senha/validade'}
@@ -151,9 +152,9 @@ export function GuiaDetalhePage() {
       </section>
     </div>
 
-    <section
+    <HtmlIsolado
       className="hidden print:block bg-white p-8 text-slate-950"
-      dangerouslySetInnerHTML={{ __html: printHtml }}
+      html={printHtml}
     />
 
     <AutomacaoProgressoModal

@@ -32,13 +32,13 @@ export function LoginPage() {
     <div className="grid min-h-screen place-items-center px-4 py-10" data-testid="login-page">
       <div className="w-full max-w-md rounded-janela border border-linha bg-superficie p-8 shadow-e3">
         <div className="mb-8">
-          <p className="text-xs uppercase tracking-[0.3em] text-acento">
+          <p className="text-meta uppercase tracking-[0.3em] text-acento">
             Acesso interno
           </p>
-          <h1 className="mt-2 text-3xl font-semibold text-texto">
+          <h1 className="mt-2 text-display font-semibold text-texto">
             Entrar no sistema
           </h1>
-          <p className="mt-2 text-sm leading-6 text-texto-suave">
+          <p className="mt-2 text-corpo leading-6 text-texto-suave">
             Use o usuário seedado do ambiente local para testar o fluxo real de
             autenticação.
           </p>
@@ -46,7 +46,7 @@ export function LoginPage() {
 
         <form className="space-y-5" onSubmit={handleSubmit}>
           <label className="block space-y-2">
-            <span className="text-sm font-medium text-texto">E-mail</span>
+            <span className="text-corpo font-medium text-texto">E-mail</span>
             <input
               type="email"
               value={email}
@@ -59,7 +59,7 @@ export function LoginPage() {
           </label>
 
           <label className="block space-y-2">
-            <span className="text-sm font-medium text-texto">Senha</span>
+            <span className="text-corpo font-medium text-texto">Senha</span>
             <input
               type="password"
               value={password}
@@ -72,7 +72,7 @@ export function LoginPage() {
           </label>
 
           {error ? (
-            <p className="rounded-campo border border-perigo/30 bg-perigo-suave px-4 py-3 text-sm text-perigo-texto">
+            <p className="rounded-campo border border-perigo/30 bg-perigo-suave px-4 py-3 text-corpo text-perigo-texto">
               {error}
             </p>
           ) : null}

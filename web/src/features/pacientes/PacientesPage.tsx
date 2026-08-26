@@ -332,10 +332,10 @@ export function PacientesPage() {
     <div className="space-y-8" data-testid="pacientes-page">
       {!isFormRoute ? (
       <section className="space-y-4">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex flex-col gap-4 sm:items-start lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Pacientes</p>
-            <h2 className="mt-2 flex items-center gap-2 text-3xl font-semibold text-white">
+            <p className="text-meta uppercase tracking-[0.3em] text-cyan-300/80">Pacientes</p>
+            <h2 className="mt-2 flex items-center gap-2 text-display font-semibold text-white">
               Cadastro e referência de pacientes
               <Tooltip rotulo="Para que serve esta tela">
                 É a base usada por Solicitações, Guias e Antecipações. Cadastre o paciente aqui —
@@ -364,25 +364,25 @@ export function PacientesPage() {
           <form onSubmit={handleSubmit} className="space-y-4" data-testid="paciente-form">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h3 className="text-lg font-semibold text-white">
+                <h3 className="text-subtitulo font-semibold text-white">
                   {editingId ? 'Editar paciente' : 'Novo paciente'}
                 </h3>
               </div>
               {editingId ? (
-                <span className="rounded-full border border-cyan-300/20 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-100">
+                <span className="rounded-full border border-cyan-300/20 bg-cyan-400/10 px-3 py-1 text-meta font-semibold text-cyan-100">
                   Editando #{editingId}
                 </span>
               ) : null}
             </div>
 
             {conveniosQuery.isLoading ? (
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
+              <div className="rounded-superficie border border-linha bg-fundo p-4 shadow-e1 text-corpo text-slate-300">
                 Carregando convênios...
               </div>
             ) : null}
 
             {conveniosQuery.isError ? (
-              <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-100">
+              <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 p-4 text-corpo text-rose-100">
                 Não foi possível carregar os convênios.
               </div>
             ) : null}
@@ -395,7 +395,7 @@ export function PacientesPage() {
             />
 
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Convênio</span>
+              <span className="text-corpo font-medium text-slate-200">Convênio</span>
               <Select
                 value={form.convenio_id}
                 onChange={(event) =>
@@ -412,13 +412,13 @@ export function PacientesPage() {
                   </option>
                 ))}
               </Select>
-              <span className="block text-xs text-slate-400">
+              <span className="block text-meta text-slate-400">
                 O convênio define o formato da carteirinha e as regras de autorização.
               </span>
             </label>
 
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Nome Completo</span>
+              <span className="text-corpo font-medium text-slate-200">Nome Completo</span>
               <input
                 value={form.nome}
                 onChange={(event) => setForm((current) => ({ ...current, nome: event.target.value }))}
@@ -429,7 +429,7 @@ export function PacientesPage() {
 
             {blocos ? (
               <div className="space-y-2">
-                <span className="text-sm font-medium text-slate-200">Carteirinha</span>
+                <span className="text-corpo font-medium text-slate-200">Carteirinha</span>
                 <CarteirinhaBlocosInput
                   blocos={blocos}
                   blocks={blocosDigitados}
@@ -442,7 +442,7 @@ export function PacientesPage() {
               </div>
             ) : (
               <label className="block space-y-2">
-                <span className="text-sm font-medium text-slate-200">Carteirinha</span>
+                <span className="text-corpo font-medium text-slate-200">Carteirinha</span>
                 <input
                   value={form.carteirinha}
                   onChange={(event) =>
@@ -456,7 +456,7 @@ export function PacientesPage() {
 
             <div className="grid gap-4 md:grid-cols-2">
               <label className="block space-y-2">
-                <span className="flex items-center gap-1 text-sm font-medium text-slate-200">
+                <span className="flex items-center gap-1 text-corpo font-medium text-slate-200">
                   Validade da carteirinha
                   <Tooltip rotulo="O que acontece se vencer">
                     Uma carteirinha vencida só gera um aviso, aqui e ao abrir uma solicitação para o
@@ -474,7 +474,7 @@ export function PacientesPage() {
                   data-testid="paciente-validade-carteirinha"
                 />
                 {carteirinhaVencida(form.validade_carteirinha) ? (
-                  <span className="block rounded-2xl border border-amber-300/20 bg-amber-400/10 px-3 py-2 text-xs text-amber-100">
+                  <span className="block rounded-2xl border border-amber-300/20 bg-amber-400/10 px-3 py-2 text-meta text-amber-100">
                     Carteirinha vencida. O cadastro continua permitido — confira o cartão atual com
                     o paciente.
                   </span>
@@ -482,7 +482,7 @@ export function PacientesPage() {
               </label>
 
               <label className="block space-y-2">
-                <span className="text-sm font-medium text-slate-200">Data de nascimento</span>
+                <span className="text-corpo font-medium text-slate-200">Data de nascimento</span>
                 <input
                   type="date"
                   value={form.data_nascimento}
@@ -496,7 +496,7 @@ export function PacientesPage() {
             </div>
 
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">CPF</span>
+              <span className="text-corpo font-medium text-slate-200">CPF</span>
               <input
                 value={formatarCpf(form.cpf)}
                 onChange={(event) =>
@@ -507,7 +507,7 @@ export function PacientesPage() {
                 className={selectClasses()}
                 data-testid="paciente-cpf"
               />
-              <span className="block text-xs text-slate-400">Opcional.</span>
+              <span className="block text-meta text-slate-400">Opcional.</span>
             </label>
 
             <TelefonesInput
@@ -525,7 +525,7 @@ export function PacientesPage() {
                 className="h-4 w-4 rounded border-white/20 bg-white/10 text-cyan-300 focus:ring-cyan-300/20"
                 data-testid="paciente-ativo"
               />
-              <span className="flex items-center gap-1 text-sm font-medium text-slate-200">
+              <span className="flex items-center gap-1 text-corpo font-medium text-slate-200">
                 Ativo
                 <Tooltip rotulo="O que muda ao desmarcar">
                   Paciente inativo some das listas do dia a dia, mas nada é apagado: o histórico de
@@ -536,7 +536,7 @@ export function PacientesPage() {
             </label>
 
             {formError ? (
-              <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+              <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-corpo text-rose-100">
                 {formError}
               </p>
             ) : null}
@@ -577,11 +577,11 @@ export function PacientesPage() {
 
       {!isFormRoute ? (
       <section className="space-y-4 rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex flex-col gap-4 sm:items-start lg:flex-row lg:items-end lg:justify-between">
 
           <form className="grid w-full gap-3 md:grid-cols-2 xl:grid-cols-4" onSubmit={handleFilterSubmit}>
             <label className="space-y-2">
-              <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Busca</span>
+              <span className="text-meta uppercase tracking-[0.25em] text-slate-400">Busca</span>
               <input
                 value={rascunho.busca}
                 onChange={(event) => setRascunho((atual) => ({ ...atual, busca: event.target.value }))}
@@ -592,7 +592,7 @@ export function PacientesPage() {
             </label>
 
             <label className="space-y-2">
-              <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Convênio</span>
+              <span className="text-meta uppercase tracking-[0.25em] text-slate-400">Convênio</span>
               <Select
                 value={rascunho.convenio_id}
                 onChange={(event) =>
@@ -611,7 +611,7 @@ export function PacientesPage() {
             </label>
 
             <label className="space-y-2">
-              <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Status</span>
+              <span className="text-meta uppercase tracking-[0.25em] text-slate-400">Status</span>
               <Select
                 value={rascunho.status}
                 onChange={(event) => setRascunho((atual) => ({ ...atual, status: event.target.value }))}
@@ -625,7 +625,7 @@ export function PacientesPage() {
             </label>
 
             <label className="space-y-2">
-              <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Carteirinha</span>
+              <span className="text-meta uppercase tracking-[0.25em] text-slate-400">Carteirinha</span>
               <Select
                 value={rascunho.carteirinha}
                 onChange={(event) =>
@@ -650,11 +650,11 @@ export function PacientesPage() {
                   setRascunho(filtrosVazios)
                   setFiltros(filtrosVazios)
                 }}
-                className="text-sm text-slate-300"
+                className="inline-flex min-h-6 items-center text-corpo text-slate-300"
               >
                 Limpar
               </button>
-              <span className="self-center text-xs text-slate-400">
+              <span className="self-center text-meta text-slate-400">
                 {pacientesQuery.isLoading ? 'Carregando...' : `${pacientes.length} paciente(s)`}
               </span>
             </div>
@@ -662,17 +662,17 @@ export function PacientesPage() {
         </div>
 
         {pacientesQuery.isLoading ? (
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
+          <div className="rounded-superficie border border-linha bg-fundo p-4 shadow-e1 text-corpo text-slate-300">
             Carregando pacientes...
           </div>
         ) : pacientesQuery.isError ? (
-          <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-100">
+          <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 p-4 text-corpo text-rose-100">
             Não foi possível carregar os pacientes.
           </div>
         ) : (
           <div className="overflow-hidden rounded-3xl border border-white/10">
-            <table className="w-full border-collapse text-left text-sm">
-              <thead className="bg-fundo text-xs uppercase tracking-[0.25em] text-texto-suave">
+            <table className="w-full border-collapse text-left text-corpo" data-cartoes="lg">
+              <thead className="bg-fundo text-meta uppercase tracking-[0.25em] text-texto-suave">
                 <tr>
                   {[
                     { coluna: 'nome', texto: 'Nome' },
@@ -686,7 +686,7 @@ export function PacientesPage() {
                       <button
                         type="button"
                         onClick={() => ordenarPor(coluna)}
-                        className="flex items-center gap-1 uppercase tracking-[0.25em] transition hover:text-cyan-100"
+                        className="-my-3 flex min-h-6 w-full items-center gap-1 py-3 text-left uppercase tracking-[0.25em] transition hover:text-cyan-100"
                         data-testid={`paciente-ordenar-${coluna}`}
                       >
                         {texto}
@@ -711,35 +711,35 @@ export function PacientesPage() {
               <tbody className="divide-y divide-linha bg-superficie">
                 {pacientes.map((paciente) => (
                   <tr key={paciente.id} data-testid={`paciente-row-${paciente.id}`}>
-                    <td className="px-4 py-4 text-slate-100">
-                      <div className="font-medium">{paciente.nome}</div>
-                      <div className="text-xs text-slate-400">#{paciente.id}</div>
+                    <td data-rotulo="Nome" data-rotulo-bloco className="px-4 py-4 text-slate-100">
+                      <div className="font-semibold text-texto">{paciente.nome}</div>
+                      <div className="text-meta text-slate-400">#{paciente.id}</div>
                     </td>
-                    <td className="px-4 py-4 tabular-nums text-slate-200">
+                    <td data-rotulo="Carteirinha" className="px-4 py-4 tabular-nums text-slate-200">
                       {formatCarteirinha(paciente.carteirinha, paciente.convenio?.carteirinha_blocos ?? undefined)}
                     </td>
-                    <td className="px-4 py-4 text-slate-200">
+                    <td data-rotulo="Convênio" className="px-4 py-4 text-slate-200">
                       {paciente.convenio?.nome ?? paciente.convenio_id}
                     </td>
-                    <td className="px-4 py-4 text-slate-200">
+                    <td data-rotulo="Contato" className="px-4 py-4 text-slate-200">
                       {/* Principal da lista nova; a coluna antiga cobre quem foi
                           cadastrado antes dos telefones multiplos. */}
                       <div>{telefonePrincipal(paciente)}</div>
-                      <div className="text-xs text-slate-400">
+                      <div className="text-meta text-slate-400">
                         {paciente.cpf ? formatarCpf(paciente.cpf) : '-'}
                       </div>
                     </td>
-                    <td className="px-4 py-4 text-slate-200">
+                    <td data-rotulo="Validade" className="px-4 py-4 text-slate-200">
                       {paciente.validade_carteirinha ? (
                         <span className={paciente.carteirinha_vencida ? 'text-amber-200' : undefined}>
                           {new Date(`${paciente.validade_carteirinha}T12:00:00`).toLocaleDateString('pt-BR')}
                           {paciente.carteirinha_vencida ? ' · vencida' : ''}
                         </span>
                       ) : (
-                        <span className="text-slate-500">-</span>
+                        <span className="text-texto-suave">-</span>
                       )}
                     </td>
-                    <td className="px-4 py-4">
+                    <td data-rotulo="Status" className="px-4 py-4">
                       <Badge
                         tone={paciente.ativo ? 'sucesso' : 'perigo'}
                         data-testid={`paciente-status-${paciente.id}`}
@@ -747,12 +747,12 @@ export function PacientesPage() {
                         {paciente.ativo ? 'Ativo' : 'Inativo'}
                       </Badge>
                     </td>
-                    <td className="px-4 py-4">
+                    <td data-rotulo="Ações" data-rotulo-bloco className="px-4 py-4">
                       <div className="flex flex-wrap gap-2">
                         <button
                           type="button"
                           onClick={() => handleEdit(paciente)}
-                          className="rounded-full border border-cyan-300/30 bg-cyan-400/10 px-3 py-1.5 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-400/20"
+                          className="rounded-full border border-cyan-300/30 bg-cyan-400/10 px-3 py-1.5 text-meta font-semibold text-cyan-100 transition hover:bg-cyan-400/20"
                           data-testid={`paciente-editar-${paciente.id}`}
                         >
                           Editar
@@ -760,7 +760,7 @@ export function PacientesPage() {
                         <button
                           type="button"
                           onClick={() => handleToggleAtivo(paciente)}
-                          className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/10 disabled:opacity-60"
+                          className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-meta font-semibold text-white transition hover:bg-white/10 disabled:opacity-60"
                           disabled={atualizarPaciente.isPending}
                           data-testid={`paciente-toggle-${paciente.id}`}
                         >

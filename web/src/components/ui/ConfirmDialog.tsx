@@ -52,8 +52,8 @@ export function ConfirmDialogProvider({ children }: { children: ReactNode }) {
         >
           <div className="w-full max-w-md space-y-4 rounded-janela border border-linha bg-superficie-elevada p-6 shadow-e3">
             <div>
-              <h3 className="text-lg font-semibold text-texto">{pendente.titulo}</h3>
-              <div className="mt-2 text-sm leading-6 text-texto-suave">{pendente.descricao}</div>
+              <h3 className="text-subtitulo font-semibold text-texto">{pendente.titulo}</h3>
+              <div className="mt-2 text-corpo leading-6 text-texto-suave">{pendente.descricao}</div>
             </div>
 
             <div className="flex flex-wrap justify-end gap-3">

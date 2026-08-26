@@ -125,17 +125,17 @@ function NovaEspecialidadeModal({
   }, [nomeInicial, aberto])
 
   return (
-    <Dialog open={aberto} onClose={onClose} className="relative z-50">
+    <Dialog open={aberto} onClose={onClose} className="relative z-(--z-dialogo)">
       <DialogBackdrop className="fixed inset-0 bg-slate-950/75 backdrop-blur-sm" />
       <div className="fixed inset-0 overflow-y-auto p-4 sm:p-6">
         <div className="flex min-h-full items-center justify-center">
-          <DialogPanel className="w-full max-w-lg rounded-[2rem] border border-white/10 bg-slate-950 p-6 text-white shadow-2xl shadow-black/60">
+          <DialogPanel className="w-full max-w-lg rounded-janela border border-white/10 bg-slate-950 p-6 text-white shadow-e3 shadow-black/60">
             <div className="flex items-start justify-between gap-4">
-              <DialogTitle className="text-xl font-semibold">Nova especialidade</DialogTitle>
+              <DialogTitle className="text-titulo font-semibold">Nova especialidade</DialogTitle>
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
+                className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-corpo font-semibold text-white transition hover:bg-white/10"
               >
                 Fechar
               </button>
@@ -149,7 +149,7 @@ function NovaEspecialidadeModal({
               }}
             >
               <label className="block space-y-2">
-                <span className="text-sm font-medium text-slate-200">Nome</span>
+                <span className="text-corpo font-medium text-slate-200">Nome</span>
                 <input
                   value={nome}
                   onChange={(event) => setNome(event.target.value)}
@@ -160,7 +160,7 @@ function NovaEspecialidadeModal({
               </label>
 
               {erro ? (
-                <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+                <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-corpo text-rose-100">
                   {erro}
                 </p>
               ) : null}
@@ -209,7 +209,7 @@ function SeletorModo({
           key={valor}
           type="button"
           onClick={() => onSelecionar(valor)}
-          className={`rounded-2xl border px-5 py-4 text-left text-sm font-semibold transition ${
+          className={`rounded-2xl border px-5 py-4 text-left text-corpo font-semibold transition ${
             modo === valor
               ? 'border-cyan-300/60 bg-cyan-400/15 text-cyan-50'
               : 'border-white/10 bg-white/5 text-slate-200 hover:border-white/20 hover:bg-white/10'
@@ -247,17 +247,17 @@ function Etapas({
               type="button"
               onClick={() => alcancavel && onIr(indice)}
               disabled={!alcancavel}
-              className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+              className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-meta font-semibold transition ${
                 ativa
                   ? 'border-cyan-300/60 bg-cyan-400/15 text-cyan-50'
                   : concluida
                     ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-100 hover:bg-emerald-400/20'
-                    : 'border-white/10 bg-white/5 text-slate-500'
+                    : 'border-white/10 bg-white/5 text-texto-suave'
               } ${alcancavel ? 'cursor-pointer' : 'cursor-not-allowed'}`}
               data-testid={`pedido-medico-etapa-${indice}`}
             >
               <span
-                className={`flex size-5 items-center justify-center rounded-full text-[11px] ${
+                className={`flex size-5 items-center justify-center rounded-full text-meta ${
                   concluida ? 'bg-emerald-400/30' : ativa ? 'bg-cyan-400/30' : 'bg-white/10'
                 }`}
               >
@@ -552,10 +552,10 @@ export function LerPedidoMedicoPage() {
   return (
     <div className="space-y-8" data-testid="ler-pedido-medico-page">
       <section className="space-y-4">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex flex-col gap-4 sm:items-start lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Solicitações</p>
-            <h2 className="mt-2 text-3xl font-semibold text-white">Ler pedido médico</h2>
+            <p className="text-meta uppercase tracking-[0.3em] text-cyan-300/80">Solicitações</p>
+            <h2 className="mt-2 text-display font-semibold text-white">Ler pedido médico</h2>
           </div>
           <Botao type="button" variante="secundario" onClick={() => navigate('/solicitacoes')}>
             Voltar
@@ -568,19 +568,19 @@ export function LerPedidoMedicoPage() {
       {/* Etapa 0 — Upload */}
       {passo === 0 ? (
         <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
-          <h3 className="text-lg font-semibold text-white">Envie o pedido médico</h3>
-          <p className="mt-1 text-sm text-slate-300">
+          <h3 className="text-subtitulo font-semibold text-white">Envie o pedido médico</h3>
+          <p className="mt-1 text-corpo text-slate-300">
             PDF, JPG ou PNG. A IA lê o documento e já sugere paciente, médico e especialidades nas
             próximas etapas.
           </p>
           <form onSubmit={handleAnalyze} className="mt-4 grid gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Arquivo do pedido médico</span>
+              <span className="text-corpo font-medium text-slate-200">Arquivo do pedido médico</span>
               <input
                 type="file"
                 accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
                 onChange={(event) => setArquivo(event.target.files?.[0] ?? null)}
-                className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white file:mr-4 file:rounded-xl file:border-0 file:bg-cyan-400 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-slate-950"
+                className="inline-flex items-center justify-center w-full rounded-2xl border border-white/10 bg-white/5 h-10 px-4 text-corpo text-white file:mr-4 file:rounded-xl file:border-0 file:bg-cyan-400 file:px-3 file:py-2 file:text-corpo file:font-semibold file:text-slate-950"
                 data-testid="pedido-medico-arquivo"
               />
             </label>
@@ -595,7 +595,7 @@ export function LerPedidoMedicoPage() {
           </form>
 
           {formError ? (
-            <p className="mt-4 rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+            <p className="mt-4 rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-corpo text-rose-100">
               {formError}
             </p>
           ) : null}
@@ -605,13 +605,13 @@ export function LerPedidoMedicoPage() {
       {/* Etapa 1 — Convênio */}
       {passo === 1 && resultado ? (
         <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
-          <h3 className="text-lg font-semibold text-white">Qual convênio?</h3>
-          <p className="mt-1 text-sm text-slate-300">
+          <h3 className="text-subtitulo font-semibold text-white">Qual convênio?</h3>
+          <p className="mt-1 text-corpo text-slate-300">
             Define o formato da carteirinha e as regras de autorização das próximas etapas.
           </p>
 
           <label className="mt-4 block space-y-2">
-            <span className="text-sm font-medium text-slate-200">Convênio</span>
+            <span className="text-corpo font-medium text-slate-200">Convênio</span>
             <Select
               value={form.convenio_id}
               onChange={(event) =>
@@ -650,14 +650,14 @@ export function LerPedidoMedicoPage() {
       {passo === 2 && resultado ? (
         <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6 space-y-4">
           <div>
-            <h3 className="text-lg font-semibold text-white">Paciente</h3>
+            <h3 className="text-subtitulo font-semibold text-white">Paciente</h3>
             {extractedPaciente ? (
-              <p className="mt-2 text-sm text-slate-300">
+              <p className="mt-2 text-corpo text-slate-300">
                 Nome lido no documento:{' '}
-                <span className="text-xl font-bold text-white">{extractedPaciente}</span>
+                <span className="text-titulo font-bold text-white">{extractedPaciente}</span>
               </p>
             ) : (
-              <p className="mt-1 text-sm text-slate-300">
+              <p className="mt-1 text-corpo text-slate-300">
                 Nenhum nome de paciente identificado no documento.
               </p>
             )}
@@ -685,7 +685,7 @@ export function LerPedidoMedicoPage() {
                       key={item.id}
                       type="button"
                       onClick={() => setForm((current) => ({ ...current, paciente_id: String(item.id) }))}
-                      className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                      className={`rounded-full border px-3 py-1.5 text-meta font-semibold transition ${
                         form.paciente_id === String(item.id)
                           ? 'border-cyan-300/60 bg-cyan-400/25 text-cyan-50'
                           : 'border-cyan-400/30 bg-cyan-400/10 text-cyan-100 hover:bg-cyan-400/20'
@@ -716,13 +716,13 @@ export function LerPedidoMedicoPage() {
               </Select>
 
               {pacienteEscolhido ? (
-                <p className="text-xs text-emerald-300">Selecionado: {pacienteEscolhido.nome}</p>
+                <p className="text-meta text-emerald-300">Selecionado: {pacienteEscolhido.nome}</p>
               ) : null}
             </div>
           ) : (
-            <div className="space-y-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div className="space-y-4 rounded-superficie border border-linha bg-fundo p-4 shadow-e1">
               <label className="block space-y-2">
-                <span className="text-sm font-medium text-slate-200">Nome</span>
+                <span className="text-corpo font-medium text-slate-200">Nome</span>
                 <input
                   value={novoPacienteNome}
                   onChange={(event) => setNovoPacienteNome(event.target.value)}
@@ -732,7 +732,7 @@ export function LerPedidoMedicoPage() {
               </label>
 
               <div className="space-y-2">
-                <span className="text-sm font-medium text-slate-200">Carteirinha</span>
+                <span className="text-corpo font-medium text-slate-200">Carteirinha</span>
                 {blocosCarteirinha ? (
                   <CarteirinhaBlocosInput
                     blocos={blocosCarteirinha}
@@ -754,7 +754,7 @@ export function LerPedidoMedicoPage() {
               </div>
 
               {novoPacienteError ? (
-                <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+                <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-corpo text-rose-100">
                   {novoPacienteError}
                 </p>
               ) : null}
@@ -798,14 +798,14 @@ export function LerPedidoMedicoPage() {
       {passo === 3 && resultado ? (
         <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6 space-y-4">
           <div>
-            <h3 className="text-lg font-semibold text-white">Médico solicitante</h3>
+            <h3 className="text-subtitulo font-semibold text-white">Médico solicitante</h3>
             {extractedMedico ? (
-              <p className="mt-2 text-sm text-slate-300">
+              <p className="mt-2 text-corpo text-slate-300">
                 Nome lido no documento:{' '}
-                <span className="text-xl font-bold text-white">{extractedMedico}</span>
+                <span className="text-titulo font-bold text-white">{extractedMedico}</span>
               </p>
             ) : (
-              <p className="mt-1 text-sm text-slate-300">
+              <p className="mt-1 text-corpo text-slate-300">
                 Nenhum nome de médico identificado no documento.
               </p>
             )}
@@ -835,7 +835,7 @@ export function LerPedidoMedicoPage() {
                       key={item.id}
                       type="button"
                       onClick={() => setForm((current) => ({ ...current, medico_id: String(item.id) }))}
-                      className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                      className={`rounded-full border px-3 py-1.5 text-meta font-semibold transition ${
                         form.medico_id === String(item.id)
                           ? 'border-cyan-300/60 bg-cyan-400/25 text-cyan-50'
                           : 'border-cyan-400/30 bg-cyan-400/10 text-cyan-100 hover:bg-cyan-400/20'
@@ -866,13 +866,13 @@ export function LerPedidoMedicoPage() {
               </Select>
 
               {medicoEscolhido ? (
-                <p className="text-xs text-emerald-300">Selecionado: {medicoEscolhido.nome}</p>
+                <p className="text-meta text-emerald-300">Selecionado: {medicoEscolhido.nome}</p>
               ) : null}
             </div>
           ) : (
-            <div className="space-y-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div className="space-y-4 rounded-superficie border border-linha bg-fundo p-4 shadow-e1">
               <label className="block space-y-2">
-                <span className="text-sm font-medium text-slate-200">Nome</span>
+                <span className="text-corpo font-medium text-slate-200">Nome</span>
                 <input
                   value={novoMedicoNome}
                   onChange={(event) => setNovoMedicoNome(event.target.value)}
@@ -883,7 +883,7 @@ export function LerPedidoMedicoPage() {
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="block space-y-2">
-                  <span className="text-sm font-medium text-slate-200">CRM</span>
+                  <span className="text-corpo font-medium text-slate-200">CRM</span>
                   <input
                     value={novoMedicoCrm}
                     onChange={(event) => setNovoMedicoCrm(event.target.value)}
@@ -891,12 +891,12 @@ export function LerPedidoMedicoPage() {
                     className={selectClasses()}
                     data-testid="pedido-medico-novo-medico-crm"
                   />
-                  <span className="block text-xs text-slate-400">
+                  <span className="block text-meta text-slate-400">
                     Opcional aqui — dá pra completar depois em Cadastros → Médicos.
                   </span>
                 </label>
                 <label className="block space-y-2">
-                  <span className="text-sm font-medium text-slate-200">Especialidade médica</span>
+                  <span className="text-corpo font-medium text-slate-200">Especialidade médica</span>
                   <input
                     value={novoMedicoEspecialidade}
                     onChange={(event) => setNovoMedicoEspecialidade(event.target.value)}
@@ -908,7 +908,7 @@ export function LerPedidoMedicoPage() {
               </div>
 
               {novoMedicoError ? (
-                <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+                <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-corpo text-rose-100">
                   {novoMedicoError}
                 </p>
               ) : null}
@@ -947,8 +947,8 @@ export function LerPedidoMedicoPage() {
         <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h3 className="text-lg font-semibold text-white">Especialidades do pedido</h3>
-              <p className="mt-1 text-sm text-slate-300">
+              <h3 className="text-subtitulo font-semibold text-white">Especialidades do pedido</h3>
+              <p className="mt-1 text-corpo text-slate-300">
                 {especialidadesLidas.length > 0
                   ? `${especialidadesLidas.length} lida${especialidadesLidas.length > 1 ? 's' : ''} no documento`
                   : 'Nenhuma especialidade identificada no documento — acrescente manualmente abaixo.'}
@@ -965,7 +965,7 @@ export function LerPedidoMedicoPage() {
           </div>
 
           {especialidadesLidas.length > 0 ? (
-            <div className="space-y-2 rounded-2xl border border-white/10 bg-white/5 p-3">
+            <div className="space-y-2 rounded-superficie border border-linha bg-fundo p-3 shadow-e1">
               {especialidadesLidas.map((lida) => {
                 const jaNoPedido = lida.matches.some((match) =>
                   form.itens.some((item) => item.especialidade_id === String(match.id)),
@@ -977,7 +977,7 @@ export function LerPedidoMedicoPage() {
                     className="flex flex-wrap items-center gap-2"
                     data-testid={`pedido-medico-especialidade-lida-${lida.termo}`}
                   >
-                    <span className="text-xs text-slate-300">
+                    <span className="text-meta text-slate-300">
                       {lida.termo}
                       {jaNoPedido ? <span className="ml-1 text-emerald-300">no pedido</span> : null}
                     </span>
@@ -986,7 +986,7 @@ export function LerPedidoMedicoPage() {
                       <button
                         type="button"
                         onClick={() => abrirNovaEspecialidade(lida.termo)}
-                        className="rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1.5 text-xs font-semibold text-amber-100 transition hover:bg-amber-400/20"
+                        className="rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1.5 text-meta font-semibold text-amber-100 transition hover:bg-amber-400/20"
                         data-testid={`pedido-medico-criar-especialidade-${lida.termo}`}
                       >
                         cadastrar "{lida.termo}"
@@ -1004,7 +1004,7 @@ export function LerPedidoMedicoPage() {
                                 itens: comEspecialidadeAdicionada(current.itens, String(match.id)),
                               }))
                             }
-                            className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1.5 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-400/20"
+                            className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1.5 text-meta font-semibold text-cyan-100 transition hover:bg-cyan-400/20"
                             title="Acrescenta esta especialidade ao pedido"
                           >
                             {match.nome} · {match.similaridade}%
@@ -1044,17 +1044,17 @@ export function LerPedidoMedicoPage() {
         <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
           <form onSubmit={handleSubmit} className="space-y-5" data-testid="pedido-medico-form">
             <div>
-              <h3 className="text-lg font-semibold text-white">Últimos dados e revisão</h3>
-              <p className="mt-1 text-sm text-slate-300">
+              <h3 className="text-subtitulo font-semibold text-white">Últimos dados e revisão</h3>
+              <p className="mt-1 text-corpo text-slate-300">
                 Arquivo: {resultado.arquivo.nome_original} · Modelo: {resultado.model}
               </p>
             </div>
 
             <div className="space-y-3">
-              <span className="block text-sm font-medium text-slate-200">CID</span>
+              <span className="block text-corpo font-medium text-slate-200">CID</span>
 
               {resultado.sugestoes.cids.length > 0 ? (
-                <div className="space-y-2 rounded-2xl border border-white/10 bg-white/5 p-3">
+                <div className="space-y-2 rounded-superficie border border-linha bg-fundo p-3 shadow-e1">
                   {resultado.sugestoes.cids.map((lido) => {
                     const jaNoPedido = lido.matches.some((match) =>
                       form.cid_ids.includes(String(match.id)),
@@ -1066,7 +1066,7 @@ export function LerPedidoMedicoPage() {
                         className="flex flex-wrap items-center gap-2"
                         data-testid={`pedido-medico-cid-lido-${lido.termo}`}
                       >
-                        <span className="text-xs text-slate-300">
+                        <span className="text-meta text-slate-300">
                           {lido.termo}
                           {jaNoPedido ? <span className="ml-1 text-emerald-300">no pedido</span> : null}
                         </span>
@@ -1075,7 +1075,7 @@ export function LerPedidoMedicoPage() {
                           <button
                             type="button"
                             onClick={() => setCidNovoTermo(lido.termo)}
-                            className="rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1.5 text-xs font-semibold text-amber-100 transition hover:bg-amber-400/20"
+                            className="rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1.5 text-meta font-semibold text-amber-100 transition hover:bg-amber-400/20"
                             data-testid={`pedido-medico-criar-cid-${lido.termo}`}
                           >
                             cadastrar "{lido.termo}"
@@ -1095,7 +1095,7 @@ export function LerPedidoMedicoPage() {
                                       : [...current.cid_ids, String(match.id)],
                                   }))
                                 }
-                                className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1.5 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-400/20"
+                                className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1.5 text-meta font-semibold text-cyan-100 transition hover:bg-cyan-400/20"
                                 title="Acrescenta este CID ao pedido"
                               >
                                 {match.codigo} · {match.similaridade}%
@@ -1118,7 +1118,7 @@ export function LerPedidoMedicoPage() {
             </div>
 
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Data da solicitação</span>
+              <span className="text-corpo font-medium text-slate-200">Data da solicitação</span>
               <input
                 type="date"
                 value={form.solicitado_em}
@@ -1129,7 +1129,7 @@ export function LerPedidoMedicoPage() {
             </label>
 
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Observações</span>
+              <span className="text-corpo font-medium text-slate-200">Observações</span>
               <textarea
                 value={form.observacoes}
                 onChange={(event) => setForm((current) => ({ ...current, observacoes: event.target.value }))}
@@ -1150,29 +1150,29 @@ export function LerPedidoMedicoPage() {
               className="space-y-4 rounded-2xl border border-cyan-300/20 bg-cyan-400/5 p-5"
               data-testid="pedido-medico-preview"
             >
-              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-cyan-300/80">
+              <p className="text-meta font-semibold uppercase tracking-[0.25em] text-cyan-300/80">
                 Pré-visualização da solicitação
               </p>
 
-              <div className="grid gap-3 text-sm text-slate-200 sm:grid-cols-2">
+              <div className="grid gap-3 text-corpo text-slate-200 sm:grid-cols-2">
                 <p>
-                  <span className="block text-xs uppercase tracking-wide text-slate-400">Convênio</span>
+                  <span className="block text-meta uppercase tracking-wide text-slate-400">Convênio</span>
                   {convenioEscolhido?.nome ?? '—'}
                 </p>
                 <p>
-                  <span className="block text-xs uppercase tracking-wide text-slate-400">Paciente</span>
+                  <span className="block text-meta uppercase tracking-wide text-slate-400">Paciente</span>
                   {pacienteEscolhido?.nome ?? '—'}
                   {pacienteEscolhido?.carteirinha ? ` · ${formatCarteirinha(pacienteEscolhido.carteirinha)}` : ''}
                 </p>
                 <p>
-                  <span className="block text-xs uppercase tracking-wide text-slate-400">
+                  <span className="block text-meta uppercase tracking-wide text-slate-400">
                     Médico solicitante
                   </span>
                   {medicoEscolhido?.nome ?? '—'}
                   {medicoEscolhido?.crm && medicoEscolhido.crm !== 'PENDENTE' ? ` · CRM ${medicoEscolhido.crm}` : ''}
                 </p>
                 <p>
-                  <span className="block text-xs uppercase tracking-wide text-slate-400">
+                  <span className="block text-meta uppercase tracking-wide text-slate-400">
                     Data da solicitação
                   </span>
                   {form.solicitado_em || '—'}
@@ -1180,31 +1180,31 @@ export function LerPedidoMedicoPage() {
               </div>
 
               <div>
-                <span className="block text-xs uppercase tracking-wide text-slate-400">CIDs</span>
+                <span className="block text-meta uppercase tracking-wide text-slate-400">CIDs</span>
                 {cidsEscolhidos.length > 0 ? (
                   <div className="mt-1 flex flex-wrap gap-2">
                     {cidsEscolhidos.map((cid) => (
                       <span
                         key={cid.id}
-                        className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-100"
+                        className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1 text-meta font-semibold text-cyan-100"
                       >
                         {cid.codigo} — {cid.descricao}
                       </span>
                     ))}
                   </div>
                 ) : (
-                  <p className="mt-1 text-sm text-rose-200">Nenhum CID selecionado ainda.</p>
+                  <p className="mt-1 text-corpo text-rose-200">Nenhum CID selecionado ainda.</p>
                 )}
               </div>
 
               <div>
-                <span className="block text-xs uppercase tracking-wide text-slate-400">
+                <span className="block text-meta uppercase tracking-wide text-slate-400">
                   Especialidades solicitadas
                 </span>
                 {itensPreenchidos.length > 0 ? (
                   <div className="mt-1 overflow-hidden rounded-2xl border border-white/10">
-                    <table className="w-full border-collapse text-left text-sm">
-                      <thead className="bg-white/5 text-xs uppercase tracking-wide text-slate-400">
+                    <table className="w-full border-collapse text-left text-corpo" data-cartoes="md">
+                      <thead className="bg-white/5 text-meta uppercase tracking-wide text-slate-400">
                         <tr>
                           <th className="px-3 py-2">Especialidade</th>
                           <th className="px-3 py-2">Profissional</th>
@@ -1214,33 +1214,33 @@ export function LerPedidoMedicoPage() {
                       <tbody className="divide-y divide-white/10">
                         {itensPreenchidos.map((item, index) => (
                           <tr key={`${item.especialidade_id}-${index}`}>
-                            <td className="px-3 py-2 text-slate-200">
+                            <td data-rotulo="Especialidade" className="px-3 py-2 text-slate-200">
                               {especialidades.find((esp) => String(esp.id) === item.especialidade_id)?.nome ?? '—'}
                             </td>
-                            <td className="px-3 py-2 text-slate-200">
+                            <td data-rotulo="Profissional" className="px-3 py-2 text-slate-200">
                               {profissionais.find((prof) => String(prof.id) === item.profissional_id)?.nome ?? '—'}
                             </td>
-                            <td className="px-3 py-2 text-slate-200">{item.quantidade || 10}</td>
+                            <td data-rotulo="Sessões" className="px-3 py-2 text-slate-200">{item.quantidade || 10}</td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
                   </div>
                 ) : (
-                  <p className="mt-1 text-sm text-rose-200">Nenhuma especialidade completa ainda.</p>
+                  <p className="mt-1 text-corpo text-rose-200">Nenhuma especialidade completa ainda.</p>
                 )}
               </div>
 
               {form.observacoes ? (
                 <div>
-                  <span className="block text-xs uppercase tracking-wide text-slate-400">Observações</span>
-                  <p className="mt-1 whitespace-pre-wrap text-sm text-slate-200">{form.observacoes}</p>
+                  <span className="block text-meta uppercase tracking-wide text-slate-400">Observações</span>
+                  <p className="mt-1 whitespace-pre-wrap text-corpo text-slate-200">{form.observacoes}</p>
                 </div>
               ) : null}
             </div>
 
             {formError ? (
-              <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+              <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-corpo text-rose-100">
                 {formError}
               </p>
             ) : null}

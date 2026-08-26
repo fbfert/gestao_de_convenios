@@ -10,6 +10,7 @@ import { Botao } from '../../components/ui/Botao'
 import { useAuthStore } from '../../stores/authStore'
 import { useLancamentoPrintTemplate } from '../lancamentos/useLancamentos'
 import { buildFilledTemplateData, renderLancamentoPrintTemplate } from '../lancamentos/printTemplate'
+import { HtmlIsolado } from '../../components/ui/HtmlIsolado'
 
 function fieldClasses() {
   return 'w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20'
@@ -79,17 +80,17 @@ export function AntecipacaoEditarPage() {
   return (
     <>
     <div className="space-y-6 print:hidden" data-testid="antecipacao-editar-page">
-      <Link to="/antecipacoes" className="text-sm font-semibold text-cyan-200 hover:text-cyan-100">
+      <Link to="/antecipacoes" className="inline-flex min-h-6 items-center text-corpo font-semibold text-cyan-200 hover:text-cyan-100">
         ← Voltar para antecipações
       </Link>
 
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <div className="flex flex-col gap-4 sm:items-start lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Antecipações</p>
-          <h2 className="mt-2 text-3xl font-semibold text-white">
+          <p className="text-meta uppercase tracking-[0.3em] text-cyan-300/80">Antecipações</p>
+          <h2 className="mt-2 text-display font-semibold text-white">
             Editar antecipação {antecipacaoId ? `#${antecipacaoId}` : ''}
           </h2>
-          <p className="mt-2 text-sm text-slate-400">
+          <p className="mt-2 text-corpo text-slate-400">
             Toda alteração fica registrada nos Logs de Auditoria, com o valor anterior e o novo.
           </p>
         </div>
@@ -107,7 +108,7 @@ export function AntecipacaoEditarPage() {
       </div>
 
       {antecipacaoQuery.isLoading ? (
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-6 text-slate-300">Carregando...</div>
+        <div className="rounded-superficie border border-linha bg-fundo p-6 shadow-e1 text-slate-300">Carregando...</div>
       ) : antecipacaoQuery.isError || !antecipacao ? (
         <div className="rounded-3xl border border-rose-400/20 bg-rose-500/10 p-6 text-rose-100">
           Antecipação não encontrada.
@@ -116,26 +117,26 @@ export function AntecipacaoEditarPage() {
         <form onSubmit={handleSubmit} className="space-y-4 rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Paciente</span>
+              <span className="text-meta uppercase tracking-[0.25em] text-slate-400">Paciente</span>
               <p className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white">
                 {antecipacao.paciente?.nome ?? antecipacao.paciente_id}
               </p>
             </div>
             <div className="space-y-2">
-              <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Cota já utilizada</span>
+              <span className="text-meta uppercase tracking-[0.25em] text-slate-400">Cota já utilizada</span>
               <p className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white">
                 {antecipacao.qtd_utilizada} sessões
               </p>
             </div>
           </div>
-          <p className="text-xs text-slate-400">
+          <p className="text-meta text-slate-400">
             Paciente, convênio, quantidade utilizada e status (aberta/fechada) não são editáveis aqui: são
             controlados automaticamente pelas sessões lançadas em Sessões. Aumentar a quantidade autorizada reabre a
             antecipação sozinha, se ela já tiver fechado.
           </p>
 
           <label className="block space-y-2">
-            <span className="text-sm font-medium text-slate-200">Quantidade autorizada por ciclo</span>
+            <span className="text-corpo font-medium text-slate-200">Quantidade autorizada por ciclo</span>
             <input
               type="number"
               min="1"
@@ -148,7 +149,7 @@ export function AntecipacaoEditarPage() {
 
           <div className="grid gap-4 md:grid-cols-2">
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Ciclo início</span>
+              <span className="text-corpo font-medium text-slate-200">Ciclo início</span>
               <input
                 type="date"
                 value={form.ciclo_inicio}
@@ -158,7 +159,7 @@ export function AntecipacaoEditarPage() {
               />
             </label>
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Ciclo fim</span>
+              <span className="text-corpo font-medium text-slate-200">Ciclo fim</span>
               <input
                 type="date"
                 value={form.ciclo_fim}
@@ -170,7 +171,7 @@ export function AntecipacaoEditarPage() {
           </div>
 
           {erro ? (
-            <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">{erro}</p>
+            <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-corpo text-rose-100">{erro}</p>
           ) : null}
 
           <div className="flex gap-2">
@@ -185,9 +186,9 @@ export function AntecipacaoEditarPage() {
       )}
     </div>
 
-    <section
+    <HtmlIsolado
       className="hidden print:block bg-white p-8 text-slate-950"
-      dangerouslySetInnerHTML={{ __html: printHtml }}
+      html={printHtml}
     />
     </>
   )

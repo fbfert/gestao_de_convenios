@@ -28,11 +28,13 @@ function selectClasses() {
 function statusTone(status: string) {
   switch (status) {
     case 'reviewed':
-      return 'bg-amber-400/15 text-amber-100 border-amber-400/20'
+      return 'bg-alerta-suave text-alerta-texto border-alerta-texto/25'
     case 'paid':
-      return 'bg-emerald-400/15 text-emerald-100 border-emerald-400/20'
+      return 'bg-sucesso-suave text-sucesso-texto border-sucesso-texto/25'
     default:
-      return 'bg-cyan-400/15 text-cyan-100 border-cyan-400/20'
+      // Pendente em azul: antes era o verde do acento, praticamente igual ao
+      // verde de "Paga" no tamanho de um chip.
+      return 'bg-info-suave text-info-texto border-info-texto/25'
   }
 }
 
@@ -120,10 +122,10 @@ export function ConciliacaoPage() {
     <div className="space-y-8" data-testid="conciliacao-page">
       <section className="space-y-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">
+          <p className="text-meta uppercase tracking-[0.3em] text-cyan-300/80">
             Conciliação financeira
           </p>
-          <h2 className="mt-2 flex items-center gap-2 text-3xl font-semibold text-white">
+          <h2 className="mt-2 flex items-center gap-2 text-display font-semibold text-white">
             Fechamento de guias
             <Tooltip rotulo="Como funciona o fechamento">
               <p className="font-semibold text-white">Ciclo fixo, sem pular etapas</p>
@@ -161,7 +163,7 @@ export function ConciliacaoPage() {
       <section className="space-y-4 rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
         <form className="grid gap-3 md:grid-cols-2 xl:grid-cols-4" onSubmit={handleFilterSubmit}>
           <label className="space-y-2">
-            <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Convênio</span>
+            <span className="text-meta uppercase tracking-[0.25em] text-slate-400">Convênio</span>
             <Select
               value={draftFilters.convenio_id}
               onChange={(event) =>
@@ -180,7 +182,7 @@ export function ConciliacaoPage() {
           </label>
 
           <label className="space-y-2">
-            <span className="text-xs uppercase tracking-[0.25em] text-slate-400">
+            <span className="text-meta uppercase tracking-[0.25em] text-slate-400">
               Especialidade (via guia)
             </span>
             <Select
@@ -201,7 +203,7 @@ export function ConciliacaoPage() {
           </label>
 
           <label className="space-y-2">
-            <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Profissional</span>
+            <span className="text-meta uppercase tracking-[0.25em] text-slate-400">Profissional</span>
             <Select
               value={draftFilters.profissional_id}
               onChange={(event) =>
@@ -220,7 +222,7 @@ export function ConciliacaoPage() {
           </label>
 
           <label className="space-y-2">
-            <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Status</span>
+            <span className="text-meta uppercase tracking-[0.25em] text-slate-400">Status</span>
             <Select
               value={draftFilters.status}
               onChange={(event) =>
@@ -238,30 +240,30 @@ export function ConciliacaoPage() {
 
           <button
             type="submit"
-            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10 md:col-span-2 xl:col-span-4"
+            className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 h-10 px-4 text-corpo font-semibold text-white transition hover:bg-white/10 md:col-span-2 xl:col-span-4"
           >
             Aplicar filtros
           </button>
         </form>
 
         {actionError ? (
-          <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+          <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-corpo text-rose-100">
             {actionError}
           </p>
         ) : null}
 
         {conciliacoesQuery.isLoading ? (
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
+          <div className="rounded-superficie border border-linha bg-fundo p-4 shadow-e1 text-corpo text-slate-300">
             Carregando conciliações...
           </div>
         ) : conciliacoesQuery.isError ? (
-          <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-100">
+          <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 p-4 text-corpo text-rose-100">
             Não foi possível carregar a lista.
           </div>
         ) : (
           <div className="overflow-x-auto rounded-superficie border border-linha">
-            <table className="w-full border-collapse text-left text-sm">
-              <thead className="bg-fundo text-xs uppercase tracking-[0.25em] text-texto-suave">
+            <table className="w-full border-collapse text-left text-corpo" data-cartoes="lg">
+              <thead className="bg-fundo text-meta uppercase tracking-[0.25em] text-texto-suave">
                 <tr>
                   <ColunaOrdenavel
                     titulo="ID"
@@ -313,17 +315,17 @@ export function ConciliacaoPage() {
               <tbody className="divide-y divide-linha bg-superficie">
                 {conciliacoes.map((conciliacao) => (
                   <tr key={conciliacao.id} data-testid={`conciliacao-row-${conciliacao.id}`}>
-                    <td className="px-4 py-4 font-medium text-white">#{conciliacao.id}</td>
-                    <td className="px-4 py-4 text-slate-200">#{conciliacao.guia_id}</td>
-                    <td className="px-4 py-4 text-slate-200">
+                    <td data-rotulo="ID" className="px-4 py-4 font-medium text-white">#{conciliacao.id}</td>
+                    <td data-rotulo="Guia" className="px-4 py-4 text-slate-200">#{conciliacao.guia_id}</td>
+                    <td data-rotulo="Convênio" className="px-4 py-4 text-slate-200">
                       {convenios.find((item) => item.id === conciliacao.convenio_id)?.nome ??
                         conciliacao.convenio_id}
                     </td>
-                    <td className="px-4 py-4 text-slate-200">
+                    <td data-rotulo="Especialidade" className="px-4 py-4 text-slate-200">
                       {especialidades.find((item) => item.id === conciliacao.especialidade_id)?.nome ??
                         conciliacao.especialidade_id}
                     </td>
-                    <td className="px-4 py-4 text-slate-200">
+                    <td data-rotulo="Profissional" className="px-4 py-4 text-slate-200">
                       <div className="space-y-1">
                         <p>
                           Plano:{' '}
@@ -332,7 +334,7 @@ export function ConciliacaoPage() {
                               ?.nome ??
                             conciliacao.profissional_id}
                         </p>
-                        <p className="text-xs text-slate-400">
+                        <p className="text-meta text-slate-400">
                           Execução:{' '}
                           {joinUnique(
                             conciliacao.movimentos_financeiros
@@ -342,14 +344,14 @@ export function ConciliacaoPage() {
                         </p>
                       </div>
                     </td>
-                    <td className="px-4 py-4 text-slate-200">{conciliacao.quantidade}</td>
-                    <td className="px-4 py-4 text-slate-200">
+                    <td data-rotulo="Qtd." className="px-4 py-4 text-slate-200">{conciliacao.quantidade}</td>
+                    <td data-rotulo="Valor unit." className="px-4 py-4 text-slate-200">
                       {formatCurrency(conciliacao.valor_unitario)}
                     </td>
-                    <td className="px-4 py-4 text-slate-200">
+                    <td data-rotulo="Valor total" className="px-4 py-4 text-slate-200">
                       {formatCurrency(conciliacao.valor_total)}
                     </td>
-                    <td className="px-4 py-4 text-slate-200">
+                    <td data-rotulo="Repasse %" className="px-4 py-4 text-slate-200">
                       <span className="flex items-center gap-1">
                         {formatPercent(conciliacao.percentual_repasse_profissional)}
                         <Tooltip rotulo="O que é repasse">
@@ -358,10 +360,10 @@ export function ConciliacaoPage() {
                         </Tooltip>
                       </span>
                     </td>
-                    <td className="px-4 py-4 text-slate-200">
+                    <td data-rotulo="Repasse total" className="px-4 py-4 text-slate-200">
                       {formatCurrency(conciliacao.valor_repasse_total)}
                     </td>
-                    <td className="px-4 py-4 text-slate-200">
+                    <td data-rotulo="Entrada" className="px-4 py-4 text-slate-200">
                       <span className="flex items-center gap-1">
                         {formatCurrency(conciliacao.entrada_total)}
                         <Tooltip rotulo="Entrada e saída">
@@ -370,12 +372,12 @@ export function ConciliacaoPage() {
                         </Tooltip>
                       </span>
                     </td>
-                    <td className="px-4 py-4 text-slate-200">
+                    <td data-rotulo="Saída" className="px-4 py-4 text-slate-200">
                       {formatCurrency(conciliacao.saida_total)}
                     </td>
-                    <td className="px-4 py-4">
+                    <td data-rotulo="Status" className="px-4 py-4">
                       <span
-                        className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${statusTone(
+                        className={`inline-flex rounded-full border px-3 py-1 text-meta font-semibold ${statusTone(
                           conciliacao.status,
                         )}`}
                         data-testid={`conciliacao-status-${conciliacao.id}`}
@@ -383,18 +385,18 @@ export function ConciliacaoPage() {
                         {translateStatus('conciliacoes', conciliacao.status)}
                       </span>
                       {conciliacao.conferido_em ? (
-                        <p className="mt-2 text-xs text-slate-400">
+                        <p className="mt-2 text-meta text-slate-400">
                           Conferida em {new Date(conciliacao.conferido_em).toLocaleDateString('pt-BR')}
                         </p>
                       ) : null}
                     </td>
-                    <td className="w-px whitespace-nowrap px-4 py-4">
+                    <td data-rotulo="Ações" data-rotulo-bloco className="w-px whitespace-nowrap px-4 py-4">
                       <div className="flex flex-nowrap items-center gap-2">
                         <button
                           type="button"
                           onClick={() => handleConferir(conciliacao.id)}
                           disabled={conciliacao.status !== 'pending' || marcarConferido.isPending}
-                          className="rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1.5 text-xs font-semibold text-amber-100 transition hover:bg-amber-400/20 disabled:opacity-50"
+                          className="rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1.5 text-meta font-semibold text-amber-100 transition hover:bg-amber-400/20 disabled:opacity-50"
                           data-testid={`conciliacao-conferir-${conciliacao.id}`}
                         >
                           Marcar conferido
@@ -403,7 +405,7 @@ export function ConciliacaoPage() {
                           type="button"
                           onClick={() => handlePagar(conciliacao.id)}
                           disabled={conciliacao.status !== 'reviewed' || marcarPago.isPending}
-                          className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1.5 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-400/20 disabled:opacity-50"
+                          className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1.5 text-meta font-semibold text-emerald-100 transition hover:bg-emerald-400/20 disabled:opacity-50"
                           data-testid={`conciliacao-pagar-${conciliacao.id}`}
                         >
                           Marcar pago
@@ -432,20 +434,20 @@ export function ConciliacaoPage() {
         <div className="flex items-center justify-between gap-3">
           <button
             type="button"
-            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10 disabled:opacity-50"
+            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-corpo font-medium text-white transition hover:bg-white/10 disabled:opacity-50"
             onClick={() => setPage((current) => Math.max(1, current - 1))}
             disabled={page <= 1 || conciliacoesQuery.isFetching}
           >
             Anterior
           </button>
 
-          <p className="text-sm text-slate-300">
+          <p className="inline-flex min-h-6 items-center text-corpo text-slate-300">
             Página {page} de {totalPages}
           </p>
 
           <button
             type="button"
-            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10 disabled:opacity-50"
+            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-corpo font-medium text-white transition hover:bg-white/10 disabled:opacity-50"
             onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
             disabled={page >= totalPages || conciliacoesQuery.isFetching}
           >

@@ -129,26 +129,26 @@ export function AutomacaoProgressoModal({
   const resultado = execucao && !emAndamento ? resultadoResumo(execucao.status) : null
 
   return (
-    <Dialog open={open} onClose={onClose} className="relative z-50">
+    <Dialog open={open} onClose={onClose} className="relative z-(--z-dialogo)">
       <DialogBackdrop className="fixed inset-0 bg-slate-950/75 backdrop-blur-sm" />
       <div className="fixed inset-0 overflow-y-auto p-4 sm:p-6">
         <div className="flex min-h-full items-center justify-center">
           <DialogPanel
-            className="w-full max-w-xl rounded-[2rem] border border-white/10 bg-slate-950 p-6 text-white shadow-2xl shadow-black/60"
+            className="w-full max-w-xl rounded-janela border border-white/10 bg-slate-950 p-6 text-white shadow-e3 shadow-black/60"
             data-testid="automacao-progresso-modal"
           >
             <div className="flex items-start justify-between gap-4">
               <div>
-                <DialogTitle className="text-xl font-semibold">
+                <DialogTitle className="text-titulo font-semibold">
                   {titulo}
                   {execucaoId ? ` · execução #${execucaoId}` : ''}
                 </DialogTitle>
-                <p className="mt-1 text-sm text-slate-300">{descricao}</p>
+                <p className="mt-1 text-corpo text-slate-300">{descricao}</p>
               </div>
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
+                className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-corpo font-semibold text-white transition hover:bg-white/10"
                 data-testid="automacao-progresso-fechar"
               >
                 Fechar
@@ -157,11 +157,11 @@ export function AutomacaoProgressoModal({
 
             <div className="mt-6 space-y-6">
               {execucaoQuery.isLoading ? (
-                <div className="rounded-3xl border border-white/10 bg-white/5 p-5 text-sm text-slate-300">
+                <div className="rounded-superficie border border-linha bg-fundo p-5 shadow-e1 text-corpo text-slate-300">
                   Carregando execução...
                 </div>
               ) : execucaoQuery.isError || !execucao ? (
-                <div className="rounded-3xl border border-rose-400/20 bg-rose-500/10 p-5 text-sm text-rose-100">
+                <div className="rounded-3xl border border-rose-400/20 bg-rose-500/10 p-5 text-corpo text-rose-100">
                   Não foi possível carregar o andamento da automação.
                 </div>
               ) : (
@@ -174,7 +174,7 @@ export function AutomacaoProgressoModal({
                       return (
                         <li key={etapa.chave} className="flex flex-1 items-center gap-2">
                           <div
-                            className={`flex size-8 shrink-0 items-center justify-center rounded-full border text-xs font-semibold ${
+                            className={`flex size-8 shrink-0 items-center justify-center rounded-full border text-meta font-semibold ${
                               concluida
                                 ? 'border-emerald-400/40 bg-emerald-400/15 text-emerald-100'
                                 : ativa
@@ -189,7 +189,7 @@ export function AutomacaoProgressoModal({
                             )}
                           </div>
                           <span
-                            className={`text-xs font-medium ${
+                            className={`text-meta font-medium ${
                               concluida || ativa ? 'text-white' : 'text-slate-400'
                             }`}
                           >
@@ -210,28 +210,28 @@ export function AutomacaoProgressoModal({
 
                   {resultado ? (
                     <div
-                      className={`rounded-3xl border p-5 text-sm ${tomClasses[resultado.tom]}`}
+                      className={`rounded-3xl border p-5 text-corpo ${tomClasses[resultado.tom]}`}
                       data-testid="automacao-progresso-resultado"
                     >
                       <p className="font-semibold">{resultado.titulo}</p>
                       <p className="mt-1">{resultado.mensagem}</p>
                       {execucao.erro_codigo ? (
-                        <p className="mt-2 text-xs font-semibold opacity-90">{execucao.erro_codigo}</p>
+                        <p className="mt-2 text-meta font-semibold opacity-90">{execucao.erro_codigo}</p>
                       ) : null}
                       {execucao.erro_mensagem ? (
-                        <p className="mt-1 text-xs opacity-90">{execucao.erro_mensagem}</p>
+                        <p className="mt-1 text-meta opacity-90">{execucao.erro_mensagem}</p>
                       ) : null}
                       {resultado.tom !== 'sucesso' ? (
                         <Link
                           to={`/automacoes/${execucao.id}`}
-                          className="mt-3 inline-block text-xs font-semibold underline decoration-current/40 underline-offset-4"
+                          className="mt-3 inline-block text-meta font-semibold underline decoration-current/40 underline-offset-4"
                         >
                           Ver detalhes em Automações
                         </Link>
                       ) : null}
                     </div>
                   ) : (
-                    <div className="flex items-center gap-3 rounded-3xl border border-white/10 bg-white/5 p-5 text-sm text-slate-300">
+                    <div className="flex items-center gap-3 rounded-superficie border border-linha bg-fundo p-5 shadow-e1 text-corpo text-slate-300">
                       <LoaderCircle className="size-4 shrink-0 animate-spin text-cyan-200" aria-hidden="true" />
                       {execucao.status === 'running' ? mensagemExecutando : 'Aguardando um worker disponível para iniciar...'}
                     </div>

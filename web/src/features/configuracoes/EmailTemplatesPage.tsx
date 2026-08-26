@@ -22,7 +22,7 @@ const emptyForm: EmailTemplateForm = {
 }
 
 function fieldClasses() {
-  return 'w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20'
+  return 'w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-corpo text-white outline-none transition placeholder:text-texto-suave focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20'
 }
 
 function statusTone(ativo: boolean): NonNullable<BadgeProps['tone']> {
@@ -187,16 +187,16 @@ export function EmailTemplatesPage() {
   return (
     <div className="space-y-8" data-testid="email-templates-page">
       <section className="space-y-4">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex flex-col gap-4 sm:items-start lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Configurações</p>
-            <h2 className="mt-2 text-3xl font-semibold text-white">Templates de E-mails</h2>
+            <p className="text-meta uppercase tracking-[0.3em] text-cyan-300/80">Configurações</p>
+            <h2 className="mt-2 text-display font-semibold text-white">Templates de E-mails</h2>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
             <Link
               to="/configuracoes"
-              className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+              className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 h-10 px-4 text-corpo font-semibold text-white transition hover:bg-white/10"
             >
               Voltar
             </Link>
@@ -220,12 +220,12 @@ export function EmailTemplatesPage() {
           <form onSubmit={handleSubmit} className="space-y-4" data-testid="email-template-form">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h3 className="text-lg font-semibold text-white">
+                <h3 className="text-subtitulo font-semibold text-white">
                   {editingId ? 'Editar template' : 'Novo template'}
                 </h3>
               </div>
               {editingId ? (
-                <span className="rounded-full border border-cyan-300/20 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-100">
+                <span className="rounded-full border border-cyan-300/20 bg-cyan-400/10 px-3 py-1 text-meta font-semibold text-cyan-100">
                   Editando #{editingId}
                 </span>
               ) : null}
@@ -233,7 +233,7 @@ export function EmailTemplatesPage() {
 
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               <label className="space-y-2">
-                <span className="text-sm font-medium text-slate-200">Chave</span>
+                <span className="text-corpo font-medium text-slate-200">Chave</span>
                 <input
                   value={form.chave}
                   onChange={(event) =>
@@ -246,7 +246,7 @@ export function EmailTemplatesPage() {
                 />
               </label>
               <label className="space-y-2">
-                <span className="text-sm font-medium text-slate-200">Nome</span>
+                <span className="text-corpo font-medium text-slate-200">Nome</span>
                 <input
                   value={form.nome}
                   onChange={(event) =>
@@ -258,7 +258,7 @@ export function EmailTemplatesPage() {
                 />
               </label>
               <label className="space-y-2 xl:col-span-2">
-                <span className="text-sm font-medium text-slate-200">Assunto</span>
+                <span className="text-corpo font-medium text-slate-200">Assunto</span>
                 <input
                   value={form.assunto}
                   onChange={(event) =>
@@ -272,7 +272,7 @@ export function EmailTemplatesPage() {
             </div>
 
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Corpo</span>
+              <span className="text-corpo font-medium text-slate-200">Corpo</span>
               <textarea
                 value={form.corpo}
                 onChange={(event) =>
@@ -294,11 +294,11 @@ export function EmailTemplatesPage() {
                 className="h-4 w-4 rounded border-white/20 bg-white/10 text-cyan-300 focus:ring-cyan-300/20"
                 data-testid="email-template-ativo"
               />
-              <span className="text-sm font-medium text-slate-200">Ativo</span>
+              <span className="text-corpo font-medium text-slate-200">Ativo</span>
             </label>
 
             {error ? (
-              <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+              <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-corpo text-rose-100">
                 {error}
               </p>
             ) : null}
@@ -332,13 +332,13 @@ export function EmailTemplatesPage() {
       ) : null}
 
       {message ? (
-        <p className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+        <p className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-corpo text-emerald-100">
           {message}
         </p>
       ) : null}
 
       {!isFormRoute && error ? (
-        <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+        <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-corpo text-rose-100">
           {error}
         </p>
       ) : null}
@@ -346,17 +346,17 @@ export function EmailTemplatesPage() {
       <section className="space-y-4 rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
 
         {templatesQuery.isLoading ? (
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
+          <div className="rounded-superficie border border-linha bg-fundo p-4 shadow-e1 text-corpo text-slate-300">
             Carregando templates...
           </div>
         ) : templatesQuery.isError ? (
-          <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-100">
+          <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 p-4 text-corpo text-rose-100">
             Não foi possível carregar os templates.
           </div>
         ) : (
           <div className="overflow-hidden rounded-3xl border border-white/10">
-            <table className="w-full border-collapse text-left text-sm">
-              <thead className="bg-fundo text-xs uppercase tracking-[0.25em] text-texto-suave">
+            <table className="w-full border-collapse text-left text-corpo" data-cartoes="md">
+              <thead className="bg-fundo text-meta uppercase tracking-[0.25em] text-texto-suave">
                 <tr>
                   <th className="px-4 py-3">Nome</th>
                   <th className="px-4 py-3">Assunto</th>
@@ -367,22 +367,22 @@ export function EmailTemplatesPage() {
               <tbody className="divide-y divide-linha bg-superficie">
                 {templates.map((template) => (
                   <tr key={template.id ?? template.chave} data-testid={`email-template-row-${template.id}`}>
-                    <td className="px-4 py-4 text-slate-100">
+                    <td data-rotulo="Nome" className="px-4 py-4 text-slate-100">
                       <div className="font-medium">{template.nome}</div>
-                      <div className="text-xs text-slate-400">{template.chave}</div>
+                      <div className="text-meta text-slate-400">{template.chave}</div>
                     </td>
-                    <td className="px-4 py-4 text-slate-200">{template.assunto}</td>
-                    <td className="px-4 py-4">
+                    <td data-rotulo="Assunto" data-rotulo-bloco className="px-4 py-4 text-slate-200">{template.assunto}</td>
+                    <td data-rotulo="Status" className="px-4 py-4">
                       <Badge tone={statusTone(template.ativo)}>
                         {template.ativo ? 'Ativo' : 'Inativo'}
                       </Badge>
                     </td>
-                    <td className="px-4 py-4">
+                    <td data-rotulo="Ações" data-rotulo-bloco className="px-4 py-4">
                       <div className="flex flex-wrap gap-2">
                         <button
                           type="button"
                           onClick={() => handleEdit(template)}
-                          className="rounded-full border border-cyan-300/30 bg-cyan-400/10 px-3 py-1.5 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-400/20"
+                          className="rounded-full border border-cyan-300/30 bg-cyan-400/10 px-3 py-1.5 text-meta font-semibold text-cyan-100 transition hover:bg-cyan-400/20"
                           data-testid={`email-template-editar-${template.id}`}
                         >
                           Editar
@@ -390,7 +390,7 @@ export function EmailTemplatesPage() {
                         <button
                           type="button"
                           onClick={() => handleToggleAtivo(template)}
-                          className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/10 disabled:opacity-60"
+                          className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-meta font-semibold text-white transition hover:bg-white/10 disabled:opacity-60"
                           disabled={atualizarTemplate.isPending}
                           data-testid={`email-template-toggle-${template.id}`}
                         >
@@ -399,7 +399,7 @@ export function EmailTemplatesPage() {
                         <button
                           type="button"
                           onClick={() => void handleDelete(template)}
-                          className="rounded-full border border-rose-300/30 bg-rose-400/10 px-3 py-1.5 text-xs font-semibold text-rose-100 transition hover:bg-rose-400/20 disabled:opacity-60"
+                          className="rounded-full border border-rose-300/30 bg-rose-400/10 px-3 py-1.5 text-meta font-semibold text-rose-100 transition hover:bg-rose-400/20 disabled:opacity-60"
                           disabled={excluirTemplate.isPending}
                           data-testid={`email-template-excluir-${template.id}`}
                         >

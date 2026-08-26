@@ -86,10 +86,10 @@ export function LancamentoTemplatesPage() {
   return (
     <div className="space-y-8" data-testid="lancamento-templates-page">
       <section className="space-y-4">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex flex-col gap-4 sm:items-start lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Sessões</p>
-            <h2 className="mt-2 text-3xl font-semibold text-white">Templates de impressão</h2>
+            <p className="text-meta uppercase tracking-[0.3em] text-cyan-300/80">Sessões</p>
+            <h2 className="mt-2 text-display font-semibold text-white">Templates de impressão</h2>
           </div>
           <Botao variante="secundario" onClick={() => navigate('/lancamentos')}>
             Voltar
@@ -98,11 +98,11 @@ export function LancamentoTemplatesPage() {
       </section>
 
       {templateQuery.isLoading ? (
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
+        <div className="rounded-superficie border border-linha bg-fundo p-4 shadow-e1 text-corpo text-slate-300">
           Carregando template...
         </div>
       ) : templateQuery.isError ? (
-        <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-100">
+        <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 p-4 text-corpo text-rose-100">
           {getHttpErrorMessage(templateQuery.error, 'Não foi possível carregar o template.')}
         </div>
       ) : (
@@ -112,7 +112,7 @@ export function LancamentoTemplatesPage() {
             className="space-y-4 rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6"
           >
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Nome do template</span>
+              <span className="text-corpo font-medium text-slate-200">Nome do template</span>
               <input
                 value={form.nome}
                 onChange={(event) => setForm((current) => ({ ...current, nome: event.target.value }))}
@@ -122,17 +122,17 @@ export function LancamentoTemplatesPage() {
             </label>
 
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">HTML</span>
+              <span className="text-corpo font-medium text-slate-200">HTML</span>
               <textarea
                 value={form.html}
                 onChange={(event) => setForm((current) => ({ ...current, html: event.target.value }))}
-                className={`${inputClasses()} min-h-[560px] font-mono text-sm leading-6`}
+                className={`${inputClasses()} min-h-[560px] font-mono text-corpo leading-6`}
                 spellCheck={false}
                 data-testid="lancamento-template-html"
               />
             </label>
 
-            <label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200">
+            <label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-corpo text-slate-200">
               <input
                 type="checkbox"
                 checked={form.ativo}
@@ -143,12 +143,12 @@ export function LancamentoTemplatesPage() {
             </label>
 
             {error ? (
-              <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+              <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-corpo text-rose-100">
                 {error}
               </p>
             ) : null}
             {saved ? (
-              <p className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+              <p className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-corpo text-emerald-100">
                 Template salvo.
               </p>
             ) : null}
@@ -166,12 +166,12 @@ export function LancamentoTemplatesPage() {
 
           <aside className="space-y-4">
             <div className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
-              <h3 className="text-lg font-semibold text-white">Placeholders</h3>
+              <h3 className="text-subtitulo font-semibold text-white">Placeholders</h3>
               <div className="mt-4 flex flex-wrap gap-2">
                 {placeholders.map((placeholder) => (
                   <code
                     key={placeholder}
-                    className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5 text-xs text-cyan-50"
+                    className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5 text-meta text-cyan-50"
                   >
                     {placeholder}
                   </code>
@@ -181,8 +181,8 @@ export function LancamentoTemplatesPage() {
 
             <div className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-4">
               <div className="mb-3 flex items-center justify-between gap-3">
-                <h3 className="text-lg font-semibold text-white">Preview</h3>
-                <span className="text-xs text-slate-400">Dados de exemplo</span>
+                <h3 className="text-subtitulo font-semibold text-white">Preview</h3>
+                <span className="text-meta text-slate-400">Dados de exemplo</span>
               </div>
               <iframe
                 title="Preview do template"
@@ -190,7 +190,7 @@ export function LancamentoTemplatesPage() {
                 sandbox=""
                 /* Branco literal: o preview imita a folha impressa, entao nao
                    pode acompanhar a inversao de --color-white do tema claro. */
-                className="h-[680px] w-full rounded-2xl border border-white/10 bg-[#ffffff]"
+                className="h-[680px] w-full rounded-2xl border border-white/10 bg-papel"
                 data-testid="lancamento-template-preview"
               />
             </div>

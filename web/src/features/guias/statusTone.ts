@@ -3,7 +3,7 @@ import type { BadgeProps } from '../../components/ui/Badge'
 export function statusTone(status: string): NonNullable<BadgeProps['tone']> {
   switch (status) {
     case 'registered':
-      return 'acento'
+      return 'info'
     case 'approved':
     case 'finalized':
       return 'sucesso'
@@ -19,6 +19,6 @@ export function statusTone(status: string): NonNullable<BadgeProps['tone']> {
       // chamar atenção, já que é o estado que mais precisa de acompanhamento.
       return 'perigo'
     default:
-      return 'acento'
+      return 'info'
   }
 }

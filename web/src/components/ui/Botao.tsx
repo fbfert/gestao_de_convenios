@@ -21,9 +21,9 @@ const botao = cva(
         fantasma: 'text-texto hover:bg-acento-suave',
       },
       tamanho: {
-        sm: 'h-8 px-3 text-xs',
-        md: 'h-10 px-4 text-sm',
-        lg: 'h-11 px-5 text-sm',
+        sm: 'h-8 px-3 text-meta',
+        md: 'h-10 px-4 text-corpo',
+        lg: 'h-11 px-5 text-corpo',
       },
     },
     defaultVariants: { variante: 'primario', tamanho: 'md' },

@@ -24,6 +24,7 @@ import {
 } from './printTemplate'
 import { Tooltip } from '../../components/ui/Tooltip'
 import { usePode } from '../../lib/permissoes'
+import { HtmlIsolado } from '../../components/ui/HtmlIsolado'
 
 const defaultFilters: LancamentoFilters = {
   profissional_id: '',
@@ -157,10 +158,10 @@ export function LancamentosPage() {
       <div className="space-y-8 print:hidden" data-testid="lancamentos-page">
         {!isCreateRoute ? (
         <section className="space-y-4">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="flex flex-col gap-4 sm:items-start lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Sessões</p>
-              <h2 className="mt-2 flex items-center gap-2 text-3xl font-semibold text-white">
+              <p className="text-meta uppercase tracking-[0.3em] text-cyan-300/80">Sessões</p>
+              <h2 className="mt-2 flex items-center gap-2 text-display font-semibold text-white">
                 Registro de sessões
                 <Tooltip rotulo="O que se registra aqui">
                   <p className="font-semibold text-white">O atendimento realizado</p>
@@ -176,14 +177,14 @@ export function LancamentosPage() {
             <div className="flex flex-wrap gap-2">
               <Link
                 to="/lancamentos/templates"
-                className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+                className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 h-10 px-4 text-corpo font-semibold text-white transition hover:bg-white/10"
                 data-testid="lancamento-templates"
               >
                 Templates
               </Link>
               <Link
                 to="/lancamentos/importar"
-                className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+                className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 h-10 px-4 text-corpo font-semibold text-white transition hover:bg-white/10"
                 data-testid="lancamento-importar-transcricao"
               >
                 Importar transcrição
@@ -234,7 +235,7 @@ export function LancamentosPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h3 className="text-lg font-semibold text-white">Novo lançamento manual</h3>
+                  <h3 className="text-subtitulo font-semibold text-white">Novo lançamento manual</h3>
                 </div>
               <Botao
                 variante="secundario"
@@ -253,7 +254,7 @@ export function LancamentosPage() {
               </div>
 
               <label className="block space-y-2">
-                <span className="flex items-center gap-1 text-sm font-medium text-slate-200">
+                <span className="flex items-center gap-1 text-corpo font-medium text-slate-200">
                   Antecipação
                   <Tooltip rotulo="O que escolher aqui">
                     A cota de sessões do paciente para esta especialidade/ciclo. Escolha a que
@@ -278,7 +279,7 @@ export function LancamentosPage() {
               </label>
 
               <label className="block space-y-2">
-                <span className="text-sm font-medium text-slate-200">Profissional executante</span>
+                <span className="text-corpo font-medium text-slate-200">Profissional executante</span>
                 <Select
                   value={form.profissional_id}
                   onChange={(event) =>
@@ -296,7 +297,7 @@ export function LancamentosPage() {
               </label>
 
               <label className="block space-y-2">
-                <span className="text-sm font-medium text-slate-200">Data da sessão</span>
+                <span className="text-corpo font-medium text-slate-200">Data da sessão</span>
                 <input
                   type="date"
                   value={form.data_sessao}
@@ -310,7 +311,7 @@ export function LancamentosPage() {
 
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="block space-y-2">
-                  <span className="text-sm font-medium text-slate-200">Hora início</span>
+                  <span className="text-corpo font-medium text-slate-200">Hora início</span>
                   <input
                     type="time"
                     value={form.hora_inicio}
@@ -323,7 +324,7 @@ export function LancamentosPage() {
                 </label>
 
                 <label className="block space-y-2">
-                  <span className="text-sm font-medium text-slate-200">Hora fim</span>
+                  <span className="text-corpo font-medium text-slate-200">Hora fim</span>
                   <input
                     type="time"
                     value={form.hora_fim}
@@ -337,7 +338,7 @@ export function LancamentosPage() {
               </div>
 
               <label className="block space-y-2">
-                <span className="text-sm font-medium text-slate-200">Acompanhante</span>
+                <span className="text-corpo font-medium text-slate-200">Acompanhante</span>
                 <input
                   value={form.acompanhante}
                   onChange={(event) =>
@@ -349,7 +350,7 @@ export function LancamentosPage() {
               </label>
 
               <label className="block space-y-2">
-                <span className="text-sm font-medium text-slate-200">Resumo das atividades</span>
+                <span className="text-corpo font-medium text-slate-200">Resumo das atividades</span>
                 <textarea
                   value={form.resumo_atividades}
                   onChange={(event) =>
@@ -361,7 +362,7 @@ export function LancamentosPage() {
               </label>
 
               <label className="block space-y-2">
-                <span className="text-sm font-medium text-slate-200">Observações</span>
+                <span className="text-corpo font-medium text-slate-200">Observações</span>
                 <textarea
                   value={form.observacoes}
                   onChange={(event) =>
@@ -374,12 +375,12 @@ export function LancamentosPage() {
               </label>
 
               {formError ? (
-                <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+                <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-corpo text-rose-100">
                   {formError}
                 </p>
               ) : null}
 
-              <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-300">
+              <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-corpo text-slate-300">
                 {antecipaSelecionada
                   ? `Antecipação selecionada: #${antecipaSelecionada.id} · ${antecipaSelecionada.status}`
                   : 'Selecione uma antecipação para registrar a sessão.'}
@@ -400,11 +401,11 @@ export function LancamentosPage() {
 
         {!isCreateRoute ? (
         <section className="space-y-4 rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="flex flex-col gap-4 sm:items-start lg:flex-row lg:items-end lg:justify-between">
 
             <form className="grid gap-3 md:grid-cols-3 xl:grid-cols-3" onSubmit={handleFilterSubmit}>
               <label className="space-y-2">
-                <span className="text-xs uppercase tracking-[0.25em] text-slate-400">
+                <span className="text-meta uppercase tracking-[0.25em] text-slate-400">
                   Profissional executante
                 </span>
                 <Select
@@ -425,7 +426,7 @@ export function LancamentosPage() {
               </label>
 
               <label className="space-y-2">
-                <span className="text-xs uppercase tracking-[0.25em] text-slate-400">
+                <span className="text-meta uppercase tracking-[0.25em] text-slate-400">
                   Data sessão
                 </span>
                 <input
@@ -446,17 +447,17 @@ export function LancamentosPage() {
           </div>
 
           {lancamentosQuery.isLoading ? (
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
+            <div className="rounded-superficie border border-linha bg-fundo p-4 shadow-e1 text-corpo text-slate-300">
               Carregando sessões...
             </div>
           ) : lancamentosQuery.isError ? (
-            <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-100">
+            <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 p-4 text-corpo text-rose-100">
               Não foi possível carregar a lista.
             </div>
           ) : (
             <div className="overflow-hidden rounded-3xl border border-white/10">
-              <table className="w-full border-collapse text-left text-sm">
-                <thead className="bg-fundo text-xs uppercase tracking-[0.25em] text-texto-suave">
+              <table className="w-full border-collapse text-left text-corpo" data-cartoes="lg">
+                <thead className="bg-fundo text-meta uppercase tracking-[0.25em] text-texto-suave">
                   <tr>
                     <ColunaOrdenavel
                     titulo="ID"
@@ -501,33 +502,33 @@ export function LancamentosPage() {
                 <tbody className="divide-y divide-linha bg-superficie">
                   {lancamentos.map((lancamento) => (
                     <tr key={lancamento.id} data-testid={`lancamento-row-${lancamento.id}`}>
-                      <td className="px-4 py-4 font-medium text-white">#{lancamento.id}</td>
-                      <td className="px-4 py-4 text-slate-200">#{lancamento.antecipacao_id}</td>
-                      <td className="px-4 py-4 text-slate-200">
+                      <td data-rotulo="ID" className="px-4 py-4 font-medium text-white">#{lancamento.id}</td>
+                      <td data-rotulo="Antecipação" className="px-4 py-4 text-slate-200">#{lancamento.antecipacao_id}</td>
+                      <td data-rotulo="Profissional executante" className="px-4 py-4 text-slate-200">
                         {lancamento.profissional?.nome ??
                           profissionais.find((item) => item.id === lancamento.profissional_id)?.nome ??
                           lancamento.profissional_id}
                       </td>
-                      <td className="px-4 py-4 text-slate-200">
+                      <td data-rotulo="Data / Hora" className="px-4 py-4 text-slate-200">
                         <div>{lancamento.data_sessao}</div>
-                        <div className="text-xs text-slate-400">
+                        <div className="text-meta text-slate-400">
                           {formatEmpty(lancamento.hora_inicio)} - {formatEmpty(lancamento.hora_fim)}
                         </div>
                       </td>
-                      <td className="px-4 py-4 text-slate-200">
+                      <td data-rotulo="Acompanhante" className="px-4 py-4 text-slate-200">
                         {formatEmpty(lancamento.acompanhante)}
                       </td>
-                      <td className="px-4 py-4 text-slate-200">
+                      <td data-rotulo="Resumo" data-rotulo-bloco className="px-4 py-4 text-slate-200">
                         <span className="block max-w-xl">{formatEmpty(lancamento.resumo_atividades)}</span>
                       </td>
-                      <td className="px-4 py-4 text-slate-200">
+                      <td data-rotulo="Status" className="px-4 py-4 text-slate-200">
                         {translateStatus('lancamentos', lancamento.status)}
                       </td>
-                      <td className="px-4 py-4">
+                      <td data-rotulo="Ações" data-rotulo-bloco className="px-4 py-4">
                         {pode('lancamentos.manage') ? (
                           <Link
                             to={`/lancamentos/${lancamento.id}/editar`}
-                            className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/10"
+                            className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-meta font-semibold text-white transition hover:bg-white/10"
                             data-testid={`lancamento-editar-${lancamento.id}`}
                           >
                             Editar
@@ -551,20 +552,20 @@ export function LancamentosPage() {
           <div className="flex items-center justify-between gap-3">
             <button
               type="button"
-              className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10 disabled:opacity-50"
+              className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-corpo font-medium text-white transition hover:bg-white/10 disabled:opacity-50"
               onClick={() => setPage((current) => Math.max(1, current - 1))}
               disabled={page <= 1 || lancamentosQuery.isFetching}
             >
               Anterior
             </button>
 
-            <p className="text-sm text-slate-300">
+            <p className="inline-flex min-h-6 items-center text-corpo text-slate-300">
               Página {page} de {totalPages}
             </p>
 
             <button
               type="button"
-              className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10 disabled:opacity-50"
+              className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-corpo font-medium text-white transition hover:bg-white/10 disabled:opacity-50"
               onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
               disabled={page >= totalPages || lancamentosQuery.isFetching}
             >
@@ -575,9 +576,9 @@ export function LancamentosPage() {
         ) : null}
       </div>
 
-      <section
+      <HtmlIsolado
         className="hidden print:block bg-white p-8 text-slate-950"
-        dangerouslySetInnerHTML={{ __html: printHtml }}
+        html={printHtml}
       />
     </>
   )

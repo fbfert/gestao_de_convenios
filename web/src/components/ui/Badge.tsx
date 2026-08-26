@@ -4,11 +4,15 @@ import type { HTMLAttributes } from 'react'
 import { cn } from '../../lib/cn'
 
 const badge = cva(
-  'inline-flex items-center gap-1 rounded-pilula px-2.5 py-1 text-xs font-semibold',
+  // `whitespace-nowrap`: em coluna estreita de tabela o chip herda largura
+  // de min-content e o texto quebra a cada espaco — a pilula arredondada
+  // vira um blob de varias linhas e infla a altura da linha inteira.
+  'inline-flex items-center gap-1 whitespace-nowrap rounded-pilula px-2.5 py-1 text-meta font-semibold',
   {
     variants: {
       tone: {
         acento: 'bg-acento-suave text-acento-intenso',
+        info: 'bg-info-suave text-info-texto',
         sucesso: 'bg-sucesso-suave text-sucesso-texto',
         alerta: 'bg-alerta-suave text-alerta-texto',
         perigo: 'bg-perigo-suave text-perigo-texto',

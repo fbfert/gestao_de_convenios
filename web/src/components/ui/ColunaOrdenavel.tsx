@@ -30,7 +30,9 @@ export function ColunaOrdenavel({
       <button
         type="button"
         onClick={() => onOrdenar(coluna)}
-        className="flex items-center gap-1 uppercase tracking-[0.25em] transition hover:text-cyan-100"
+        // `-my-3 py-3` estende o alvo de clique ate a altura do <th> sem
+        // mexer no espacamento: 16px de altura reprovava o minimo de 24x24.
+        className="-my-3 flex w-full items-center gap-1 py-3 text-left uppercase tracking-[0.25em] transition hover:text-cyan-100"
         data-testid={`ordenar-${coluna}`}
       >
         {titulo}

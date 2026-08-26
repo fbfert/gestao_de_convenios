@@ -242,10 +242,10 @@ export function UsuariosPage() {
     <div className="space-y-8" data-testid="usuarios-page">
       {!isFormRoute ? (
       <section className="space-y-4">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex flex-col gap-4 sm:items-start lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Usuários</p>
-            <h2 className="mt-2 text-3xl font-semibold text-white">Cadastro e vínculo de acesso</h2>
+            <p className="text-meta uppercase tracking-[0.3em] text-cyan-300/80">Usuários</p>
+            <h2 className="mt-2 text-display font-semibold text-white">Cadastro e vínculo de acesso</h2>
           </div>
 
           <div className="flex items-center gap-3">
@@ -270,31 +270,31 @@ export function UsuariosPage() {
           <form onSubmit={handleSubmit} className="space-y-4" data-testid="usuario-form">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h3 className="text-lg font-semibold text-white">
+                <h3 className="text-subtitulo font-semibold text-white">
                   {editingId ? 'Editar usuário' : 'Novo usuário'}
                 </h3>
               </div>
               {editingId ? (
-                <span className="rounded-full border border-cyan-300/20 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-100">
+                <span className="rounded-full border border-cyan-300/20 bg-cyan-400/10 px-3 py-1 text-meta font-semibold text-cyan-100">
                   Editando #{editingId}
                 </span>
               ) : null}
             </div>
 
             {rolesQuery.isLoading || profissionaisQuery.isLoading ? (
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
+              <div className="rounded-superficie border border-linha bg-fundo p-4 shadow-e1 text-corpo text-slate-300">
                 Carregando dados de referência...
               </div>
             ) : null}
 
             {rolesQuery.isError ? (
-              <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-100">
+              <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 p-4 text-corpo text-rose-100">
                 Não foi possível carregar os papéis do tenant.
               </div>
             ) : null}
 
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Nome</span>
+              <span className="text-corpo font-medium text-slate-200">Nome</span>
               <input
                 value={form.name}
                 onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
@@ -304,7 +304,7 @@ export function UsuariosPage() {
             </label>
 
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">E-mail</span>
+              <span className="text-corpo font-medium text-slate-200">E-mail</span>
               <input
                 type="email"
                 value={form.email}
@@ -315,7 +315,7 @@ export function UsuariosPage() {
             </label>
 
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">
+              <span className="text-corpo font-medium text-slate-200">
                 {editingId ? 'Senha nova' : 'Senha'}
               </span>
               <input
@@ -331,7 +331,7 @@ export function UsuariosPage() {
             </label>
 
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Papel</span>
+              <span className="text-corpo font-medium text-slate-200">Papel</span>
               <Select
                 value={form.role}
                 onChange={(event) => handleRoleChange(event.target.value)}
@@ -352,7 +352,7 @@ export function UsuariosPage() {
 
             {form.role === 'profissional' ? (
               <label className="block space-y-2">
-                <span className="text-sm font-medium text-slate-200">Profissional vinculado</span>
+                <span className="text-corpo font-medium text-slate-200">Profissional vinculado</span>
                 <Select
                   value={form.profissional_id}
                   onChange={(event) =>
@@ -385,11 +385,11 @@ export function UsuariosPage() {
                 className="h-4 w-4 rounded border-white/20 bg-white/10 text-cyan-300 focus:ring-cyan-300/20"
                 data-testid="usuario-ativo"
               />
-              <span className="text-sm font-medium text-slate-200">Ativo</span>
+              <span className="text-corpo font-medium text-slate-200">Ativo</span>
             </label>
 
             {formError ? (
-              <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+              <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-corpo text-rose-100">
                 {formError}
               </p>
             ) : null}
@@ -431,11 +431,11 @@ export function UsuariosPage() {
 
       {!isFormRoute ? (
       <section className="space-y-4 rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex flex-col gap-4 sm:items-start lg:flex-row lg:items-end lg:justify-between">
 
           <form className="flex gap-3" onSubmit={handleFilterSubmit}>
             <label className="min-w-56 space-y-2">
-              <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Busca</span>
+              <span className="text-meta uppercase tracking-[0.25em] text-slate-400">Busca</span>
               <input
                 value={draftFilters.busca}
                 onChange={(event) =>
@@ -453,17 +453,17 @@ export function UsuariosPage() {
         </div>
 
         {usuariosQuery.isLoading ? (
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
+          <div className="rounded-superficie border border-linha bg-fundo p-4 shadow-e1 text-corpo text-slate-300">
             Carregando usuários...
           </div>
         ) : usuariosQuery.isError ? (
-          <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-100">
+          <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 p-4 text-corpo text-rose-100">
             Não foi possível carregar os usuários.
           </div>
         ) : (
           <div className="overflow-x-auto rounded-superficie border border-linha">
-            <table className="w-full border-collapse text-left text-sm">
-              <thead className="bg-fundo text-xs uppercase tracking-[0.25em] text-texto-suave">
+            <table className="w-full border-collapse text-left text-corpo" data-cartoes="lg">
+              <thead className="bg-fundo text-meta uppercase tracking-[0.25em] text-texto-suave">
                 <tr>
                   <ColunaOrdenavel
                     titulo="Nome"
@@ -492,14 +492,14 @@ export function UsuariosPage() {
               <tbody className="divide-y divide-linha bg-superficie">
                 {usuarios.map((usuario) => (
                   <tr key={usuario.id} data-testid={`usuario-row-${usuario.id}`}>
-                    <td className="px-4 py-4 text-slate-100">
+                    <td data-rotulo="Nome" className="px-4 py-4 text-slate-100">
                       <div className="font-medium">{usuario.name}</div>
-                      <div className="text-xs text-slate-400">#{usuario.id}</div>
+                      <div className="text-meta text-slate-400">#{usuario.id}</div>
                     </td>
-                    <td className="px-4 py-4 text-slate-200">{usuario.email}</td>
-                    <td className="px-4 py-4 text-slate-200">{usuario.role}</td>
-                    <td className="px-4 py-4 text-slate-200">{usuario.profissional?.nome ?? '-'}</td>
-                    <td className="px-4 py-4">
+                    <td data-rotulo="E-mail" className="px-4 py-4 text-slate-200">{usuario.email}</td>
+                    <td data-rotulo="Papel" className="px-4 py-4 text-slate-200">{usuario.role}</td>
+                    <td data-rotulo="Profissional" className="px-4 py-4 text-slate-200">{usuario.profissional?.nome ?? '-'}</td>
+                    <td data-rotulo="Status" className="px-4 py-4">
                       <Badge
                         tone={usuario.ativo ? 'sucesso' : 'perigo'}
                         data-testid={`usuario-status-${usuario.id}`}
@@ -507,12 +507,12 @@ export function UsuariosPage() {
                         {usuario.ativo ? 'Ativo' : 'Inativo'}
                       </Badge>
                     </td>
-                    <td className="w-px whitespace-nowrap px-4 py-4">
+                    <td data-rotulo="Ações" data-rotulo-bloco className="w-px whitespace-nowrap px-4 py-4">
                       <div className="flex flex-nowrap gap-2">
                         <button
                           type="button"
                           onClick={() => handleEdit(usuario)}
-                          className="rounded-full border border-cyan-300/30 bg-cyan-400/10 px-3 py-1.5 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-400/20"
+                          className="rounded-full border border-cyan-300/30 bg-cyan-400/10 px-3 py-1.5 text-meta font-semibold text-cyan-100 transition hover:bg-cyan-400/20"
                           data-testid={`usuario-editar-${usuario.id}`}
                         >
                           Editar
@@ -522,7 +522,7 @@ export function UsuariosPage() {
                           onClick={() =>
                             navigate(`/permissoes/${encodeURIComponent(usuario.role)}/editar`)
                           }
-                          className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/10"
+                          className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-meta font-semibold text-white transition hover:bg-white/10"
                           data-testid={`usuario-permissoes-${usuario.id}`}
                         >
                           Permissões
@@ -530,7 +530,7 @@ export function UsuariosPage() {
                         <button
                           type="button"
                           onClick={() => handleToggleAtivo(usuario)}
-                          className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/10 disabled:opacity-60"
+                          className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-meta font-semibold text-white transition hover:bg-white/10 disabled:opacity-60"
                           disabled={atualizarUsuario.isPending}
                           data-testid={`usuario-toggle-${usuario.id}`}
                         >
@@ -563,7 +563,7 @@ export function UsuariosPage() {
             Anterior
           </Botao>
 
-          <p className="text-sm text-slate-300">
+          <p className="inline-flex min-h-6 items-center text-corpo text-slate-300">
             Página {page} de {totalPages}
           </p>
 

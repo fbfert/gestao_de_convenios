@@ -27,12 +27,12 @@ export function Indicadores({ itens }: { itens: Indicador[] }) {
               : 'border-white/10 bg-slate-950/40',
           ].join(' ')}
         >
-          <span className="text-[0.65rem] uppercase tracking-[0.2em] text-slate-400">
+          <span className="text-meta uppercase tracking-[0.2em] text-slate-400">
             {item.rotulo}
           </span>
           <span
             className={[
-              'text-sm font-semibold tabular-nums',
+              'text-corpo font-semibold tabular-nums',
               item.tom === 'alerta' ? 'text-amber-100' : 'text-white',
             ].join(' ')}
           >

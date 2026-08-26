@@ -189,14 +189,14 @@ export function ImportarSessoesPage() {
   return (
     <div className="space-y-6" data-testid="importar-sessoes-page">
       <div>
-        <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Sessões</p>
-        <h2 className="mt-2 text-3xl font-semibold text-white">Importar registro de sessões</h2>
+        <p className="text-meta uppercase tracking-[0.3em] text-cyan-300/80">Sessões</p>
+        <h2 className="mt-2 text-display font-semibold text-white">Importar registro de sessões</h2>
       </div>
 
       <section className="space-y-4 rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
         <div className="grid gap-4 md:grid-cols-2">
           <label className="block space-y-2">
-            <span className="text-sm font-medium text-slate-200">Antecipação</span>
+            <span className="text-corpo font-medium text-slate-200">Antecipação</span>
             <Select
               value={form.antecipacao_id}
               onChange={(event) =>
@@ -217,7 +217,7 @@ export function ImportarSessoesPage() {
           </label>
 
           <label className="block space-y-2">
-            <span className="text-sm font-medium text-slate-200">Profissional executante</span>
+            <span className="text-corpo font-medium text-slate-200">Profissional executante</span>
             <Select
               value={form.profissional_id}
               onChange={(event) =>
@@ -235,7 +235,7 @@ export function ImportarSessoesPage() {
               ))}
             </Select>
             {antecipacao?.especialidade?.nome ? (
-              <span className="block text-xs text-slate-400">
+              <span className="block text-meta text-slate-400">
                 Mostrando quem atende {antecipacao.especialidade.nome}.
               </span>
             ) : null}
@@ -262,7 +262,7 @@ export function ImportarSessoesPage() {
             data-testid="importar-arquivo"
           />
 
-          <span className="text-xs text-slate-400">
+          <span className="text-meta text-slate-400">
             {prontoParaLer
               ? 'A IA lê o documento e traz as sessões para conferência.'
               : 'Escolha a antecipação e o executante para começar.'}
@@ -271,7 +271,7 @@ export function ImportarSessoesPage() {
 
         {lendo ? (
           <div
-            className="flex items-center gap-3 rounded-2xl border border-cyan-300/30 bg-cyan-400/10 px-4 py-3 text-sm text-cyan-50"
+            className="flex items-center gap-3 rounded-2xl border border-cyan-300/30 bg-cyan-400/10 px-4 py-3 text-corpo text-cyan-50"
             role="status"
             aria-live="polite"
             data-testid="importar-lendo"
@@ -284,8 +284,8 @@ export function ImportarSessoesPage() {
           </div>
         ) : null}
 
-        <details className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <summary className="cursor-pointer text-sm font-semibold text-slate-200">
+        <details className="rounded-superficie border border-linha bg-fundo p-4 shadow-e1">
+          <summary className="cursor-pointer text-corpo font-semibold text-slate-200">
             Colar a transcrição em texto
           </summary>
 
@@ -295,7 +295,7 @@ export function ImportarSessoesPage() {
               onChange={(event) =>
                 setForm((atual) => ({ ...atual, transcricao: event.target.value }))
               }
-              className={`${campo} min-h-48 font-mono text-sm leading-6`}
+              className={`${campo} min-h-48 font-mono text-corpo leading-6`}
               placeholder={`GUIA Nº: 521381566206\nPaciente: ...\nNúmero Cartão: 0220 090000 551.330-8\n\n08/04/26 14:50 15:40 Bruno Marinho Aplicação de testes`}
               data-testid="importar-transcricao"
             />
@@ -303,7 +303,7 @@ export function ImportarSessoesPage() {
             <button
               type="submit"
               disabled={!prontoParaLer || lendo || form.transcricao.trim() === ''}
-              className="rounded-2xl border border-cyan-300/30 bg-cyan-400/10 px-4 py-2 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-400/20 disabled:opacity-60"
+              className="rounded-2xl border border-cyan-300/30 bg-cyan-400/10 px-4 py-2 text-corpo font-semibold text-cyan-100 transition hover:bg-cyan-400/20 disabled:opacity-60"
               data-testid="importar-analisar-texto"
             >
               {analisarTexto.isPending ? 'Analisando...' : 'Analisar texto colado'}
@@ -312,13 +312,13 @@ export function ImportarSessoesPage() {
         </details>
 
         {erro ? (
-          <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+          <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-corpo text-rose-100">
             {erro}
           </p>
         ) : null}
 
         {aviso ? (
-          <p className="rounded-2xl border border-amber-300/20 bg-amber-400/10 px-4 py-3 text-sm text-amber-100">
+          <p className="rounded-2xl border border-amber-300/20 bg-amber-400/10 px-4 py-3 text-corpo text-amber-100">
             {aviso}
           </p>
         ) : null}
@@ -326,40 +326,40 @@ export function ImportarSessoesPage() {
 
       {preview ? (
         <section className="space-y-4 rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
-          <div className="rounded-2xl border border-cyan-400/20 bg-cyan-500/10 px-4 py-3 text-sm text-cyan-50">
+          <div className="rounded-2xl border border-cyan-400/20 bg-cyan-500/10 px-4 py-3 text-corpo text-cyan-50">
             Nenhuma sessão foi salva ainda. Ajuste datas e horários, depois confirme o envio.
           </div>
 
           {exigePdf ? (
-            <div className="rounded-2xl border border-amber-400/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-50">
+            <div className="rounded-2xl border border-amber-400/20 bg-amber-500/10 px-4 py-3 text-corpo text-amber-50">
               Regional 0220 detectada pela carteirinha. O PDF do registro de sessões é obrigatório
               para confirmar o envio.
             </div>
           ) : null}
 
           <label className="block space-y-2">
-            <span className="text-sm font-medium text-slate-200">PDF do registro de sessões</span>
+            <span className="text-corpo font-medium text-slate-200">PDF do registro de sessões</span>
             <input
               type="file"
               accept="application/pdf,.pdf"
               onChange={(event) => setPdf(event.target.files?.[0] ?? null)}
-              className="block w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200 file:mr-4 file:rounded-full file:border-0 file:bg-cyan-400 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-slate-950"
+              className="inline-flex items-center justify-center block w-full rounded-2xl border border-white/10 bg-white/5 h-10 px-4 text-corpo text-slate-200 file:mr-4 file:rounded-full file:border-0 file:bg-cyan-400 file:px-4 file:py-2 file:text-corpo file:font-semibold file:text-slate-950"
               data-testid="importar-pdf"
             />
           </label>
 
           <div className="grid gap-3 md:grid-cols-3">
             {Object.entries(preview.cabecalho).map(([chave, valor]) => (
-              <div key={chave} className="rounded-2xl border border-white/10 bg-white/5 p-3">
-                <p className="text-[0.65rem] uppercase tracking-[0.2em] text-slate-400">{chave}</p>
-                <p className="mt-1 text-sm font-medium text-white">{formatEmpty(valor)}</p>
+              <div key={chave} className="rounded-superficie border border-linha bg-fundo p-3 shadow-e1">
+                <p className="text-meta uppercase tracking-[0.2em] text-slate-400">{chave}</p>
+                <p className="mt-1 text-corpo font-medium text-white">{formatEmpty(valor)}</p>
               </div>
             ))}
           </div>
 
           <div className="overflow-x-auto rounded-superficie border border-linha">
-            <table className="w-full min-w-[48rem] border-collapse text-left text-sm">
-              <thead className="bg-fundo text-xs uppercase tracking-[0.25em] text-texto-suave">
+            <table className="w-full min-w-[48rem] border-collapse text-left text-corpo" data-cartoes="lg">
+              <thead className="bg-fundo text-meta uppercase tracking-[0.25em] text-texto-suave">
                 <tr>
                   <th className="px-4 py-3">Data</th>
                   <th className="px-4 py-3">Início</th>
@@ -372,7 +372,7 @@ export function ImportarSessoesPage() {
               <tbody className="divide-y divide-linha bg-superficie">
                 {sessoes.map((sessao, indice) => (
                   <tr key={indice}>
-                    <td className="px-4 py-3">
+                    <td data-rotulo="Data" className="px-4 py-3">
                       <input
                         type="date"
                         value={sessao.data_sessao ?? ''}
@@ -382,7 +382,7 @@ export function ImportarSessoesPage() {
                         className={celula}
                       />
                     </td>
-                    <td className="px-4 py-3">
+                    <td data-rotulo="Início" className="px-4 py-3">
                       <input
                         type="time"
                         value={sessao.hora_inicio ?? ''}
@@ -392,7 +392,7 @@ export function ImportarSessoesPage() {
                         className={celula}
                       />
                     </td>
-                    <td className="px-4 py-3">
+                    <td data-rotulo="Fim" className="px-4 py-3">
                       <input
                         type="time"
                         value={sessao.hora_fim ?? ''}
@@ -400,7 +400,7 @@ export function ImportarSessoesPage() {
                         className={celula}
                       />
                     </td>
-                    <td className="px-4 py-3">
+                    <td data-rotulo="Acompanhante" className="px-4 py-3">
                       <input
                         value={sessao.acompanhante ?? ''}
                         onChange={(event) =>
@@ -409,7 +409,7 @@ export function ImportarSessoesPage() {
                         className={celula}
                       />
                     </td>
-                    <td className="px-4 py-3">
+                    <td data-rotulo="Resumo" data-rotulo-bloco className="px-4 py-3">
                       <textarea
                         value={sessao.resumo_atividades ?? ''}
                         onChange={(event) =>
@@ -422,7 +422,7 @@ export function ImportarSessoesPage() {
                       <button
                         type="button"
                         onClick={() => setSessoes((atual) => atual.filter((_, i) => i !== indice))}
-                        className="text-xs font-semibold text-rose-200"
+                        className="inline-flex min-h-6 items-center text-meta font-semibold text-rose-200"
                         data-testid={`importar-remover-sessao-${indice}`}
                       >
                         Remover
@@ -435,7 +435,7 @@ export function ImportarSessoesPage() {
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-sm text-slate-300">
+            <p className="inline-flex min-h-6 items-center text-corpo text-slate-300">
               {sessoes.length} sessão(ões) pronta(s) para confirmação.
             </p>
 
@@ -443,7 +443,7 @@ export function ImportarSessoesPage() {
               <button
                 type="button"
                 onClick={() => navigate('/lancamentos')}
-                className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+                className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 h-10 px-4 text-corpo font-semibold text-white transition hover:bg-white/10"
               >
                 Cancelar
               </button>
@@ -451,7 +451,7 @@ export function ImportarSessoesPage() {
                 type="button"
                 onClick={enviar}
                 disabled={confirmar.isPending || sessoes.length === 0 || (exigePdf && !pdf)}
-                className="rounded-2xl bg-emerald-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-emerald-300 disabled:opacity-60"
+                className="inline-flex items-center justify-center rounded-2xl bg-emerald-400 h-10 px-4 text-corpo font-semibold text-slate-950 transition hover:bg-emerald-300 disabled:opacity-60"
                 data-testid="importar-confirmar"
               >
                 {confirmar.isPending ? 'Confirmando...' : 'Confirmar envio'}

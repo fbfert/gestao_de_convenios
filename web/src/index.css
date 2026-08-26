@@ -1,162 +1,213 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Inter", "Segoe UI", sans-serif;
+  /*
+   * Tipografia — titulos em Plus Jakarta Sans, corpo na sans do sistema.
+   * Mesma dupla do xiax-agenda (DS 1.0.0 §5). A escala de tamanhos (sete
+   * papeis) NAO foi adotada aqui: as telas do gescon usam a escala crua do
+   * Tailwind em ~1.500 lugares, e trocar isso e uma migracao separada.
+   */
+  --font-display: "Plus Jakarta Sans", ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  /*
+   * Os SETE papeis de tamanho (DS §5) — e so eles.
+   *
+   * Cada papel carrega line-height, tracking e peso proprios. E a razao de a
+   * escala crua do framework estar banida (§11.2): `text-sm` traz line-height
+   * 1.43 e `text-corpo` traz 1.5. Uma area escrita com a escala crua desalinha
+   * o ritmo vertical do produto inteiro — por construcao, sem erro visivel.
+   *
+   * No Tailwind v4 os sufixos `--line-height`, `--letter-spacing` e
+   * `--font-weight` viajam junto com o utilitario: `text-rotulo` ja aplica o
+   * peso 500 sem precisar de `font-medium` ao lado.
+   */
+  --text-display: 1.75rem;
+  --text-display--line-height: 1.25;
+  --text-display--letter-spacing: -0.015em;
+
+  --text-titulo: 1.375rem;
+  --text-titulo--line-height: 1.3;
+  --text-titulo--letter-spacing: -0.01em;
+
+  --text-subtitulo: 1.125rem;
+  --text-subtitulo--line-height: 1.4;
+
+  --text-corpo-lg: 1rem;
+  --text-corpo-lg--line-height: 1.5;
+
+  --text-corpo: 0.875rem;
+  --text-corpo--line-height: 1.5;
+
+  --text-rotulo: 0.8125rem;
+  --text-rotulo--line-height: 1.4;
+  --text-rotulo--font-weight: 500;
+
+  --text-meta: 0.75rem;
+  --text-meta--line-height: 1.35;
 }
 
 /*
- * Temas visuais
- * -------------
- * As telas usam diretamente as classes utilitárias do Tailwind (text-slate-200,
- * bg-white/5, bg-cyan-400, ...). No Tailwind v4 cada utilitário resolve para
- * var(--color-*), então basta redefinir essas variáveis em
- * :root[data-theme='...'] para o app inteiro trocar de tema — sem tocar em JSX.
+ * Design System — xiax-agenda 1.0.0
+ * =================================
+ * Portado de `design-system-xiax-agenda.md` (raiz do repositorio) em
+ * 26/08/2026, para o gescon e o clinica.gestaonossa.com.br terem a mesma pele.
  *
- * Regra de leitura da paleta clara: a escala fica invertida. No tema escuro os
- * tons baixos (100/200) são claros e os altos (900/950) são escuros; em tema
- * claro é o contrário. Assim `text-slate-200` continua sendo "texto principal" e
- * `bg-slate-950` continua sendo "superfície", em qualquer tema.
+ * A regra de ouro do DS: base neutra + UM acento, cor com contencao. Os
+ * neutros sao QUENTES (matiz ~82-85 OKLCH), nao cinzas frios — e o que da o ar
+ * calmo e "de papel" ao produto. O acento e o verde-petroleo da marca.
  *
- * As redefinições ficam dentro de @media screen de propósito: a impressão sempre
- * usa a paleta padrão, onde `bg-white` é branco e `text-slate-950` é escuro.
+ * Dois niveis, e a separacao entre eles e o que faz o sistema durar:
+ *   nivel 1 (--neutro-*, --marca-*)  → paleta crua. Nenhum componente le daqui.
+ *   nivel 2 (--texto, --acento, ...) → o papel. E o unico que telas consomem.
+ * Existe UM tema, como no xiax-agenda. Se um dia entrar um segundo, ele
+ * redefine so o nivel 2 e o produto inteiro acompanha.
  *
- * Camada semântica (--fundo/--acento/--texto/...) — adicionada em 20/08/2026
- * junto com um 3º tema ("clinicas-claro", visual do clinica.gestaonossa.com.br,
- * removido em 20/08/2026 a pedido do usuário). Ficou: em escuro/claro ela só
- * ALIASA os tokens nativos que já existiam (zero mudança visual) — é o que os
- * componentes novos (Botao/Badge/Card/Tabela, ShellLayout, ConfirmarExclusao,
- * LoginPage) consomem, e continuam funcionando normalmente nos dois temas.
+ * TERCEIRA camada, especifica do gescon: as ~1.500 ocorrencias de utilitario
+ * cru (`text-slate-200`, `bg-cyan-400/10`, `text-rose-100`) que as telas ja
+ * usam. Em vez de reescrever tudo, a paleta nativa do Tailwind e reapontada
+ * para os primitivos do DS no bloco `@media screen` abaixo — `text-slate-200`
+ * passa a pintar o neutro quente 900, `bg-cyan-400` passa a pintar o verde da
+ * marca. E o que permite trocar a pele do produto inteiro num arquivo so.
  */
 
 :root {
-  --app-bg:
-    radial-gradient(circle at top, rgba(30, 41, 59, 0.25), transparent 42%),
-    linear-gradient(180deg, #07111f 0%, #0f172a 100%);
-  --app-color-scheme: dark;
+  /* ── Nivel 1 · neutros QUENTES ── */
+  --neutro-0: #FFFFFF;   --neutro-50: #FAF9F7;  --neutro-100: #F1EFEB;
+  --neutro-200: #E5E2DC; --neutro-300: #D3CFC7; --neutro-400: #A9A49B;
+  --neutro-450: #8F8A80; --neutro-500: #837E74; --neutro-600: #5F5A51;
+  --neutro-700: #494540; --neutro-800: #32302B; --neutro-900: #211F1B;
 
-  /* Semânticos — aliasando os nativos, mesmo valor em qualquer tema que não
-     redefina explicitamente (escuro e claro não redefinem: preservam 100% do
-     visual atual). */
-  --fundo: var(--color-slate-950);
-  --superficie: var(--color-slate-950);
-  --superficie-elevada: var(--color-slate-900);
-  --texto: var(--color-slate-200);
-  --texto-suave: var(--color-slate-400);
-  --texto-desativado: var(--color-slate-500);
-  --linha: color-mix(in oklab, var(--color-white) 10%, transparent);
-  --linha-forte: color-mix(in oklab, var(--color-white) 18%, transparent);
-  --borda-campo: color-mix(in oklab, var(--color-white) 15%, transparent);
-  --neutro-desativado: color-mix(in oklab, var(--color-white) 6%, transparent);
-  --selecao: color-mix(in oklab, var(--color-cyan-400) 25%, transparent);
-  --foco: var(--color-cyan-300);
-  --acento: var(--color-cyan-400);
-  --acento-intenso: var(--color-cyan-300);
-  --sobre-acento: var(--color-slate-950);
-  --acento-suave: color-mix(in oklab, var(--color-cyan-400) 15%, transparent);
-  --perigo: var(--color-rose-400);
-  --perigo-intenso: var(--color-rose-300);
-  --sobre-perigo: var(--color-slate-950);
-  --perigo-texto: var(--color-rose-100);
-  --perigo-suave: color-mix(in oklab, var(--color-rose-400) 15%, transparent);
-  --sucesso-texto: var(--color-emerald-100);
-  --sucesso-suave: color-mix(in oklab, var(--color-emerald-400) 15%, transparent);
-  --alerta-texto: var(--color-amber-100);
-  --alerta-suave: color-mix(in oklab, var(--color-amber-400) 15%, transparent);
+  /* ── Nivel 1 · marca (verde-petroleo) ── */
+  --marca-50: #EDF7F5;  --marca-100: #D6EDE9; --marca-200: #ADDCD5;
+  --marca-300: #7CC3BA; --marca-400: #47A399; --marca-500: #23867C;
+  --marca-600: #16695F; --marca-700: #10554E; --marca-800: #0D443F; --marca-900: #0B3733;
 
-  /* Raio/sombra — papéis novos (não existiam antes; escuro/claro usam estes
-     defaults, iguais ao que os componentes já usam hoje via classe literal). */
-  --raio-controle: 1rem;
-  --raio-campo: 1rem;
-  --raio-superficie: 1.75rem;
-  --raio-janela: 1.75rem;
-  --raio-pilula: 9999px;
-  --sombra-e1: 0 1px 2px 0 rgb(0 0 0 / 0.3);
-  --sombra-e2: 0 8px 24px -4px rgb(0 0 0 / 0.4), 0 2px 6px -1px rgb(0 0 0 / 0.25);
-  --sombra-e3: 0 24px 60px -12px rgb(0 0 0 / 0.55), 0 6px 16px -2px rgb(0 0 0 / 0.3);
+  /* ── Nivel 1 · feedback (padrao "tom suave": fundo suave + texto forte) ── */
+  --vermelho-600: #B3372E; --vermelho-700: #992F27;
+  --vermelho-texto: #8F2B23; --vermelho-suave: #FBEEEC;
+  --verde-texto: #1D6B41;   --verde-suave: #EAF5EE;
+  --ambar-texto: #8A5A00;   --ambar-suave: #FCF3E1;
+  --azul-texto: #1D5C96;    --azul-suave: #EBF3FB;
 
-  /* z-index nomeado — não tem namespace no Tailwind v4, consumido via
-     z-(--z-menu) etc. Mesma escala do clinica. */
-  --z-fixo: 10;
-  --z-fixo-canto: 11;
-  --z-scrim: 40;
-  --z-dialogo: 50;
-  --z-menu: 55;
-  --z-toast: 60;
-  --z-tooltip: 70;
+  /* ── Escalas fisicas ── */
+  --raio-controle: 6px; --raio-campo: 8px; --raio-superficie: 12px;
+  --raio-janela: 16px;  --raio-pilula: 999px;
+  --sombra-e1: 0 1px 2px 0 rgb(33 31 27 / 0.05);
+  --sombra-e2: 0 2px 8px -1px rgb(33 31 27 / 0.08), 0 1px 2px 0 rgb(33 31 27 / 0.04);
+  --sombra-e3: 0 16px 40px -8px rgb(33 31 27 / 0.16), 0 4px 12px -2px rgb(33 31 27 / 0.06);
+  --z-fixo: 10; --z-fixo-canto: 11; --z-scrim: 40;
+  --z-dialogo: 50; --z-menu: 55; --z-toast: 60; --z-tooltip: 70;
+  --duracao-1: 100ms; --duracao-2: 160ms; --duracao-3: 220ms;
+  --curva-padrao: cubic-bezier(0.2, 0, 0, 1);
+  --curva-saida:  cubic-bezier(0.4, 0, 1, 1);
 
-  /* Duração/curva — não têm namespace no Tailwind v4 (consumidos via
-     duration-(--duracao-1)), então não entram no @theme inline abaixo. */
-  --duracao-1: 100ms;
-  --duracao-2: 160ms;
-  --duracao-3: 220ms;
+  /* ── Nivel 2 · papeis semanticos (tema claro — o padrao) ── */
+  --fundo: var(--neutro-50);
+  --superficie: var(--neutro-0);
+  --superficie-elevada: var(--neutro-0);
+  --texto: var(--neutro-900);
+  --texto-suave: var(--neutro-600);
+  --texto-desativado: var(--neutro-400);
+  --neutro-desativado: var(--neutro-100);
+  --linha: var(--neutro-200);
+  --linha-forte: var(--neutro-300);
+  --borda-campo: var(--neutro-450);
+  --acento: var(--marca-600);
+  --acento-intenso: var(--marca-700);
+  --sobre-acento: var(--neutro-0);
+  --acento-suave: var(--marca-50);
+  --selecao: var(--marca-100);
+  --foco: var(--marca-600);
+  --perigo: var(--vermelho-600);
+  --perigo-intenso: var(--vermelho-700);
+  --sobre-perigo: var(--neutro-0);
+  --perigo-texto: var(--vermelho-texto);
+  --perigo-suave: var(--vermelho-suave);
+  --sucesso-texto: var(--verde-texto);
+  --sucesso-suave: var(--verde-suave);
+  --alerta-texto: var(--ambar-texto);
+  --alerta-suave: var(--ambar-suave);
+  --info-texto: var(--azul-texto);
+  --info-suave: var(--azul-suave);
+  --tooltip: var(--neutro-800);
+  --sobre-tooltip: var(--neutro-0);
+  /* Folha de papel: a previa de um documento impresso e sempre branca,
+     nos dois temas. Nao e `--superficie`, que acompanha o tema. */
+  --papel: #FFFFFF;
+  --sobre-papel: var(--neutro-900);
+
 }
 
+/*
+ * Reaponta a paleta NATIVA do Tailwind para os primitivos do DS.
+ *
+ * Dentro de `@media screen` de proposito: a impressao precisa de `bg-white`
+ * branco de verdade (os tres containers de modelo de impressao usam essa
+ * classe) e de `text-slate-950` escuro. Fora da tela, a paleta volta a ser a
+ * do framework.
+ *
+ * A escala fica INVERTIDA: tom baixo (100/200) e tinta escura e tom alto
+ * (900/950) e superficie clara. E o que faz `text-slate-200` continuar
+ * significando "texto principal" e `bg-slate-950` continuar significando
+ * "superficie", sem tocar em JSX.
+ */
 @media screen {
-  :root[data-theme='claro'] {
-    --app-bg:
-      radial-gradient(circle at top, rgba(8, 145, 178, 0.08), transparent 46%),
-      linear-gradient(180deg, #f7f9fc 0%, #eef2f7 100%);
-    --app-color-scheme: light;
+  :root {
+    /* branco vira tinta: text-white = titulo escuro, bg-white/5 = veu quente,
+       border-white/10 = linha discreta. */
+    --color-white: var(--neutro-900);
 
-    /* Neutros ------------------------------------------------------------ */
-    /* branco vira o tom de tinta: text-white = texto escuro,
-       bg-white/5 = leve véu cinza, border-white/10 = borda discreta. */
-    --color-white: oklch(21% 0.04 265.755);
-    /* preto continua preto: as sombras (shadow-black/60) precisam dele. */
+    --color-slate-50: var(--neutro-900);
+    --color-slate-100: var(--neutro-900);
+    --color-slate-200: var(--neutro-900);
+    --color-slate-300: var(--neutro-700);
+    --color-slate-400: var(--neutro-600);
+    --color-slate-500: var(--neutro-500);
+    --color-slate-600: var(--neutro-400);
+    --color-slate-700: var(--neutro-300);
+    --color-slate-800: var(--neutro-200);
+    --color-slate-900: var(--neutro-100);
+    --color-slate-950: var(--neutro-0);
 
-    --color-slate-50: oklch(20.8% 0.042 265.755);
-    --color-slate-100: oklch(24% 0.042 265.755);
-    --color-slate-200: oklch(29.5% 0.041 260.031);
-    --color-slate-300: oklch(38.5% 0.044 257.287);
-    --color-slate-400: oklch(52% 0.045 257.417);
-    --color-slate-500: oklch(63% 0.042 257);
-    --color-slate-600: oklch(80% 0.028 255);
-    --color-slate-700: oklch(88% 0.02 253);
-    --color-slate-800: oklch(93.5% 0.013 255.508);
-    --color-slate-900: oklch(97% 0.007 247.896);
-    /* superfícies: bg-slate-950/40 · /60 · /80 e cartões sólidos */
-    --color-slate-950: oklch(100% 0 0);
+    /* Ciano — o acento do gescon — passa a ser o verde-petroleo da marca. */
+    --color-cyan-50: var(--marca-900);
+    --color-cyan-100: var(--marca-700);
+    --color-cyan-200: var(--marca-700);
+    --color-cyan-300: var(--marca-700);
+    --color-cyan-400: var(--marca-600);
+    --color-cyan-500: var(--marca-500);
+    --color-cyan-600: var(--marca-700);
+    --color-cyan-950: var(--marca-100);
 
-    /* Ciano — cor de ação ------------------------------------------------ */
-    --color-cyan-50: oklch(36% 0.065 227.392);
-    --color-cyan-100: oklch(42% 0.08 225);
-    --color-cyan-200: oklch(45% 0.085 224.283);
-    /* hover de botão sólido e borda de foco: mais escuro que o 400 */
-    --color-cyan-300: oklch(47.5% 0.102 223.128);
-    /* botão sólido (bg-cyan-400 + text-slate-950 → branco): ~4.6:1 */
-    --color-cyan-400: oklch(55.5% 0.118 222);
-    --color-cyan-500: oklch(50% 0.11 222);
-    --color-cyan-600: oklch(45% 0.095 223);
-    --color-cyan-950: oklch(85% 0.05 210);
+    /* Rosa — erro. Solido so no botao destrutivo (rose-400/500). */
+    --color-rose-50: var(--vermelho-texto);
+    --color-rose-100: var(--vermelho-texto);
+    --color-rose-200: var(--vermelho-texto);
+    --color-rose-300: var(--vermelho-700);
+    --color-rose-400: var(--vermelho-600);
+    --color-rose-500: var(--vermelho-600);
 
-    /* Rosa — erro -------------------------------------------------------- */
-    --color-rose-50: oklch(40% 0.155 14);
-    --color-rose-100: oklch(44% 0.17 15);
-    --color-rose-200: oklch(48% 0.19 16);
-    --color-rose-300: oklch(52% 0.21 17);
-    --color-rose-400: oklch(58% 0.23 17.585);
-    --color-rose-500: oklch(60% 0.24 17);
+    /* Esmeralda — sucesso. */
+    --color-emerald-50: var(--verde-texto);
+    --color-emerald-100: var(--verde-texto);
+    --color-emerald-200: var(--verde-texto);
+    --color-emerald-300: var(--verde-texto);
+    --color-emerald-400: var(--verde-texto);
+    --color-emerald-500: var(--verde-texto);
 
-    /* Esmeralda — sucesso ------------------------------------------------ */
-    --color-emerald-50: oklch(36% 0.08 166);
-    --color-emerald-100: oklch(40% 0.09 165);
-    --color-emerald-200: oklch(43% 0.1 164);
-    --color-emerald-300: oklch(46% 0.1 163);
-    --color-emerald-400: oklch(52% 0.115 162);
-    --color-emerald-500: oklch(55% 0.12 162);
-
-    /* Âmbar — atenção ---------------------------------------------------- */
-    --color-amber-50: oklch(38% 0.07 70);
-    --color-amber-100: oklch(42% 0.08 70);
-    --color-amber-200: oklch(46% 0.09 68);
-    --color-amber-300: oklch(58% 0.13 70);
-    --color-amber-400: oklch(65% 0.15 68);
-    --color-amber-500: oklch(63% 0.15 66);
+    /* Ambar — atencao. */
+    --color-amber-50: var(--ambar-texto);
+    --color-amber-100: var(--ambar-texto);
+    --color-amber-200: var(--ambar-texto);
+    --color-amber-300: var(--ambar-texto);
+    --color-amber-400: var(--ambar-texto);
+    --color-amber-500: var(--ambar-texto);
   }
 
 }
 
-/* Ponte Tailwind v4 — os semânticos viram utilitário (bg-acento, text-texto-suave, rounded-janela...). */
+/* Ponte Tailwind v4 — cada semantico vira utilitario com o NOME DO PAPEL. */
 @theme inline {
   --color-fundo: var(--fundo);
   --color-superficie: var(--superficie);
@@ -183,6 +234,12 @@
   --color-sucesso-suave: var(--sucesso-suave);
   --color-alerta-texto: var(--alerta-texto);
   --color-alerta-suave: var(--alerta-suave);
+  --color-info-texto: var(--info-texto);
+  --color-info-suave: var(--info-suave);
+  --color-tooltip: var(--tooltip);
+  --color-sobre-tooltip: var(--sobre-tooltip);
+  --color-papel: var(--papel);
+  --color-sobre-papel: var(--sobre-papel);
 
   --radius-controle: var(--raio-controle);
   --radius-campo: var(--raio-campo);
@@ -192,13 +249,15 @@
   --shadow-e1: var(--sombra-e1);
   --shadow-e2: var(--sombra-e2);
   --shadow-e3: var(--sombra-e3);
+  --ease-padrao: var(--curva-padrao);
+  --ease-saida: var(--curva-saida);
 }
 
 @layer base {
   html {
     font-family: var(--font-sans);
-    background: var(--app-bg);
-    color-scheme: var(--app-color-scheme);
+    background: var(--fundo);
+    color-scheme: light;
   }
 
   body {
@@ -206,6 +265,12 @@
     margin: 0;
     color: var(--texto);
     background: transparent;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Titulos na display; o resto herda a sans do corpo. */
+  h1, h2, h3 {
+    font-family: var(--font-display);
   }
 
   /*
@@ -235,6 +300,20 @@
   }
 
   /*
+   * Altura unica de controle: 2.75rem (44px), a mesma do `Botao tamanho="lg"`.
+   *
+   * Fica aqui, e nao nas telas, porque a receita de campo esta duplicada em
+   * ~13 helpers `fieldClasses()`/`selectClasses()` locais — e o mesmo helper
+   * serve <input> e <textarea>, entao fixar altura la achataria o textarea.
+   * Sem isto, uma fila de filtro tinha campo de 47px, select de 50px e botao
+   * de 40px lado a lado.
+   */
+  input:not([type='checkbox']):not([type='radio']):not([type='file']),
+  select {
+    height: 2.75rem;
+  }
+
+  /*
    * Listas de <select>
    * ------------------
    * A lista aberta e desenhada pelo navegador, fora do fluxo do documento, e
@@ -245,23 +324,266 @@
    * Profissionais — isso dava letra branca sobre fundo branco.
    *
    * A correcao fica aqui, e nao nas telas, porque e o unico ponto que alcanca
-   * todos os selects de uma vez. As cores sao literais de proposito: os tokens
-   * --color-* se invertem entre os temas e aqui precisamos do valor final.
+   * todos os selects de uma vez. Com tema unico os proprios papeis servem —
+   * antes eram literais porque a paleta se invertia entre os dois temas.
    */
   select option,
   select optgroup {
-    background-color: #0f172a;
-    color: #e2e8f0;
-  }
-
-  :root[data-theme='claro'] select option,
-  :root[data-theme='claro'] select optgroup {
-    background-color: #ffffff;
-    color: #1e293b;
+    background-color: var(--superficie);
+    color: var(--texto);
   }
 
   * {
     box-sizing: border-box;
+  }
+}
+
+/*
+ * Base obrigatoria do design system (xiax-agenda §7).
+ *
+ * Fora de `@layer` pelo mesmo motivo dos blocos abaixo: no Tailwind v4 quem
+ * vence o empate e a camada, e um `outline-none` utilitario em qualquer
+ * componente apagaria o anel de foco se esta regra morasse em `@layer base`.
+ * Foco visivel e piso de acessibilidade (WCAG 2.4.7), nao preferencia visual.
+ */
+:focus-visible {
+  outline: 2px solid var(--foco);
+  outline-offset: 2px;
+}
+
+/* Foco nunca escondido sob o cabecalho fixo (WCAG 2.4.11). */
+[id], [tabindex], a, button, input, select, textarea {
+  scroll-margin-top: 4rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/*
+ * Tabela em modo cartão (telas estreitas)
+ * ---------------------------------------
+ * Uma tabela de 8 a 15 colunas não cabe em celular nem em tablet retrato. Antes
+ * ela apenas rolava na horizontal dentro do wrapper: nada quebrava, mas ler uma
+ * linha exigia arrastar de um lado a outro e perder o cabeçalho de vista. Aqui
+ * cada `<tr>` vira um cartão e cada `<td>` vira uma linha "rótulo → valor".
+ *
+ * FORA de `@layer` de propósito, pelo mesmo motivo documentado no bloco de
+ * impressão logo abaixo: o Tailwind v4 resolve empate por camada, não por
+ * especificidade, e as células carregam utilitários (`px-4 py-4`,
+ * `whitespace-nowrap`, `w-px`) da camada `utilities`. Regra sem camada vence
+ * qualquer regra em camada, então é isto que permite reescrever padding,
+ * largura e alinhamento das células sem tocar em nenhum JSX.
+ *
+ * Adesão é opt-in por tabela, via `data-cartoes`, porque o ponto em que cada
+ * uma deixa de caber depende de quantas colunas ela tem:
+ *   data-cartoes="md" → vira cartão abaixo de 48rem (tabelas de até 5 colunas)
+ *   data-cartoes="lg" → vira cartão abaixo de 64rem (tabelas de 6+ colunas)
+ *
+ * Os dois blocos abaixo são o MESMO conjunto de regras, mudando só o seletor e
+ * o ponto de corte. A duplicação é deliberada: cada nível precisa de todas as
+ * suas regras dentro da própria media query. Escrever a aparência uma vez só,
+ * na query mais larga, daria visual de cartão a uma tabela `md` entre 48rem e
+ * 64rem — largura em que ela ainda é uma tabela de verdade.
+ *
+ * O rótulo sai de `data-rotulo` na própria célula: CSS não consegue ler o texto
+ * do `<th>` correspondente. Célula sem `data-rotulo` (ações, estado vazio,
+ * seleção) ocupa a linha inteira, sem rótulo.
+ */
+
+/* --- até 5 colunas: vira cartão abaixo de 48rem ------------------------- */
+@media (width < 48rem) {
+  table[data-cartoes='md'],
+  table[data-cartoes='md'] > tbody { display: block; width: 100%; }
+
+  /* Duas tabelas carregam `min-w-[32rem]`/`min-w-[48rem]` para nao espremer
+     colunas no modo tabela. Em cartao isso forcaria a largura de volta. */
+  table[data-cartoes='md'] { min-width: 0; }
+
+  table[data-cartoes='md'] > thead { display: none; }
+
+  table[data-cartoes='md'] > tbody > tr {
+    display: block;
+    margin-bottom: 0.75rem;
+    border: 1px solid var(--linha);
+    border-radius: var(--raio-superficie);
+    background: var(--superficie);
+    padding: 0.25rem 1rem;
+  }
+
+  /* O hover de linha do @layer base pinta o cartao inteiro e apaga a borda. */
+  table[data-cartoes='md'] > tbody > tr:hover { background-color: var(--superficie); }
+
+  /*
+   * `display: block` + rotulo flutuando a esquerda, e nao `display: flex`.
+   * Com flex, TODO filho do <td> vira item na horizontal: celula com dois
+   * <div> empilhados (telefone + CPF, nome + subtitulo) virava duas colunas
+   * espremidas e quebrava numero no meio. Com float o rotulo ocupa a esquerda
+   * e o conteudo continua em fluxo normal, empilhando como na tabela.
+   */
+  table[data-cartoes='md'] > tbody > tr > td {
+    display: block;
+    width: auto;
+    padding: 0.625rem 0;
+    border-bottom: 1px solid var(--linha);
+    white-space: normal;
+    text-align: right;
+    overflow-wrap: anywhere;
+  }
+
+  /* Limpa o float para o proximo <td> nao subir ao lado do rotulo anterior. */
+  table[data-cartoes='md'] > tbody > tr > td::after {
+    content: '';
+    display: block;
+    clear: both;
+  }
+
+  table[data-cartoes='md'] > tbody > tr > td:last-child { border-bottom: 0; }
+
+  table[data-cartoes='md'] > tbody > tr > td[data-rotulo]::before {
+    content: attr(data-rotulo);
+    float: left;
+    max-width: 55%;
+    padding-right: 1rem;
+    text-align: left;
+    font-size: 0.6875rem;
+    line-height: 1.4;
+    font-weight: 500;
+    text-transform: uppercase;
+    /* `overflow-wrap: anywhere` vem do <td> para segurar valor longo sem
+       espaco (id, URL). No rotulo ele parte a palavra ao meio
+       ("ESPECIALIDAD/E"): aqui o texto e conhecido e curto. */
+    overflow-wrap: normal;
+    letter-spacing: 0.1em;
+    color: var(--texto-suave);
+  }
+
+  /* Sem rotulo: acoes, estado vazio e selecao usam a linha inteira. */
+  table[data-cartoes='md'] > tbody > tr > td:not([data-rotulo]) {
+    text-align: left;
+  }
+
+  /* Valor que nao cabe ao lado do rotulo: rotulo em cima, valor embaixo. */
+  table[data-cartoes='md'] > tbody > tr > td[data-rotulo-bloco] {
+    text-align: left;
+  }
+
+  table[data-cartoes='md'] > tbody > tr > td[data-rotulo-bloco]::before {
+    float: none;
+    display: block;
+    max-width: none;
+    padding: 0 0 0.375rem;
+  }
+
+  table[data-cartoes='md'] > tbody > tr > td > * { min-width: 0; }
+
+  /* A barra de acoes usa `flex-nowrap` para nao quebrar na coluna estreita
+     da tabela; dentro do cartao ela tem a largura toda e pode quebrar. */
+  /* Chip e botao dentro de coluna flex esticariam para a largura do cartao
+     (`align-items: stretch` e o padrao): mantem a largura do conteudo. */
+  table[data-cartoes='md'] > tbody > tr > td[data-rotulo-bloco] > * {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+}
+
+/* --- 6+ colunas: vira cartão abaixo de 64rem ---------------------------- */
+@media (width < 64rem) {
+  table[data-cartoes='lg'],
+  table[data-cartoes='lg'] > tbody { display: block; width: 100%; }
+
+  /* Duas tabelas carregam `min-w-[32rem]`/`min-w-[48rem]` para nao espremer
+     colunas no modo tabela. Em cartao isso forcaria a largura de volta. */
+  table[data-cartoes='lg'] { min-width: 0; }
+
+  table[data-cartoes='lg'] > thead { display: none; }
+
+  table[data-cartoes='lg'] > tbody > tr {
+    display: block;
+    margin-bottom: 0.75rem;
+    border: 1px solid var(--linha);
+    border-radius: var(--raio-superficie);
+    background: var(--superficie);
+    padding: 0.25rem 1rem;
+  }
+
+  /* O hover de linha do @layer base pinta o cartao inteiro e apaga a borda. */
+  table[data-cartoes='lg'] > tbody > tr:hover { background-color: var(--superficie); }
+
+  /*
+   * `display: block` + rotulo flutuando a esquerda, e nao `display: flex`.
+   * Com flex, TODO filho do <td> vira item na horizontal: celula com dois
+   * <div> empilhados (telefone + CPF, nome + subtitulo) virava duas colunas
+   * espremidas e quebrava numero no meio. Com float o rotulo ocupa a esquerda
+   * e o conteudo continua em fluxo normal, empilhando como na tabela.
+   */
+  table[data-cartoes='lg'] > tbody > tr > td {
+    display: block;
+    width: auto;
+    padding: 0.625rem 0;
+    border-bottom: 1px solid var(--linha);
+    white-space: normal;
+    text-align: right;
+    overflow-wrap: anywhere;
+  }
+
+  /* Limpa o float para o proximo <td> nao subir ao lado do rotulo anterior. */
+  table[data-cartoes='lg'] > tbody > tr > td::after {
+    content: '';
+    display: block;
+    clear: both;
+  }
+
+  table[data-cartoes='lg'] > tbody > tr > td:last-child { border-bottom: 0; }
+
+  table[data-cartoes='lg'] > tbody > tr > td[data-rotulo]::before {
+    content: attr(data-rotulo);
+    float: left;
+    max-width: 55%;
+    padding-right: 1rem;
+    text-align: left;
+    font-size: 0.6875rem;
+    line-height: 1.4;
+    font-weight: 500;
+    text-transform: uppercase;
+    /* `overflow-wrap: anywhere` vem do <td> para segurar valor longo sem
+       espaco (id, URL). No rotulo ele parte a palavra ao meio
+       ("ESPECIALIDAD/E"): aqui o texto e conhecido e curto. */
+    overflow-wrap: normal;
+    letter-spacing: 0.1em;
+    color: var(--texto-suave);
+  }
+
+  /* Sem rotulo: acoes, estado vazio e selecao usam a linha inteira. */
+  table[data-cartoes='lg'] > tbody > tr > td:not([data-rotulo]) {
+    text-align: left;
+  }
+
+  /* Valor que nao cabe ao lado do rotulo: rotulo em cima, valor embaixo. */
+  table[data-cartoes='lg'] > tbody > tr > td[data-rotulo-bloco] {
+    text-align: left;
+  }
+
+  table[data-cartoes='lg'] > tbody > tr > td[data-rotulo-bloco]::before {
+    float: none;
+    display: block;
+    max-width: none;
+    padding: 0 0 0.375rem;
+  }
+
+  table[data-cartoes='lg'] > tbody > tr > td > * { min-width: 0; }
+
+  /* A barra de acoes usa `flex-nowrap` para nao quebrar na coluna estreita
+     da tabela; dentro do cartao ela tem a largura toda e pode quebrar. */
+  /* Chip e botao dentro de coluna flex esticariam para a largura do cartao
+     (`align-items: stretch` e o padrao): mantem a largura do conteudo. */
+  table[data-cartoes='lg'] > tbody > tr > td[data-rotulo-bloco] > * {
+    flex-wrap: wrap;
+    align-items: flex-start;
   }
 }
 

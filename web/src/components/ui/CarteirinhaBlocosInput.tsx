@@ -58,7 +58,7 @@ export function CarteirinhaBlocosInput({
           />
         ))}
       </div>
-      <p className="text-xs text-slate-400">
+      <p className="text-meta text-slate-400">
         {tamanhoCarteirinha(blocos)} dígitos no padrão {blocos.join(' · ')}.
       </p>
     </div>

@@ -78,8 +78,8 @@ export function SolicitacaoItensFields({
   return (
     <div className="space-y-3" data-testid="solicitacao-itens">
       <div>
-        <span className="text-sm font-medium text-slate-200">Especialidades do pedido</span>
-        <p className="text-xs text-slate-400">
+        <span className="text-corpo font-medium text-slate-200">Especialidades do pedido</span>
+        <p className="text-meta text-slate-400">
           Cada especialidade vira um item com o seu próprio profissional executante.
         </p>
       </div>
@@ -90,11 +90,11 @@ export function SolicitacaoItensFields({
         return (
           <div
             key={index}
-            className="grid gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 md:grid-cols-[2fr_2fr_.8fr_auto] md:items-end"
+            className="grid gap-3 rounded-superficie border border-linha bg-fundo p-4 shadow-e1 md:grid-cols-[2fr_2fr_.8fr_auto] md:items-end"
             data-testid={`solicitacao-item-${index}`}
           >
             <label className="block space-y-2">
-              <span className="text-xs uppercase tracking-[0.25em] text-slate-400">
+              <span className="text-meta uppercase tracking-[0.25em] text-slate-400">
                 Especialidade
               </span>
               <Select
@@ -121,7 +121,7 @@ export function SolicitacaoItensFields({
             </label>
 
             <label className="block space-y-2">
-              <span className="flex items-center gap-1 text-xs uppercase tracking-[0.25em] text-slate-400">
+              <span className="flex items-center gap-1 text-meta uppercase tracking-[0.25em] text-slate-400">
                 Profissional executante
                 <Tooltip rotulo="Por que a lista muda">
                   Só aparece quem atende a especialidade escolhida ao lado — como especialidade
@@ -152,7 +152,7 @@ export function SolicitacaoItensFields({
 
               {item.especialidade_id !== '' && disponiveis.length === 0 ? (
                 <span className="block space-y-2 rounded-2xl border border-amber-300/20 bg-amber-400/10 p-3">
-                  <span className="block text-xs leading-5 text-amber-100">
+                  <span className="block text-meta leading-5 text-amber-100">
                     Nenhum profissional atende{' '}
                     {rotuloEspecialidade(
                       especialidades.find(
@@ -166,7 +166,7 @@ export function SolicitacaoItensFields({
                     to={`/profissionais/novo?especialidade_id=${item.especialidade_id}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-block rounded-full border border-cyan-300/30 bg-cyan-400/10 px-3 py-1.5 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-400/20"
+                    className="inline-block rounded-full border border-cyan-300/30 bg-cyan-400/10 px-3 py-1.5 text-meta font-semibold text-cyan-100 transition hover:bg-cyan-400/20"
                     data-testid={`solicitacao-item-adicionar-profissional-${index}`}
                   >
                     Adicionar profissional
@@ -176,7 +176,7 @@ export function SolicitacaoItensFields({
             </label>
 
             <label className="block space-y-2">
-              <span className="flex items-center gap-1 text-xs uppercase tracking-[0.25em] text-slate-400">
+              <span className="flex items-center gap-1 text-meta uppercase tracking-[0.25em] text-slate-400">
                 Qtd.
                 <Tooltip rotulo="O que este número significa">
                   Quantas sessões dessa especialidade estão sendo pedidas ao convênio nesta guia —
@@ -198,7 +198,7 @@ export function SolicitacaoItensFields({
               type="button"
               onClick={() => onChange(itens.filter((_, posicao) => posicao !== index))}
               disabled={disabled || itens.length === 1}
-              className="rounded-2xl border border-rose-400/30 bg-rose-400/10 px-4 py-3 text-sm font-semibold text-rose-100 transition hover:bg-rose-400/20 disabled:opacity-40"
+              className="inline-flex items-center justify-center rounded-2xl border border-rose-400/30 bg-rose-400/10 h-10 px-4 text-corpo font-semibold text-rose-100 transition hover:bg-rose-400/20 disabled:opacity-40"
               title={itens.length === 1 ? 'O pedido precisa de ao menos uma especialidade.' : undefined}
               data-testid={`solicitacao-item-remover-${index}`}
             >
@@ -215,7 +215,7 @@ export function SolicitacaoItensFields({
             onChange([...itens, { especialidade_id: '', profissional_id: '', quantidade: '10' }])
           }
           disabled={disabled}
-          className="rounded-2xl border border-cyan-300/30 bg-cyan-400/10 px-4 py-2 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-400/20 disabled:opacity-50"
+          className="rounded-2xl border border-cyan-300/30 bg-cyan-400/10 px-4 py-2 text-corpo font-semibold text-cyan-100 transition hover:bg-cyan-400/20 disabled:opacity-50"
           data-testid="solicitacao-item-adicionar"
         >
           Adicionar especialidade
@@ -224,7 +224,7 @@ export function SolicitacaoItensFields({
 
       {repetidas ? (
         <p
-          className="rounded-2xl border border-amber-400/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100"
+          className="rounded-2xl border border-amber-400/20 bg-amber-500/10 px-4 py-3 text-corpo text-amber-100"
           data-testid="solicitacao-itens-repetidas"
         >
           Há especialidades repetidas no pedido. Cada uma será enviada como uma guia separada à

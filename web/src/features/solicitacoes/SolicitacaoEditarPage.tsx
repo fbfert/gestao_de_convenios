@@ -68,22 +68,22 @@ export function SolicitacaoEditarPage() {
 
   return (
     <div className="space-y-6" data-testid="solicitacao-editar-page">
-      <Link to="/solicitacoes" className="text-sm font-semibold text-cyan-200 hover:text-cyan-100">
+      <Link to="/solicitacoes" className="inline-flex min-h-6 items-center text-corpo font-semibold text-cyan-200 hover:text-cyan-100">
         ← Voltar para solicitações
       </Link>
 
       <div>
-        <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Solicitações</p>
-        <h2 className="mt-2 text-3xl font-semibold text-white">
+        <p className="text-meta uppercase tracking-[0.3em] text-cyan-300/80">Solicitações</p>
+        <h2 className="mt-2 text-display font-semibold text-white">
           Editar solicitação {solicitacaoId ? `#${solicitacaoId}` : ''}
         </h2>
-        <p className="mt-2 text-sm text-slate-400">
+        <p className="mt-2 text-corpo text-slate-400">
           Toda alteração fica registrada nos Logs de Auditoria, com o valor anterior e o novo.
         </p>
       </div>
 
       {solicitacaoQuery.isLoading ? (
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-6 text-slate-300">Carregando...</div>
+        <div className="rounded-superficie border border-linha bg-fundo p-6 shadow-e1 text-slate-300">Carregando...</div>
       ) : solicitacaoQuery.isError || !solicitacao ? (
         <div className="rounded-3xl border border-rose-400/20 bg-rose-500/10 p-6 text-rose-100">
           Solicitação não encontrada.
@@ -92,24 +92,24 @@ export function SolicitacaoEditarPage() {
         <form onSubmit={handleSubmit} className="space-y-4 rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Paciente</span>
+              <span className="text-meta uppercase tracking-[0.25em] text-slate-400">Paciente</span>
               <p className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white">
                 {solicitacao.paciente?.nome ?? solicitacao.paciente_id}
               </p>
             </div>
             <div className="space-y-2">
-              <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Convênio</span>
+              <span className="text-meta uppercase tracking-[0.25em] text-slate-400">Convênio</span>
               <p className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white">
                 {solicitacao.convenio?.nome ?? solicitacao.convenio_id}
               </p>
             </div>
           </div>
-          <p className="text-xs text-slate-400">
+          <p className="text-meta text-slate-400">
             Paciente e convênio não são editáveis aqui: guia, antecipação e conciliação já geradas usam esses dados.
           </p>
 
           <label className="block space-y-2">
-            <span className="text-sm font-medium text-slate-200">Médico solicitante</span>
+            <span className="text-corpo font-medium text-slate-200">Médico solicitante</span>
             <Select
               value={form.medico_id}
               onChange={(event) => setForm((current) => ({ ...current, medico_id: event.target.value }))}
@@ -128,7 +128,7 @@ export function SolicitacaoEditarPage() {
           </label>
 
           <label className="block space-y-2">
-            <span className="text-sm font-medium text-slate-200">CID</span>
+            <span className="text-corpo font-medium text-slate-200">CID</span>
             <CidsCampo
               value={form.cid_ids}
               onChange={(cidIds) => setForm((current) => ({ ...current, cid_ids: cidIds }))}
@@ -137,7 +137,7 @@ export function SolicitacaoEditarPage() {
           </label>
 
           <label className="block space-y-2">
-            <span className="text-sm font-medium text-slate-200">Data da solicitação</span>
+            <span className="text-corpo font-medium text-slate-200">Data da solicitação</span>
             <input
               type="date"
               value={form.solicitado_em}
@@ -148,7 +148,7 @@ export function SolicitacaoEditarPage() {
           </label>
 
           <label className="block space-y-2">
-            <span className="text-sm font-medium text-slate-200">Observações</span>
+            <span className="text-corpo font-medium text-slate-200">Observações</span>
             <textarea
               value={form.observacoes}
               onChange={(event) => setForm((current) => ({ ...current, observacoes: event.target.value }))}
@@ -159,7 +159,7 @@ export function SolicitacaoEditarPage() {
           </label>
 
           {erro ? (
-            <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">{erro}</p>
+            <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-corpo text-rose-100">{erro}</p>
           ) : null}
 
           <div className="flex gap-2">

@@ -6,7 +6,7 @@ import { useAuthStore } from '../stores/authStore'
 import { Botao } from '../components/ui/Botao'
 import { isGroup, montarMenu, type NavGroup } from './navigation'
 
-const linkBase = 'rounded-pilula px-4 py-2 text-sm font-medium transition'
+const linkBase = 'rounded-pilula px-3 py-2 text-corpo font-medium transition'
 const linkAtivo = 'bg-acento-suave font-semibold text-acento-intenso'
 const linkInativo = 'text-texto-suave hover:bg-fundo hover:text-texto'
 
@@ -79,7 +79,7 @@ function GrupoNav({
         <NavLink
           to={grupo.to}
           title={grupo.descricao}
-          className={`px-4 py-2 text-sm font-medium transition ${
+          className={`px-3 py-2 text-corpo font-medium transition ${
             ativo ? 'font-semibold text-acento-intenso' : 'text-texto-suave hover:bg-fundo hover:text-texto'
           }`}
         >
@@ -131,7 +131,7 @@ function GrupoNav({
                 title={filho.descricao}
                 className={({ isActive }) =>
                   [
-                    'block rounded-controle px-3 py-2 text-sm transition',
+                    'block rounded-controle px-3 py-2 text-corpo transition',
                     isActive
                       ? 'bg-acento-suave font-semibold text-acento-intenso'
                       : 'text-texto-suave hover:bg-fundo hover:text-texto',
@@ -162,6 +162,7 @@ export function ShellLayout() {
   const larguraAmpla = usaLarguraAmpla(location.pathname)
   const larguraContainer = larguraAmpla ? 'max-w-[1900px]' : 'max-w-6xl'
   const [grupoAberto, setGrupoAberto] = useState<string | null>(null)
+  const [menuMobileAberto, setMenuMobileAberto] = useState(false)
   const navRef = useRef<HTMLElement | null>(null)
   const timerFechar = useRef<number | null>(null)
 
@@ -201,7 +202,26 @@ export function ShellLayout() {
   useEffect(() => {
     cancelarFechamento()
     setGrupoAberto(null)
+    setMenuMobileAberto(false)
   }, [location.pathname])
+
+  // O painel mobile cobre a tela: rolar o conteudo por baixo dele desorienta.
+  useEffect(() => {
+    if (!menuMobileAberto) return
+
+    const anterior = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    const aoTeclar = (evento: KeyboardEvent) => {
+      if (evento.key === 'Escape') setMenuMobileAberto(false)
+    }
+    document.addEventListener('keydown', aoTeclar)
+
+    return () => {
+      document.body.style.overflow = anterior
+      document.removeEventListener('keydown', aoTeclar)
+    }
+  }, [menuMobileAberto])
 
   useEffect(() => {
     if (!grupoAberto) {
@@ -247,7 +267,119 @@ export function ShellLayout() {
         <div
           className={`mx-auto flex w-full flex-col gap-4 px-6 py-4 transition-[max-width] duration-200 lg:flex-row lg:items-center lg:justify-between ${larguraContainer}`}
         >
-          <nav ref={navRef} className="flex flex-wrap items-center gap-2">
+          {/*
+            Abaixo de lg a barra horizontal some e vira painel. Ela nao "cabia"
+            no celular por acaso: `flex-wrap` empilhava os 5 grupos em 3 linhas,
+            comendo 150px de altura antes do conteudo comecar, e o submenu
+            dependia de hover — gesto que nao existe em tela de toque.
+          */}
+          <div className="flex items-center justify-between gap-3 lg:hidden">
+            <button
+              type="button"
+              onClick={() => setMenuMobileAberto((estava) => !estava)}
+              aria-expanded={menuMobileAberto}
+              aria-controls="menu-mobile"
+              aria-label={menuMobileAberto ? 'Fechar menu' : 'Abrir menu'}
+              data-testid="shell-menu-mobile"
+              className="flex h-11 w-11 items-center justify-center rounded-controle border border-linha text-texto transition hover:bg-fundo"
+            >
+              <svg aria-hidden="true" viewBox="0 0 20 20" className="h-5 w-5">
+                {menuMobileAberto ? (
+                  <path d="M5 5l10 10M15 5L5 15" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                ) : (
+                  <path d="M3 6h14M3 10h14M3 14h14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                )}
+              </svg>
+            </button>
+
+            {/*
+              So a marca. Usuario, clinica e "Sair" ficam dentro do painel: no
+              cabecalho fechado eles disputavam a linha com a marca e os tres
+              saiam truncados a 390px ("Gestao de Conve...", "Admin Clinica Ex...").
+            */}
+            <p className="min-w-0 flex-1 text-corpo font-semibold text-texto">
+              Gestão de Convênios
+            </p>
+          </div>
+
+          {/*
+            `dvh` e nao `vh`: no Safari do iPhone a barra de endereco entra e sai
+            da conta do `vh`, e o painel ficava com o rodape (o botao Sair) atras
+            dela. 5.5rem desconta a linha do cabecalho.
+          */}
+          {menuMobileAberto ? (
+            <div id="menu-mobile" className="max-h-[calc(100dvh-5.5rem)] overflow-y-auto lg:hidden">
+              <nav className="flex flex-col gap-1 border-t border-linha pt-3">
+                {entradas.map((entry) =>
+                  isGroup(entry) ? (
+                    <div key={entry.to} className="py-1">
+                      <NavLink
+                        to={entry.to}
+                        className={({ isActive }) =>
+                          [
+                            'block rounded-controle px-3 py-3 text-corpo font-semibold',
+                            isActive ? 'bg-acento-suave text-acento-intenso' : 'text-texto',
+                          ].join(' ')
+                        }
+                      >
+                        {entry.label}
+                      </NavLink>
+                      <div className="mt-1 flex flex-col gap-1 border-l border-linha pl-3">
+                        {entry.children.map((filho) => (
+                          <NavLink
+                            key={`${entry.to}${filho.to}`}
+                            to={filho.to}
+                            className={({ isActive }) =>
+                              [
+                                'block rounded-controle px-3 py-3 text-corpo',
+                                isActive
+                                  ? 'bg-acento-suave font-semibold text-acento-intenso'
+                                  : 'text-texto-suave',
+                              ].join(' ')
+                            }
+                          >
+                            {filho.label}
+                          </NavLink>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <NavLink
+                      key={entry.to}
+                      to={entry.to}
+                      className={({ isActive }) =>
+                        [
+                          'block rounded-controle px-3 py-3 text-corpo font-semibold',
+                          isActive ? 'bg-acento-suave text-acento-intenso' : 'text-texto',
+                        ].join(' ')
+                      }
+                    >
+                      {entry.label}
+                    </NavLink>
+                  ),
+                )}
+
+                <div className="mt-2 border-t border-linha pt-3">
+                  <p className="px-3 text-meta text-texto-suave">
+                    {tenant?.nome} · {tenant?.slug}
+                  </p>
+                  <div className="mt-2 px-3">
+                    <Botao
+                      type="button"
+                      variante="secundario"
+                      tamanho="sm"
+                      onClick={handleLogout}
+                      carregando={logout.isPending}
+                    >
+                      Sair
+                    </Botao>
+                  </div>
+                </div>
+              </nav>
+            </div>
+          ) : null}
+
+          <nav ref={navRef} className="hidden flex-wrap items-center gap-2 lg:flex">
             {entradas.map((entry) =>
               isGroup(entry) ? (
                 <GrupoNav
@@ -271,10 +403,11 @@ export function ShellLayout() {
             )}
           </nav>
 
-          <div className="flex items-center gap-4 self-end lg:self-auto">
+          {/* Bloco de usuario do desktop — no mobile ele vive dentro do painel. */}
+          <div className="hidden items-center gap-4 self-end lg:flex lg:self-auto">
             <div className="text-right">
-              <p className="text-sm font-medium text-texto">{user?.name}</p>
-              <p className="text-xs text-texto-suave">
+              <p className="text-corpo font-medium text-texto">{user?.name}</p>
+              <p className="text-meta text-texto-suave">
                 {tenant?.nome} · {tenant?.slug}
               </p>
             </div>

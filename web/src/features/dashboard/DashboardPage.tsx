@@ -62,11 +62,11 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-8" data-testid="dashboard-page">
-      <section className="overflow-hidden rounded-[2rem] border border-cyan-300/20 bg-gradient-to-br from-cyan-400/10 via-slate-950 to-slate-900 p-6 shadow-2xl shadow-slate-950/30">
+      <section className="overflow-hidden rounded-janela border border-cyan-300/20 bg-gradient-to-br from-cyan-400/10 via-slate-950 to-slate-900 p-6 shadow-e3 shadow-slate-950/30">
         <div className="space-y-4">
           <div className="space-y-4">
-            <h2 className="text-4xl font-semibold text-white">Visão geral operacional</h2>
-            <p className="max-w-3xl text-sm leading-6 text-slate-300">
+            <h2 className="text-display font-semibold text-white">Visão geral operacional</h2>
+            <p className="max-w-3xl text-corpo leading-6 text-slate-300">
               Clique nos Atalhos ou Acesse pelo Menu Superior. Em caso de dúvidas acesse o{' '}
               <Link
                 to="/manual"
@@ -81,19 +81,19 @@ export function DashboardPage() {
       </section>
 
       {dashboardQuery.isLoading ? (
-        <div className="rounded-janela border border-linha bg-fundo p-6 text-sm text-texto-suave">
+        <div className="rounded-janela border border-linha bg-fundo p-6 text-corpo text-texto-suave">
           Carregando Dashboard...
         </div>
       ) : dashboardQuery.isError ? (
-        <div className="rounded-janela border border-perigo/30 bg-perigo-suave p-6 text-sm text-perigo-texto">
+        <div className="rounded-janela border border-perigo/30 bg-perigo-suave p-6 text-corpo text-perigo-texto">
           Não foi possível carregar o Dashboard.
         </div>
       ) : null}
 
       <section className="space-y-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Relatórios</p>
-          <h3 className="mt-2 text-2xl font-semibold text-white">Resumo por área</h3>
+          <p className="text-meta uppercase tracking-[0.3em] text-cyan-300/80">Relatórios</p>
+          <h3 className="mt-2 text-titulo font-semibold text-white">Resumo por área</h3>
         </div>
 
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -104,20 +104,20 @@ export function DashboardPage() {
                 to={block.href}
                 className="rounded-janela border border-linha bg-fundo px-4 py-3 shadow-e1 transition hover:border-cyan-300/30"
               >
-                <p className="text-xs uppercase tracking-[0.2em] text-cyan-300/70">{block.label}</p>
+                <p className="text-meta uppercase tracking-[0.2em] text-cyan-300/70">{block.label}</p>
                 <div className="mt-1 flex items-baseline justify-between gap-2">
-                  <span className="text-3xl font-semibold text-white">{block.value}</span>
-                  <span className="text-xs font-medium text-cyan-200">Abrir →</span>
+                  <span className="text-display font-semibold text-white">{block.value}</span>
+                  <span className="text-meta font-medium text-cyan-200">Abrir →</span>
                 </div>
-                <p className="mt-1 truncate text-xs text-slate-400" title={block.detail}>
+                <p className="mt-1 truncate text-meta text-slate-400" title={block.detail}>
                   {block.detail}
                 </p>
               </Link>
             ) : (
               <article key={block.key} className="rounded-janela border border-linha bg-fundo px-4 py-3 shadow-e1">
-                <p className="text-xs uppercase tracking-[0.2em] text-cyan-300/70">{block.label}</p>
-                <p className="mt-1 text-3xl font-semibold text-white">{block.value}</p>
-                <p className="mt-1 truncate text-xs text-slate-400" title={block.detail}>
+                <p className="text-meta uppercase tracking-[0.2em] text-cyan-300/70">{block.label}</p>
+                <p className="mt-1 text-display font-semibold text-white">{block.value}</p>
+                <p className="mt-1 truncate text-meta text-slate-400" title={block.detail}>
                   {block.detail}
                 </p>
               </article>
@@ -130,12 +130,12 @@ export function DashboardPage() {
         <article className={card}>
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Acesso rápido</p>
-              <h3 className="mt-2 text-2xl font-semibold text-white">Telas operacionais</h3>
+              <p className="text-meta uppercase tracking-[0.3em] text-cyan-300/80">Acesso rápido</p>
+              <h3 className="mt-2 text-titulo font-semibold text-white">Telas operacionais</h3>
             </div>
             <Link
               to="/auditoria"
-              className="rounded-full border border-cyan-300/30 px-4 py-2 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-400/10"
+              className="rounded-full border border-cyan-300/30 px-4 py-2 text-corpo font-semibold text-cyan-100 transition hover:bg-cyan-400/10"
             >
               Ver auditoria
             </Link>
@@ -159,7 +159,7 @@ export function DashboardPage() {
               <Link
                 key={href}
                 to={href}
-                className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-slate-100 transition hover:border-cyan-300/30 hover:bg-white/10"
+                className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 h-10 px-4 text-corpo font-medium text-slate-100 transition hover:border-cyan-300/30 hover:bg-white/10"
               >
                 {label}
               </Link>
@@ -169,28 +169,28 @@ export function DashboardPage() {
 
         <article className={card}>
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Auditoria</p>
-            <h3 className="mt-2 text-2xl font-semibold text-white">Últimas alterações</h3>
-            <p className="mt-2 text-sm text-slate-300">
+            <p className="text-meta uppercase tracking-[0.3em] text-cyan-300/80">Auditoria</p>
+            <h3 className="mt-2 text-titulo font-semibold text-white">Últimas alterações</h3>
+            <p className="mt-2 text-corpo text-slate-300">
               Linha do tempo resumida das ações recentes do seu tenant.
             </p>
           </div>
 
           <div className="mt-5 space-y-3">
             {recentAudits.length === 0 ? (
-              <p className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
+              <p className="rounded-superficie border border-linha bg-fundo p-4 shadow-e1 text-corpo text-slate-300">
                 Nenhum evento de auditoria disponível para o seu perfil.
               </p>
             ) : (
               recentAudits.map((item) => (
                 <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-950/50 p-4">
-                  <p className="text-sm font-medium text-white">
+                  <p className="text-corpo font-medium text-white">
                     {item.usuario ?? 'Sistema'} · {item.acao}
                   </p>
-                  <p className="mt-1 text-sm text-slate-300">
+                  <p className="mt-1 text-corpo text-slate-300">
                     {item.entidade} #{item.entidade_id}
                   </p>
-                  <p className="mt-2 text-xs text-slate-400">{formatDateTime(item.created_at)}</p>
+                  <p className="mt-2 text-meta text-slate-400">{formatDateTime(item.created_at)}</p>
                 </div>
               ))
             )}

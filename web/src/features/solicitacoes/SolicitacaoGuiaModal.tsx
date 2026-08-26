@@ -22,9 +22,9 @@ function fieldClasses() {
 
 function DetailItem({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-      <p className="text-xs uppercase tracking-[0.25em] text-slate-400">{label}</p>
-      <div className="mt-2 text-sm font-medium text-white">{children}</div>
+    <div className="rounded-superficie border border-linha bg-fundo p-4 shadow-e1">
+      <p className="text-meta uppercase tracking-[0.25em] text-slate-400">{label}</p>
+      <div className="mt-2 text-corpo font-medium text-white">{children}</div>
     </div>
   )
 }
@@ -74,12 +74,12 @@ function SolicitacaoDados({ solicitacao }: { solicitacao: Solicitacao }) {
   return (
     <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h3 className="text-lg font-semibold text-white">Dados da solicitação</h3>
+        <h3 className="text-subtitulo font-semibold text-white">Dados da solicitação</h3>
         {pode('solicitacoes.manage') && !editando ? (
           <button
             type="button"
             onClick={iniciarEdicao}
-            className="rounded-2xl border border-cyan-300/40 bg-cyan-400/15 px-4 py-2 text-sm font-medium text-cyan-50 transition hover:bg-cyan-400/25"
+            className="rounded-2xl border border-cyan-300/40 bg-cyan-400/15 px-4 py-2 text-corpo font-medium text-cyan-50 transition hover:bg-cyan-400/25"
             data-testid="solicitacao-modal-ativar-edicao"
           >
             Ativar edição
@@ -91,7 +91,7 @@ function SolicitacaoDados({ solicitacao }: { solicitacao: Solicitacao }) {
         <DetailItem label="Paciente">{solicitacao.paciente?.nome ?? solicitacao.paciente_id}</DetailItem>
         <DetailItem label="Convênio">{solicitacao.convenio?.nome ?? solicitacao.convenio_id}</DetailItem>
       </div>
-      <p className="mt-2 text-xs text-slate-400">
+      <p className="mt-2 text-meta text-slate-400">
         Paciente e convênio não são editáveis aqui: guia, antecipação e conciliação já geradas usam esses dados.
       </p>
 
@@ -110,7 +110,7 @@ function SolicitacaoDados({ solicitacao }: { solicitacao: Solicitacao }) {
         <div className="mt-4 space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Médico solicitante</span>
+              <span className="text-corpo font-medium text-slate-200">Médico solicitante</span>
               <Select
                 value={form.medico_id}
                 onChange={(event) => setForm((current) => ({ ...current, medico_id: event.target.value }))}
@@ -128,7 +128,7 @@ function SolicitacaoDados({ solicitacao }: { solicitacao: Solicitacao }) {
               </Select>
             </label>
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">CID</span>
+              <span className="text-corpo font-medium text-slate-200">CID</span>
               <CidsCampo
                 value={form.cid_ids}
                 onChange={(cidIds) => setForm((current) => ({ ...current, cid_ids: cidIds }))}
@@ -138,7 +138,7 @@ function SolicitacaoDados({ solicitacao }: { solicitacao: Solicitacao }) {
           </div>
 
           <label className="block space-y-2">
-            <span className="text-sm font-medium text-slate-200">Data da solicitação</span>
+            <span className="text-corpo font-medium text-slate-200">Data da solicitação</span>
             <input
               type="date"
               value={form.solicitado_em}
@@ -149,7 +149,7 @@ function SolicitacaoDados({ solicitacao }: { solicitacao: Solicitacao }) {
           </label>
 
           <label className="block space-y-2">
-            <span className="text-sm font-medium text-slate-200">Observações</span>
+            <span className="text-corpo font-medium text-slate-200">Observações</span>
             <textarea
               value={form.observacoes}
               onChange={(event) => setForm((current) => ({ ...current, observacoes: event.target.value }))}
@@ -160,7 +160,7 @@ function SolicitacaoDados({ solicitacao }: { solicitacao: Solicitacao }) {
           </label>
 
           {erro ? (
-            <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">{erro}</p>
+            <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-corpo text-rose-100">{erro}</p>
           ) : null}
 
           <div className="flex gap-2">
@@ -197,27 +197,27 @@ export function SolicitacaoGuiaModal({ solicitacao, onClose }: SolicitacaoGuiaMo
   )
 
   return (
-    <Dialog open={open} onClose={onClose} className="relative z-50">
+    <Dialog open={open} onClose={onClose} className="relative z-(--z-dialogo)">
       <DialogBackdrop className="fixed inset-0 bg-slate-950/75 backdrop-blur-sm" />
       <div className="fixed inset-0 overflow-y-auto p-4 sm:p-6">
         <div className="flex min-h-full items-center justify-center">
           <DialogPanel
-            className="w-full max-w-6xl rounded-[2rem] border border-white/10 bg-slate-950 p-6 text-white shadow-2xl shadow-black/60"
+            className="w-full max-w-6xl rounded-janela border border-white/10 bg-slate-950 p-6 text-white shadow-e3 shadow-black/60"
             data-testid="solicitacao-guia-modal"
           >
             <div className="flex items-start justify-between gap-4">
               <div>
-                <DialogTitle className="text-xl font-semibold">
+                <DialogTitle className="text-titulo font-semibold">
                   Detalhes da solicitação{solicitacao ? ` #${solicitacao.id}` : ''}
                 </DialogTitle>
-                <p className="mt-1 text-sm text-slate-300">
+                <p className="mt-1 text-corpo text-slate-300">
                   Dados da solicitação, anexos do pedido e da guia vinculada, sem sair da lista.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
+                className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-corpo font-semibold text-white transition hover:bg-white/10"
               >
                 Fechar
               </button>
@@ -231,7 +231,7 @@ export function SolicitacaoGuiaModal({ solicitacao, onClose }: SolicitacaoGuiaMo
               {/* Fallback para solicitações antigas, anteriores à tabela de documentos:
                   elas têm o arquivo no campo legado mas nenhuma linha em solicitacao_documentos. */}
               {solicitacao?.pedido_medico && !temDocumentoPedidoMedico ? (
-                <div className="rounded-3xl border border-cyan-400/20 bg-cyan-500/10 p-5 text-sm text-cyan-50">
+                <div className="rounded-3xl border border-cyan-400/20 bg-cyan-500/10 p-5 text-corpo text-cyan-50">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <p className="font-semibold">Pedido médico anexado</p>
@@ -247,7 +247,7 @@ export function SolicitacaoGuiaModal({ solicitacao, onClose }: SolicitacaoGuiaMo
                           solicitacao.pedido_medico?.nome_original,
                         )
                       }
-                      className="rounded-2xl border border-cyan-300/30 bg-cyan-400/10 px-4 py-2 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-400/20"
+                      className="rounded-2xl border border-cyan-300/30 bg-cyan-400/10 px-4 py-2 text-corpo font-semibold text-cyan-50 transition hover:bg-cyan-400/20"
                     >
                       Abrir pedido
                     </button>
@@ -257,25 +257,25 @@ export function SolicitacaoGuiaModal({ solicitacao, onClose }: SolicitacaoGuiaMo
 
               {!solicitacao?.guia ? (
                 <div
-                  className="rounded-3xl border border-amber-400/20 bg-amber-500/10 p-5 text-sm text-amber-50"
+                  className="rounded-3xl border border-amber-400/20 bg-amber-500/10 p-5 text-corpo text-amber-50"
                   data-testid="solicitacao-guia-empty"
                 >
                   Esta solicitação ainda não possui uma guia vinculada.
                 </div>
               ) : guiaQuery.isLoading ? (
                 <div
-                  className="rounded-3xl border border-white/10 bg-white/5 p-5 text-sm text-slate-300"
+                  className="rounded-superficie border border-linha bg-fundo p-5 shadow-e1 text-corpo text-slate-300"
                   data-testid="solicitacao-guia-loading"
                 >
                   Carregando detalhes da guia...
                 </div>
               ) : guiaQuery.isError || !guiaQuery.data ? (
                 <div
-                  className="space-y-2 rounded-3xl border border-rose-400/20 bg-rose-500/10 p-5 text-sm text-rose-100"
+                  className="space-y-2 rounded-3xl border border-rose-400/20 bg-rose-500/10 p-5 text-corpo text-rose-100"
                   data-testid="solicitacao-guia-error"
                 >
                   <p>Não foi possível carregar a guia vinculada.</p>
-                  <p className="text-xs text-rose-100/80">
+                  <p className="text-meta text-rose-100/80">
                     {getHttpErrorMessage(guiaQuery.error, 'Confira o vínculo da solicitação e tente novamente.')}
                   </p>
                 </div>

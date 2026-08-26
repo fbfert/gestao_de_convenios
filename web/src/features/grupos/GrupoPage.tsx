@@ -58,16 +58,16 @@ export function GrupoPage({ titulo, chapeu, resumo, itens: todos, ordenado = fal
 
   return (
     <div className="space-y-8" data-testid={testId}>
-      <section className="overflow-hidden rounded-[2rem] border border-cyan-300/20 bg-gradient-to-br from-cyan-400/10 via-slate-950 to-slate-900 p-6 shadow-2xl shadow-slate-950/30">
+      <section className="overflow-hidden rounded-janela border border-cyan-300/20 bg-gradient-to-br from-cyan-400/10 via-slate-950 to-slate-900 p-6 shadow-e3 shadow-slate-950/30">
         <div className="space-y-4">
-          <p className="text-xs uppercase tracking-[0.35em] text-cyan-300/80">{chapeu}</p>
-          <h2 className="text-4xl font-semibold text-white">{titulo}</h2>
-          <p className="max-w-3xl text-sm leading-6 text-slate-300">{resumo}</p>
+          <p className="text-meta uppercase tracking-[0.35em] text-cyan-300/80">{chapeu}</p>
+          <h2 className="text-display font-semibold text-white">{titulo}</h2>
+          <p className="max-w-3xl text-corpo leading-6 text-slate-300">{resumo}</p>
         </div>
       </section>
 
       <section className="space-y-4">
-        <h3 className="text-lg font-semibold text-white">
+        <h3 className="text-subtitulo font-semibold text-white">
           {ordenado ? 'Telas, na ordem de uso' : 'O que cada cadastro guarda'}
         </h3>
 
@@ -81,16 +81,16 @@ export function GrupoPage({ titulo, chapeu, resumo, itens: todos, ordenado = fal
             >
               <div className="flex items-start gap-3">
                 {ordenado ? (
-                  <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-cyan-400/20 text-xs font-semibold text-cyan-100">
+                  <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-cyan-400/20 text-meta font-semibold text-cyan-100">
                     {indice + 1}
                   </span>
                 ) : null}
 
                 <div className="space-y-2">
-                  <p className="text-base font-semibold text-white group-hover:text-cyan-50">
+                  <p className="text-corpo-lg font-semibold text-white group-hover:text-cyan-50">
                     {item.label}
                   </p>
-                  <p className="text-sm leading-6 text-slate-300">{item.descricao}</p>
+                  <p className="text-corpo leading-6 text-slate-300">{item.descricao}</p>
                 </div>
               </div>
             </Link>
@@ -99,20 +99,20 @@ export function GrupoPage({ titulo, chapeu, resumo, itens: todos, ordenado = fal
       </section>
 
       <section className="space-y-4">
-        <h3 className="text-lg font-semibold text-white">Métricas</h3>
+        <h3 className="text-subtitulo font-semibold text-white">Métricas</h3>
 
         {dashboardQuery.isPending ? (
-          <p className="text-sm text-slate-400">Carregando métricas...</p>
+          <p className="text-corpo text-slate-400">Carregando métricas...</p>
         ) : null}
 
         {dashboardQuery.isError ? (
-          <p className="text-sm text-rose-300">
+          <p className="text-corpo text-rose-300">
             Não foi possível carregar as métricas. Recarregue a página para tentar de novo.
           </p>
         ) : null}
 
         {!dashboardQuery.isPending && !dashboardQuery.isError && metricasUnicas.length === 0 ? (
-          <p className="text-sm text-slate-400">
+          <p className="text-corpo text-slate-400">
             Seu papel não tem permissão para ver os números destas telas.
           </p>
         ) : null}
@@ -122,9 +122,9 @@ export function GrupoPage({ titulo, chapeu, resumo, itens: todos, ordenado = fal
             {metricasUnicas.map((bloco) => {
               const conteudo = (
                 <>
-                  <p className="text-xs uppercase tracking-[0.25em] text-slate-400">{bloco.label}</p>
-                  <p className="mt-2 text-3xl font-semibold text-white">{bloco.value}</p>
-                  <p className="mt-1 text-xs text-slate-400">{bloco.detail}</p>
+                  <p className="text-meta uppercase tracking-[0.25em] text-slate-400">{bloco.label}</p>
+                  <p className="mt-2 text-display font-semibold text-white">{bloco.value}</p>
+                  <p className="mt-1 text-meta text-slate-400">{bloco.detail}</p>
                 </>
               )
 

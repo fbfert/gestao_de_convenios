@@ -223,10 +223,10 @@ export function GuiasPage() {
     <div className="space-y-8" data-testid="guias-page">
       {!isCreateRoute ? (
       <section className="space-y-4">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex flex-col gap-4 sm:items-start lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Guias</p>
-            <h2 className="mt-2 flex items-center gap-2 text-3xl font-semibold text-white">
+            <p className="text-meta uppercase tracking-[0.3em] text-cyan-300/80">Guias</p>
+            <h2 className="mt-2 flex items-center gap-2 text-display font-semibold text-white">
               Controle da guia e do prazo de senha
               <Tooltip rotulo="O que é uma guia">
                 <p className="font-semibold text-white">Documento de autorização</p>
@@ -265,7 +265,7 @@ export function GuiasPage() {
               type="button"
               onClick={toggleVencendoBadge}
               className={[
-                'inline-flex rounded-full border px-3 py-1.5 text-sm font-semibold transition',
+                'inline-flex rounded-full border px-3 py-1.5 text-corpo font-semibold transition',
                 filters.validade_senha_vencendo_em_dias === String(SENHA_VENCENDO_EM_DIAS)
                   ? 'border-cyan-200/50 bg-cyan-300/20 text-white'
                   : 'border-cyan-200/20 bg-white/5 text-cyan-50 hover:bg-white/10',
@@ -285,7 +285,7 @@ export function GuiasPage() {
           <form onSubmit={handleCreateSubmit} className="space-y-4">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h3 className="text-lg font-semibold text-white">Nova guia</h3>
+                <h3 className="text-subtitulo font-semibold text-white">Nova guia</h3>
               </div>
               <Botao
                 variante="secundario"
@@ -304,7 +304,7 @@ export function GuiasPage() {
             </div>
 
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Convênio</span>
+              <span className="text-corpo font-medium text-slate-200">Convênio</span>
               <Select
                 value={form.convenio_id}
                 onChange={(event) =>
@@ -326,7 +326,7 @@ export function GuiasPage() {
             </label>
 
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Paciente</span>
+              <span className="text-corpo font-medium text-slate-200">Paciente</span>
               <Select
                 value={form.paciente_id}
                 onChange={(event) =>
@@ -347,7 +347,7 @@ export function GuiasPage() {
             </label>
 
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Profissional executante</span>
+              <span className="text-corpo font-medium text-slate-200">Profissional executante</span>
               <Select
                 value={form.profissional_id}
                 onChange={(event) =>
@@ -368,7 +368,7 @@ export function GuiasPage() {
             </label>
 
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Especialidade</span>
+              <span className="text-corpo font-medium text-slate-200">Especialidade</span>
               <Select
                 value={form.especialidade_id}
                 onChange={(event) =>
@@ -390,7 +390,7 @@ export function GuiasPage() {
             </label>
 
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Número da guia</span>
+              <span className="text-corpo font-medium text-slate-200">Número da guia</span>
               <input
                 value={form.numero_guia}
                 onChange={(event) => setForm((current) => ({ ...current, numero_guia: event.target.value }))}
@@ -400,7 +400,7 @@ export function GuiasPage() {
             </label>
 
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Tipo de terapia</span>
+              <span className="text-corpo font-medium text-slate-200">Tipo de terapia</span>
               <Select
                 value={form.tipo_terapia}
                 onChange={(event) => setForm((current) => ({ ...current, tipo_terapia: event.target.value }))}
@@ -413,7 +413,7 @@ export function GuiasPage() {
             </label>
 
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Data da solicitação</span>
+              <span className="text-corpo font-medium text-slate-200">Data da solicitação</span>
               <input
                 type="date"
                 value={form.data_solicitacao}
@@ -424,7 +424,7 @@ export function GuiasPage() {
             </label>
 
             {formError ? (
-              <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+              <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-corpo text-rose-100">
                 {formError}
               </p>
             ) : null}
@@ -445,9 +445,9 @@ export function GuiasPage() {
       {!isCreateRoute ? (
       <section className="space-y-4 rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
         <form className="flex flex-wrap items-center gap-3" onSubmit={handleFilterSubmit}>
-          <label className="flex items-center gap-2">
-            <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Status</span>
-            <div className="w-44">
+          <label className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <span className="text-meta uppercase tracking-[0.25em] text-slate-400">Status</span>
+            <div className="w-full sm:w-44">
               <Select
                 value={draftFilters.status}
                 onChange={(event) =>
@@ -469,9 +469,9 @@ export function GuiasPage() {
             </div>
           </label>
 
-          <label className="flex items-center gap-2">
-            <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Convênio</span>
-            <div className="w-44">
+          <label className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <span className="text-meta uppercase tracking-[0.25em] text-slate-400">Convênio</span>
+            <div className="w-full sm:w-44">
               <Select
                 value={draftFilters.convenio_id}
                 onChange={(event) =>
@@ -493,9 +493,9 @@ export function GuiasPage() {
             </div>
           </label>
 
-          <label className="flex items-center gap-2">
-            <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Paciente</span>
-            <div className="w-52">
+          <label className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <span className="text-meta uppercase tracking-[0.25em] text-slate-400">Paciente</span>
+            <div className="w-full sm:w-52">
               <Select
                 value={draftFilters.paciente_id}
                 onChange={(event) =>
@@ -520,25 +520,25 @@ export function GuiasPage() {
         </form>
 
         {guiasQuery.isLoading ? (
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
+          <div className="rounded-superficie border border-linha bg-fundo p-4 shadow-e1 text-corpo text-slate-300">
             Carregando guias...
           </div>
         ) : guiasQuery.isError ? (
-          <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-100">
+          <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 p-4 text-corpo text-rose-100">
             Não foi possível carregar a lista.
           </div>
         ) : (
           <div className="space-y-4">
             {conciliacaoError ? (
-              <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+              <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-corpo text-rose-100">
                 {conciliacaoError}
               </p>
             ) : null}
             {/* Com as colunas de sessões separadas a tabela não cabe mais em telas médias:
                 rola na horizontal em vez de cortar Senha, Validade e Ações. */}
             <div className="overflow-x-auto rounded-superficie border border-linha">
-              <table className="w-full border-collapse text-left text-sm">
-                <thead className="bg-fundo text-xs uppercase tracking-[0.25em] text-texto-suave">
+              <table className="w-full border-collapse text-left text-corpo" data-cartoes="lg">
+                <thead className="bg-fundo text-meta uppercase tracking-[0.25em] text-texto-suave">
                   <tr>
                     <ColunaOrdenavel
                     titulo="Nº Guia"
@@ -603,26 +603,26 @@ export function GuiasPage() {
                 <tbody className="divide-y divide-linha bg-superficie">
                   {guias.map((guia) => (
                     <tr key={guia.id} data-testid={`guia-row-${guia.id}`}>
-                      <td className="px-4 py-4 font-medium text-white">
-                        <Link to={`/guias/${guia.id}`} className="text-cyan-100 underline decoration-cyan-300/40 underline-offset-4 hover:text-cyan-50">
+                      <td data-rotulo="Nº Guia" className="px-4 py-4 font-medium text-white">
+                        <Link to={`/guias/${guia.id}`} className="inline-flex min-h-6 items-center font-semibold text-texto decoration-acento/60 underline-offset-4 transition hover:underline hover:text-acento-intenso">
                           {guia.numero_guia ?? 'Aguardando número'}
                         </Link>
                       </td>
-                        <td className="px-4 py-4 text-slate-200">
+                        <td data-rotulo="Paciente" className="px-4 py-4 text-slate-200">
                           {guia.paciente?.nome ??
                             pacientes.find((item) => item.id === guia.paciente_id)?.nome ??
                             guia.paciente_id}
                         </td>
-                        <td className="px-4 py-4 tabular-nums text-slate-200">
+                        <td data-rotulo="Carteirinha" className="px-4 py-4 tabular-nums text-slate-200">
                           {formatCarteirinha(guia.paciente?.carteirinha) || '-'}
                         </td>
-                        <td className="px-4 py-4 text-slate-200">
+                        <td data-rotulo="Especialidade" className="px-4 py-4 text-slate-200">
                           {guia.especialidade?.nome ?? guia.especialidade_id}
                         </td>
-                        <td className="px-4 py-4 text-slate-200">
+                        <td data-rotulo="Profissional" className="px-4 py-4 text-slate-200">
                           {guia.profissional?.nome ?? guia.profissional_id}
                         </td>
-                        <td className="px-4 py-4">
+                        <td data-rotulo="Status" data-rotulo-bloco className="px-4 py-4">
                           <div className="flex flex-col gap-2">
                             <Badge tone={statusTone(guia.status)} data-testid={`guia-status-${guia.id}`}>
                               {translateStatus('guias', guia.status)}
@@ -634,37 +634,37 @@ export function GuiasPage() {
                                 type="button"
                                 onClick={() => handleVerificarStatus(guia.id)}
                                 disabled={consultarGuiaUnimed.isPending}
-                                className="inline-flex w-fit rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-400/20 disabled:opacity-50"
+                                className="inline-flex w-fit whitespace-nowrap rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1 text-meta font-semibold text-cyan-100 transition hover:bg-cyan-400/20 disabled:opacity-50"
                                 data-testid={`guia-verificar-status-${guia.id}`}
                               >
                                 Verificar status
                               </button>
                             ) : guia.automacao_execucao ? (
-                              <span className="inline-flex w-fit rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-100">
+                              <span className="inline-flex w-fit whitespace-nowrap rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-meta font-semibold text-cyan-100">
                                 Unimed · {guia.automacao_execucao.status}
                               </span>
                             ) : guia.solicitacao_item_id ? (
-                              <span className="inline-flex w-fit rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-slate-200">
+                              <span className="inline-flex w-fit whitespace-nowrap rounded-full border border-white/10 bg-white/5 px-3 py-1 text-meta font-semibold text-slate-200">
                                 Item #{guia.solicitacao_item_id}
                               </span>
                             ) : null}
                           </div>
                         </td>
-                        <td
+                        <td data-rotulo="Nº de Sessões"
                           className="px-4 py-4 tabular-nums text-slate-200"
                           data-testid={`guia-sessoes-solicitadas-${guia.id}`}
                         >
                           {guia.sessoes_solicitadas ?? '-'}
                         </td>
-                        <td
+                        <td data-rotulo="Sessões Autorizadas"
                           className="px-4 py-4 tabular-nums text-slate-200"
                           data-testid={`guia-sessoes-autorizadas-${guia.id}`}
                         >
                           {guia.sessoes_autorizadas ?? '-'}
                         </td>
-                        <td className="px-4 py-4 text-slate-200">{guia.senha ?? '-'}</td>
-                        <td className="px-4 py-4 text-slate-200">{guia.validade_senha ?? '-'}</td>
-                        <td className="px-4 py-4 text-center text-slate-200">
+                        <td data-rotulo="Senha" className="px-4 py-4 text-slate-200">{guia.senha ?? '-'}</td>
+                        <td data-rotulo="Validade" className="px-4 py-4 text-slate-200">{guia.validade_senha ?? '-'}</td>
+                        <td data-rotulo="Última consulta" className="px-4 py-4 text-center text-slate-200">
                           {guia.unimed_last_checked_at || guia.ultima_automacao_unimed ? (
                             <Tooltip rotulo="Ver última consulta Unimed" icone={iconeLupa}>
                               <p className="font-semibold text-white">
@@ -684,16 +684,16 @@ export function GuiasPage() {
                               ) : null}
                             </Tooltip>
                           ) : (
-                            <span className="text-slate-500">-</span>
+                            <span className="text-texto-suave">-</span>
                           )}
                         </td>
-                        <td className="w-px whitespace-nowrap px-4 py-4">
+                        <td data-rotulo="Ações" data-rotulo-bloco className="w-px whitespace-nowrap px-4 py-4">
                           <DropdownMenu rotulo="Ações da guia" testId={`guia-acoes-${guia.id}`}>
                             <GuiaStatusActions guia={guia} />
                             <div className="flex w-full items-center gap-2">
                               <button
                                 type="button"
-                                className="flex-1 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1.5 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-400/20 disabled:opacity-50"
+                                className="flex-1 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1.5 text-meta font-semibold text-emerald-100 transition hover:bg-emerald-400/20 disabled:opacity-50"
                                 onClick={() => handleGerarConciliacao(guia.id)}
                                 disabled={gerarConciliacao.isPending || (guia.status !== 'finalized' && guia.status !== 'approved')}
                                 data-testid={`guia-gerar-conciliacao-${guia.id}`}
@@ -708,7 +708,7 @@ export function GuiasPage() {
                             {pode('guias.manage') ? (
                               <Link
                                 to={`/guias/${guia.id}/editar`}
-                                className="block w-full rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-center text-xs font-semibold text-white transition hover:bg-white/10"
+                                className="block w-full rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-center text-meta font-semibold text-white transition hover:bg-white/10"
                                 data-testid={`guia-editar-${guia.id}`}
                               >
                                 Editar
@@ -734,20 +734,20 @@ export function GuiasPage() {
         <div className="flex items-center justify-between gap-3">
           <button
             type="button"
-            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10 disabled:opacity-50"
+            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-corpo font-medium text-white transition hover:bg-white/10 disabled:opacity-50"
             onClick={() => setPage((current) => Math.max(1, current - 1))}
             disabled={page <= 1 || guiasQuery.isFetching}
           >
             Anterior
           </button>
 
-          <p className="text-sm text-slate-300">
+          <p className="inline-flex min-h-6 items-center text-corpo text-slate-300">
             Página {page} de {totalPages}
           </p>
 
           <button
             type="button"
-            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10 disabled:opacity-50"
+            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-corpo font-medium text-white transition hover:bg-white/10 disabled:opacity-50"
             onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
             disabled={page >= totalPages || guiasQuery.isFetching}
           >

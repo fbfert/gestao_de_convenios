@@ -17,6 +17,12 @@ export interface TabelaProps extends TableHTMLAttributes<HTMLTableElement> {
   cabecalhoFixo?: boolean
   /** <caption class="sr-only"> — total/página para leitor de tela */
   legenda: string
+  /**
+   * Ponto em que a tabela vira cartão: `md` abaixo de 48rem (até 5 colunas),
+   * `lg` abaixo de 64rem (6+). `nenhum` mantém a rolagem lateral do wrapper.
+   * Ver o bloco "Tabela em modo cartão" no index.css.
+   */
+  cartoes?: 'md' | 'lg' | 'nenhum'
 }
 
 /**
@@ -24,15 +30,19 @@ export interface TabelaProps extends TableHTMLAttributes<HTMLTableElement> {
  * clinica, portada em 20/08/2026. O wrapper tem scroll próprio (a página
  * nunca rola horizontal); células numéricas usam `numerica`.
  *
- * Ainda não adotada pelas ~18 tabelas existentes do gescon (continuam em
- * <table> puro, só com as classes semânticas trocadas — ver index.css @layer
- * base). Fica disponível pra quem for escrever tabela nova, ou pra migração
- * futura das existentes.
+ * Ainda não adotada pelas 21 tabelas existentes do gescon (continuam em
+ * <table> puro, com `data-cartoes`/`data-rotulo` aplicados direto). Fica
+ * disponível pra quem for escrever tabela nova, ou pra migração futura.
+ *
+ * Nasce com modo cartão ligado (`cartoes="lg"`): o componente é o caminho
+ * recomendado, e seria uma armadilha ele ser o único que não vira cartão em
+ * tela estreita.
  */
 function TabelaRaiz({
   densidade = 'confortavel',
   cabecalhoFixo = false,
   legenda,
+  cartoes = 'lg',
   className,
   children,
   ...props
@@ -40,7 +50,11 @@ function TabelaRaiz({
   return (
     <ContextoTabela.Provider value={{ densidade, cabecalhoFixo }}>
       <div className="w-full overflow-x-auto rounded-superficie border border-linha-forte bg-superficie">
-        <table className={cn('w-full border-collapse text-corpo text-texto', className)} {...props}>
+        <table
+          data-cartoes={cartoes === 'nenhum' ? undefined : cartoes}
+          className={cn('w-full border-collapse text-corpo text-texto', className)}
+          {...props}
+        >
           <caption className="sr-only">{legenda}</caption>
           {children}
         </table>
@@ -81,12 +95,22 @@ function Linha({ selecionada = false, className, ...props }: TabelaLinhaProps) {
 export interface TabelaCelulaProps extends TdHTMLAttributes<HTMLTableCellElement> {
   /** Célula de dado numérico: tabular-nums + alinhamento à direita */
   numerica?: boolean
+  /**
+   * Nome da coluna, exibido ao lado do valor quando a tabela vira cartão. CSS
+   * não consegue ler o texto do `<th>` correspondente, então ele vem daqui.
+   * Célula sem rótulo (ações, seleção) ocupa a linha inteira do cartão.
+   */
+  rotulo?: string
+  /** Rótulo em cima e valor embaixo — para texto corrido ou barra de botões. */
+  rotuloEmBloco?: boolean
 }
 
-function Celula({ numerica = false, className, ...props }: TabelaCelulaProps) {
+function Celula({ numerica = false, rotulo, rotuloEmBloco = false, className, ...props }: TabelaCelulaProps) {
   const { densidade } = useContext(ContextoTabela)
   return (
     <td
+      data-rotulo={rotulo}
+      data-rotulo-bloco={rotuloEmBloco ? '' : undefined}
       className={cn(
         densidade === 'compacta' ? 'px-3 py-2' : 'px-4 py-3',
         numerica && 'text-right tabular-nums',

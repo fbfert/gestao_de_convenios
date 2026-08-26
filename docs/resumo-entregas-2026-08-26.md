@@ -141,6 +141,57 @@ o serviço novo abaixo automatiza.
   (`operacao === 'gerar_guia' && status === 'uncertain'`), o botão apagado "Enviar para Unimed" vira
   "Verificar Andamento" (`POST /solicitacao-itens/{id}/verificar-andamento`).
 
+## Automação Unimed — dois bugs reais achados ao vivo pós-deploy (mesma sessão)
+
+Depois do deploy acima, dois itens reais da Solicitação #5 continuaram sem sair do lugar ao tentar
+enviar pra Unimed — cada um revelou um bug novo, os dois corrigidos e implantados no mesmo dia:
+
+**1. Formulário principal resetado ao escolher o prestador.** Item da Greice Silva Pereira
+(Psicologia ABA) e depois o do Wilian Monteiro Dias (Fisioterapia ABA) voltavam `uncertain` mesmo
+com o Script 1 (idempotência) já funcionando. Diagnóstico ao vivo mostrou a causa: selecionar o
+prestador solicitante recarrega o formulário SP/SADT inteiro, apagando Data de emissão, Atendimento
+a RN, Caráter da solicitação, Indicação de acidente e o campo novo **"Liminar judicial"** (exigido
+pelo portal, não existia quando o worker foi escrito) — todos preenchidos cedo demais em
+`preencherFormularioPrincipal()`. Corrigido movendo o preenchimento pra depois de
+`selecionarContratado`/`selecionarPrestador`, com reforço defensivo do campo Liminar logo antes do
+clique em Finalizar. De quebra, corrigido um regex que confundia "Total" (de "Total de registros: 1")
+com o protocolo de atendimento quando o portal deixa esse campo vazio.
+
+**2. Timeout curto demais no clique de Finalizar.** Mesmo corrigido o formulário, o clique real de
+submissão às vezes demora mais que os 5s padrão pra navegar até a confirmação — vira
+`WORKER_INTERNAL_FATAL`, classificado como estrutural, e **pausa a credencial Unimed
+automaticamente** (circuit breaker). Confirmado ao vivo que nenhuma guia ficou duplicada antes de
+corrigir. Timeout subido pra 30s só nesse clique específico (não no timeout padrão global, pra não
+mascarar seletor quebrado nos outros passos).
+
+Com as duas correções, a guia da Greice (nº `50144044209`) e a do Wilian foram criadas de verdade no
+portal real — confirmado, registrado localmente.
+
+**Achado à parte, ainda não corrigido:** `atualizarCadastroSeNecessario()` só espera 500ms pelo
+botão "Atualizar" da tela de recadastro do beneficiário — insuficiente pelo menos uma vez ao vivo em
+26/08 (a tela demorou mais pra aparecer). Mesma classe de bug dos dois acima. Fica registrado pra
+correção futura.
+
+## Mapeamentos Unimed pendentes — Terapia Ocupacional e Fonoaudiologia (não-ABA)
+
+Dois itens da mesma Solicitação #5 bloqueados por mapeamento ausente: **Paula de Lima Passos**
+(Terapia Ocupacional) e **Thais dos Santos Paz** (Fonoaudiologia) — as duas com a especialidade
+**sem** o sufixo "ABA" (diferente dos outros itens da solicitação). Não é erro de cadastro: Paula e
+Thais estão mesmo registradas sob essas especialidades (não as variantes ABA), que simplesmente
+nunca tiveram mapeamento Unimed configurado.
+
+- **Código de operadora da Thais**: achado ao vivo (`952167`) e já configurado — a tela de seleção
+  de profissional executante no portal lista todos os profissionais vinculados à clínica com seus
+  códigos, mesma técnica de `worker-unimed/scripts/listar-profissionais.js`.
+- **Códigos de procedimento** pra Terapia Ocupacional e Fonoaudiologia (não-ABA): **não encontrados**
+  depois de três tentativas ao vivo — "Sugestão de procedimentos" (menu Utilitários) é uma tela pra
+  cadastrar procedimento customizado da clínica, não um catálogo de busca (0 resultados pras duas
+  buscas); o campo de descrição do procedimento no formulário é somente-leitura; e existe um ícone de
+  lupa "Localizar" logo abaixo do campo de código que é claramente o mecanismo certo, mas fica
+  inacessível pra automação (mesmo padrão de elemento com área zero já visto antes nesse portal — ver
+  `#cadastro_biometria`). Segue pendente: ou alguém clica manualmente nesse ícone no portal, ou os
+  códigos vêm da tabela de procedimentos negociados com a operadora.
+
 **Pendente:** rodar a homologação real de ponta a ponta (deploy + exercitar o botão "Verificar
 Andamento" contra o portal real) antes de marcar o caso 14 como aprovado — hoje só o mecanismo de
 busca por paciente foi validado ao vivo, não o pipeline novo completo.

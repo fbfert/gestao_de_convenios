@@ -6,9 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "lint": "oxlint",
+    "lint": "oxlint && node scripts/verificar-design-system.mjs",
     "preview": "vite preview",
-    "test:e2e": "php ../api/artisan migrate:fresh --seed --env=testing --force && playwright test"
+    "test:e2e": "php ../api/artisan migrate:fresh --seed --env=testing --force && playwright test",
+    "ds:check": "node scripts/verificar-design-system.mjs"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.10",

@@ -36,3 +36,8 @@ coverage/
 # Segredos do deploy (o .example fica versionado)
 deploy/.secrets.env
 
+
+# Bytecode do Python — gerado ao rodar os scripts das skills, e especifico da
+# versao do interpretador (cpython-314). Nao serve para outra maquina.
+__pycache__/
+*.pyc

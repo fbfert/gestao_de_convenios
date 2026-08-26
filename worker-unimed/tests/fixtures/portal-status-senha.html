@@ -55,7 +55,21 @@
       renderExamesAbertos()
     }
 
+    // Confirmacao de guia incerta (busca por paciente, sem numero de guia
+    // conhecido) usa uma listagem que ja aparece populada e paginada assim
+    // que abre "Exames em aberto" — sem precisar preencher/filtrar
+    // s_nr_guia. Confirmado ao vivo em producao em 26/08/2026 (11 paginas
+    // varridas). Cenarios 'confirmar-*' modelam esse comportamento; os
+    // demais mantem o fluxo por filtro exato ja existente.
+    const CONFIRMAR_CARD_LAST6 = '654321'
+    const CONFIRMAR_NUMERO_GUIA = 'UNI-999'
+
     function renderExamesAbertos() {
+      if (scenario.startsWith('confirmar-')) {
+        renderExamesAbertoListaSemFiltro(1)
+        return
+      }
+
       app.innerHTML = `
         <input name="s_nr_guia">
         <button name="Button_FIltro" type="button">Filtrar</button>
@@ -65,6 +79,64 @@
         const numero = document.querySelector('[name="s_nr_guia"]').value
         renderResultado(numero)
       })
+    }
+
+    function renderExamesAbertoListaSemFiltro(pagina) {
+      const linhasOutras = [
+        '<tr><td>25/08/2026 10:00</td><td>OUTRO-1</td><td>Paciente Um 111111</td></tr>',
+        '<tr><td>25/08/2026 10:05</td><td>OUTRO-2</td><td>Paciente Dois 222222</td></tr>',
+      ]
+      const linhaEncontrada = `<tr><td>26/08/2026 13:39</td><td><a href="#" data-open-confirmacao>${CONFIRMAR_NUMERO_GUIA}</a></td><td>Laura De Faveri ${CONFIRMAR_CARD_LAST6}</td></tr>`
+
+      let linhas
+      let temProxima
+
+      if (scenario === 'confirmar-encontrada') {
+        if (pagina === 1) {
+          linhas = linhasOutras
+          temProxima = true
+        } else {
+          linhas = [linhaEncontrada]
+          temProxima = false
+        }
+      } else {
+        linhas = pagina === 1
+          ? linhasOutras
+          : ['<tr><td>25/08/2026 11:00</td><td>OUTRO-3</td><td>Paciente Tres 333333</td></tr>']
+        temProxima = pagina === 1
+      }
+
+      app.innerHTML = `
+        <table>${linhas.join('')}</table>
+        ${temProxima ? '<a href="#" data-next-page>Próxima</a>' : ''}
+      `
+
+      const proxima = app.querySelector('[data-next-page]')
+      if (proxima) {
+        proxima.addEventListener('click', (event) => {
+          event.preventDefault()
+          renderExamesAbertoListaSemFiltro(pagina + 1)
+        })
+      }
+
+      const abrir = app.querySelector('[data-open-confirmacao]')
+      if (abrir) {
+        abrir.addEventListener('click', (event) => {
+          event.preventDefault()
+          renderExecucaoConfirmacao()
+        })
+      }
+    }
+
+    function renderExecucaoConfirmacao() {
+      app.innerHTML = `
+        <input name="NR_GUIA" value="${CONFIRMAR_NUMERO_GUIA}">
+        <input name="DT_AUTORIZACAO" value="26/08/2026">
+        <input name="NR_SENHA" value="8811223">
+        <input name="DT_VALIDADE_SENHA" value="26/12/2026">
+        <input name="QT_SOLIC_1" value="10">
+        <input name="QT_AUTORIZADA_1" value="10">
+      `
     }
 
     function renderResultado(numero) {

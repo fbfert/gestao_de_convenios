@@ -21,10 +21,12 @@ class SolicitacaoItem extends Model
         'quantidade',
         'status_operacional',
         'observacoes',
+        'unimed_verificacao_next_check_at',
     ];
 
     protected $casts = [
         'quantidade' => 'integer',
+        'unimed_verificacao_next_check_at' => 'datetime',
     ];
 
     public function solicitacao()

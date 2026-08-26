@@ -38,6 +38,18 @@ class ConfiguracaoGlobalController extends Controller
             'carteirinha_retencao_dias' => $configuracao->carteirinha_retencao_dias,
             'unimed_recheck_horas_sucesso' => $configuracao->unimed_recheck_horas_sucesso,
             'unimed_recheck_horas_falha' => $configuracao->unimed_recheck_horas_falha,
+            'unimed_verificacao_incerta_intervalo_minutos' => $configuracao->unimed_verificacao_incerta_intervalo_minutos,
+            'unimed_verificacao_incerta_horario_inicio' => $this->paraHorario($configuracao->unimed_verificacao_incerta_horario_inicio),
+            'unimed_verificacao_incerta_horario_fim' => $this->paraHorario($configuracao->unimed_verificacao_incerta_horario_fim),
         ];
+    }
+
+    /**
+     * Coluna TIME sem cast volta do banco como "HH:MM:SS" — normaliza pra
+     * "HH:MM", o mesmo formato exigido na validação (date_format:H:i).
+     */
+    private function paraHorario(?string $valor): ?string
+    {
+        return $valor === null ? null : substr($valor, 0, 5);
     }
 }

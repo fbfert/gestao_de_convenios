@@ -16,6 +16,12 @@ export type ConfiguracoesGlobais = {
   unimed_recheck_horas_sucesso: number
   /** Horas até a próxima consulta de status Unimed quando a anterior falhou por erro técnico. */
   unimed_recheck_horas_falha: number
+  /** Minutos entre tentativas de confirmar uma guia incerta pós-submit (busca por paciente). */
+  unimed_verificacao_incerta_intervalo_minutos: number
+  /** Horário (HH:MM) de início da janela em que a confirmação de guia incerta pode rodar. */
+  unimed_verificacao_incerta_horario_inicio: string
+  /** Horário (HH:MM) de fim da janela em que a confirmação de guia incerta pode rodar. */
+  unimed_verificacao_incerta_horario_fim: string
 }
 
 export type ConfiguracoesGlobaisForm = {
@@ -27,6 +33,9 @@ export type ConfiguracoesGlobaisForm = {
   carteirinha_retencao_dias: string
   unimed_recheck_horas_sucesso: string
   unimed_recheck_horas_falha: string
+  unimed_verificacao_incerta_intervalo_minutos: string
+  unimed_verificacao_incerta_horario_inicio: string
+  unimed_verificacao_incerta_horario_fim: string
 }
 
 const chaveQuery = ['configuracoes', 'globais']
@@ -41,6 +50,9 @@ export function paraFormulario(dados: ConfiguracoesGlobais): ConfiguracoesGlobai
     carteirinha_retencao_dias: String(dados.carteirinha_retencao_dias),
     unimed_recheck_horas_sucesso: String(dados.unimed_recheck_horas_sucesso),
     unimed_recheck_horas_falha: String(dados.unimed_recheck_horas_falha),
+    unimed_verificacao_incerta_intervalo_minutos: String(dados.unimed_verificacao_incerta_intervalo_minutos),
+    unimed_verificacao_incerta_horario_inicio: dados.unimed_verificacao_incerta_horario_inicio,
+    unimed_verificacao_incerta_horario_fim: dados.unimed_verificacao_incerta_horario_fim,
   }
 }
 
@@ -84,6 +96,9 @@ export function useSalvarConfiguracoesGlobais() {
         carteirinha_retencao_dias: Number(form.carteirinha_retencao_dias),
         unimed_recheck_horas_sucesso: Number(form.unimed_recheck_horas_sucesso),
         unimed_recheck_horas_falha: Number(form.unimed_recheck_horas_falha),
+        unimed_verificacao_incerta_intervalo_minutos: Number(form.unimed_verificacao_incerta_intervalo_minutos),
+        unimed_verificacao_incerta_horario_inicio: form.unimed_verificacao_incerta_horario_inicio,
+        unimed_verificacao_incerta_horario_fim: form.unimed_verificacao_incerta_horario_fim,
       })
       return data.data
     },

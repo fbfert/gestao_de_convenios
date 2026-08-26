@@ -37,6 +37,14 @@ class UpdateConfiguracaoGlobalRequest extends FormRequest
             // tentar de novo bem mais cedo.
             'unimed_recheck_horas_sucesso' => ['required', 'integer', 'min:1', 'max:168'],
             'unimed_recheck_horas_falha' => ['required', 'integer', 'min:1', 'max:168'],
+
+            // Confirmação de guia incerta pós-submit (busca por paciente em
+            // "Exames em aberto"). O job de fila roda a cada 30 min, então
+            // intervalo menor que isso não tem efeito prático — mas não
+            // bloqueamos aqui, é só aviso na tela.
+            'unimed_verificacao_incerta_intervalo_minutos' => ['required', 'integer', 'min:5', 'max:1440'],
+            'unimed_verificacao_incerta_horario_inicio' => ['required', 'date_format:H:i'],
+            'unimed_verificacao_incerta_horario_fim' => ['required', 'date_format:H:i', 'after:unimed_verificacao_incerta_horario_inicio'],
         ];
     }
 
@@ -48,6 +56,7 @@ class UpdateConfiguracaoGlobalRequest extends FormRequest
             'auditoria_retencao_meses.min' => 'A auditoria precisa ser mantida por ao menos 3 meses.',
             'carteirinha_retencao_dias.max' => 'A imagem da carteirinha não pode ser guardada por mais de 365 dias.',
             'unimed_recheck_horas_falha.max' => 'O reagendamento após falha não pode passar de 168 horas (7 dias).',
+            'unimed_verificacao_incerta_horario_fim.after' => 'O horário de fim precisa ser depois do horário de início.',
         ];
     }
 }

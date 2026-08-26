@@ -22,6 +22,9 @@ class ConfiguracaoGlobal extends Model
         'carteirinha_retencao_dias',
         'unimed_recheck_horas_sucesso',
         'unimed_recheck_horas_falha',
+        'unimed_verificacao_incerta_intervalo_minutos',
+        'unimed_verificacao_incerta_horario_inicio',
+        'unimed_verificacao_incerta_horario_fim',
     ];
 
     protected $casts = [
@@ -33,6 +36,7 @@ class ConfiguracaoGlobal extends Model
         'carteirinha_retencao_dias' => 'integer',
         'unimed_recheck_horas_sucesso' => 'integer',
         'unimed_recheck_horas_falha' => 'integer',
+        'unimed_verificacao_incerta_intervalo_minutos' => 'integer',
     ];
 
     /**

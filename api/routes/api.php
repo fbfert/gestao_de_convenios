@@ -153,6 +153,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EncerrarSessaoExpirada::
     Route::patch('/solicitacoes/{solicitacao}/aprovar', [SolicitacaoController::class, 'aprovar']);
     Route::patch('/solicitacoes/{solicitacao}/negar', [SolicitacaoController::class, 'negar']);
     Route::post('/solicitacao-itens/{solicitacaoItem}/enviar-unimed', [SolicitacaoController::class, 'enviarItemUnimed']);
+    Route::post('/solicitacao-itens/{solicitacaoItem}/verificar-andamento', [SolicitacaoController::class, 'verificarAndamentoItem']);
 
     Route::get('/guias', [GuiaController::class, 'index']);
     Route::post('/guias', [GuiaController::class, 'store']);

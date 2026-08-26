@@ -101,3 +101,46 @@ O contrato da §11 passou a fiscalizar todo bloco `[data-theme]` que existir, n�
   do defeito de permissão acima.
 - **Raio de campo e controle** ainda na escala crua (`rounded-2xl` em input e botão). É a mesma
   classe da migração de tipografia e merece guarda própria.
+
+## Automação Unimed — confirmação de guia incerta pós-submit (sessão separada)
+
+Motivado pela Solicitação #5 (Laura de Faveri): 3 itens travados em `status_operacional =
+'uncertain'` (`UNCERTAIN_AFTER_SUBMIT` — o worker clicou em Finalizar mas não leu a confirmação de
+volta, sem número de guia). Como nenhuma Guia local é criada nesse caso, e
+`GerarGuiaUnimedService::avaliar()` bloqueia reenvio enquanto existir qualquer execução `uncertain`
+do item, esses itens ficavam travados **para sempre** — o endpoint `reprocessar()` já recusava
+explicitamente esse caso com a mensagem "exige confirmação idempotente antes de reprocessar", mas
+essa peça nunca tinha sido construída. É também o caso 14, ainda `Pendente`, do roteiro de
+homologação real (`docs/automacao-unimed/v2-05-homologacao-real.md`).
+
+**Validação ao vivo antes de codificar.** Havia um script de diagnóstico avulso
+(`worker-unimed/scripts/checar-guia-paciente.js`) que assumia que abrir "Exames em aberto" sem
+preencher `s_nr_guia` já lista os exames abertos reais, paginados — nunca confirmado contra o
+portal de produção. Rodado ao vivo em 26/08 contra `rda.unimedsc.com.br`: confirmado (11 páginas
+varridas), e ao mesmo tempo resolveu o caso real — nenhuma das 3 guias da Laura apareceu na
+listagem, indicando que o Finalizar não chegou a criar a guia no portal. Os 3 itens foram destravados
+manualmente no banco (execução `gerar_guia` original: `uncertain` → `failed`,
+`erro_codigo = CONFIRMADO_NAO_CRIADA`; item: `status_operacional` → `pending`) — mesma transição que
+o serviço novo abaixo automatiza.
+
+**O que foi construído:**
+- `worker-unimed/src/operations/confirmarGuiaIncerta.js` — nova operação `confirmar_guia_incerta`:
+  login, abre "Exames em aberto" sem filtrar, pagina até achar uma linha cujo texto contenha os
+  últimos 6 dígitos da carteirinha do paciente (promovendo a técnica do script de diagnóstico),
+  entra na guia encontrada e lê `NR_GUIA`/`DT_AUTORIZACAO`/`NR_SENHA`/etc. pela mesma tela de
+  execução já usada em `consultarStatusGuia`.
+- `App\Services\Automation\ConfirmarGuiaIncertaUnimedService` — se achou: cria/atualiza a Guia local
+  e resolve a execução `gerar_guia` original para `succeeded`. Se não achou: resolve a execução
+  original para `failed` (`CONFIRMADO_NAO_CRIADA`) e o item volta a `pending` — **nunca reenvia
+  sozinho**, só libera o botão manual.
+- `EnfileirarConsultasUnimedDueJob` ganhou um terceiro bloco: busca itens `uncertain` sem Guia,
+  respeitando um intervalo mínimo e uma janela de horário (`[início, fim]`) configuráveis por tenant
+  em **Automações → Configurações** (novos campos em `configuracoes_globais`; o tick do job continua
+  a cada 30 min, então intervalo menor que isso não tem efeito prático).
+- Tela de Solicitações: quando o item está travado nesse estado específico
+  (`operacao === 'gerar_guia' && status === 'uncertain'`), o botão apagado "Enviar para Unimed" vira
+  "Verificar Andamento" (`POST /solicitacao-itens/{id}/verificar-andamento`).
+
+**Pendente:** rodar a homologação real de ponta a ponta (deploy + exercitar o botão "Verificar
+Andamento" contra o portal real) antes de marcar o caso 14 como aprovado — hoje só o mecanismo de
+busca por paciente foi validado ao vivo, não o pipeline novo completo.

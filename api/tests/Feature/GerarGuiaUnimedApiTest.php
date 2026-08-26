@@ -446,6 +446,7 @@ class GerarGuiaUnimedApiTest extends TestCase
         (new EnfileirarConsultasUnimedDueJob())->handle(
             app(ConsultarStatusUnimedService::class),
             app(CapturarSenhaValidadeUnimedService::class),
+            app(\App\Services\Automation\ConfirmarGuiaIncertaUnimedService::class),
         );
 
         $this->assertSame(1, AutomacaoExecucao::query()->where('operacao', 'consult_status_batch')->count());

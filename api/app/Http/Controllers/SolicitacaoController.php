@@ -15,6 +15,7 @@ use App\Models\Medico;
 use App\Models\Paciente;
 use App\Models\Solicitacao;
 use App\Models\SolicitacaoItem;
+use App\Services\Automation\ConfirmarGuiaIncertaUnimedService;
 use App\Services\Automation\GerarGuiaUnimedService;
 use App\Services\PedidoMedicoAiService;
 use App\Services\SolicitacaoService;
@@ -72,6 +73,24 @@ class SolicitacaoController extends Controller
         GerarGuiaUnimedService $gerarGuiaUnimed,
     ): JsonResponse {
         $execucao = $gerarGuiaUnimed->enviar($solicitacaoItem);
+
+        return response()->json([
+            'data' => [
+                'id' => $execucao->id,
+                'status' => $execucao->status,
+                'operacao' => $execucao->operacao,
+                'solicitacao_item_id' => $execucao->solicitacao_item_id,
+                'queued_at' => $execucao->queued_at?->toISOString(),
+            ],
+        ], 202);
+    }
+
+    public function verificarAndamentoItem(
+        Request $request,
+        SolicitacaoItem $solicitacaoItem,
+        ConfirmarGuiaIncertaUnimedService $confirmarGuiaIncertaUnimed,
+    ): JsonResponse {
+        $execucao = $confirmarGuiaIncertaUnimed->enviar($solicitacaoItem);
 
         return response()->json([
             'data' => [

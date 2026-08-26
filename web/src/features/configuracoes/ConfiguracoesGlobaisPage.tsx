@@ -22,6 +22,9 @@ const formVazio: ConfiguracoesGlobaisForm = {
   carteirinha_retencao_dias: '30',
   unimed_recheck_horas_sucesso: '24',
   unimed_recheck_horas_falha: '2',
+  unimed_verificacao_incerta_intervalo_minutos: '60',
+  unimed_verificacao_incerta_horario_inicio: '02:00',
+  unimed_verificacao_incerta_horario_fim: '12:50',
 }
 
 /** Atalhos de tempo de sessão, para não ter que calcular minutos na mão. */

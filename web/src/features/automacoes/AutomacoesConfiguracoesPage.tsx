@@ -21,6 +21,9 @@ const formVazio: ConfiguracoesGlobaisForm = {
   carteirinha_retencao_dias: '30',
   unimed_recheck_horas_sucesso: '24',
   unimed_recheck_horas_falha: '2',
+  unimed_verificacao_incerta_intervalo_minutos: '60',
+  unimed_verificacao_incerta_horario_inicio: '02:00',
+  unimed_verificacao_incerta_horario_fim: '12:50',
 }
 
 /**
@@ -127,6 +130,58 @@ export function AutomacoesConfiguracoesPage() {
               A automação quebrou antes de conseguir consultar (timeout, portal indisponível etc.).
               Padrão: 2h.
             </span>
+          </label>
+        </div>
+      </section>
+
+      <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
+        <h3 className="text-subtitulo font-semibold text-white">Confirmação de guia incerta</h3>
+        <p className="mt-1 text-corpo text-slate-300">
+          Quando o robô finaliza uma guia no portal mas não consegue confirmar o resultado
+          (resposta ambígua, sem número de guia), o sistema não reenvia sozinho — em vez disso,
+          confirma buscando pelo paciente em "Exames em aberto" dentro da janela de horário abaixo.
+          O job que checa isso roda a cada 30 minutos, então um intervalo menor que 30 min não tem
+          efeito prático.
+        </p>
+
+        <div className="mt-5 grid gap-4 md:grid-cols-3">
+          <label className="space-y-2">
+            <span className="text-corpo font-medium text-slate-200">Intervalo mínimo entre tentativas (minutos)</span>
+            <input
+              type="number"
+              min={5}
+              max={1440}
+              value={form.unimed_verificacao_incerta_intervalo_minutos}
+              onChange={(event) => alterar('unimed_verificacao_incerta_intervalo_minutos', event.target.value)}
+              className={inputClasses()}
+              required
+              data-testid="automacoes-config-verificacao-intervalo"
+            />
+            <span className="block text-meta text-slate-400">Padrão: 60 min.</span>
+          </label>
+
+          <label className="space-y-2">
+            <span className="text-corpo font-medium text-slate-200">Início da janela</span>
+            <input
+              type="time"
+              value={form.unimed_verificacao_incerta_horario_inicio}
+              onChange={(event) => alterar('unimed_verificacao_incerta_horario_inicio', event.target.value)}
+              className={inputClasses()}
+              required
+              data-testid="automacoes-config-verificacao-horario-inicio"
+            />
+          </label>
+
+          <label className="space-y-2">
+            <span className="text-corpo font-medium text-slate-200">Fim da janela</span>
+            <input
+              type="time"
+              value={form.unimed_verificacao_incerta_horario_fim}
+              onChange={(event) => alterar('unimed_verificacao_incerta_horario_fim', event.target.value)}
+              className={inputClasses()}
+              required
+              data-testid="automacoes-config-verificacao-horario-fim"
+            />
           </label>
         </div>
       </section>

@@ -199,7 +199,7 @@ async function abrirGuiaPorFiltro(page, numeroGuia) {
   return true
 }
 
-async function lerDadosExecucaoGuia(page) {
+export async function lerDadosExecucaoGuia(page) {
   const dtAutorizacao = await valorCampo(page, 'DT_AUTORIZACAO')
   const nrSenha = await valorCampo(page, 'NR_SENHA')
   const dtValidadeSenha = normalizeDate(await valorCampo(page, 'DT_VALIDADE_SENHA'))
@@ -209,7 +209,7 @@ async function lerDadosExecucaoGuia(page) {
   return { dtAutorizacao, nrSenha, dtValidadeSenha, qtSolicitadas, qtAutorizadas }
 }
 
-async function valorCampo(page, name) {
+export async function valorCampo(page, name) {
   const locator = page.locator(`[name="${name}"]`).first()
   if ((await locator.count()) === 0) {
     return null

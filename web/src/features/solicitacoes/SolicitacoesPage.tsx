@@ -12,6 +12,7 @@ import {
   useCriarSolicitacao,
   useEnviarItemUnimed,
   useSolicitacoes,
+  useVerificarAndamentoItem,
 } from './useSolicitacoes'
 import type { Solicitacao, SolicitacaoFilters, SolicitacaoForm, SolicitacaoStatus } from './types'
 import {
@@ -132,6 +133,7 @@ export function SolicitacoesPage() {
   const criarSolicitacao = useCriarSolicitacao()
   const atualizarStatusSolicitacao = useAtualizarStatusSolicitacao()
   const enviarItemUnimed = useEnviarItemUnimed()
+  const verificarAndamentoItem = useVerificarAndamentoItem()
 
   const convenios = useMemo(() => conveniosQuery.data ?? emptyArray, [conveniosQuery.data])
   const especialidades = useMemo(
@@ -304,6 +306,15 @@ export function SolicitacoesPage() {
       setProgressoExecucaoId(execucao.id)
     } catch (error) {
       window.alert(getHttpErrorMessage(error, 'Não foi possível enviar o item para a Unimed.'))
+    }
+  }
+
+  const handleVerificarAndamentoItem = async (itemId: number) => {
+    try {
+      const execucao = await verificarAndamentoItem.mutateAsync(itemId)
+      setProgressoExecucaoId(execucao.id)
+    } catch (error) {
+      window.alert(getHttpErrorMessage(error, 'Não foi possível verificar o andamento no portal da Unimed.'))
     }
   }
 
@@ -728,6 +739,14 @@ export function SolicitacoesPage() {
                               solicitacao.status === 'ready_for_automation' &&
                               !item.guia_id &&
                               !hasActiveExecution
+                            // Guia incerta pos-submit (Finalizar rodou no portal mas o worker
+                            // nao leu a confirmacao de volta): sem numero de guia conhecido,
+                            // so da pra confirmar buscando por paciente, nao reenviando.
+                            const precisaVerificarAndamento =
+                              isUnimedRda &&
+                              !item.guia_id &&
+                              item.automacao_execucao_ativa?.operacao === 'gerar_guia' &&
+                              item.automacao_execucao_ativa?.status === 'uncertain'
 
                             return (
                               <div
@@ -769,7 +788,25 @@ export function SolicitacoesPage() {
                                       {item.automacao_execucao_ativa.status} · ver andamento
                                     </button>
                                   ) : null}
-                                  {isUnimedRda && !item.guia_id ? (
+                                  {precisaVerificarAndamento ? (
+                                    <>
+                                      <button
+                                        type="button"
+                                        onClick={() => void handleVerificarAndamentoItem(item.id)}
+                                        disabled={verificarAndamentoItem.isPending}
+                                        className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1.5 text-meta font-semibold text-cyan-100 transition hover:bg-cyan-400/20 disabled:cursor-not-allowed disabled:opacity-50"
+                                        data-testid={`solicitacao-item-verificar-andamento-${item.id}`}
+                                      >
+                                        Verificar Andamento
+                                      </button>
+                                      <Tooltip rotulo="O que este botão faz">
+                                        O robô tentou gerar a guia mas não conseguiu confirmar o
+                                        resultado com o portal. Clique para checar se a guia foi
+                                        criada de fato, buscando pelo paciente em Exames em
+                                        aberto — sem reenviar a solicitação.
+                                      </Tooltip>
+                                    </>
+                                  ) : isUnimedRda && !item.guia_id ? (
                                     <>
                                       <button
                                         type="button"

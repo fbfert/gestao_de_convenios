@@ -328,6 +328,29 @@ export function useEnviarItemUnimed() {
   })
 }
 
+export function useVerificarAndamentoItem() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (itemId: number) => {
+      const { data } = await apiClient.post<{
+        data: {
+          id: number
+          status: string
+          operacao: string
+          solicitacao_item_id: number
+          queued_at: string | null
+        }
+      }>(`/solicitacao-itens/${itemId}/verificar-andamento`)
+
+      return data.data
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['solicitacoes'] })
+    },
+  })
+}
+
 export function useAprovarSolicitacao() {
   return useAtualizarStatusSolicitacao()
 }

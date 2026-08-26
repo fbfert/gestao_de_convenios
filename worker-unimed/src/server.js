@@ -1,6 +1,7 @@
 import http from 'node:http'
 import { executarGerarGuia } from './operations/gerarGuia.js'
 import { executarCapturarAutorizacaoBatch, executarConsultarStatusBatch } from './operations/statusSenha.js'
+import { executarConfirmarGuiaIncerta } from './operations/confirmarGuiaIncerta.js'
 
 const port = Number(process.env.UNIMED_WORKER_PORT ?? 8787)
 // Padrao 127.0.0.1 para execucao local. Em container precisa ser 0.0.0.0,
@@ -75,6 +76,17 @@ const server = http.createServer(async (request, response) => {
 
       if (operation === 'capture_authorization_data_batch' || operation === 'capturar_senha_validade') {
         const result = await executarCapturarAutorizacaoBatch({
+          executionId: payload.execution_id ?? null,
+          idempotencyKey: payload.idempotency_key ?? null,
+          payload: payload.payload ?? {},
+        })
+
+        sendJson(response, 200, result)
+        return
+      }
+
+      if (operation === 'confirmar_guia_incerta') {
+        const result = await executarConfirmarGuiaIncerta({
           executionId: payload.execution_id ?? null,
           idempotencyKey: payload.idempotency_key ?? null,
           payload: payload.payload ?? {},

@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\AutomacaoExecucao;
 use App\Services\Automation\AutomacaoService;
 use App\Services\Automation\CapturarSenhaValidadeUnimedService;
+use App\Services\Automation\ConfirmarGuiaIncertaUnimedService;
 use App\Services\Automation\ConsultarStatusUnimedService;
 use App\Services\Automation\GerarGuiaUnimedService;
 use App\Services\Automation\UnimedCircuitBreakerService;
@@ -35,6 +36,7 @@ class ExecutarAutomacaoUnimedJob implements ShouldQueue
     ): void {
         $execucao = AutomacaoExecucao::query()->findOrFail($this->execucaoId);
         $capturarSenhaValidadeUnimed = app(CapturarSenhaValidadeUnimedService::class);
+        $confirmarGuiaIncertaUnimed = app(ConfirmarGuiaIncertaUnimedService::class);
         $lock = Cache::lock("automacao:unimed:tenant:{$execucao->tenant_id}:{$execucao->operacao}", 300);
 
         if (! $lock->get()) {
@@ -53,6 +55,7 @@ class ExecutarAutomacaoUnimedJob implements ShouldQueue
                 'gerar_guia' => $gerarGuiaUnimed->payloadParaWorker($execucao),
                 'consultar_status', ConsultarStatusUnimedService::OPERATION => $consultarStatusUnimed->payloadParaWorker($execucao),
                 CapturarSenhaValidadeUnimedService::OPERATION => $capturarSenhaValidadeUnimed->payloadParaWorker($execucao),
+                ConfirmarGuiaIncertaUnimedService::OPERATION => $confirmarGuiaIncertaUnimed->payloadParaWorker($execucao),
                 default => $execucao->payload ?? [],
             };
             $resultado = $worker->executar($execucao, $payload);
@@ -64,6 +67,8 @@ class ExecutarAutomacaoUnimedJob implements ShouldQueue
                 $consultarStatusUnimed->aplicarResultado($execucao, $resultado);
             } elseif ($execucao->operacao === CapturarSenhaValidadeUnimedService::OPERATION) {
                 $capturarSenhaValidadeUnimed->aplicarResultado($execucao, $resultado);
+            } elseif ($execucao->operacao === ConfirmarGuiaIncertaUnimedService::OPERATION) {
+                $confirmarGuiaIncertaUnimed->aplicarResultado($execucao, $resultado);
             } else {
                 $automacoes->concluir($execucao, $resultado);
             }

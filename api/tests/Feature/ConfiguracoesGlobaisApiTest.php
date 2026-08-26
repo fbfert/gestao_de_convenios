@@ -27,64 +27,54 @@ class ConfiguracoesGlobaisApiTest extends TestCase
             ->assertJsonPath('data.auditoria_retencao_meses', 12)
             ->assertJsonPath('data.carteirinha_retencao_dias', 30)
             ->assertJsonPath('data.unimed_recheck_horas_sucesso', 24)
-            ->assertJsonPath('data.unimed_recheck_horas_falha', 2);
+            ->assertJsonPath('data.unimed_recheck_horas_falha', 2)
+            ->assertJsonPath('data.unimed_verificacao_incerta_intervalo_minutos', 60)
+            ->assertJsonPath('data.unimed_verificacao_incerta_horario_inicio', '02:00')
+            ->assertJsonPath('data.unimed_verificacao_incerta_horario_fim', '12:50');
     }
 
     public function test_salva_e_valida_os_limites(): void
     {
         $this->autenticarComToken();
 
-        $this->putJson('/api/configuracoes/globais', [
+        $this->putJson('/api/configuracoes/globais', $this->payloadValido([
             'sessao_minutos' => 120,
-            'senha_alerta_dias' => 15,
-            'sessoes_padrao' => 20,
-            'itens_por_pagina' => 50,
             'auditoria_retencao_meses' => 24,
             'carteirinha_retencao_dias' => 45,
-            'unimed_recheck_horas_sucesso' => 24,
-            'unimed_recheck_horas_falha' => 2,
-        ])->assertOk()
+        ]))->assertOk()
             ->assertJsonPath('data.sessao_minutos', 120)
             ->assertJsonPath('data.auditoria_retencao_meses', 24);
 
-        $this->putJson('/api/configuracoes/globais', [
+        $this->putJson('/api/configuracoes/globais', $this->payloadValido([
             'sessao_minutos' => 999999,
-            'senha_alerta_dias' => 15,
-            'sessoes_padrao' => 20,
-            'itens_por_pagina' => 50,
-            'auditoria_retencao_meses' => 12,
-            'carteirinha_retencao_dias' => 30,
-            'unimed_recheck_horas_sucesso' => 24,
-            'unimed_recheck_horas_falha' => 2,
-        ])->assertJsonValidationErrors('sessao_minutos');
+        ]))->assertJsonValidationErrors('sessao_minutos');
 
-        $this->putJson('/api/configuracoes/globais', [
-            'sessao_minutos' => 120,
-            'senha_alerta_dias' => 15,
-            'sessoes_padrao' => 20,
+        $this->putJson('/api/configuracoes/globais', $this->payloadValido([
             'itens_por_pagina' => 1,
-            'auditoria_retencao_meses' => 12,
-            'carteirinha_retencao_dias' => 30,
-            'unimed_recheck_horas_sucesso' => 24,
-            'unimed_recheck_horas_falha' => 2,
-        ])->assertJsonValidationErrors('itens_por_pagina');
+        ]))->assertJsonValidationErrors('itens_por_pagina');
 
         // Piso de 3 meses: prazo menor esvaziaria a trilha antes de qualquer
         // conferencia de fechamento.
-        $this->putJson('/api/configuracoes/globais', [
-            'sessao_minutos' => 120,
-            'senha_alerta_dias' => 15,
-            'sessoes_padrao' => 20,
-            'itens_por_pagina' => 50,
+        $this->putJson('/api/configuracoes/globais', $this->payloadValido([
             'auditoria_retencao_meses' => 1,
-            'carteirinha_retencao_dias' => 30,
-            'unimed_recheck_horas_sucesso' => 24,
-            'unimed_recheck_horas_falha' => 2,
-        ])->assertJsonValidationErrors('auditoria_retencao_meses');
+        ]))->assertJsonValidationErrors('auditoria_retencao_meses');
 
         // Teto de 168h (7 dias): acima disso o reagendamento deixa de ser prazo
         // curto de retry e vira "praticamente nunca".
-        $this->putJson('/api/configuracoes/globais', [
+        $this->putJson('/api/configuracoes/globais', $this->payloadValido([
+            'unimed_recheck_horas_falha' => 200,
+        ]))->assertJsonValidationErrors('unimed_recheck_horas_falha');
+
+        // Horario de fim precisa vir depois do horario de inicio.
+        $this->putJson('/api/configuracoes/globais', $this->payloadValido([
+            'unimed_verificacao_incerta_horario_inicio' => '13:00',
+            'unimed_verificacao_incerta_horario_fim' => '12:50',
+        ]))->assertJsonValidationErrors('unimed_verificacao_incerta_horario_fim');
+    }
+
+    private function payloadValido(array $overrides = []): array
+    {
+        return array_merge([
             'sessao_minutos' => 120,
             'senha_alerta_dias' => 15,
             'sessoes_padrao' => 20,
@@ -92,8 +82,11 @@ class ConfiguracoesGlobaisApiTest extends TestCase
             'auditoria_retencao_meses' => 12,
             'carteirinha_retencao_dias' => 30,
             'unimed_recheck_horas_sucesso' => 24,
-            'unimed_recheck_horas_falha' => 200,
-        ])->assertJsonValidationErrors('unimed_recheck_horas_falha');
+            'unimed_recheck_horas_falha' => 2,
+            'unimed_verificacao_incerta_intervalo_minutos' => 60,
+            'unimed_verificacao_incerta_horario_inicio' => '02:00',
+            'unimed_verificacao_incerta_horario_fim' => '12:50',
+        ], $overrides);
     }
 
     public function test_token_expira_depois_do_tempo_configurado(): void

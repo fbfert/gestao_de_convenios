@@ -106,7 +106,7 @@ function ListaDePapeis() {
             <Link
               key={papel.id}
               to={`/permissoes/${encodeURIComponent(papel.name)}/editar`}
-              className="group block rounded-janela border border-linha bg-fundo p-5 transition hover:border-acento/40 hover:bg-superficie"
+              className="group block rounded-janela border border-linha bg-superficie p-5 transition hover:border-acento/40 hover:bg-superficie"
               data-testid={`papel-${papel.name}`}
             >
               <div className="flex items-center justify-between gap-3">

@@ -31,7 +31,7 @@ export function ConfiguracoesGeralPage() {
             <Link
               key={item.to}
               to={item.to}
-              className="group block rounded-janela border border-linha bg-fundo p-5 shadow-e1 transition hover:border-acento/40 hover:bg-superficie hover:shadow-e2"
+              className="group block rounded-janela border border-linha bg-superficie p-5 shadow-e1 transition hover:border-acento/40 hover:bg-superficie hover:shadow-e2"
               data-testid={`configuracoes-card-${item.to.split('/').pop()}`}
             >
               <p className="text-corpo-lg font-semibold text-white group-hover:text-cyan-50">

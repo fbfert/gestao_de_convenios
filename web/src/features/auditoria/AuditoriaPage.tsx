@@ -10,7 +10,7 @@ import {
 } from './useAuditoria'
 import type { AuditFiltros, AuditItem, AuditPayload } from './types'
 
-const card = 'rounded-janela border border-linha bg-fundo p-5 shadow-e1'
+const card = 'rounded-janela border border-linha bg-superficie p-5 shadow-e1'
 const campo =
   'w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20'
 

@@ -56,7 +56,7 @@ export function DropdownMenu({
         aria-expanded={aberto}
         aria-label={rotulo}
         title={rotulo}
-        className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/5 text-slate-200 transition hover:border-cyan-300/40 hover:bg-white/10"
+        className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/5 text-slate-200 transition hover:border-acento/40 hover:bg-acento-suave"
         data-testid={testId}
       >
         <svg aria-hidden="true" viewBox="0 0 4 16" className="h-4 w-1" fill="currentColor">

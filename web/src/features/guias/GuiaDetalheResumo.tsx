@@ -32,7 +32,11 @@ function DetailItem({
     span === 'total' ? 'md:col-span-2 xl:col-span-4' : span === 'duplo' ? 'xl:col-span-2' : ''
 
   return (
-    <div className={`rounded-superficie border border-linha bg-fundo p-4 shadow-e1 ${classesSpan}`}>
+    // As secoes desta tela sao grades nuas, sem painel em volta: o cartao
+    // assenta direto na pagina e por isso e `--superficie`. Dentro do painel
+    // de Operacao Unimed ele fica branco sobre a tinta de acento, que separa
+    // igualmente bem.
+    <div className={`rounded-superficie border border-linha bg-superficie p-4 shadow-e1 ${classesSpan}`}>
       <p className="text-meta uppercase tracking-[0.25em] text-slate-400">{label}</p>
       <div className="mt-2 text-corpo font-medium text-white">{children}</div>
     </div>

@@ -17,7 +17,7 @@ type DashboardResponse = {
 }
 
 const cartao =
-  'rounded-janela border border-linha bg-fundo p-5 shadow-e1'
+  'rounded-janela border border-linha bg-superficie p-5 shadow-e1'
 
 export type GrupoPageProps = {
   titulo: string
@@ -58,10 +58,10 @@ export function GrupoPage({ titulo, chapeu, resumo, itens: todos, ordenado = fal
 
   return (
     <div className="space-y-8" data-testid={testId}>
-      <section className="overflow-hidden rounded-janela border border-cyan-300/20 bg-gradient-to-br from-cyan-400/10 via-slate-950 to-slate-900 p-6 shadow-e3 shadow-slate-950/30">
+      <section className="overflow-hidden rounded-janela border border-acento/25 bg-acento-suave p-6 shadow-e1">
         <div className="space-y-4">
           <p className="text-meta uppercase tracking-[0.35em] text-cyan-300/80">{chapeu}</p>
-          <h2 className="text-display font-semibold text-white">{titulo}</h2>
+          <h2 className="text-display font-semibold text-texto">{titulo}</h2>
           <p className="max-w-3xl text-corpo leading-6 text-slate-300">{resumo}</p>
         </div>
       </section>
@@ -76,7 +76,7 @@ export function GrupoPage({ titulo, chapeu, resumo, itens: todos, ordenado = fal
             <Link
               key={`${item.to}-${indice}`}
               to={item.to}
-              className={`${cartao} group block transition hover:border-cyan-300/40 hover:bg-white/10`}
+              className={`${cartao} group block transition hover:border-acento/40 hover:bg-acento-suave`}
               data-testid={`${testId}-card-${item.label.toLowerCase()}`}
             >
               <div className="flex items-start gap-3">
@@ -132,7 +132,7 @@ export function GrupoPage({ titulo, chapeu, resumo, itens: todos, ordenado = fal
                 <Link
                   key={bloco.key}
                   to={bloco.href}
-                  className={`${cartao} block transition hover:border-cyan-300/40 hover:bg-white/10`}
+                  className={`${cartao} block transition hover:border-acento/40 hover:bg-acento-suave`}
                   data-testid={`${testId}-metrica-${bloco.key}`}
                 >
                   {conteudo}

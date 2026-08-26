@@ -78,3 +78,24 @@ O nome da coluna vem da query string e vai direto para o `ORDER BY`, então cada
 
 ADR-10 — Leitura de documento por IA nunca grava sozinha
 Carteirinha, pedido médico e registro de sessões são lidos pela OpenAI com prompt editável por clínica, mas o resultado sempre volta para conferência: nenhum cadastro é criado ou alterado sem confirmação de quem está com o documento na mão. Campo que o modelo não reconhece volta nulo e não apaga o que já estava preenchido; dado que exige casamento com cadastro — o convênio da carteirinha — só preenche o campo acima de um corte alto de semelhança, e abaixo dele vira sugestão com a nota de proximidade. O contrato de saída (as chaves do JSON) fica no código, e não no prompt editável, porque a tela depende exatamente daquelas chaves.
+
+ADR-16 — A pele do produto é a do xiax-agenda, e é contrato fiscalizado
+O gescon e o clinica.gestaonossa.com.br são sistemas irmãos da mesma clínica; parecer produtos de empresas diferentes é defeito, não liberdade. Os tokens vêm de `design-system-xiax-agenda.md` (raiz) copiados verbatim — não se ajusta tom "só um pouquinho", porque os neutros quentes e o verde-petróleo são a identidade. A adoção não exigiu reescrever telas: as ~1.500 ocorrências de utilitário cru (`text-slate-200`, `bg-cyan-400/10`) continuam onde estavam, e é a **paleta nativa do Tailwind** que foi reapontada para os primitivos do design system. O reaponte vive em `@media screen` porque a impressão precisa de `bg-white` branco de verdade.
+
+ADR-17 — Tema único
+Existe uma aparência, como no irmão. O tema escuro foi removido — store, seletor, bootstrap e bloco CSS — em vez de mantido desligado: tema sem uso é pele morta que ninguém testa e que diverge a cada mudança de token. A arquitetura de dois níveis continua de pé; se um segundo tema entrar, ele redefine apenas os papéis semânticos e o produto inteiro acompanha.
+
+ADR-18 — Tamanho de texto só por papel
+Sete papéis (`display`, `titulo`, `subtitulo`, `corpo-lg`, `corpo`, `rotulo`, `meta`), cada um com entrelinha e peso próprios. A escala crua do framework está banida e é reprovada pelo contrato. Não é purismo: `text-sm` traz entrelinha 1,43 e `text-corpo` traz 1,5, então uma área escrita com a escala crua desalinha o ritmo vertical do produto **por construção**, sem erro visível. A migração revelou o sintoma: `text-4xl` e `text-3xl` conviviam como dois tamanhos para o mesmo papel — título de página.
+
+ADR-19 — O compositor de classes precisa conhecer os papéis de tamanho
+`tailwind-merge` classifica `text-*` por lista interna. Ele sabe que `text-white` é cor, mas `text-corpo` e `text-sobre-acento` são nomes novos: sem declaração, os dois caem no grupo de COR e o último vence. No xiax-agenda isso chegou a produção — o botão primário perdia a cor e pintava o rótulo em `--texto` sobre o verde do acento, 2,52:1 medido. O contrato de contraste não viu nada, porque ele confere os tokens, não o que a tela pinta. Por isso a configuração precede a existência do primeiro papel.
+
+ADR-20 — Tabela vira cartão por atributo, com corte por número de colunas
+Uma tabela de 8 a 15 colunas não cabe em celular nem em tablet retrato. Abaixo do corte, cada linha vira cartão de pares "rótulo → valor" — o rótulo sai de `data-rotulo` na célula, porque CSS não consegue ler o texto do `<th>` correspondente. O corte é por tabela (`data-cartoes="md"` abaixo de 48rem, `"lg"` abaixo de 64rem): forçar cartão numa tabela de três colunas em tablet é pior que a tabela. O CSS mora fora de `@layer` porque no Tailwind v4 quem vence empate é a camada, e as células carregam utilitários (`px-4 py-3`, `w-px`) da camada `utilities`.
+
+ADR-21 — HTML de modelo de impressão roda isolado
+Os modelos de impressão são HTML editável pela clínica e trazem `<style>` próprio. Injetados com `dangerouslySetInnerHTML`, esse `<style>` vale para a **página inteira**, mesmo com a seção escondida: o modelo padrão declara `.grid`, `.box`, `table`, `th`, `td` e `body`, nomes que colidem de frente com as classes utilitárias. O efeito era `.grid` virando duas colunas fixas em três telas, fonte do app trocada por Arial e tabelas de verdade reestilizadas. Shadow root resolve nos dois sentidos; `body` do modelo vira `:host`, já que dentro de shadow root aquele seletor não casa com nada.
+
+ADR-22 — Contrato de design reprova o build
+Quatro guardas em `web/scripts/verificar-design-system.mjs`, ligadas ao `npm run lint`: contraste calculado a partir do próprio CSS, ausência de valor mágico, classe com cara de token que não existe, e configuração do compositor de classes. A terceira é a menos óbvia e a mais valiosa — `border-borda` (o token é `borda-campo`) não gera CSS nenhum, o componente renderiza sem erro e simplesmente fica sem a pele da casa. Isenção é permitida, mas só com o motivo registrado na lista: guarda que vira ruído é guarda que alguém desliga.

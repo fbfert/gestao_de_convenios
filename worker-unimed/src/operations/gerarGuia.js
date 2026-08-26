@@ -309,10 +309,18 @@ async function finalizar(page, request, estrategiaMedico) {
   // seguidas ao vivo em 26/08/2026.
   await selectIfVisible(page, '[name="FG_LIMINAR_JUDICIAL"], #FG_LIMINAR_JUDICIAL', 'N')
 
+  // Diferente dos outros cliques do fluxo, este e o que de fato submete a
+  // guia pro portal — a navegacao ate a confirmacao demora mais que o
+  // DEFAULT_TIMEOUT de 5s (achado ao vivo em 26/08/2026: o clique em si
+  // sempre "acontece", mas o Playwright estoura esperando a navegacao
+  // terminar, e isso vira WORKER_INTERNAL_FATAL sem nunca saber se a guia
+  // foi criada). Timeout maior so aqui, nao em DEFAULT_TIMEOUT global, pra
+  // nao mascarar seletor quebrado nos outros passos com espera mais longa.
+  const FINALIZAR_TIMEOUT = Math.max(DEFAULT_TIMEOUT, 30000)
   const finalize = page.locator('[name="Button_Finalizar"]')
-  await finalize.click({ timeout: DEFAULT_TIMEOUT })
+  await finalize.click({ timeout: FINALIZAR_TIMEOUT })
   await waitProcessing(page)
-  await page.waitForLoadState('domcontentloaded', { timeout: DEFAULT_TIMEOUT }).catch(() => {})
+  await page.waitForLoadState('domcontentloaded', { timeout: FINALIZAR_TIMEOUT }).catch(() => {})
   await page.waitForTimeout(1500)
 
   const result = await parseResultado(page)

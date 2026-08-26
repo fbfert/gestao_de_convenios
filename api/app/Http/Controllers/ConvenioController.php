@@ -40,7 +40,7 @@ class ConvenioController extends Controller
         return new ConvenioResource($convenio);
     }
 
-    public function regras(Convenio $convenio): AnonymousResourceCollection { return ConvenioRegra::query()->where('convenio_id', $convenio->id)->orderByDesc('vigente_desde')->get()->toResourceCollection(); }
+    public function regras(Convenio $convenio): JsonResponse { return response()->json(['data' => ConvenioRegra::query()->where('convenio_id', $convenio->id)->orderByDesc('vigente_desde')->get()]); }
     public function storeRegra(StoreConvenioRegraRequest $request, Convenio $convenio): JsonResponse { return response()->json(['data' => $this->regras->criar($convenio, $request->validated())], 201); }
     public function encerrarRegra(Request $request, Convenio $convenio, ConvenioRegra $regra): JsonResponse { abort_unless($regra->convenio_id === $convenio->id, 404); return response()->json(['data' => $this->regras->encerrar($regra, $request->input('vigente_ate'))]); }
     public function valores(Convenio $convenio): JsonResponse { return response()->json(['data' => TabelaValor::query()->where('convenio_id', $convenio->id)->orderByDesc('vigente_desde')->get()]); }

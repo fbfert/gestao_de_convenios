@@ -54,6 +54,7 @@ class RoleCatalog
             'manual.manage',
             'configuracoes.manage',
             'configuracoes.unimed.manage',
+            'configuracoes.clinica.manage',
         ],
         // As permissoes solicitacoes.manage/guias.manage/lancamentos.manage/
         // antecipacoes.manage controlam a EDICAO manual desses 4 cadastros

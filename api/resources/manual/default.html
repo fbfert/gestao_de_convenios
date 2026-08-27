@@ -734,6 +734,13 @@
   É o mesmo código que a automação da Unimed usa. Alterá-lo aqui preserva a quantidade padrão e a descrição da
   operadora configuradas em Configurações → Unimed RDA.
 </div>
+<div class="aviso">
+  <strong>Mensagem "Mapeamento Especialidade x Convênio não configurado."</strong> Aparece ao clicar em
+  <span class="btn">Enviar para Unimed</span> (em <a href="#solicitacoes">Solicitações</a>) quando o código
+  desta tela está em branco para o convênio daquele item. Corrija aqui mesmo, sem precisar da equipe
+  técnica: abra a especialidade, preencha o código do convênio em questão e salve — o item volta a ficar
+  elegível para envio na hora, sem precisar recriar a solicitação.
+</div>
 
 <h2 class="secao" id="usuarios">16. Usuários <span class="rota">/usuarios</span></h2>
 <div class="objetivo">Objetivo: cadastrar quem pode logar no sistema, definir o papel (role) de cada pessoa e, quando o papel for "profissional", vincular ao cadastro correspondente em Profissionais.</div>
@@ -785,6 +792,24 @@
   preenche o pedido e devolve o número da guia. Depois, uma rotina periódica volta ao portal para consultar se a
   senha e a validade já saíram. Esta tela é o painel de controle dessas execuções — não é onde elas são disparadas.
 </p>
+<h3>Por que um item não pode ser enviado</h3>
+<p>
+  Antes de enfileirar, o sistema confere uma lista de requisitos e, se algum faltar, recusa o envio na hora — em
+  <a href="#solicitacoes">Solicitações</a>, o clique em <span class="btn">Enviar para Unimed</span> mostra a
+  mensagem exata em vez de deixar a execução seguir e falhar depois no portal.
+</p>
+<table>
+  <tr><th>Mensagem</th><th>Onde corrigir</th></tr>
+  <tr><td>A Solicitação precisa estar pronta para automatização.</td><td>Status da solicitação ainda não chegou em "pronta para automatização" — confira em <a href="#solicitacoes">Solicitações</a>.</td></tr>
+  <tr><td>O Convênio não está configurado como Unimed RDA.</td><td><a href="#convenios">Convênios</a> — o conector do convênio precisa ser API/Unimed RDA.</td></tr>
+  <tr><td>A credencial Unimed ativa não está configurada.</td><td>Configurações → Unimed RDA — cadastre ou reative a credencial do portal.</td></tr>
+  <tr><td>Pedido Médico obrigatório não encontrado.</td><td>Anexe o pedido médico na solicitação (ver <a href="#solicitacoes">Anexos da solicitação</a>).</td></tr>
+  <tr><td>Profissional e especialidade do item são obrigatórios.</td><td>Complete esses dois campos na linha do item, em <a href="#solicitacoes">Solicitações</a>.</td></tr>
+  <tr><td>Mapeamento Especialidade x Convênio não configurado.</td><td><a href="#especialidades">Especialidades</a> → preencha o código dessa especialidade para o convênio da solicitação.</td></tr>
+  <tr><td>Mapeamento Profissional x Convênio não configurado.</td><td>Configurações → Unimed RDA — complete o de-para desse profissional para o convênio.</td></tr>
+  <tr><td>O item já possui Guia local vinculada.</td><td>Já existe guia cadastrada para o item; confira em <a href="#guias">Guias</a> antes de reenviar.</td></tr>
+  <tr><td>Já existe execução Unimed ativa ou incerta para este item.</td><td>Aguarde a execução em andamento terminar, ou resolva a pendência <span class="badge ambar">uncertain</span> primeiro — ver abaixo.</td></tr>
+</table>
 <h3>O que aparece na lista</h3>
 <table>
   <tr><th>Coluna</th><th>O que significa</th></tr>

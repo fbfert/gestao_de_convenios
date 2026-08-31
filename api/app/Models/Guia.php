@@ -17,6 +17,7 @@ class Guia extends Model
         'status', 'unimed_status', 'unimed_last_checked_at', 'unimed_next_check_at',
         'sessoes_solicitadas', 'sessoes_autorizadas', 'protocolo_operadora',
         'data_solicitacao', 'data_finalizacao', 'senha', 'validade_senha', 'observacoes',
+        'alerta_negacao_ocultado_em',
     ];
 
     protected $casts = [
@@ -27,6 +28,7 @@ class Guia extends Model
         'unimed_next_check_at' => 'datetime',
         'sessoes_solicitadas' => 'integer',
         'sessoes_autorizadas' => 'integer',
+        'alerta_negacao_ocultado_em' => 'datetime',
     ];
 
     public function solicitacao()

@@ -48,6 +48,9 @@ class GuiaService
             ->when(Arr::get($filtros, 'status'), fn ($query, $status) => $query->where('status', $status))
             ->when(Arr::get($filtros, 'convenio_id'), fn ($query, $convenioId) => $query->where('convenio_id', $convenioId))
             ->when(Arr::get($filtros, 'paciente_id'), fn ($query, $pacienteId) => $query->where('paciente_id', $pacienteId))
+            ->when(Arr::get($filtros, 'alerta_negacao_pendente'), fn ($query) => $query
+                ->where('status', GuiaStatus::DENIED)
+                ->whereNull('alerta_negacao_ocultado_em'))
             ->when(Arr::get($filtros, 'validade_senha_vencendo_em_dias') !== null, function ($query) use ($filtros) {
                 $dias = (int) $filtros['validade_senha_vencendo_em_dias'];
 
@@ -221,6 +224,20 @@ class GuiaService
         if ($guia->solicitacao_id) {
             $this->solicitacaoService->sincronizarStatusComGuias($guia->solicitacao);
         }
+
+        return $guia->refresh();
+    }
+
+    /**
+     * Oculta o alerta de guia negada (tela de Guias + Dashboard). Sem trava
+     * de status de proposito: se a guia deixar de estar 'denied' por algum
+     * motivo, ocultar continua sendo uma operacao valida e idempotente — so
+     * nao aparece mais no alerta de qualquer forma, ja que o filtro exige
+     * status='denied'.
+     */
+    public function ocultarAlertaNegacao(Guia $guia): Guia
+    {
+        $guia->forceFill(['alerta_negacao_ocultado_em' => now()])->save();
 
         return $guia->refresh();
     }

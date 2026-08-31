@@ -123,6 +123,34 @@ export function useFinalizarGuia() {
   })
 }
 
+/** Guias negadas com o alerta ainda visível (não ocultado) — Guias + Dashboard. */
+export function useGuiasAlertaNegacao() {
+  return useQuery({
+    queryKey: ['guias', 'alerta-negacao'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<PaginatedResponse<Guia>>('/guias', {
+        params: { alerta_negacao_pendente: 1, per_page: 50 },
+      })
+
+      return data.data
+    },
+  })
+}
+
+export function useOcultarAlertaNegacaoGuia() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const { data } = await apiClient.patch<{ data: Guia }>(`/guias/${id}/ocultar-alerta-negacao`)
+      return data.data
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['guias'] })
+    },
+  })
+}
+
 export function useNegarGuia() {
   const queryClient = useQueryClient()
 

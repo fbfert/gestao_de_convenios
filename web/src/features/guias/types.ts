@@ -21,6 +21,7 @@ export type Guia = {
   senha: string | null
   validade_senha: string | null
   observacoes: string | null
+  alerta_negacao_ocultado_em: string | null
   paciente?: GuiaPaciente
   convenio?: GuiaReferencia
   profissional?: GuiaReferencia
@@ -30,6 +31,8 @@ export type Guia = {
   ultima_automacao_unimed?: GuiaAutomacaoExecucao | null
   antecipacoes?: GuiaAntecipacao[]
   conciliacoes?: GuiaConciliacao[]
+  created_at: string
+  updated_at: string
 }
 
 export type GuiaReferencia = {

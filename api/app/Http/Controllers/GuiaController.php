@@ -29,6 +29,7 @@ class GuiaController extends Controller
                 'convenio_id',
                 'paciente_id',
                 'validade_senha_vencendo_em_dias',
+                'alerta_negacao_pendente',
             ]), (int) $request->integer('per_page', 15))
         );
     }
@@ -58,6 +59,11 @@ class GuiaController extends Controller
     public function negar(MutateGuiaStatusRequest $request, Guia $guia): GuiaResource
     {
         return new GuiaResource($this->service->negar($guia, $request->input('observacoes')));
+    }
+
+    public function ocultarAlertaNegacao(Guia $guia): GuiaResource
+    {
+        return new GuiaResource($this->service->ocultarAlertaNegacao($guia));
     }
 
     public function consultarUnimed(Guia $guia, ConsultarStatusUnimedService $consultarStatus): JsonResponse

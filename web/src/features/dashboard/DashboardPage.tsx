@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { apiClient } from '../../api/client'
+import { GuiaAlertaNegacoes } from '../guias/GuiaAlertaNegacoes'
+import { usePode } from '../../lib/permissoes'
 
 type DashboardBlock = {
   key: string
@@ -41,6 +43,7 @@ function formatDateTime(value: string | null) {
 }
 
 export function DashboardPage() {
+  const pode = usePode()
   const dashboardQuery = useQuery({
     queryKey: ['dashboard'],
     queryFn: async () => (await apiClient.get<{ data: DashboardResponse }>('/dashboard')).data.data,
@@ -86,6 +89,8 @@ export function DashboardPage() {
           </div>
         </div>
       </section>
+
+      {pode('dashboard.guias') ? <GuiaAlertaNegacoes /> : null}
 
       {dashboardQuery.isLoading ? (
         <div className="rounded-janela border border-linha bg-superficie p-6 text-corpo text-texto-suave">

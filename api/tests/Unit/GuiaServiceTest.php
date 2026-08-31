@@ -107,6 +107,20 @@ class GuiaServiceTest extends TestCase
         $service->finalizar($guia, []);
     }
 
+    public function test_ocultar_alerta_negacao_preenche_timestamp_sem_mudar_status(): void
+    {
+        $service = app(GuiaService::class);
+        $guia = $this->novaGuia('Unimed', 'Fisioterapia', 'especializada');
+        $guia->forceFill(['status' => 'denied'])->save();
+
+        $this->assertNull($guia->alerta_negacao_ocultado_em);
+
+        $ocultada = $service->ocultarAlertaNegacao($guia);
+
+        $this->assertSame('denied', $ocultada->status);
+        $this->assertNotNull($ocultada->alerta_negacao_ocultado_em);
+    }
+
     public function test_denegar_muda_status_para_denied(): void
     {
         $service = app(GuiaService::class);

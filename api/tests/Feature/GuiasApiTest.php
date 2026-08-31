@@ -108,6 +108,30 @@ class GuiasApiTest extends TestCase
             ->assertJsonMissing(['id' => $guiaLonga]);
     }
 
+    public function test_alerta_negacao_lista_so_negadas_nao_ocultadas_e_oculta_via_http(): void
+    {
+        $this->autenticar();
+
+        $idNegada = $this->postJson('/api/guias', $this->payloadGuia('Unimed'))->assertCreated()->json('data.id');
+        $idAprovada = $this->postJson('/api/guias', $this->payloadGuia('SC Saúde'))->assertCreated()->json('data.id');
+
+        $this->patchJson("/api/guias/{$idNegada}/negar", [])->assertOk()->assertJsonPath('data.status', 'denied');
+        $this->patchJson("/api/guias/{$idAprovada}/finalizar", ['senha' => 'ABC123'])->assertOk();
+
+        $this->getJson('/api/guias?alerta_negacao_pendente=1')
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $idNegada)
+            ->assertJsonMissing(['id' => $idAprovada]);
+
+        $this->patchJson("/api/guias/{$idNegada}/ocultar-alerta-negacao", [])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'denied');
+
+        $this->getJson('/api/guias?alerta_negacao_pendente=1')
+            ->assertOk()
+            ->assertJsonMissing(['id' => $idNegada]);
+    }
+
     public function test_detalhe_expoe_relacionamentos_da_guia(): void
     {
         $this->autenticar();

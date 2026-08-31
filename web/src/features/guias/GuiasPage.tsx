@@ -16,6 +16,7 @@ import {
   useGuias,
 } from './useGuias'
 import type { GuiaFilters, GuiaForm } from './types'
+import { GuiaAlertaNegacoes } from './GuiaAlertaNegacoes'
 import { GuiaStatusActions } from './GuiaStatusActions'
 import { statusTone } from './statusTone'
 import { SENHA_VENCENDO_EM_DIAS } from './senhaValidade'
@@ -221,6 +222,7 @@ export function GuiasPage() {
 
   return (
     <div className="space-y-8" data-testid="guias-page">
+      {!isCreateRoute ? <GuiaAlertaNegacoes /> : null}
       {!isCreateRoute ? (
       <section className="space-y-4">
         <div className="flex flex-col gap-4 sm:items-start lg:flex-row lg:items-end lg:justify-between">

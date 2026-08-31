@@ -3,7 +3,7 @@ import { MoreVertical } from 'lucide-react'
 import { DropdownMenu } from 'radix-ui'
 import { ColunaOrdenavel } from '../../components/ui/ColunaOrdenavel'
 import { useOrdenacao } from '../../lib/useOrdenacao'
-import { Link, useMatch, useNavigate } from 'react-router-dom'
+import { Link, useMatch, useNavigate, useSearchParams } from 'react-router-dom'
 import { translateStatus } from '../../lib/statusLabels'
 import { Select } from '../../components/ui/Select'
 import {
@@ -108,6 +108,7 @@ export function SolicitacoesPage() {
   const pode = usePode()
   const navigate = useNavigate()
   const isCreateRoute = useMatch('/solicitacoes/nova') !== null
+  const [searchParams] = useSearchParams()
   const [filters, setFilters] = useState(defaultFilters)
   const [draftFilters, setDraftFilters] = useState(defaultFilters)
   const [page, setPage] = useState(1)
@@ -207,6 +208,35 @@ export function SolicitacoesPage() {
       }
     })
   }, [medicos])
+
+  // Pré-preenche a partir do "Nova Solicitação" do alerta de guia negada
+  // (GuiaAlertaNegacoes), que navega pra cá com esses query params. So roda
+  // uma vez ao entrar na rota — os outros useEffects de default (convenio,
+  // paciente, medico) so preenchem campo vazio, entao nao competem com isso.
+  useEffect(() => {
+    if (!isCreateRoute) {
+      return
+    }
+
+    const pacienteId = searchParams.get('paciente_id')
+    const convenioId = searchParams.get('convenio_id')
+    const especialidadeId = searchParams.get('especialidade_id')
+    const profissionalId = searchParams.get('profissional_id')
+
+    if (!pacienteId && !convenioId && !especialidadeId) {
+      return
+    }
+
+    setForm((current) => ({
+      ...current,
+      paciente_id: pacienteId ?? current.paciente_id,
+      convenio_id: convenioId ?? current.convenio_id,
+      itens: especialidadeId
+        ? [{ ...emptyItem, especialidade_id: especialidadeId, profissional_id: profissionalId ?? '' }]
+        : current.itens,
+    }))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isCreateRoute])
 
   const totalPages = solicitacoesQuery.data?.meta?.last_page ?? 1
 

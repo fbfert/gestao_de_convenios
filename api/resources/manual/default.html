@@ -275,7 +275,7 @@
 </div>
 <ol>
   <li><strong>Solicitação:</strong> pedido de autorização enviado ao convênio para um paciente fazer terapia com um profissional. Começa como <span class="badge cinza">Cadastrado</span>, evolui manualmente para <span class="badge azul">Em análise</span>, e termina em <span class="badge verde">Aprovado</span> ou <span class="badge vermelho">Negado</span>.</li>
-  <li><strong>Guia:</strong> o documento oficial de autorização, com senha e prazo de validade. Nasce em <span class="badge azul">Em análise</span>; ao ser <strong>finalizada</strong> (senha + validade preenchidas) fica <span class="badge verde">Aprovada</span>; ao ser <strong>negada</strong>, fica <span class="badge vermelho">Negada</span>.</li>
+  <li><strong>Guia:</strong> o documento oficial de autorização, com senha e prazo de validade. Nasce em <span class="badge azul">Em análise</span>. Convênios com automação Unimed atualizam a guia sozinhos, sem clique nenhum, para <span class="badge verde">Autorizada</span> ou <span class="badge vermelho">Negada</span>; ao ser <strong>finalizada</strong> pelo botão Finalizar (com senha + validade — próprias ou já capturadas pela automação) fica <span class="badge verde">Aprovada</span> e abre o ciclo de Antecipação.</li>
   <li><strong>Antecipação:</strong> a "cota" de sessões autorizadas por ciclo (ex.: 12 sessões/mês). Mostra quanto já foi utilizado da cota e alerta quando não há próximas sessões agendadas.</li>
   <li><strong>Sessões (Lançamentos):</strong> o registro de cada atendimento realizado, digitado manualmente ou importado da transcrição de um formulário em papel. Cada sessão lançada consome uma unidade da cota da antecipação.</li>
   <li><strong>Analítico:</strong> a planilha que o convênio (hoje, Unimed) envia com o que efetivamente pagou e glosou (recusou) por guia. É importada em <a href="#analiticos">Analíticos</a>.</li>
@@ -305,7 +305,7 @@
   <tr><th>Cartão</th><th>O que mostra</th></tr>
   <tr><td>Convênios</td><td>Total de convênios cadastrados / quantos estão ativos.</td></tr>
   <tr><td>Solicitações</td><td>Quantas estão em análise / quantas foram aprovadas.</td></tr>
-  <tr><td>Guias</td><td>Quantas estão em análise / quantas finalizadas.</td></tr>
+  <tr><td>Guias</td><td>Quantas estão em análise / quantas autorizadas ou aprovadas.</td></tr>
   <tr><td>Antecipações</td><td>Quantas estão abertas / quantas fechadas.</td></tr>
   <tr><td>Sessões</td><td>Quantas foram lançadas hoje / quantas concluídas.</td></tr>
   <tr><td>Conciliações</td><td>Quantas estão pendentes / quantas conferidas.</td></tr>
@@ -314,6 +314,11 @@
   <tr><td>Auditoria</td><td>Eventos registrados nas últimas 24 horas.</td></tr>
 </table>
 <p>Clicar em qualquer cartão leva direto para a tela correspondente. Abaixo dos cartões há uma lista fixa "Acesso rápido" com links para todas as telas operacionais, e um bloco <strong>"Últimas alterações"</strong> com as ações mais recentes registradas na auditoria (visível só para quem tem permissão de auditoria).</p>
+<p>
+  Quando existir alguma guia <span class="badge vermelho">Negada</span> ainda não revisada, um aviso
+  aparece entre o cabeçalho e os cartões, com a mesma lista e os mesmos botões da tela de
+  <a href="#guias">Guias</a> — ver "Alerta de guias negadas" na seção 7.
+</p>
 <div class="nota">
   O cartão de <strong>Usuários</strong> não aparece aqui: ele foi retirado para a grade fechar em múltiplo de três.
   O número continua existindo na visão geral de <a href="#conceitos">Cadastros</a>, e a tela segue acessível pelo
@@ -479,15 +484,49 @@
   <tr><td><span class="btn">Criar guia</span></td><td>Grava a guia. Uma guia nova pode gerar automaticamente uma Antecipação vinculada.</td></tr>
   <tr><td>Número da guia (link)</td><td>Abre a tela de detalhe da guia (<code>/guias/:id</code>).</td></tr>
   <tr><td>"Vencendo em 7 dias"</td><td>Filtro rápido para mostrar apenas guias cuja senha vence em até 7 dias — use para não perder o prazo de renovação.</td></tr>
-  <tr><td><span class="btn">Gerar conciliação</span> (por linha)</td><td>Cria a linha de conciliação financeira para essa guia. Só fica disponível quando a guia está <span class="badge verde">Aprovada/Finalizada</span>.</td></tr>
+  <tr><td><span class="btn">Gerar conciliação</span> (por linha)</td><td>Cria a linha de conciliação financeira para essa guia. Só fica disponível quando a guia está <span class="badge verde">Autorizada</span> ou <span class="badge verde">Aprovada</span>.</td></tr>
 </table>
-<h3>Ações de status (só aparecem enquanto a guia está "Em análise")</h3>
+<h3>Como a guia muda de status</h3>
+<p>
+  Guias de convênio com automação Unimed são atualizadas sozinhas: o robô consulta o portal
+  periodicamente e, quando a operadora decide, a guia vira <span class="badge verde">Autorizada</span>
+  (com senha e validade já preenchidas sozinho) ou <span class="badge vermelho">Negada</span> — sem
+  precisar de nenhum clique. Para os demais convênios (sem automação), quem decide é a pessoa, pelos
+  botões abaixo.
+</p>
+<h3>Ações de status</h3>
 <table>
   <tr><th>Botão</th><th>O que faz</th></tr>
-  <tr><td><span class="btn">Finalizar</span></td><td>Abre um mini-formulário para informar a <strong>Senha</strong> (obrigatória) e a <strong>Validade da senha</strong> (opcional). Ao confirmar, a guia passa para <span class="badge verde">Aprovada</span>.</td></tr>
-  <tr><td><span class="btn">Negar</span></td><td>Marca a guia como <span class="badge vermelho">Negada</span>, sem campos extra.</td></tr>
+  <tr><td><span class="btn">Finalizar</span></td><td>
+    Aparece em <span class="badge azul">Em análise</span> e também em <span class="badge verde">Autorizada</span>.<br>
+    Em <span class="badge azul">Em análise</span>: abre um mini-formulário para informar a
+    <strong>Senha</strong> (obrigatória) e a <strong>Validade da senha</strong> (opcional).<br>
+    Em <span class="badge verde">Autorizada</span>: o mesmo formulário já vem preenchido com a senha e
+    validade que a automação capturou sozinha — revise e confirme.<br>
+    Nos dois casos, ao confirmar a guia passa para <span class="badge verde">Aprovada</span> e abre
+    automaticamente o ciclo de <a href="#antecipacoes">Antecipação</a> (a cota de sessões que os
+    Lançamentos vão consumir) — é este clique que efetivamente libera o faturamento da guia.
+  </td></tr>
+  <tr><td><span class="btn">Negar</span></td><td>Só aparece em <span class="badge azul">Em análise</span>. Marca a guia como <span class="badge vermelho">Negada</span>, sem campos extra — não faz sentido negar uma guia que a operadora já autorizou.</td></tr>
 </table>
-<div class="nota">Uma vez finalizada, negada ou vencida, a guia não tem mais botões de mudança de status — o fluxo é de mão única pela tela.</div>
+<div class="nota">Uma vez aprovada, negada ou vencida, a guia não tem mais botões de mudança de status — o fluxo é de mão única pela tela.</div>
+<h3>Alerta de guias negadas</h3>
+<p>
+  Sempre que existir alguma guia <span class="badge vermelho">Negada</span> ainda não revisada, um
+  aviso aparece no topo desta tela e também no <a href="#dashboard">Dashboard</a>, listando cada guia
+  negada em uma linha (paciente, número, especialidade, convênio e data da negação).
+</p>
+<table>
+  <tr><th>Ação</th><th>O que faz</th></tr>
+  <tr><td><span class="btn">Ocultar</span> (por linha)</td><td>Abre um modal com três opções.</td></tr>
+  <tr><td><span class="btn">Nova Solicitação</span> (no modal)</td><td>Oculta o aviso e abre o formulário de nova solicitação já pré-preenchido com o paciente, convênio, especialidade e profissional dessa guia.</td></tr>
+  <tr><td><span class="btn">Já solicitei</span> (no modal)</td><td>Só oculta o aviso — use quando a nova solicitação já foi aberta por fora do modal.</td></tr>
+  <tr><td><span class="btn">Pode ocultar</span> (no modal)</td><td>Só oculta o aviso, sem nenhuma outra ação — use quando essa guia negada não precisa de nova solicitação.</td></tr>
+</table>
+<div class="nota">
+  Ocultar é definitivo e vale para toda a clínica: uma vez que alguém oculta o aviso de uma guia, ele
+  não volta a aparecer para ninguém. Não existe "ocultar só para mim".
+</div>
 <h3>Tela de detalhe da guia</h3>
 <p>Mostra todos os dados (paciente, carteirinha, convênio, profissional, especialidade, datas, senha e validade — destacada em âmbar quando está a vencer) e dois atalhos:</p>
 <table>
@@ -503,7 +542,8 @@
   sessões solicitadas/autorizadas, protocolo da operadora e observações</strong>. Paciente, convênio e status
   ficam travados — o status muda só pelos botões <span class="btn">Finalizar</span>/<span class="btn">Negar</span>.
   Diferente das ações de status, essa edição continua disponível mesmo depois de a guia estar
-  <span class="badge verde">Aprovada</span> ou <span class="badge vermelho">Negada</span>.
+  <span class="badge verde">Autorizada</span>, <span class="badge verde">Aprovada</span> ou
+  <span class="badge vermelho">Negada</span>.
 </p>
 <table>
   <tr><th>Onde</th><th>Como</th></tr>
@@ -1038,7 +1078,7 @@
 <table>
   <tr><th>Tela</th><th>Status possíveis</th></tr>
   <tr><td>Solicitações</td><td><span class="badge cinza">Cadastrado</span> · <span class="badge azul">Em análise</span> · <span class="badge verde">Aprovado</span> · <span class="badge vermelho">Negado</span> · <span class="badge cinza">Cancelado</span> · <span class="badge ambar">Vencido</span></td></tr>
-  <tr><td>Guias</td><td><span class="badge cinza">Cadastrado</span> · <span class="badge azul">Em análise</span> · <span class="badge verde">Aprovado</span> (inclui "finalizada") · <span class="badge vermelho">Negado</span> · <span class="badge cinza">Cancelado</span> · <span class="badge ambar">Vencido</span></td></tr>
+  <tr><td>Guias</td><td><span class="badge cinza">Cadastrado</span> · <span class="badge azul">Em análise</span> · <span class="badge verde">Autorizado</span> (operadora autorizou; ciclo de Antecipação ainda não aberto) · <span class="badge verde">Aprovado</span> (passou pelo Finalizar; ciclo de Antecipação aberto) · <span class="badge vermelho">Negado</span> · <span class="badge cinza">Cancelado</span> · <span class="badge ambar">Vencido</span></td></tr>
   <tr><td>Antecipações</td><td><span class="badge azul">Aberta</span> · <span class="badge cinza">Fechada</span></td></tr>
   <tr><td>Sessões (Lançamentos)</td><td><span class="badge verde">Concluído</span> · <span class="badge ambar">Perdido</span> · <span class="badge cinza">Cancelado</span></td></tr>
   <tr><td>Conciliação</td><td><span class="badge cinza">Pendente</span> · <span class="badge azul">Conferida</span> · <span class="badge verde">Paga</span></td></tr>

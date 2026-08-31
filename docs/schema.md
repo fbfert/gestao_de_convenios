@@ -53,10 +53,12 @@ guias
   id, tenant_id, solicitacao_id (FK, nullable), convenio_id (FK),
   paciente_id (FK), profissional_id (FK), especialidade_id (FK),
   numero_guia (string), tipo_terapia (especializada|convencional|outro),
-  status (under_review|finalized|denied),
+  status (under_review|approved|finalized|denied|canceled|needs_verification),
   data_solicitacao, data_finalizacao (nullable),
   senha (string, nullable), validade_senha (date, nullable),
-  observacoes (text, nullable)
+  observacoes (text, nullable),
+  alerta_negacao_ocultado_em (timestamp, nullable) -- 31/08/2026: alerta de guia
+    negada some de /guias e /dashboard quando preenchido; ver GuiaAlertaNegacoes.tsx
 
 antecipacoes
   id, tenant_id, guia_id (FK), paciente_id (FK), convenio_id (FK),
@@ -93,7 +95,13 @@ audit_logs
 ### Fluxo de status
 ```
 solicitacao: under_review -> approved -> (gera guia)
-guia:        under_review -> finalized (com senha+validade) | denied
+guia:        under_review -> approved (automação Unimed autoriza sozinha) | denied
+             under_review | approved -> finalized (Finalizar, com senha+validade;
+               abre ciclo de Antecipacao) — ver GuiaService::finalizar()
+             -- 'approved' e 'finalized' sao estados DIFERENTES (approved ainda nao
+             -- tem ciclo de Antecipacao aberto) mas so 'finalized' aparecia como
+             -- "Aprovado" antes de 31/08/2026; agora approved = "Autorizado",
+             -- finalized = "Aprovado" (so o rotulo mudou, ver statusLabels.ts)
 antecipacao: open (qtd_utilizada < qtd_autorizada) -> closed
 lancamento:  a cada sessão, incrementa qtd_utilizada da antecipação
 conciliacao: pending -> reviewed -> paid

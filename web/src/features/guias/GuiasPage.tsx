@@ -461,7 +461,7 @@ export function GuiasPage() {
                 <option value="">Todos</option>
                 <option value="registered">Cadastrado</option>
                 <option value="under_review">Em análise</option>
-                <option value="approved">Aprovado</option>
+                <option value="approved">Autorizado</option>
                 <option value="finalized">Aprovado</option>
                 <option value="needs_verification">Verificar Restrição</option>
                 <option value="canceled">Cancelado</option>

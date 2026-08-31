@@ -22,12 +22,18 @@ export function GuiaStatusActions({ guia }: { guia: Guia }) {
   const negarGuia = useNegarGuia()
   const confirmar = useConfirm()
 
+  const podeFinalizar = guia.status === 'under_review' || guia.status === 'approved'
+  const podeNegar = guia.status === 'under_review'
+
   const handleFinalize = async () => {
     setActionError(null)
 
     const ok = await confirmar({
       titulo: 'Finalizar guia',
-      descricao: 'A guia passa para Aprovada com a senha e validade informadas. Confirma?',
+      descricao:
+        guia.status === 'approved'
+          ? 'Abre o ciclo de faturamento (Antecipação) desta guia, usando a senha e validade já capturadas pela automação. Confirma?'
+          : 'A guia passa para Aprovada com a senha e validade informadas. Confirma?',
       confirmarTexto: 'Finalizar',
       variante: 'primario',
     })
@@ -71,34 +77,42 @@ export function GuiaStatusActions({ guia }: { guia: Guia }) {
     }
   }
 
-  if (guia.status !== 'under_review') {
+  if (!podeFinalizar && !podeNegar) {
     return null
   }
 
   return (
     <div className="space-y-3" data-testid={`guia-status-actions-${guia.id}`}>
       <div className="flex flex-nowrap items-center gap-2">
-        <button
-          type="button"
-          className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1.5 text-meta font-semibold text-emerald-100 transition hover:bg-emerald-400/20 disabled:opacity-50"
-          onClick={() => {
-            setIsFinalizeOpen(true)
-            setActionError(null)
-          }}
-          disabled={finalizarGuia.isPending || negarGuia.isPending}
-          data-testid={`guia-finalizar-${guia.id}`}
-        >
-          Finalizar
-        </button>
-        <button
-          type="button"
-          className="rounded-full border border-rose-400/30 bg-rose-400/10 px-3 py-1.5 text-meta font-semibold text-rose-100 transition hover:bg-rose-400/20 disabled:opacity-50"
-          onClick={handleNegar}
-          disabled={finalizarGuia.isPending || negarGuia.isPending}
-          data-testid={`guia-negar-${guia.id}`}
-        >
-          Negar
-        </button>
+        {podeFinalizar ? (
+          <button
+            type="button"
+            className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1.5 text-meta font-semibold text-emerald-100 transition hover:bg-emerald-400/20 disabled:opacity-50"
+            onClick={() => {
+              setIsFinalizeOpen(true)
+              setActionError(null)
+              setFinalizeDraft({
+                senha: guia.senha ?? '',
+                validade_senha: guia.validade_senha ?? '',
+              })
+            }}
+            disabled={finalizarGuia.isPending || negarGuia.isPending}
+            data-testid={`guia-finalizar-${guia.id}`}
+          >
+            Finalizar
+          </button>
+        ) : null}
+        {podeNegar ? (
+          <button
+            type="button"
+            className="rounded-full border border-rose-400/30 bg-rose-400/10 px-3 py-1.5 text-meta font-semibold text-rose-100 transition hover:bg-rose-400/20 disabled:opacity-50"
+            onClick={handleNegar}
+            disabled={finalizarGuia.isPending || negarGuia.isPending}
+            data-testid={`guia-negar-${guia.id}`}
+          >
+            Negar
+          </button>
+        ) : null}
       </div>
 
       {isFinalizeOpen ? (

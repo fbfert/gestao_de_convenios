@@ -161,14 +161,22 @@ class GuiaService
         return $guia->refresh();
     }
 
+    /**
+     * Tambem aceita guia ja 'approved' (achado em 31/08/2026: guias
+     * aprovadas pela automacao Unimed pulam direto pra 'approved' e nunca
+     * passavam por aqui, entao nunca abriam ciclo de Antecipacao — sem
+     * ciclo, nenhum Lancamento de sessao tem cota pra consumir). Nesse caso
+     * senha/validade_senha ja vieram da automacao (CapturarSenhaValidadeUnimedService)
+     * e servem de default, mas continuam editaveis pelo usuario.
+     */
     public function finalizar(Guia $guia, array $dados): Guia
     {
-        if ($guia->status !== GuiaStatus::UNDER_REVIEW) {
+        if (! in_array($guia->status, [GuiaStatus::UNDER_REVIEW, GuiaStatus::APPROVED], true)) {
             throw GuiaStatusInvalidoException::transicaoInvalida($guia->status, GuiaStatus::FINALIZED);
         }
 
-        $senha = $dados['senha'] ?? null;
-        $validadeSenha = $dados['validade_senha'] ?? null;
+        $senha = $dados['senha'] ?? $guia->senha;
+        $validadeSenha = $dados['validade_senha'] ?? $guia->validade_senha?->toDateString();
         $dataFinalizacao = isset($dados['data_finalizacao'])
             ? Carbon::parse($dados['data_finalizacao'])->toDateString()
             : today()->toDateString();

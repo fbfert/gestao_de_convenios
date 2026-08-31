@@ -53,6 +53,50 @@ class GuiaServiceTest extends TestCase
         $this->assertTrue($finalizada->validade_senha->isSameDay(today()->copy()->addDays(30)));
     }
 
+    public function test_finalizar_aceita_guia_approved_usando_senha_ja_capturada_pela_automacao(): void
+    {
+        $antecipacaoService = Mockery::mock(AntecipacaoService::class);
+        $antecipacaoService->shouldReceive('abrirCiclo')->once()->andReturnUsing(function (Guia $guia) {
+            return Antecipacao::query()->create([
+                'tenant_id' => $guia->tenant_id,
+                'guia_id' => $guia->id,
+                'paciente_id' => $guia->paciente_id,
+                'convenio_id' => $guia->convenio_id,
+                'ciclo_inicio' => today(),
+                'ciclo_fim' => today(),
+                'qtd_autorizada' => 1,
+                'qtd_utilizada' => 0,
+                'status' => 'open',
+            ]);
+        });
+        $this->app->instance(AntecipacaoService::class, $antecipacaoService);
+
+        $service = app(GuiaService::class);
+        $guia = $this->novaGuia('Unimed', 'Fisioterapia', 'especializada');
+        $guia->forceFill([
+            'status' => 'approved',
+            'senha' => 'AUTO-999',
+            'validade_senha' => today()->copy()->addDays(10),
+        ])->save();
+
+        $finalizada = $service->finalizar($guia, []);
+
+        $this->assertSame('finalized', $finalizada->status);
+        $this->assertSame('AUTO-999', $finalizada->senha);
+        $this->assertTrue($finalizada->validade_senha->isSameDay(today()->copy()->addDays(10)));
+    }
+
+    public function test_finalizar_rejeita_guia_negada(): void
+    {
+        $service = app(GuiaService::class);
+        $guia = $this->novaGuia('Unimed', 'Fisioterapia', 'especializada');
+        $guia->forceFill(['status' => 'denied'])->save();
+
+        $this->expectException(GuiaStatusInvalidoException::class);
+
+        $service->finalizar($guia, ['senha' => 'ABC123']);
+    }
+
     public function test_finalizar_rejeita_sem_senha(): void
     {
         $service = app(GuiaService::class);

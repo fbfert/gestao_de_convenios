@@ -78,6 +78,15 @@ test('consulta status: guia nao aparece em Exames em aberto', async () => {
   assert.equal(result.conclusivo, false)
 })
 
+test('consulta status: guia negada some de Exames em aberto mas e achada via cadastro de beneficiario (icone ico16negado.gif)', async () => {
+  const result = await run(executarConsultarStatusBatch, 'status-negada-via-cadastro')
+
+  assert.equal(result.status, 'succeeded')
+  assert.equal(result.guia_status, 'denied')
+  assert.equal(result.unimed_status, 'Negado')
+  assert.equal(result.conclusivo, true)
+})
+
 test('captura senha e validade pela mesma tela de execucao', async () => {
   const result = await run(executarCapturarAutorizacaoBatch, 'capture-sucesso')
 

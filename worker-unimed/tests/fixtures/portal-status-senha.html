@@ -38,7 +38,17 @@
       'status-approved': { autorizado: true, comQuantidades: false },
       'status-approved-com-quantidades': { autorizado: true, comQuantidades: true },
       'status-em-analise': { autorizado: false, comQuantidades: false },
-      'status-nao-encontrada': { naoEncontrada: true },
+      // Nem em Exames em aberto, nem via cadastro de beneficiario: caso
+      // "genuinamente nao localizavel", GUIA_NOT_FOUND deve continuar valendo.
+      'status-nao-encontrada': { naoEncontrada: true, cadastroEncontrada: false },
+      // Reproduz o achado ao vivo de 31/08/2026 (guias Negadas de Laura de
+      // Faveri/Miguel Ribeiro Machado): some de Exames em aberto mas aparece
+      // via cadastro -> Localizar Guia, so que so com o icone (sem texto).
+      'status-negada-via-cadastro': {
+        naoEncontrada: true,
+        cadastroEncontrada: true,
+        iconeCadastro: 'ico16negado.gif',
+      },
       'capture-sucesso': { autorizado: true, comQuantidades: false },
       'capture-sem-senha': { autorizado: false, comQuantidades: false },
       'capture-nao-encontrada': { naoEncontrada: true },
@@ -52,7 +62,121 @@
         event.preventDefault()
         renderExamesAbertos()
       }
+      const botaoNovoExame = menu.querySelector('#cadastro_biometria .MagnetoBigRoundedButton')
+      botaoNovoExame.onclick = (event) => {
+        event.preventDefault()
+        abrirPopupNovoExame()
+      }
       renderExamesAbertos()
+    }
+
+    // O clique real em "+ Novo Exame" abre uma popup de verdade (window.open)
+    // — todo o caminho de cadastro/"Localizar Guia" roda dentro dela, igual
+    // ao fixture de gerarGuia (ver portal-gerar-guia.html).
+    function abrirPopupNovoExame() {
+      const popup = window.open('about:blank', '_blank')
+      popup.document.open()
+      popup.document.write(popupCadastroHtml(scenario))
+      popup.document.close()
+    }
+
+    function popupCadastroHtml(scenarioValue) {
+      return `<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><title>Fixture Unimed - Popup Novo Exame (status)</title></head>
+<body>
+  <main id="app"></main>
+  <script>
+    const scenario = ${JSON.stringify(scenarioValue)}
+    const GUIA_EXISTENTE = ${JSON.stringify(GUIA_EXISTENTE)}
+    const cfg = (${JSON.stringify(cenarios)})[scenario] || {}
+    const app = document.querySelector('#app')
+
+    function html(content) {
+      app.innerHTML = content
+      bind()
+    }
+
+    function processing(next) {
+      app.insertAdjacentHTML('beforeend', '<div id="processing">Processando, por favor aguarde...</div>')
+      setTimeout(() => {
+        document.querySelector('#processing')?.remove()
+        next()
+      }, 20)
+    }
+
+    function bind() {
+      document.querySelector('#ignora-cartao')?.addEventListener('click', (event) => {
+        event.preventDefault()
+        showCardStart()
+      })
+      document.querySelector('[data-beneficiary-option="intercambio"]')?.addEventListener('click', (event) => {
+        event.preventDefault()
+        showBeneficiaryForm()
+      })
+      document.querySelector('[name="Button_Insert"]')?.addEventListener('click', () => {
+        processing(showUpdate)
+      })
+      document.querySelector('[name="Button_Update"]')?.addEventListener('click', () => processing(showLocalizarGuia))
+      document.querySelector('[name="Button_Filtro"]')?.addEventListener('click', () => {
+        const numero = document.querySelector('[name="s_NR_GUIA"]').value
+        processing(() => showResultadoCadastro(numero))
+      })
+    }
+
+    // Tela inicial da popup: "Passe o cartao..." com o link de problemas.
+    html('<p>Passe o cartão...</p><a id="ignora-cartao" href="#">Se tiver problemas com o cartão, clique aqui.</a>')
+
+    function showCardStart() {
+      html(\`
+        <p>Problemas com o cartão do beneficiário?</p>
+        <a href="#" data-beneficiary-option="local">Beneficiário local sem cartão ou cartão não lê. Localize o beneficiário e prossiga com o atendimento.</a>
+        <a href="#" data-beneficiary-option="intercambio">Beneficiário de intercâmbio sem cartão. Cadastre o beneficiário e prossiga com o atendimento.</a>
+      \`)
+    }
+
+    function showBeneficiaryForm() {
+      html(\`
+        <input id="CD_UNIMED" name="CD_UNIMED">
+        <input id="CD_CARTAO" name="CD_CARTAO">
+        <input id="CD_BENEF" name="CD_BENEF">
+        <input id="CD_DEPEN" name="CD_DEPEN">
+        <input id="NR_DV" name="NR_DV">
+        <button name="Button_Insert">Verificar</button>
+      \`)
+    }
+
+    function showUpdate() {
+      html('<h1>Atualização cadastral</h1><button name="Button_Update">Atualizar</button>')
+    }
+
+    function showLocalizarGuia() {
+      html(\`
+        <h1>Localizar Guia</h1>
+        <input id="s_NR_GUIA" name="s_NR_GUIA">
+        <button name="Button_Filtro">Localizar</button>
+      \`)
+    }
+
+    function showResultadoCadastro(numero) {
+      if (!cfg.cadastroEncontrada || numero !== GUIA_EXISTENTE) {
+        html('<table><tr><td>0 exame(s) encontrado(s)</td></tr></table>')
+        return
+      }
+
+      html(\`
+        <table>
+          <tr>
+            <td>25/08/2026</td>
+            <td>\${numero}</td>
+            <td><img width="16" height="16" alt="" title="" src="/cmagnet/Themes/Magneto2014/\${cfg.iconeCadastro}"></td>
+          </tr>
+        </table>
+      \`)
+    }
+  <\/script>
+</body>
+</html>`
     }
 
     // Confirmacao de guia incerta (busca por paciente, sem numero de guia

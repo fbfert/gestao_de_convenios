@@ -2,10 +2,16 @@ import { chromium } from 'playwright'
 import {
   DEFAULT_TIMEOUT,
   WorkerResultError,
+  abrirBeneficiario,
+  atualizarCadastroSeNecessario,
   fillIfVisible,
   login,
   mapPortalStatus,
+  normalize,
   parseNumber,
+  preencherCarteirinha,
+  splitCarteirinha,
+  textoRestricao,
   waitProcessing,
 } from '../portal.js'
 
@@ -79,11 +85,23 @@ async function consultarStatusGuia(page, guia) {
   try {
     const encontrada = await abrirGuiaPorFiltro(page, guia.numero_guia)
     if (!encontrada) {
+      const viaCadastro = await localizarGuiaPorCadastro(page, guia)
+      if (!viaCadastro) {
+        return itemResult(guia, {
+          status: 'failed',
+          error_code: 'GUIA_NOT_FOUND',
+          message: 'Guia não encontrada em Exames em aberto nem via cadastro de beneficiário.',
+          conclusivo: false,
+        })
+      }
+
       return itemResult(guia, {
-        status: 'failed',
-        error_code: 'GUIA_NOT_FOUND',
-        message: 'Guia não encontrada em Exames em aberto.',
-        conclusivo: false,
+        status: 'succeeded',
+        portal_status: viaCadastro.situacao,
+        guia_status: viaCadastro.guia_status,
+        unimed_status: viaCadastro.situacao,
+        status_operadora: viaCadastro.situacao,
+        conclusivo: viaCadastro.guia_status !== 'under_review',
       })
     }
 
@@ -197,6 +215,102 @@ async function abrirGuiaPorFiltro(page, numeroGuia) {
   await page.waitForLoadState('domcontentloaded', { timeout: DEFAULT_TIMEOUT }).catch(() => {})
 
   return true
+}
+
+/**
+ * Fallback quando a guia não aparece em "Exames em aberto" (achado ao vivo
+ * 31/08/2026: guias Negadas de Laura de Faveri e Miguel Ribeiro Machado
+ * apareciam como "Em análise" no gescon mas "Guia não encontrada" na
+ * consulta normal). Guias que mudam para Negado/Cancelado saem dessa lista,
+ * mas continuam localizáveis pelo mesmo caminho de cadastro de beneficiário
+ * usado por gerarGuia (abrirBeneficiario -> preencherCarteirinha ->
+ * atualizarCadastroSeNecessario) — só que a tela seguinte ("Localizar
+ * Guia": campo `s_NR_GUIA` + `Button_Filtro`, diferente do
+ * `s_nr_guia`/`Button_FIltro` de Exames em aberto) mostra o status real por
+ * ícone (ex.: `ico16negado.gif` = Negado) em vez de seguir para a
+ * Digitação de guia SP/SADT. Devolve null (sem lançar) em qualquer
+ * impossibilidade — carteirinha ausente, restrição administrativa, guia
+ * também não encontrada aqui — para que o chamador caia de volta no
+ * GUIA_NOT_FOUND normal.
+ */
+async function localizarGuiaPorCadastro(mainPage, guia) {
+  const carteirinha = guia.paciente?.carteirinha
+  if (!carteirinha) {
+    return null
+  }
+
+  let card
+  try {
+    card = splitCarteirinha(carteirinha)
+  } catch {
+    return null
+  }
+
+  let popup
+  try {
+    popup = await abrirBeneficiario(mainPage)
+  } catch {
+    return null
+  }
+
+  try {
+    await preencherCarteirinha(popup, card)
+
+    if (await textoRestricao(popup)) {
+      return null
+    }
+
+    await atualizarCadastroSeNecessario(popup)
+
+    await popup.locator('#s_NR_GUIA, [name="s_NR_GUIA"]').fill(String(guia.numero_guia), { timeout: DEFAULT_TIMEOUT })
+    await popup.locator('[name="Button_Filtro"]').first().click({ timeout: DEFAULT_TIMEOUT })
+    await waitProcessing(popup)
+    await popup.waitForLoadState('domcontentloaded', { timeout: DEFAULT_TIMEOUT }).catch(() => {})
+
+    const row = await rowByGuia(popup, guia.numero_guia)
+    if (!row) {
+      return null
+    }
+
+    const texto = await row.innerText().catch(() => '')
+    const iconSrc = await row.locator('img').first().getAttribute('src').catch(() => null)
+    const situacao = situacaoDaLinha(texto, iconSrc)
+
+    return { situacao, guia_status: mapPortalStatus(situacao) }
+  } catch {
+    return null
+  } finally {
+    await popup.close().catch(() => {})
+  }
+}
+
+const STATUS_CONHECIDOS = ['Negado', 'Autorizado', 'Em execução', 'Cancelado', 'Em análise', 'Pendente']
+
+function situacaoDaLinha(texto, iconSrc) {
+  const encontrado = STATUS_CONHECIDOS.find((status) => normalize(texto).includes(normalize(status)))
+  if (encontrado) {
+    return encontrado
+  }
+
+  const rotuloIcone = rotuloDoIcone(iconSrc)
+  if (rotuloIcone) {
+    return rotuloIcone.charAt(0).toUpperCase() + rotuloIcone.slice(1)
+  }
+
+  return texto.trim() || 'Desconhecido'
+}
+
+// Sem rótulo de texto confiável ao lado do ícone (o `title`/`alt` do
+// `<img>` vêm vazios no portal real) — deriva um rótulo a partir do nome do
+// arquivo (ex.: "ico16negado.gif" -> "negado"), que alimenta o mesmo
+// mapPortalStatus() usado em todo o resto do worker.
+function rotuloDoIcone(src) {
+  const arquivo = String(src ?? '').split('/').pop() ?? ''
+  return arquivo
+    .replace(/\.[a-z]+$/i, '')
+    .replace(/^ico\d*/i, '')
+    .replace(/[_-]+/g, ' ')
+    .trim()
 }
 
 export async function lerDadosExecucaoGuia(page) {

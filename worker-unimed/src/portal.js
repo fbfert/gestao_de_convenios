@@ -74,7 +74,14 @@ export async function preencherCarteirinha(page, card) {
 
 export async function atualizarCadastroSeNecessario(page) {
   const updateButton = page.locator('[name="Button_Update"]')
-  if (await updateButton.isVisible({ timeout: 500 }).catch(() => false)) {
+  // 500ms nao bastava (achado ao vivo em 26/08/2026 e reproduzido em
+  // 31/08/2026 rodando 3 lookups de status seguidos pro mesmo paciente: a
+  // 3a travava presa em cadastrar_sem_cartao.do porque o botao ainda nao
+  // tinha aparecido) — o portal as vezes demora mais que isso pra renderizar
+  // esta tela intermediaria. So ainda usamos isVisible (nao waitFor) porque
+  // o botao e opcional: quando o cadastro ja esta em dia essa tela real nao
+  // aparece nenhuma vez.
+  if (await updateButton.isVisible({ timeout: 3000 }).catch(() => false)) {
     await updateButton.click({ timeout: DEFAULT_TIMEOUT })
     await waitProcessing(page)
   }

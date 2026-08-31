@@ -30,7 +30,8 @@ import { AutomacaoProgressoModal } from '../automacoes/AutomacaoProgressoModal'
 const defaultFilters: GuiaFilters = {
   status: '',
   convenio_id: '',
-  paciente_id: '',
+  profissional_id: '',
+  paciente_nome: '',
   validade_senha_vencendo_em_dias: '',
 }
 
@@ -71,6 +72,7 @@ export function GuiasPage() {
   const especialidadesQuery = useEspecialidades()
   const pacientesQuery = usePacientes({ convenio_id: form.convenio_id })
   const profissionaisQuery = useProfissionais({ especialidade_id: form.especialidade_id })
+  const profissionaisFiltroQuery = useProfissionais()
   const guiasQuery = useGuias({ ...filters, ...ordenacao }, page)
   const criarGuia = useCriarGuia()
   const gerarConciliacao = useGerarConciliacao()
@@ -81,6 +83,7 @@ export function GuiasPage() {
   const especialidades = useMemo(() => especialidadesQuery.data ?? [], [especialidadesQuery.data])
   const pacientes = useMemo(() => pacientesQuery.data ?? [], [pacientesQuery.data])
   const profissionais = useMemo(() => profissionaisQuery.data ?? [], [profissionaisQuery.data])
+  const profissionaisFiltro = useMemo(() => profissionaisFiltroQuery.data ?? [], [profissionaisFiltroQuery.data])
   const guias = guiasQuery.data?.data ?? []
   const totalPages = guiasQuery.data?.meta?.last_page ?? 1
 
@@ -496,23 +499,39 @@ export function GuiasPage() {
           </label>
 
           <label className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <span className="text-meta uppercase tracking-[0.25em] text-slate-400">Paciente</span>
+            <span className="text-meta uppercase tracking-[0.25em] text-slate-400">Profissional</span>
             <div className="w-full sm:w-52">
               <Select
-                value={draftFilters.paciente_id}
+                value={draftFilters.profissional_id}
                 onChange={(event) =>
-                  setDraftFilters((current) => ({ ...current, paciente_id: event.target.value }))
+                  setDraftFilters((current) => ({ ...current, profissional_id: event.target.value }))
                 }
                 className={selectClasses()}
-                data-testid="guia-filtro-paciente"
+                data-testid="guia-filtro-profissional"
               >
                 <option value="">Todos</option>
-                {pacientes.map((item) => (
+                {profissionaisFiltro.map((item) => (
                   <option key={item.id} value={item.id}>
                     {item.nome}
                   </option>
                 ))}
               </Select>
+            </div>
+          </label>
+
+          <label className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <span className="text-meta uppercase tracking-[0.25em] text-slate-400">Paciente</span>
+            <div className="w-full sm:w-52">
+              <input
+                type="text"
+                value={draftFilters.paciente_nome}
+                onChange={(event) =>
+                  setDraftFilters((current) => ({ ...current, paciente_nome: event.target.value }))
+                }
+                placeholder="Buscar por nome..."
+                className={selectClasses()}
+                data-testid="guia-filtro-paciente-nome"
+              />
             </div>
           </label>
 

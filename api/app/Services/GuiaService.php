@@ -48,6 +48,9 @@ class GuiaService
             ->when(Arr::get($filtros, 'status'), fn ($query, $status) => $query->where('status', $status))
             ->when(Arr::get($filtros, 'convenio_id'), fn ($query, $convenioId) => $query->where('convenio_id', $convenioId))
             ->when(Arr::get($filtros, 'paciente_id'), fn ($query, $pacienteId) => $query->where('paciente_id', $pacienteId))
+            ->when(Arr::get($filtros, 'profissional_id'), fn ($query, $profissionalId) => $query->where('profissional_id', $profissionalId))
+            ->when(Arr::get($filtros, 'paciente_nome'), fn ($query, $pacienteNome) => $query
+                ->whereHas('paciente', fn ($query) => $query->where('nome', 'like', '%' . $pacienteNome . '%')))
             ->when(Arr::get($filtros, 'alerta_negacao_pendente'), fn ($query) => $query
                 ->where('status', GuiaStatus::DENIED)
                 ->whereNull('alerta_negacao_ocultado_em'))

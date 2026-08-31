@@ -96,7 +96,8 @@ export type PaginatedResponse<T> = {
 export type GuiaFilters = {
   status: string
   convenio_id: string
-  paciente_id: string
+  profissional_id: string
+  paciente_nome: string
   validade_senha_vencendo_em_dias: string
 }
 

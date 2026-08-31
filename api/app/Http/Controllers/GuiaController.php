@@ -28,6 +28,8 @@ class GuiaController extends Controller
                 'status',
                 'convenio_id',
                 'paciente_id',
+                'profissional_id',
+                'paciente_nome',
                 'validade_senha_vencendo_em_dias',
                 'alerta_negacao_pendente',
             ]), (int) $request->integer('per_page', 15))

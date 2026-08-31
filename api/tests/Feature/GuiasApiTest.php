@@ -61,6 +61,41 @@ class GuiasApiTest extends TestCase
             ->assertJsonPath('message', 'Transição inválida de guia: finalized -> denied.');
     }
 
+    public function test_filtra_guias_por_profissional_e_por_nome_do_paciente(): void
+    {
+        $this->autenticar();
+
+        $payload = $this->payloadGuia('Unimed');
+        $id = $this->postJson('/api/guias', $payload)
+            ->assertCreated()
+            ->json('data.id');
+
+        $outroPaciente = Paciente::query()
+            ->where('convenio_id', $payload['convenio_id'])
+            ->where('id', '!=', $payload['paciente_id'])
+            ->firstOrFail();
+
+        $outraGuia = $this->payloadGuia('Unimed', 'Fonoaudiologia');
+        $outraGuia['paciente_id'] = $outroPaciente->id;
+        $outraId = $this->postJson('/api/guias', $outraGuia)
+            ->assertCreated()
+            ->json('data.id');
+
+        $paciente = Paciente::query()->findOrFail($payload['paciente_id']);
+
+        $porProfissional = $this->getJson('/api/guias?profissional_id='.$payload['profissional_id'])
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $id)
+            ->json('data.*.id');
+        $this->assertNotContains($outraId, $porProfissional);
+
+        $porNomePaciente = $this->getJson('/api/guias?paciente_nome='.urlencode(mb_substr($paciente->nome, 0, 4)))
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $id)
+            ->json('data.*.id');
+        $this->assertNotContains($outraId, $porNomePaciente);
+    }
+
     public function test_finaliza_via_http_sem_validade_senha_calculando_data_automaticamente(): void
     {
         $this->autenticar();
@@ -338,10 +373,10 @@ class GuiasApiTest extends TestCase
         return $user;
     }
 
-    private function payloadGuia(string $convenioNome): array
+    private function payloadGuia(string $convenioNome, string $especialidadeNome = 'Fisioterapia'): array
     {
         $convenio = Convenio::query()->where('nome', $convenioNome)->firstOrFail();
-        $especialidade = Especialidade::query()->where('nome', 'Fisioterapia')->firstOrFail();
+        $especialidade = Especialidade::query()->where('nome', $especialidadeNome)->firstOrFail();
         $profissional = Profissional::query()->where('especialidade_id', $especialidade->id)->firstOrFail();
 
         return [

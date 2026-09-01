@@ -226,3 +226,56 @@ export type PedidoMedicoAiResult = {
     cids: PedidoMedicoCidLido[]
   }
 }
+
+export type SolicitacaoImportLinhaDados = {
+  linha: number
+  grupo: string
+  protocolo: string | null
+  paciente_cpf: string | null
+  paciente_carteirinha: string | null
+  paciente_id: number | null
+  convenio: string
+  convenio_id: number | null
+  medico: string
+  medico_id: number | null
+  cids: string
+  cid_ids: number[]
+  solicitado_em: string | null
+  status: 'under_review' | 'denied' | 'canceled' | 'expired' | null
+  observacoes: string | null
+  especialidade: string
+  especialidade_id: number | null
+  profissional: string
+  profissional_id: number | null
+  quantidade: number
+  item_observacoes: string | null
+  matched_solicitacao_id: number | null
+}
+
+export type SolicitacaoImportLinha = {
+  id: number
+  linha: number
+  grupo: string
+  status: 'valida' | 'erro' | 'importado' | 'atualizado' | 'ignorado'
+  matched_solicitacao_id: number | null
+  dados: SolicitacaoImportLinhaDados
+  erros: Record<string, string>
+}
+
+export type SolicitacaoImportLote = {
+  id: number
+  arquivo_nome_original: string
+  status: 'previsualizado' | 'confirmado'
+  confirmado_em: string | null
+  total_linhas: number
+  total_validas: number
+  total_invalidas: number
+  total_importados: number
+  total_atualizados: number
+  total_ignorados: number
+}
+
+export type SolicitacaoImportPreview = {
+  lote: SolicitacaoImportLote
+  linhas: SolicitacaoImportLinha[]
+}

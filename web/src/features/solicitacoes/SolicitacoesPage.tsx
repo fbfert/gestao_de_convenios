@@ -390,6 +390,15 @@ export function SolicitacoesPage() {
               <strong className="mt-1 block">Novo</strong> abre o mesmo formulário em branco, para
               digitar tudo manualmente.
             </Tooltip>
+            {pode('solicitacoes.manage') ? (
+              <Botao
+                variante="secundario"
+                onClick={() => navigate('/solicitacoes/importar')}
+                data-testid="solicitacao-importar"
+              >
+                Importar planilha
+              </Botao>
+            ) : null}
             <Botao variante="primario" onClick={handleNew} data-testid="solicitacao-novo">
               Novo
             </Botao>

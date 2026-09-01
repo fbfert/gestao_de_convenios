@@ -30,6 +30,7 @@ use App\Http\Controllers\PacienteController;
 use App\Http\Controllers\PacienteImportController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\SolicitacaoController;
+use App\Http\Controllers\SolicitacaoImportController;
 use App\Http\Controllers\TenantController;
 use App\Http\Controllers\ProfissionalController;
 use App\Http\Controllers\SolicitacaoDocumentoController;
@@ -145,6 +146,12 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EncerrarSessaoExpirada::
 
     Route::get('/solicitacoes', [SolicitacaoController::class, 'index']);
     Route::post('/solicitacoes', [SolicitacaoController::class, 'store']);
+    Route::get('/solicitacoes/importar/template', [SolicitacaoImportController::class, 'template'])
+        ->middleware('permission:solicitacoes.manage');
+    Route::post('/solicitacoes/importar', [SolicitacaoImportController::class, 'previsualizar'])
+        ->middleware('permission:solicitacoes.manage');
+    Route::post('/solicitacoes/importar/{solicitacao_import_lote}/confirmar', [SolicitacaoImportController::class, 'confirmar'])
+        ->middleware('permission:solicitacoes.manage');
     Route::post('/solicitacoes/ler-pedido-medico', [SolicitacaoController::class, 'analisarPedidoMedico']);
     Route::post('/solicitacoes/pacientes-rapido', [SolicitacaoController::class, 'storePacienteRapido']);
     Route::post('/solicitacoes/especialidades-rapido', [SolicitacaoController::class, 'storeEspecialidadeRapida']);

@@ -7,6 +7,7 @@ import { ShellLayout } from './ShellLayout'
 import { SolicitacoesPage } from '../features/solicitacoes/SolicitacoesPage'
 import { LerPedidoMedicoPage } from '../features/solicitacoes/LerPedidoMedicoPage'
 import { SolicitacaoEditarPage } from '../features/solicitacoes/SolicitacaoEditarPage'
+import { ImportarSolicitacoesPage } from '../features/solicitacoes/ImportarSolicitacoesPage'
 import { ImportarPacientesPage, PacientesPage } from '../features/pacientes'
 import { GuiaDetalhePage, GuiaEditarPage, GuiasPage } from '../features/guias'
 import { AntecipacoesPage } from '../features/antecipacoes/AntecipacoesPage'
@@ -56,6 +57,7 @@ export function AppRoutes() {
           <Route path="/solicitacoes" element={<SolicitacoesPage />} />
           <Route path="/solicitacoes/ler-pedido-medico" element={<LerPedidoMedicoPage />} />
           <Route path="/solicitacoes/nova" element={<SolicitacoesPage />} />
+          <Route path="/solicitacoes/importar" element={<ImportarSolicitacoesPage />} />
           <Route path="/solicitacoes/:id/editar" element={<SolicitacaoEditarPage />} />
           <Route path="/pacientes" element={<PacientesPage />} />
           <Route path="/pacientes/novo" element={<PacientesPage />} />

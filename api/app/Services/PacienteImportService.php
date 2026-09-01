@@ -32,6 +32,11 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class PacienteImportService
 {
+    public function __construct(
+        private readonly ImportacaoHeaderMappingAiService $headerMappingAi
+    ) {
+    }
+
     /** Cabeçalho aceito, na ordem em que aparece no modelo gerado. */
     private const COLUNAS = [
         'nome' => 'Nome',
@@ -90,6 +95,10 @@ class PacienteImportService
         $sheet = $spreadsheet->getActiveSheet();
 
         $colunas = $this->mapearCabecalho($sheet);
+
+        if (! isset($colunas['nome'], $colunas['carteirinha'], $colunas['convenio'])) {
+            $colunas = $this->reforcarComIA($colunas, $this->lerCabecalhoBruto($sheet), $tenantId);
+        }
 
         if (! isset($colunas['nome'], $colunas['carteirinha'], $colunas['convenio'])) {
             throw new RuntimeException('A planilha precisa ter pelo menos as colunas Nome, Carteirinha e Convênio.');
@@ -204,6 +213,58 @@ class PacienteImportService
 
             return $this->serializarLote($lote->fresh('linhas'));
         });
+    }
+
+    /**
+     * @return array<string, string> letra da coluna -> texto literal do cabeçalho
+     */
+    private function lerCabecalhoBruto($sheet): array
+    {
+        $colunas = [];
+
+        foreach ($sheet->getRowIterator(1, 1) as $row) {
+            foreach ($row->getCellIterator() as $cell) {
+                $valor = trim((string) $cell->getValue());
+
+                if ($valor !== '') {
+                    $colunas[$cell->getColumn()] = $valor;
+                }
+            }
+        }
+
+        return $colunas;
+    }
+
+    /**
+     * Reforço por IA: só entra quando o casamento estrito não achou as
+     * colunas obrigatórias — a clínica mandou a própria planilha, não o
+     * modelo baixável. Qualquer falha (sem IA configurada, erro de rede)
+     * é silenciosa aqui — quem chama continua com o $colunas de entrada e
+     * cai no erro de "faltam colunas" de sempre.
+     *
+     * @param array<string, string> $colunas chave canônica -> letra da coluna (já resolvidas)
+     * @param array<string, string> $colunasBrutas letra da coluna -> texto literal do cabeçalho
+     * @return array<string, string> chave canônica -> letra da coluna
+     */
+    private function reforcarComIA(array $colunas, array $colunasBrutas, int $tenantId): array
+    {
+        try {
+            $mapeamento = $this->headerMappingAi->mapear($tenantId, array_values($colunasBrutas), self::COLUNAS);
+        } catch (\Throwable) {
+            return $colunas;
+        }
+
+        $textoParaColuna = array_flip($colunasBrutas);
+
+        foreach ($mapeamento as $textoBruto => $chaveCanonica) {
+            if (isset($colunas[$chaveCanonica]) || ! isset($textoParaColuna[$textoBruto])) {
+                continue;
+            }
+
+            $colunas[$chaveCanonica] = $textoParaColuna[$textoBruto];
+        }
+
+        return $colunas;
     }
 
     /**

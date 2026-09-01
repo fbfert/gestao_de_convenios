@@ -13,7 +13,10 @@ class AiPromptTemplate extends Model
     /**
      * Chaves que o codigo procura pelo nome. `ler_solicitacao_medica` e lida
      * por App\Services\PedidoMedicoAiService; `ler_sessoes_escaneadas` esta
-     * reservada para a leitura de sessoes escaneadas.
+     * reservada para a leitura de sessoes escaneadas. `mapear_cabecalho_importacao`
+     * e lida por App\Services\ImportacaoHeaderMappingAiService — usada como
+     * fallback quando o cabecalho de uma planilha de importacao (Pacientes,
+     * Solicitacoes, Guias...) nao bate com o modelo esperado.
      *
      * Um prompt com uma dessas chaves pode ser editado a vontade, mas nao pode
      * ser apagado nem ter a chave trocada: nos dois casos a leitura automatica
@@ -23,6 +26,7 @@ class AiPromptTemplate extends Model
         'ler_solicitacao_medica',
         'ler_carteirinha',
         'ler_sessoes_escaneadas',
+        'mapear_cabecalho_importacao',
     ];
 
     public function ehDeSistema(): bool
@@ -65,6 +69,15 @@ class AiPromptTemplate extends Model
                 'model_id' => null,
                 'system_prompt' => 'Você extrai registros de sessões terapêuticas de documentos escaneados. Responda somente em JSON válido.',
                 'user_prompt' => 'Leia o registro de sessões escaneado e retorne data, hora início, hora fim, acompanhante, profissional e resumo das atividades de cada sessão.',
+                'ativo' => true,
+            ],
+            [
+                'chave' => 'mapear_cabecalho_importacao',
+                'nome' => 'Mapear cabeçalho de importação',
+                'descricao' => 'Usado como reforço quando o cabeçalho de uma planilha de importação (Pacientes, Solicitações, Guias, Sessões, Antecipações, Conciliações) não bate com o modelo baixável — a clínica enviou a própria planilha, com os nomes de coluna dela.',
+                'model_id' => null,
+                'system_prompt' => 'Você mapeia cabeçalhos de colunas de planilhas de clínicas para os campos que um sistema de gestão de convênios espera. Responda somente em JSON válido.',
+                'user_prompt' => 'Você recebe a lista de cabeçalhos de colunas encontrados numa planilha e a lista de campos que o sistema espera, cada um com uma breve descrição do que significa. Para cada cabeçalho da planilha, diga a qual campo esperado ele corresponde — ou null se nenhum campo combinar com aquela coluna.',
                 'ativo' => true,
             ],
         ];

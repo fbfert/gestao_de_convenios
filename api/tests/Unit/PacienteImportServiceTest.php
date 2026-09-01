@@ -2,6 +2,8 @@
 
 namespace Tests\Unit;
 
+use App\Models\AiOpenaiSetting;
+use App\Models\AiPromptTemplate;
 use App\Models\Convenio;
 use App\Models\Paciente;
 use App\Models\PacienteImportLote;
@@ -9,10 +11,12 @@ use App\Models\Tenant;
 use App\Services\PacienteImportService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use RuntimeException;
 use Tests\TestCase;
 
 class PacienteImportServiceTest extends TestCase
@@ -249,5 +253,86 @@ class PacienteImportServiceTest extends TestCase
 
         $this->expectException(ValidationException::class);
         $service->confirmar($lote->fresh(), [$linhaId], [], $tenantId);
+    }
+
+    /**
+     * @param array<int, string> $cabecalho
+     * @param array<int, array<int, string>> $linhas
+     */
+    private function arquivoXlsxCabecalhoLivre(array $cabecalho, array $linhas): UploadedFile
+    {
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->fromArray($cabecalho, null, 'A1');
+
+        $numeroLinha = 2;
+        foreach ($linhas as $linha) {
+            $sheet->fromArray($linha, null, "A{$numeroLinha}");
+            $numeroLinha++;
+        }
+
+        $caminho = tempnam(sys_get_temp_dir(), 'pacientes-import-livre-').'.xlsx';
+        (new Xlsx($spreadsheet))->save($caminho);
+
+        return new UploadedFile($caminho, 'pacientes-livre.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true);
+    }
+
+    private function configurarIa(int $tenantId): void
+    {
+        AiOpenaiSetting::query()->create([
+            'tenant_id' => $tenantId,
+            'api_key' => 'sk-teste',
+            'base_url' => 'https://api.openai.com/v1',
+            'ativo' => true,
+        ]);
+
+        AiPromptTemplate::garantirPadroes($tenantId);
+    }
+
+    public function test_previsualizar_usa_ia_para_mapear_cabecalho_fora_do_modelo(): void
+    {
+        $this->configurarIa($this->tenantId());
+
+        Http::fake([
+            '*/responses' => Http::response([
+                'output_text' => json_encode([
+                    'Nome do Paciente' => 'nome',
+                    'Documento CPF' => 'cpf',
+                    'Nº da Carteirinha' => 'carteirinha',
+                    'Operadora' => 'convenio',
+                ]),
+            ], 200),
+        ]);
+
+        $service = app(PacienteImportService::class);
+        $tenantId = $this->tenantId();
+
+        $arquivo = $this->arquivoXlsxCabecalhoLivre(
+            ['Nome do Paciente', 'Documento CPF', 'Nº da Carteirinha', 'Operadora'],
+            [['Paciente Planilha Da Clinica', '111.444.777-35', '99988877766', 'Unimed']],
+        );
+
+        $resultado = $service->previsualizar($arquivo, $tenantId);
+
+        $this->assertSame(1, $resultado['lote']['total_validas']);
+        $this->assertSame('Paciente Planilha Da Clinica', $resultado['linhas'][0]['dados']['nome']);
+        $this->assertSame('Unimed', $resultado['linhas'][0]['dados']['convenio']);
+
+        Http::assertSent(fn ($request) => str_contains($request->url(), '/responses'));
+    }
+
+    public function test_previsualizar_sem_ia_configurada_mantem_erro_de_colunas(): void
+    {
+        // Sem configurarIa(): nenhuma AiOpenaiSetting ativa pro tenant.
+        $service = app(PacienteImportService::class);
+        $tenantId = $this->tenantId();
+
+        $arquivo = $this->arquivoXlsxCabecalhoLivre(
+            ['Nome do Paciente', 'Documento CPF', 'Nº da Carteirinha', 'Operadora'],
+            [['Paciente Sem Ia', '111.444.777-35', '99988877766', 'Unimed']],
+        );
+
+        $this->expectException(RuntimeException::class);
+        $service->previsualizar($arquivo, $tenantId);
     }
 }

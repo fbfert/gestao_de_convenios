@@ -112,7 +112,8 @@ class AiSettingsApiTest extends TestCase
         $this->getJson('/api/configuracoes/ia')
             ->assertOk()
             ->assertJsonPath('data.openai', null)
-            ->assertJsonCount(3, 'data.prompts');
+            // 4 prompts de sistema — ver AiPromptTemplate::CHAVES_SISTEMA.
+            ->assertJsonCount(4, 'data.prompts');
     }
 
     private function autenticar(): void

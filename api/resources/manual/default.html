@@ -336,6 +336,7 @@
   <tr><td><span class="btn">Novo</span></td><td>Abre o cadastro em tela própria, em <code>/pacientes/novo</code>.</td></tr>
   <tr><td><span class="btn">Editar</span> (por linha)</td><td>Abre a edição em tela própria, em <code>/pacientes/{id}/editar</code>. A listagem sai da tela enquanto o formulário está aberto.</td></tr>
   <tr><td><span class="btn">Ler Carteirinha</span></td><td>Lê a carteirinha por IA e preenche os campos. Ver abaixo.</td></tr>
+  <tr><td><span class="btn">Importar planilha</span></td><td>Abre a importação em massa por planilha, em <code>/pacientes/importar</code>. Ver abaixo.</td></tr>
   <tr><td><span class="btn">Usar webcam</span></td><td>No computador, captura a foto na própria página. No celular, o botão Ler Carteirinha já abre a câmera.</td></tr>
   <tr><td><span class="btn">Ativar</span> / <span class="btn">Desativar</span></td><td>Alterna o status do paciente imediatamente, sem pedir confirmação.</td></tr>
   <tr><td><span class="btn">Criar paciente</span> / <span class="btn">Salvar alterações</span></td><td>Grava o cadastro. Só habilita quando Nome Completo, Carteirinha e Convênio estão preenchidos.</td></tr>
@@ -393,6 +394,46 @@
   Os contadores no topo mostram Total, Ativos e Inativos calculados na hora a partir da lista carregada. A tabela
   <strong>ordena pelos cabeçalhos</strong>: clique em Nome, Carteirinha, Convênio, Contato, Validade ou Status, e
   clique de novo para inverter o sentido.
+</p>
+
+<h3>Importar planilha <span class="rota">/pacientes/importar</span></h3>
+<p>
+  Traz pacientes que já existem numa planilha da clínica (Excel, Google Sheets) para dentro do sistema, em vez de
+  cadastrar um por um. Quatro passos, e nada é gravado antes do último:
+</p>
+<ol>
+  <li><span class="btn">Baixar modelo</span> gera um <code>.xlsx</code> com as colunas certas e uma linha de exemplo.</li>
+  <li><span class="btn">Escolher planilha (.xlsx)</span> envia o arquivo preenchido para conferência.</li>
+  <li>
+    A prévia mostra uma linha por paciente da planilha, com <strong>cada campo editável</strong> e o que deu errado
+    (se der) em vermelho embaixo do campo. Linhas sem erro já vêm marcadas para importar; desmarque as que não quer
+    trazer, ou use a caixa no cabeçalho da tabela para marcar/desmarcar todas de uma vez.
+  </li>
+  <li><span class="btn">Confirmar importação</span> grava só as linhas marcadas.</li>
+</ol>
+<p>
+  <strong>Reimportar a mesma planilha depois não duplica.</strong> A chave é o CPF quando a linha traz um; sem CPF,
+  carteirinha + convênio. Achando um paciente já cadastrado com essa chave, a linha <strong>atualiza</strong> em vez
+  de criar outro — a prévia mostra "Atualiza #123" nesse caso.
+</p>
+<div class="nota">
+  Linha que cita um convênio que não existe no cadastro vira <strong>erro</strong>, desmarcada por padrão — o
+  sistema nunca cadastra um convênio novo sozinho a partir da planilha.
+</div>
+<div class="dica">
+  <strong>Cabeçalho fora do modelo?</strong> Se a planilha enviada não usa os nomes de coluna do modelo baixado —
+  por exemplo, a planilha que a clínica já usa no dia a dia, com nomes de coluna diferentes — o sistema tenta
+  identificar as colunas por IA antes de desistir, usando a mesma conexão de
+  <a href="#configuracoes">Configurações → IA</a> (prompt <code>mapear_cabecalho_importacao</code>, editável em
+  Prompts Operacionais). A IA só olha os <strong>nomes das colunas</strong>, nunca os dados das linhas: um
+  mapeamento errado aparece como valor na coluna errada na prévia, revisável e corrigível antes de confirmar. Sem
+  conexão de IA configurada, o sistema pede para usar o modelo baixado.
+</div>
+<div class="nota">Exige a permissão <code>dashboard.pacientes</code> — mais restrita que o cadastro manual, que hoje não exige nenhuma.</div>
+<p>
+  Este é o mesmo padrão de importação disponível em <a href="#solicitacoes">Solicitações</a>,
+  <a href="#guias">Guias</a>, <a href="#lancamentos">Sessões</a>, <a href="#antecipacoes">Antecipações</a> e
+  <a href="#conciliacao">Conciliação</a> — cada tela com a chave de correspondência explicada na respectiva seção.
 </p>
 
 <h2 class="secao" id="solicitacoes">6. Solicitações <span class="rota">/solicitacoes</span></h2>
@@ -476,6 +517,32 @@
   enviada à operadora, a evidência do envio. Anexo de guia já gerada não pode ser removido.
 </div>
 
+<h3>Importar planilha <span class="rota">/solicitacoes/importar</span></h3>
+<p>Mesmo padrão de <a href="#pacientes">Pacientes</a> (modelo → prévia editável → confirmação seletiva — ver lá como funciona), com duas diferenças:</p>
+<ul>
+  <li>
+    <strong>Cada linha da planilha é um item</strong> (especialidade + profissional). Linhas com o mesmo
+    <strong>Protocolo</strong> viram itens da mesma solicitação — uma solicitação com várias especialidades vira
+    várias linhas na planilha, uma por item, todas com o mesmo protocolo.
+  </li>
+  <li>
+    A planilha aceita uma coluna <strong>Status</strong> opcional (<span class="badge azul">Em análise</span>,
+    <span class="badge vermelho">Negado</span>, Cancelado ou Vencido) — útil para trazer histórico de solicitações
+    já resolvidas. Em branco, entra como <span class="badge azul">Em análise</span>, igual ao cadastro manual.
+  </li>
+</ul>
+<p>
+  <strong>Chave de correspondência: o Protocolo.</strong> Reimportar o mesmo protocolo atualiza a solicitação
+  (substituindo os itens pelos que vieram agora) em vez de duplicar. Linha sem protocolo sempre cria uma
+  solicitação nova, de item único.
+</p>
+<div class="nota">
+  Linhas do mesmo protocolo precisam concordar em paciente, convênio, médico, CID(s), data e status — se
+  divergirem, a linha vira erro em vez de gravar um dado errado silenciosamente.
+</div>
+<div class="dica">Cabeçalho fora do modelo? O sistema tenta identificar as colunas por IA antes de desistir — ver <a href="#pacientes">Pacientes → Importar planilha</a>.</div>
+<div class="nota">Exige a permissão <code>solicitacoes.manage</code> (por padrão, só o admin).</div>
+
 <h2 class="secao" id="guias">7. Guias <span class="rota">/guias</span></h2>
 <div class="objetivo">Objetivo: controlar o documento de autorização do convênio — número da guia, senha e prazo de validade da senha.</div>
 <table>
@@ -485,6 +552,7 @@
   <tr><td>Número da guia (link)</td><td>Abre a tela de detalhe da guia (<code>/guias/:id</code>).</td></tr>
   <tr><td>"Vencendo em 7 dias"</td><td>Filtro rápido para mostrar apenas guias cuja senha vence em até 7 dias — use para não perder o prazo de renovação.</td></tr>
   <tr><td><span class="btn">Gerar conciliação</span> (por linha)</td><td>Cria a linha de conciliação financeira para essa guia. Só fica disponível quando a guia está <span class="badge verde">Autorizada</span> ou <span class="badge verde">Aprovada</span>.</td></tr>
+  <tr><td><span class="btn">Importar planilha</span></td><td>Abre a importação em massa por planilha, em <code>/guias/importar</code>. Ver abaixo.</td></tr>
 </table>
 <h3>Como a guia muda de status</h3>
 <p>
@@ -555,6 +623,21 @@
   padrão só o admin tem essa permissão — a clínica pode concedê-la ao <code>funcionario</code> em
   <a href="#permissoes">Perfis e Permissões</a>.
 </div>
+
+<h3>Importar planilha <span class="rota">/guias/importar</span></h3>
+<p>
+  Mesmo padrão de <a href="#pacientes">Pacientes</a>. A planilha aceita todos os campos da guia, inclusive
+  <strong>Status</strong> histórico (Em análise, Autorizado, Finalizado, Negado, Cancelado ou Verificar Restrição)
+  e, opcionalmente, o <strong>Protocolo da solicitação</strong> para vincular a uma solicitação já importada.
+</p>
+<p><strong>Chave de correspondência: o Número da guia</strong>, dentro do convênio. Reimportar o mesmo número atualiza a guia em vez de duplicar.</p>
+<div class="nota">
+  Importar uma guia como <span class="badge verde">Finalizado</span> <strong>não abre sozinho</strong> o ciclo de
+  Antecipação (diferente de clicar em <span class="btn">Finalizar</span> na tela) — quem migra histórico importa a
+  Antecipação separadamente, em <a href="#antecipacoes">Antecipações</a>.
+</div>
+<div class="dica">Cabeçalho fora do modelo? O sistema tenta identificar as colunas por IA antes de desistir — ver <a href="#pacientes">Pacientes → Importar planilha</a>.</div>
+<div class="nota">Exige a permissão <code>guias.manage</code> (por padrão, só o admin).</div>
 
 <h2 class="secao" id="convenios">8. Convênios <span class="rota">/convenios</span></h2>
 <div class="objetivo">Objetivo: cadastrar os planos de saúde parceiros e configurar as regras de autorização e a tabela de valores usados nos cálculos financeiros.</div>
@@ -629,11 +712,30 @@
   ao chegar em <em>12/12</em> ela fecha sozinha. Se uma sessão for excluída depois, a cota volta e a antecipação reabre.
 </div>
 
+<h3>Importar planilha <span class="rota">/antecipacoes/importar</span></h3>
+<p>
+  Diferente do resto do sistema, esta importação <strong>grava os valores direto</strong> — quantidade autorizada,
+  quantidade já utilizada, ciclo início/fim e status —, sem passar pela abertura automática de ciclo (que só
+  acontece ao finalizar uma guia). Pensada para quem está trazendo histórico e já sabe a cota real.
+</p>
+<p>
+  A guia precisa já existir no sistema (ver <a href="#guias">Guias</a>). <strong>Chave de correspondência: guia +
+  início do ciclo</strong> — uma guia pode ter mais de um ciclo ao longo do tempo, e reimportar o mesmo início de
+  ciclo atualiza em vez de duplicar.
+</p>
+<div class="nota">
+  Status em branco na planilha é calculado sozinho (Aberta ou Fechada, comparando quantidade utilizada com
+  autorizada) — só preencha para forçar um valor diferente do calculado.
+</div>
+<div class="dica">Cabeçalho fora do modelo? O sistema tenta identificar as colunas por IA antes de desistir — ver <a href="#pacientes">Pacientes → Importar planilha</a>.</div>
+<div class="nota">Exige a permissão <code>antecipacoes.manage</code> (por padrão, só o admin).</div>
+
 <h2 class="secao" id="lancamentos">10. Sessões / Lançamentos <span class="rota">/lancamentos</span></h2>
 <div class="objetivo">Objetivo: registrar cada sessão de terapia realizada, seja digitando manualmente, seja importando a transcrição de um formulário em papel preenchido durante o atendimento.</div>
 <table>
   <tr><th>Botão</th><th>O que faz</th></tr>
   <tr><td><span class="btn">Importar transcrição</span></td><td>Abre a importação do registro de sessões em tela própria, em <code>/lancamentos/importar</code>. Fica ao lado de Templates.</td></tr>
+  <tr><td><span class="btn">Importar planilha</span></td><td>Abre a importação em massa por planilha (várias sessões de uma vez), em <code>/lancamentos/importar-planilha</code>. Ver abaixo.</td></tr>
   <tr><td><span class="btn">Imprimir modelo em branco</span></td><td>Imprime uma tabela em branco (8 linhas) para o profissional preencher à mão durante o atendimento, antes de ser digitada ou transcrita no sistema.</td></tr>
   <tr><td><span class="btn">Novo</span></td><td>Abre o formulário manual de lançamento (Antecipação e Profissional executante são obrigatórios; data/hora, acompanhante, resumo e observações completam o registro).</td></tr>
   <tr><td><span class="btn">Registrar sessão</span></td><td>Grava a sessão manualmente digitada.</td></tr>
@@ -668,6 +770,30 @@
   A leitura por IA usa o prompt <code>ler_sessoes_escaneadas</code>, editável em Configurações → IA → Prompts
   Operacionais.
 </div>
+
+<h3>Importar planilha <span class="rota">/lancamentos/importar-planilha</span></h3>
+<p>
+  Diferente de <span class="btn">Importar transcrição</span> (que lê um documento por vez com IA), esta importação
+  traz <strong>várias sessões de uma vez</strong> a partir de uma planilha — pensada para migrar histórico. Mesmo
+  padrão de <a href="#pacientes">Pacientes</a> (modelo → prévia editável → confirmação seletiva).
+</p>
+<p>
+  A planilha não pede o número interno da antecipação (sem sentido pra quem preenche) — só o <strong>número da
+  guia</strong> e a <strong>data da sessão</strong>. O sistema acha a antecipação sozinho: se a guia tem só um
+  ciclo, usa ele; se tem mais de um, escolhe o ciclo cuja janela (início/fim) cobre a data da sessão.
+</p>
+<div class="aviso">
+  <strong>Sessão importada não trava por cota estourada.</strong> Uma sessão histórica já aconteceu de verdade — se
+  a quantidade importada passar da cota autorizada da antecipação, a sessão é gravada mesmo assim (e a antecipação
+  fecha), diferente do lançamento manual, que recusa quando a cota já esgotou.
+</div>
+<p>
+  <strong>Chave de correspondência:</strong> antecipação + data + hora de início + profissional. Reimportar a mesma
+  sessão atualiza os demais campos (acompanhante, resumo...) sem contar a cota de novo.
+</p>
+<div class="dica">Cabeçalho fora do modelo? O sistema tenta identificar as colunas por IA antes de desistir — ver <a href="#pacientes">Pacientes → Importar planilha</a>.</div>
+<div class="nota">Exige a permissão <code>lancamentos.manage</code> (por padrão, só o admin).</div>
+
 <table>
   <tr><th>Botão</th><th>O que faz</th></tr>
   <tr><td><span class="btn">Aplicar</span> (filtros)</td><td>Filtra por Profissional executante e Data da sessão.</td></tr>
@@ -713,6 +839,23 @@
 </table>
 <div class="nota">Não existe botão para pular etapas (ex.: ir direto de Pendente para Paga) nem para voltar um status já avançado.</div>
 <p>A tabela mostra, por guia: quantidade, valor unitário, valor total, percentual de repasse, valor de repasse, entrada/saída financeira e o profissional "planejado" vs. os profissionais que de fato executaram as sessões.</p>
+
+<h3>Importar planilha <span class="rota">/conciliacao/importar</span></h3>
+<p>
+  Além de nascer do botão <span class="btn">Gerar conciliação</span> em <a href="#guias">Guias</a>, uma conciliação
+  pode vir de planilha — grava os valores <strong>direto</strong>, sem os cálculos automáticos de repasse/retenção
+  (esses continuam calculados a partir do convênio, na tela). A guia precisa já existir.
+</p>
+<p>
+  <strong>Chave de correspondência: a guia.</strong> Reimportar a mesma guia atualiza a conciliação em vez de
+  duplicar. Preenchendo quantidade e valor unitário sem o valor total, o sistema calcula o total sozinho
+  (quantidade × valor unitário).
+</p>
+<div class="dica">Cabeçalho fora do modelo? O sistema tenta identificar as colunas por IA antes de desistir — ver <a href="#pacientes">Pacientes → Importar planilha</a>.</div>
+<div class="nota">
+  Exige a permissão <code>conciliacoes.manage</code> (por padrão, só o admin). Não gera os movimentos financeiros de
+  repasse/retenção — só o registro da conciliação em si.
+</div>
 
 <h2 class="secao" id="profissionais">13. Profissionais <span class="rota">/profissionais</span></h2>
 <div class="objetivo">Objetivo: cadastro dos profissionais que atendem na clínica (fisioterapeutas, terapeutas etc.) — usados em Guias, Sessões e Conciliação. Não confundir com "Médicos" (que apenas solicitam terapias).</div>

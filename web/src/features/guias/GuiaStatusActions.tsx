@@ -116,7 +116,7 @@ export function GuiaStatusActions({ guia }: { guia: Guia }) {
       </div>
 
       {isFinalizeOpen ? (
-        <div className="grid gap-3 rounded-2xl border border-white/10 bg-slate-950/50 p-4 md:grid-cols-[1fr_1fr_auto] md:items-end">
+        <div className="grid gap-3 rounded-2xl border border-white/10 bg-slate-950/50 p-4 md:grid-cols-2">
           <label className="space-y-2">
             <span className="flex items-center gap-1 text-meta uppercase tracking-[0.25em] text-slate-400">
               Senha
@@ -149,7 +149,7 @@ export function GuiaStatusActions({ guia }: { guia: Guia }) {
               data-testid={`guia-validade-${guia.id}`}
             />
           </label>
-          <div className="flex gap-2">
+          <div className="flex gap-2 md:col-span-2">
             <Botao
               variante="primario"
               onClick={handleFinalize}

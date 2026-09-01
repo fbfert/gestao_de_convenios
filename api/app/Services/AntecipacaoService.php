@@ -103,7 +103,19 @@ class AntecipacaoService
         }
 
         $cicloInicio = today();
-        $cicloFim = $this->calcularCicloFim($cicloInicio, $regra->frequencia_lancamento);
+
+        // guia.sessoes_autorizadas e o total realmente autorizado nesta guia
+        // (capturado da operadora, ex.: 10) — quando existe, a cota do ciclo
+        // e ele, nao o qtd_autorizada_por_ciclo do convenio (que descreve o
+        // ritmo de liberacao, ex.: "1 por dia", nao o total da guia; sem essa
+        // preferencia a guia so conseguia lancar 1 sessao no total, pois nada
+        // reabre um novo ciclo diario sozinho). O ciclo passa a cobrir a
+        // validade da senha, ja que ele vale pro total autorizado e nao mais
+        // so pra 1 dia.
+        $qtdAutorizada = $guia->sessoes_autorizadas ?? $regra->qtd_autorizada_por_ciclo;
+        $cicloFim = $guia->sessoes_autorizadas && $guia->validade_senha
+            ? $guia->validade_senha->copy()
+            : $this->calcularCicloFim($cicloInicio, $regra->frequencia_lancamento);
 
         return Antecipacao::query()->create([
             'tenant_id' => $guia->tenant_id,
@@ -112,7 +124,7 @@ class AntecipacaoService
             'convenio_id' => $guia->convenio_id,
             'ciclo_inicio' => $cicloInicio,
             'ciclo_fim' => $cicloFim,
-            'qtd_autorizada' => $regra->qtd_autorizada_por_ciclo,
+            'qtd_autorizada' => $qtdAutorizada,
             'qtd_utilizada' => 0,
             'status' => 'open',
         ]);

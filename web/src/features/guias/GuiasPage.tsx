@@ -26,6 +26,8 @@ import { usePode } from '../../lib/permissoes'
 import { useConfirm } from '../../components/ui/ConfirmDialog'
 import { DropdownMenu } from '../../components/ui/DropdownMenu'
 import { AutomacaoProgressoModal } from '../automacoes/AutomacaoProgressoModal'
+import { AutomacaoUnimedDesativadaModal } from '../configuracoes/AutomacaoUnimedDesativadaModal'
+import { useAutomacaoUnimedGate } from '../configuracoes/useAutomacaoUnimedGate'
 
 const defaultFilters: GuiaFilters = {
   status: '',
@@ -78,6 +80,7 @@ export function GuiasPage() {
   const gerarConciliacao = useGerarConciliacao()
   const consultarGuiaUnimed = useConsultarGuiaUnimed()
   const confirmar = useConfirm()
+  const { tratarErroUnimed, modalProps: automacaoUnimedModalProps } = useAutomacaoUnimedGate()
 
   const convenios = useMemo(() => conveniosQuery.data ?? [], [conveniosQuery.data])
   const especialidades = useMemo(() => especialidadesQuery.data ?? [], [especialidadesQuery.data])
@@ -203,6 +206,15 @@ export function GuiasPage() {
     }
   }
 
+  const executarVerificarStatus = async (guiaId: number) => {
+    try {
+      const execucao = await consultarGuiaUnimed.mutateAsync(guiaId)
+      setProgressoExecucaoId(execucao.id)
+    } catch (error) {
+      tratarErroUnimed(error, 'Não foi possível consultar a Unimed.', () => executarVerificarStatus(guiaId))
+    }
+  }
+
   const handleVerificarStatus = async (guiaId: number) => {
     const ok = await confirmar({
       titulo: 'Verificar status na Unimed',
@@ -215,12 +227,7 @@ export function GuiasPage() {
       return
     }
 
-    try {
-      const execucao = await consultarGuiaUnimed.mutateAsync(guiaId)
-      setProgressoExecucaoId(execucao.id)
-    } catch (error) {
-      window.alert(getHttpErrorMessage(error, 'Não foi possível consultar a Unimed.'))
-    }
+    await executarVerificarStatus(guiaId)
   }
 
   return (
@@ -786,6 +793,8 @@ export function GuiasPage() {
         mensagemExecutando="O robô está consultando o status desta guia no portal da Unimed..."
         queryKeysInvalidar={[['guias']]}
       />
+
+      <AutomacaoUnimedDesativadaModal {...automacaoUnimedModalProps} />
     </div>
   )
 }

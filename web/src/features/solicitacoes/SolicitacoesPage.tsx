@@ -25,6 +25,8 @@ import {
 import { formatCarteirinha } from '../../lib/carteirinha'
 import { SolicitacaoGuiaModal } from './SolicitacaoGuiaModal'
 import { AutomacaoProgressoModal } from '../automacoes/AutomacaoProgressoModal'
+import { AutomacaoUnimedDesativadaModal } from '../configuracoes/AutomacaoUnimedDesativadaModal'
+import { useAutomacaoUnimedGate } from '../configuracoes/useAutomacaoUnimedGate'
 import { CidsCampo } from '../cids/CidsCampo'
 import { SolicitacaoItensFields } from './SolicitacaoItensFields'
 import { emptyItem, itensEstaoCompletos } from './solicitacaoItens'
@@ -135,6 +137,7 @@ export function SolicitacoesPage() {
   const atualizarStatusSolicitacao = useAtualizarStatusSolicitacao()
   const enviarItemUnimed = useEnviarItemUnimed()
   const verificarAndamentoItem = useVerificarAndamentoItem()
+  const { tratarErroUnimed, modalProps: automacaoUnimedModalProps } = useAutomacaoUnimedGate()
 
   const convenios = useMemo(() => conveniosQuery.data ?? emptyArray, [conveniosQuery.data])
   const especialidades = useMemo(
@@ -335,7 +338,7 @@ export function SolicitacoesPage() {
       const execucao = await enviarItemUnimed.mutateAsync(itemId)
       setProgressoExecucaoId(execucao.id)
     } catch (error) {
-      window.alert(getHttpErrorMessage(error, 'Não foi possível enviar o item para a Unimed.'))
+      tratarErroUnimed(error, 'Não foi possível enviar o item para a Unimed.', () => handleEnviarItemUnimed(itemId))
     }
   }
 
@@ -344,7 +347,11 @@ export function SolicitacoesPage() {
       const execucao = await verificarAndamentoItem.mutateAsync(itemId)
       setProgressoExecucaoId(execucao.id)
     } catch (error) {
-      window.alert(getHttpErrorMessage(error, 'Não foi possível verificar o andamento no portal da Unimed.'))
+      tratarErroUnimed(
+        error,
+        'Não foi possível verificar o andamento no portal da Unimed.',
+        () => handleVerificarAndamentoItem(itemId),
+      )
     }
   }
 
@@ -992,6 +999,8 @@ export function SolicitacoesPage() {
         onClose={() => setProgressoExecucaoId(null)}
         queryKeysInvalidar={[['solicitacoes']]}
       />
+
+      <AutomacaoUnimedDesativadaModal {...automacaoUnimedModalProps} />
     </div>
   )
 }

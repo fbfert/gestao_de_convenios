@@ -84,13 +84,14 @@ export type UnimedProfissionalMapeamentoForm = {
   ativo: boolean
 }
 
-export function useUnimedSettings() {
+export function useUnimedSettings(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ['configuracoes', 'unimed'],
     queryFn: async () => {
       const { data } = await apiClient.get<{ data: UnimedSettings }>('/configuracoes/unimed')
       return data.data
     },
+    enabled: options?.enabled ?? true,
   })
 }
 

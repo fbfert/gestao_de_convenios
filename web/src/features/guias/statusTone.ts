@@ -15,9 +15,7 @@ export function statusTone(status: string): NonNullable<BadgeProps['tone']> {
     case 'expired':
       return 'alerta'
     case 'under_review':
-      // A operadora ainda não decidiu — fica em vermelho de propósito pra
-      // chamar atenção, já que é o estado que mais precisa de acompanhamento.
-      return 'perigo'
+      return 'alerta'
     default:
       return 'info'
   }

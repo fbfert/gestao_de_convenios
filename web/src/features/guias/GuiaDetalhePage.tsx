@@ -9,6 +9,8 @@ import { buildGuiaTemplateData, renderLancamentoPrintTemplate } from '../lancame
 import { Botao } from '../../components/ui/Botao'
 import { useConfirm } from '../../components/ui/ConfirmDialog'
 import { AutomacaoProgressoModal } from '../automacoes/AutomacaoProgressoModal'
+import { AutomacaoUnimedDesativadaModal } from '../configuracoes/AutomacaoUnimedDesativadaModal'
+import { useAutomacaoUnimedGate } from '../configuracoes/useAutomacaoUnimedGate'
 import { HtmlIsolado } from '../../components/ui/HtmlIsolado'
 
 export function GuiaDetalhePage() {
@@ -19,6 +21,7 @@ export function GuiaDetalhePage() {
   const buscarSenhaValidadeUnimed = useBuscarSenhaValidadeGuiaUnimed()
   const confirmar = useConfirm()
   const [progresso, setProgresso] = useState<{ id: number; tipo: 'status' | 'senha' } | null>(null)
+  const { tratarErroUnimed, modalProps: automacaoUnimedModalProps } = useAutomacaoUnimedGate()
   const printTemplateQuery = useLancamentoPrintTemplate()
   const clinica = useAuthStore((state) => state.tenant)?.nome ?? ''
 
@@ -64,6 +67,15 @@ export function GuiaDetalhePage() {
   const canConsultarUnimed = isUnimed && Boolean(guia.numero_guia) && !['approved', 'denied', 'canceled', 'finalized', 'needs_verification'].includes(guia.status)
   const canBuscarSenhaValidade = isUnimed && guia.status === 'approved' && Boolean(guia.numero_guia) && (!guia.senha || !guia.validade_senha)
 
+  const executarConsultarUnimed = async () => {
+    try {
+      const execucao = await consultarGuiaUnimed.mutateAsync(guia.id)
+      setProgresso({ id: execucao.id, tipo: 'status' })
+    } catch (error) {
+      tratarErroUnimed(error, 'Não foi possível consultar a Unimed.', executarConsultarUnimed)
+    }
+  }
+
   const handleConsultarUnimed = async () => {
     const ok = await confirmar({
       titulo: 'Verificar status na Unimed',
@@ -76,11 +88,15 @@ export function GuiaDetalhePage() {
       return
     }
 
+    await executarConsultarUnimed()
+  }
+
+  const executarBuscarSenhaValidade = async () => {
     try {
-      const execucao = await consultarGuiaUnimed.mutateAsync(guia.id)
-      setProgresso({ id: execucao.id, tipo: 'status' })
+      const execucao = await buscarSenhaValidadeUnimed.mutateAsync(guia.id)
+      setProgresso({ id: execucao.id, tipo: 'senha' })
     } catch (error) {
-      window.alert(getHttpErrorMessage(error, 'Não foi possível consultar a Unimed.'))
+      tratarErroUnimed(error, 'Não foi possível buscar senha e validade na Unimed.', executarBuscarSenhaValidade)
     }
   }
 
@@ -96,12 +112,7 @@ export function GuiaDetalhePage() {
       return
     }
 
-    try {
-      const execucao = await buscarSenhaValidadeUnimed.mutateAsync(guia.id)
-      setProgresso({ id: execucao.id, tipo: 'senha' })
-    } catch (error) {
-      window.alert(getHttpErrorMessage(error, 'Não foi possível buscar senha e validade na Unimed.'))
-    }
+    await executarBuscarSenhaValidade()
   }
 
   return (
@@ -173,6 +184,8 @@ export function GuiaDetalhePage() {
       }
       queryKeysInvalidar={[['guias']]}
     />
+
+    <AutomacaoUnimedDesativadaModal {...automacaoUnimedModalProps} />
     </>
   )
 }

@@ -58,6 +58,21 @@ class AntecipacaoServiceTest extends TestCase
         $this->assertTrue($antecipacao->ciclo_fim->isSameDay(today()->copy()->addMonthNoOverflow()->subDay()));
     }
 
+    public function test_abrir_ciclo_usa_sessoes_autorizadas_da_guia_quando_definido(): void
+    {
+        $service = app(AntecipacaoService::class);
+        $guia = $this->novaGuia('Unimed', 'Fisioterapia', 'especializada');
+        $guia->forceFill([
+            'sessoes_autorizadas' => 10,
+            'validade_senha' => today()->addDays(30),
+        ])->save();
+
+        $antecipacao = $service->abrirCiclo($guia);
+
+        $this->assertSame(10, $antecipacao->qtd_autorizada);
+        $this->assertTrue($antecipacao->ciclo_fim->isSameDay(today()->copy()->addDays(30)));
+    }
+
     public function test_consumir_cota_incrementa_e_fecha_quando_atinge_limite(): void
     {
         $service = app(AntecipacaoService::class);

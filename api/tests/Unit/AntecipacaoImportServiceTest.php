@@ -2,6 +2,8 @@
 
 namespace Tests\Unit;
 
+use App\Models\AiOpenaiSetting;
+use App\Models\AiPromptTemplate;
 use App\Models\AntecipacaoImportLote;
 use App\Models\Convenio;
 use App\Models\Especialidade;
@@ -12,6 +14,7 @@ use App\Models\Tenant;
 use App\Services\AntecipacaoImportService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -145,5 +148,53 @@ class AntecipacaoImportServiceTest extends TestCase
 
         $this->expectException(ValidationException::class);
         $service->confirmar($lote->fresh(), $linhaIds, [], $tenantId);
+    }
+
+    private function configurarIa(int $tenantId): void
+    {
+        AiOpenaiSetting::query()->create([
+            'tenant_id' => $tenantId,
+            'api_key' => 'sk-teste',
+            'base_url' => 'https://api.openai.com/v1',
+            'ativo' => true,
+        ]);
+
+        AiPromptTemplate::garantirPadroes($tenantId);
+    }
+
+    public function test_previsualizar_usa_ia_para_mapear_cabecalho_fora_do_modelo(): void
+    {
+        $tenantId = $this->tenantId();
+        $this->configurarIa($tenantId);
+        $guia = $this->criarGuia();
+
+        Http::fake([
+            '*/responses' => Http::response([
+                'output_text' => json_encode([
+                    'Guia Nº' => 'numero_guia',
+                    'Convênio' => 'convenio',
+                    'Início Ciclo' => 'ciclo_inicio',
+                    'Fim Ciclo' => 'ciclo_fim',
+                    'Cota Autorizada' => 'qtd_autorizada',
+                ]),
+            ], 200),
+        ]);
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->fromArray([
+            ['Guia Nº', 'Convênio', 'Início Ciclo', 'Fim Ciclo', 'Cota Autorizada'],
+            [$guia->numero_guia, 'Unimed', '01/01/2026', '31/12/2026', '10'],
+        ], null, 'A1');
+
+        $caminho = tempnam(sys_get_temp_dir(), 'antecipacoes-import-livre-').'.xlsx';
+        (new Xlsx($spreadsheet))->save($caminho);
+        $arquivo = new UploadedFile($caminho, 'antecipacoes-livre.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true);
+
+        $service = app(AntecipacaoImportService::class);
+        $resultado = $service->previsualizar($arquivo, $tenantId);
+
+        $this->assertSame(1, $resultado['lote']['total_validas']);
+        Http::assertSent(fn ($request) => str_contains($request->url(), '/responses'));
     }
 }

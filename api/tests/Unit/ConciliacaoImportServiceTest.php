@@ -2,6 +2,8 @@
 
 namespace Tests\Unit;
 
+use App\Models\AiOpenaiSetting;
+use App\Models\AiPromptTemplate;
 use App\Models\ConciliacaoFinanceira;
 use App\Models\ConciliacaoImportLote;
 use App\Models\Convenio;
@@ -13,6 +15,7 @@ use App\Models\Tenant;
 use App\Services\ConciliacaoImportService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -150,5 +153,53 @@ class ConciliacaoImportServiceTest extends TestCase
 
         $this->expectException(ValidationException::class);
         $service->confirmar($lote->fresh(), $linhaIds, [], $tenantId);
+    }
+
+    private function configurarIa(int $tenantId): void
+    {
+        AiOpenaiSetting::query()->create([
+            'tenant_id' => $tenantId,
+            'api_key' => 'sk-teste',
+            'base_url' => 'https://api.openai.com/v1',
+            'ativo' => true,
+        ]);
+
+        AiPromptTemplate::garantirPadroes($tenantId);
+    }
+
+    public function test_previsualizar_usa_ia_para_mapear_cabecalho_fora_do_modelo(): void
+    {
+        $tenantId = $this->tenantId();
+        $this->configurarIa($tenantId);
+        $guia = $this->criarGuia();
+        $profissional = Profissional::query()->find($guia->profissional_id);
+
+        Http::fake([
+            '*/responses' => Http::response([
+                'output_text' => json_encode([
+                    'Guia' => 'numero_guia',
+                    'Convênio' => 'convenio',
+                    'Profissional Executante' => 'profissional',
+                    'Qtd Sessões' => 'quantidade',
+                ]),
+            ], 200),
+        ]);
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->fromArray([
+            ['Guia', 'Convênio', 'Profissional Executante', 'Qtd Sessões'],
+            [$guia->numero_guia, 'Unimed', $profissional->nome, '10'],
+        ], null, 'A1');
+
+        $caminho = tempnam(sys_get_temp_dir(), 'conciliacoes-import-livre-').'.xlsx';
+        (new Xlsx($spreadsheet))->save($caminho);
+        $arquivo = new UploadedFile($caminho, 'conciliacoes-livre.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true);
+
+        $service = app(ConciliacaoImportService::class);
+        $resultado = $service->previsualizar($arquivo, $tenantId);
+
+        $this->assertSame(1, $resultado['lote']['total_validas']);
+        Http::assertSent(fn ($request) => str_contains($request->url(), '/responses'));
     }
 }

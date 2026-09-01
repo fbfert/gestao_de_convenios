@@ -2,6 +2,8 @@
 
 namespace Tests\Unit;
 
+use App\Models\AiOpenaiSetting;
+use App\Models\AiPromptTemplate;
 use App\Models\Antecipacao;
 use App\Models\Convenio;
 use App\Models\Especialidade;
@@ -14,6 +16,7 @@ use App\Models\Tenant;
 use App\Services\LancamentoImportService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -199,5 +202,52 @@ class LancamentoImportServiceTest extends TestCase
 
         $this->expectException(ValidationException::class);
         $service->confirmar($lote->fresh(), $linhaIds, [], $tenantId);
+    }
+
+    private function configurarIa(int $tenantId): void
+    {
+        AiOpenaiSetting::query()->create([
+            'tenant_id' => $tenantId,
+            'api_key' => 'sk-teste',
+            'base_url' => 'https://api.openai.com/v1',
+            'ativo' => true,
+        ]);
+
+        AiPromptTemplate::garantirPadroes($tenantId);
+    }
+
+    public function test_previsualizar_usa_ia_para_mapear_cabecalho_fora_do_modelo(): void
+    {
+        $tenantId = $this->tenantId();
+        $this->configurarIa($tenantId);
+        $setup = $this->criarGuiaComAntecipacao();
+
+        Http::fake([
+            '*/responses' => Http::response([
+                'output_text' => json_encode([
+                    'Nº Guia' => 'numero_guia',
+                    'Plano' => 'convenio',
+                    'Executante' => 'profissional',
+                    'Data' => 'data_sessao',
+                ]),
+            ], 200),
+        ]);
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->fromArray([
+            ['Nº Guia', 'Plano', 'Executante', 'Data'],
+            [$setup['guia']->numero_guia, 'Unimed', $setup['profissional']->nome, '20/01/2026'],
+        ], null, 'A1');
+
+        $caminho = tempnam(sys_get_temp_dir(), 'lancamentos-import-livre-').'.xlsx';
+        (new Xlsx($spreadsheet))->save($caminho);
+        $arquivo = new UploadedFile($caminho, 'sessoes-livre.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true);
+
+        $service = app(LancamentoImportService::class);
+        $resultado = $service->previsualizar($arquivo, $tenantId);
+
+        $this->assertSame(1, $resultado['lote']['total_validas']);
+        Http::assertSent(fn ($request) => str_contains($request->url(), '/responses'));
     }
 }

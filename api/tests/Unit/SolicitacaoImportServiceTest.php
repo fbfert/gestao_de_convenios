@@ -2,6 +2,8 @@
 
 namespace Tests\Unit;
 
+use App\Models\AiOpenaiSetting;
+use App\Models\AiPromptTemplate;
 use App\Models\Cid;
 use App\Models\Convenio;
 use App\Models\Especialidade;
@@ -14,6 +16,7 @@ use App\Models\Tenant;
 use App\Services\SolicitacaoImportService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -199,5 +202,61 @@ class SolicitacaoImportServiceTest extends TestCase
 
         $this->expectException(ValidationException::class);
         $service->confirmar($lote->fresh(), $linhaIds, [], $tenantId);
+    }
+
+    private function configurarIa(int $tenantId): void
+    {
+        AiOpenaiSetting::query()->create([
+            'tenant_id' => $tenantId,
+            'api_key' => 'sk-teste',
+            'base_url' => 'https://api.openai.com/v1',
+            'ativo' => true,
+        ]);
+
+        AiPromptTemplate::garantirPadroes($tenantId);
+    }
+
+    public function test_previsualizar_usa_ia_para_mapear_cabecalho_fora_do_modelo(): void
+    {
+        $tenantId = $this->tenantId();
+        $this->configurarIa($tenantId);
+
+        Http::fake([
+            '*/responses' => Http::response([
+                'output_text' => json_encode([
+                    'Convênio de Saúde' => 'convenio',
+                    'Médico Solicitante' => 'medico',
+                    'Código CID' => 'cids',
+                    'Data do Pedido' => 'solicitado_em',
+                    'Área de Atendimento' => 'especialidade',
+                    'Terapeuta' => 'profissional',
+                    'CPF do Paciente' => 'paciente_cpf',
+                ]),
+            ], 200),
+        ]);
+
+        $paciente = Paciente::query()->where('tenant_id', $tenantId)
+            ->where('convenio_id', Convenio::query()->where('tenant_id', $tenantId)->where('nome', 'Unimed')->firstOrFail()->id)
+            ->firstOrFail();
+        $profissional = Profissional::query()->where('tenant_id', $tenantId)
+            ->where('especialidade_id', Especialidade::query()->where('tenant_id', $tenantId)->where('nome', 'Fisioterapia')->firstOrFail()->id)
+            ->firstOrFail();
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->fromArray([
+            ['Convênio de Saúde', 'Médico Solicitante', 'Código CID', 'Data do Pedido', 'Área de Atendimento', 'Terapeuta', 'CPF do Paciente'],
+            ['Unimed', 'Dr. Carlos Almeida', 'F84.0', '15/01/2026', 'Fisioterapia', $profissional->nome, $paciente->cpf ?? '39053344705'],
+        ], null, 'A1');
+
+        $caminho = tempnam(sys_get_temp_dir(), 'solicitacoes-import-livre-').'.xlsx';
+        (new Xlsx($spreadsheet))->save($caminho);
+        $arquivo = new UploadedFile($caminho, 'solicitacoes-livre.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true);
+
+        $service = app(SolicitacaoImportService::class);
+        $resultado = $service->previsualizar($arquivo, $tenantId);
+
+        $this->assertSame(1, $resultado['lote']['total_validas']);
+        Http::assertSent(fn ($request) => str_contains($request->url(), '/responses'));
     }
 }

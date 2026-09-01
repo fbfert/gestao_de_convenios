@@ -2,6 +2,8 @@
 
 namespace Tests\Unit;
 
+use App\Models\AiOpenaiSetting;
+use App\Models\AiPromptTemplate;
 use App\Models\Convenio;
 use App\Models\Especialidade;
 use App\Models\Guia;
@@ -12,6 +14,7 @@ use App\Models\Tenant;
 use App\Services\GuiaImportService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -161,5 +164,61 @@ class GuiaImportServiceTest extends TestCase
 
         $this->expectException(ValidationException::class);
         $service->confirmar($lote->fresh(), $linhaIds, [], $tenantId);
+    }
+
+    private function configurarIa(int $tenantId): void
+    {
+        AiOpenaiSetting::query()->create([
+            'tenant_id' => $tenantId,
+            'api_key' => 'sk-teste',
+            'base_url' => 'https://api.openai.com/v1',
+            'ativo' => true,
+        ]);
+
+        AiPromptTemplate::garantirPadroes($tenantId);
+    }
+
+    public function test_previsualizar_usa_ia_para_mapear_cabecalho_fora_do_modelo(): void
+    {
+        $tenantId = $this->tenantId();
+        $this->configurarIa($tenantId);
+
+        Http::fake([
+            '*/responses' => Http::response([
+                'output_text' => json_encode([
+                    'Nº da Guia' => 'numero_guia',
+                    'Operadora' => 'convenio',
+                    'Terapeuta' => 'profissional',
+                    'Área' => 'especialidade',
+                    'Tipo' => 'tipo_terapia',
+                    'Data do Pedido' => 'data_solicitacao',
+                    'CPF' => 'paciente_cpf',
+                ]),
+            ], 200),
+        ]);
+
+        $paciente = Paciente::query()->where('tenant_id', $tenantId)
+            ->where('convenio_id', Convenio::query()->where('tenant_id', $tenantId)->where('nome', 'Unimed')->firstOrFail()->id)
+            ->firstOrFail();
+        $profissional = Profissional::query()->where('tenant_id', $tenantId)
+            ->where('especialidade_id', Especialidade::query()->where('tenant_id', $tenantId)->where('nome', 'Fisioterapia')->firstOrFail()->id)
+            ->firstOrFail();
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->fromArray([
+            ['Nº da Guia', 'Operadora', 'Terapeuta', 'Área', 'Tipo', 'Data do Pedido', 'CPF'],
+            ['GUIA-IA-1', 'Unimed', $profissional->nome, 'Fisioterapia', 'especializada', '15/01/2026', $paciente->cpf],
+        ], null, 'A1');
+
+        $caminho = tempnam(sys_get_temp_dir(), 'guias-import-livre-').'.xlsx';
+        (new Xlsx($spreadsheet))->save($caminho);
+        $arquivo = new UploadedFile($caminho, 'guias-livre.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true);
+
+        $service = app(GuiaImportService::class);
+        $resultado = $service->previsualizar($arquivo, $tenantId);
+
+        $this->assertSame(1, $resultado['lote']['total_validas']);
+        Http::assertSent(fn ($request) => str_contains($request->url(), '/responses'));
     }
 }

@@ -14,7 +14,12 @@ RUN npm run build   # gera /web/dist
 FROM composer:2 AS vendor
 WORKDIR /app
 COPY api/ ./
-RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
+# --ignore-platform-req=ext-gd: esta imagem "composer:2" só resolve
+# dependências, não roda a aplicação — o gd real é instalado no estágio
+# "runtime" logo abaixo. Sem o ignore, phpoffice/phpspreadsheet (que
+# declara gd como sugestão de plataforma) falha aqui mesmo já estando
+# disponível em produção.
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts --ignore-platform-req=ext-gd
 
 # ---------- 3) Runtime: php-fpm + nginx (supervisord) ----------
 FROM php:8.4-fpm-bookworm AS runtime

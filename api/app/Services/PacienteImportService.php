@@ -19,7 +19,6 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
-use RuntimeException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -101,7 +100,9 @@ class PacienteImportService
         }
 
         if (! isset($colunas['nome'], $colunas['carteirinha'], $colunas['convenio'])) {
-            throw new RuntimeException('A planilha precisa ter pelo menos as colunas Nome, Carteirinha e Convênio.');
+            throw ValidationException::withMessages([
+                'arquivo' => ['A planilha precisa ter pelo menos as colunas Nome, Carteirinha e Convênio.'],
+            ]);
         }
 
         $convenios = Convenio::query()->where('tenant_id', $tenantId)->get(['id', 'nome', 'carteirinha_blocos']);

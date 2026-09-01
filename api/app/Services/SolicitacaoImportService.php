@@ -22,7 +22,6 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
-use RuntimeException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -137,7 +136,9 @@ class SolicitacaoImportService
         }
 
         if (count(array_intersect($obrigatorias, array_keys($colunas))) < count($obrigatorias)) {
-            throw new RuntimeException('A planilha precisa ter pelo menos as colunas Convênio, Médico, CID(s), Data da solicitação, Especialidade e Profissional.');
+            throw ValidationException::withMessages([
+                'arquivo' => ['A planilha precisa ter pelo menos as colunas Convênio, Médico, CID(s), Data da solicitação, Especialidade e Profissional.'],
+            ]);
         }
 
         $refs = $this->carregarReferencias($tenantId);

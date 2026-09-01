@@ -16,7 +16,6 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
-use RuntimeException;
 use Tests\TestCase;
 
 class PacienteImportServiceTest extends TestCase
@@ -332,7 +331,7 @@ class PacienteImportServiceTest extends TestCase
             [['Paciente Sem Ia', '111.444.777-35', '99988877766', 'Unimed']],
         );
 
-        $this->expectException(RuntimeException::class);
+        $this->expectException(ValidationException::class);
         $service->previsualizar($arquivo, $tenantId);
     }
 }

@@ -25,8 +25,9 @@ const statusLabels: Record<StatusEntidade, Record<string, string>> = {
     // depois de alguém confirmar isso no gescon clicando Finalizar (abre o
     // ciclo de Antecipação). "Autorizado" usa a mesma palavra que a própria
     // Unimed usa no portal pra esse estado — ver worker-unimed/src/portal.js.
+    // "Finalizado" nomeia o clique em si, pra não ficar igual a "Autorizado".
     approved: 'Autorizado',
-    finalized: 'Aprovado',
+    finalized: 'Finalizado',
     canceled: 'Cancelado',
     denied: 'Negado',
     needs_verification: 'Verificar Restrição',

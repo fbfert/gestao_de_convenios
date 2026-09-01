@@ -33,7 +33,7 @@ export function GuiaStatusActions({ guia }: { guia: Guia }) {
       descricao:
         guia.status === 'approved'
           ? 'Abre o ciclo de faturamento (Antecipação) desta guia, usando a senha e validade já capturadas pela automação. Confirma?'
-          : 'A guia passa para Aprovada com a senha e validade informadas. Confirma?',
+          : 'A guia é finalizada com a senha e validade informadas. Confirma?',
       confirmarTexto: 'Finalizar',
       variante: 'primario',
     })
@@ -116,13 +116,13 @@ export function GuiaStatusActions({ guia }: { guia: Guia }) {
       </div>
 
       {isFinalizeOpen ? (
-        <div className="grid gap-3 rounded-2xl border border-white/10 bg-slate-950/50 p-4 md:grid-cols-2">
+        <div className="grid gap-3 rounded-2xl border border-white/10 bg-slate-950/50 p-4">
           <label className="space-y-2">
             <span className="flex items-center gap-1 text-meta uppercase tracking-[0.25em] text-slate-400">
               Senha
               <Tooltip rotulo="O que é a senha aqui">
                 É o código de autorização que o convênio devolve para a guia — não é senha de login.
-                Preencher aqui muda o status para Aprovada.
+                Preencher aqui muda o status para Finalizado.
               </Tooltip>
             </span>
             <input
@@ -149,7 +149,7 @@ export function GuiaStatusActions({ guia }: { guia: Guia }) {
               data-testid={`guia-validade-${guia.id}`}
             />
           </label>
-          <div className="flex gap-2 md:col-span-2">
+          <div className="flex gap-2">
             <Botao
               variante="primario"
               onClick={handleFinalize}

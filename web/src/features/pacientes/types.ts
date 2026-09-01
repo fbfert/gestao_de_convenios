@@ -42,6 +42,46 @@ export type PacienteForm = {
   carteirinha_documento_id?: number | null
 }
 
+export type PacienteImportLinhaDados = {
+  linha: number
+  nome: string
+  cpf: string | null
+  carteirinha: string
+  convenio: string
+  convenio_id: number | null
+  data_nascimento: string | null
+  validade_carteirinha: string | null
+  telefone: string | null
+  ativo: boolean
+}
+
+export type PacienteImportLinha = {
+  id: number
+  linha: number
+  status: 'valida' | 'erro' | 'importado' | 'atualizado' | 'ignorado'
+  matched_paciente_id: number | null
+  dados: PacienteImportLinhaDados
+  erros: Record<string, string>
+}
+
+export type PacienteImportLote = {
+  id: number
+  arquivo_nome_original: string
+  status: 'previsualizado' | 'confirmado'
+  confirmado_em: string | null
+  total_linhas: number
+  total_validas: number
+  total_invalidas: number
+  total_importados: number
+  total_atualizados: number
+  total_ignorados: number
+}
+
+export type PacienteImportPreview = {
+  lote: PacienteImportLote
+  linhas: PacienteImportLinha[]
+}
+
 export type LeituraCarteirinha = {
   documento_id: number
   expira_em: string

@@ -19,6 +19,7 @@ import { Indicadores } from '../../components/ui/Indicadores'
 import { Tooltip } from '../../components/ui/Tooltip'
 import { Botao } from '../../components/ui/Botao'
 import { Badge } from '../../components/ui/Badge'
+import { usePode } from '../../lib/permissoes'
 
 const emptyForm: PacienteForm = {
   nome: '',
@@ -85,6 +86,7 @@ function carteirinhaVencida(validade: string): boolean {
 
 export function PacientesPage() {
   const navigate = useNavigate()
+  const pode = usePode()
   const isCreateRoute = useMatch('/pacientes/novo') !== null
   // Editar tambem em rota propria, pelo mesmo motivo da criacao.
   const editRouteMatch = useMatch('/pacientes/:id/editar')
@@ -344,9 +346,20 @@ export function PacientesPage() {
             </h2>
           </div>
 
-          <Botao variante="primario" onClick={handleNew} data-testid="paciente-novo">
-            Novo
-          </Botao>
+          <div className="flex flex-wrap gap-2">
+            {pode('dashboard.pacientes') ? (
+              <Botao
+                variante="secundario"
+                onClick={() => navigate('/pacientes/importar')}
+                data-testid="paciente-importar"
+              >
+                Importar planilha
+              </Botao>
+            ) : null}
+            <Botao variante="primario" onClick={handleNew} data-testid="paciente-novo">
+              Novo
+            </Botao>
+          </div>
         </div>
 
         <Indicadores

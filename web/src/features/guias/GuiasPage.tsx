@@ -252,9 +252,20 @@ export function GuiasPage() {
             </h2>
           </div>
 
-          <Botao variante="primario" onClick={handleNew} data-testid="guia-novo">
-            Novo
-          </Botao>
+          <div className="flex flex-wrap gap-2">
+            {pode('guias.manage') ? (
+              <Botao
+                variante="secundario"
+                onClick={() => navigate('/guias/importar')}
+                data-testid="guia-importar"
+              >
+                Importar planilha
+              </Botao>
+            ) : null}
+            <Botao variante="primario" onClick={handleNew} data-testid="guia-novo">
+              Novo
+            </Botao>
+          </div>
         </div>
 
         {/* O contador vira linha compacta; o filtro de validade continua sendo

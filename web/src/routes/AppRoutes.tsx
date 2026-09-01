@@ -9,14 +9,17 @@ import { LerPedidoMedicoPage } from '../features/solicitacoes/LerPedidoMedicoPag
 import { SolicitacaoEditarPage } from '../features/solicitacoes/SolicitacaoEditarPage'
 import { ImportarSolicitacoesPage } from '../features/solicitacoes/ImportarSolicitacoesPage'
 import { ImportarPacientesPage, PacientesPage } from '../features/pacientes'
-import { GuiaDetalhePage, GuiaEditarPage, GuiasPage } from '../features/guias'
+import { GuiaDetalhePage, GuiaEditarPage, GuiasPage, ImportarGuiasPage } from '../features/guias'
 import { AntecipacoesPage } from '../features/antecipacoes/AntecipacoesPage'
 import { AntecipacaoEditarPage } from '../features/antecipacoes/AntecipacaoEditarPage'
+import { ImportarAntecipacoesPage } from '../features/antecipacoes/ImportarAntecipacoesPage'
 import { AnaliticosPage, AnaliticoDetalhePage } from '../features/analiticos'
 import { LancamentosPage, LancamentoEditarPage } from '../features/lancamentos'
 import { LancamentoTemplatesPage } from '../features/lancamentos/LancamentoTemplatesPage'
 import { ImportarSessoesPage } from '../features/lancamentos/ImportarSessoesPage'
+import { ImportarSessoesPlanilhaPage } from '../features/lancamentos/ImportarSessoesPlanilhaPage'
 import { ConciliacaoPage } from '../features/conciliacao'
+import { ImportarConciliacoesPage } from '../features/conciliacao/ImportarConciliacoesPage'
 import { MedicosPage } from '../features/medicos'
 import { EspecialidadesPage } from '../features/especialidades'
 import { CidsPage } from '../features/cids'
@@ -65,6 +68,7 @@ export function AppRoutes() {
           <Route path="/pacientes/:id/editar" element={<PacientesPage />} />
           <Route path="/guias" element={<GuiasPage />} />
           <Route path="/guias/nova" element={<GuiasPage />} />
+          <Route path="/guias/importar" element={<ImportarGuiasPage />} />
           <Route path="/guias/:id" element={<GuiaDetalhePage />} />
           <Route path="/guias/:id/editar" element={<GuiaEditarPage />} />
           <Route path="/convenios" element={<ConveniosPage />} />
@@ -73,6 +77,7 @@ export function AppRoutes() {
           <Route path="/convenios/:id" element={<ConvenioDetalhePage />} />
           <Route path="/convenios/:id/editar" element={<ConveniosPage />} />
           <Route path="/antecipacoes" element={<AntecipacoesPage />} />
+          <Route path="/antecipacoes/importar" element={<ImportarAntecipacoesPage />} />
           <Route path="/antecipacoes/:id/editar" element={<AntecipacaoEditarPage />} />
           <Route path="/lancamentos/templates" element={<LancamentoTemplatesPage />} />
           <Route path="/lancamentos/templates/" element={<LancamentoTemplatesPage />} />
@@ -80,9 +85,11 @@ export function AppRoutes() {
           <Route path="/lancamentos/novo" element={<LancamentosPage />} />
           <Route path="/lancamentos/:id/editar" element={<LancamentoEditarPage />} />
           <Route path="/lancamentos/importar" element={<ImportarSessoesPage />} />
+          <Route path="/lancamentos/importar-planilha" element={<ImportarSessoesPlanilhaPage />} />
           <Route path="/analiticos" element={<AnaliticosPage />} />
           <Route path="/analiticos/:id" element={<AnaliticoDetalhePage />} />
           <Route path="/conciliacao" element={<ConciliacaoPage />} />
+          <Route path="/conciliacao/importar" element={<ImportarConciliacoesPage />} />
           <Route path="/profissionais" element={<ProfissionaisPage />} />
           <Route path="/profissionais/novo" element={<ProfissionaisPage />} />
           <Route path="/profissionais/:id/editar" element={<ProfissionaisPage />} />

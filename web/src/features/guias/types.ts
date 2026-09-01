@@ -119,3 +119,55 @@ export type GuiaFinalizarForm = {
   senha: string
   validade_senha?: string
 }
+
+export type GuiaImportLinhaDados = {
+  linha: number
+  numero_guia: string
+  convenio: string
+  convenio_id: number | null
+  paciente_cpf: string | null
+  paciente_carteirinha: string | null
+  paciente_id: number | null
+  profissional: string
+  profissional_id: number | null
+  especialidade: string
+  especialidade_id: number | null
+  tipo_terapia: string
+  data_solicitacao: string | null
+  status: string | null
+  senha: string | null
+  validade_senha: string | null
+  data_finalizacao: string | null
+  sessoes_solicitadas: number | null
+  sessoes_autorizadas: number | null
+  protocolo_operadora: string | null
+  solicitacao_protocolo: string | null
+  observacoes: string | null
+}
+
+export type GuiaImportLinha = {
+  id: number
+  linha: number
+  status: 'valida' | 'erro' | 'importado' | 'atualizado' | 'ignorado'
+  matched_guia_id: number | null
+  dados: GuiaImportLinhaDados
+  erros: Record<string, string>
+}
+
+export type GuiaImportLote = {
+  id: number
+  arquivo_nome_original: string
+  status: 'previsualizado' | 'confirmado'
+  confirmado_em: string | null
+  total_linhas: number
+  total_validas: number
+  total_invalidas: number
+  total_importados: number
+  total_atualizados: number
+  total_ignorados: number
+}
+
+export type GuiaImportPreview = {
+  lote: GuiaImportLote
+  linhas: GuiaImportLinha[]
+}

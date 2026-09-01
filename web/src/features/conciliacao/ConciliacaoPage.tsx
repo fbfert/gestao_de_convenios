@@ -1,4 +1,5 @@
 import { useMemo, useState, type FormEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { ColunaOrdenavel } from '../../components/ui/ColunaOrdenavel'
 import { useOrdenacao } from '../../lib/useOrdenacao'
 import { translateStatus } from '../../lib/statusLabels'
@@ -13,6 +14,8 @@ import {
 import type { ConciliacaoFilters } from './types'
 import { Indicadores } from '../../components/ui/Indicadores'
 import { Tooltip } from '../../components/ui/Tooltip'
+import { usePode } from '../../lib/permissoes'
+import { Botao } from '../../components/ui/Botao'
 
 const defaultFilters: ConciliacaoFilters = {
   convenio_id: '',
@@ -69,6 +72,8 @@ function joinUnique(values: Array<string | null | undefined>) {
 }
 
 export function ConciliacaoPage() {
+  const pode = usePode()
+  const navigate = useNavigate()
   const [filters, setFilters] = useState(defaultFilters)
   const [draftFilters, setDraftFilters] = useState(defaultFilters)
   const [page, setPage] = useState(1)
@@ -121,21 +126,29 @@ export function ConciliacaoPage() {
   return (
     <div className="space-y-8" data-testid="conciliacao-page">
       <section className="space-y-4">
-        <div>
-          <p className="text-meta uppercase tracking-[0.3em] text-cyan-300/80">
-            Conciliação financeira
-          </p>
-          <h2 className="mt-2 flex items-center gap-2 text-display font-semibold text-white">
-            Fechamento de guias
-            <Tooltip rotulo="Como funciona o fechamento">
-              <p className="font-semibold text-white">Ciclo fixo, sem pular etapas</p>
-              <p className="mt-1">
-                Uma conciliação nasce do botão &quot;Gerar conciliação&quot; em Guias, nunca aqui.
-                Depois segue sempre Pendente → Conferida → Paga, cruzando o valor esperado com o
-                que o convênio efetivamente pagou (importado em Analíticos).
-              </p>
-            </Tooltip>
-          </h2>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-meta uppercase tracking-[0.3em] text-cyan-300/80">
+              Conciliação financeira
+            </p>
+            <h2 className="mt-2 flex items-center gap-2 text-display font-semibold text-white">
+              Fechamento de guias
+              <Tooltip rotulo="Como funciona o fechamento">
+                <p className="font-semibold text-white">Ciclo fixo, sem pular etapas</p>
+                <p className="mt-1">
+                  Uma conciliação nasce do botão &quot;Gerar conciliação&quot; em Guias, ou da
+                  importação de planilha. Depois segue sempre Pendente → Conferida → Paga, cruzando
+                  o valor esperado com o que o convênio efetivamente pagou (importado em
+                  Analíticos).
+                </p>
+              </Tooltip>
+            </h2>
+          </div>
+          {pode('conciliacoes.manage') ? (
+            <Botao variante="secundario" onClick={() => navigate('/conciliacao/importar')} data-testid="conciliacao-importar">
+              Importar planilha
+            </Botao>
+          ) : null}
         </div>
 
         <Indicadores

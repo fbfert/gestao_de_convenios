@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AutomacaoController;
 use App\Http\Controllers\AntecipacaoController;
+use App\Http\Controllers\AntecipacaoImportController;
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmailSettingsController;
@@ -16,9 +17,12 @@ use App\Http\Controllers\RolePermissionController;
 use App\Http\Controllers\CidController;
 use App\Http\Controllers\EspecialidadeController;
 use App\Http\Controllers\ConciliacaoController;
+use App\Http\Controllers\ConciliacaoImportController;
 use App\Http\Controllers\GuiaController;
+use App\Http\Controllers\GuiaImportController;
 use App\Http\Controllers\MedicoController;
 use App\Http\Controllers\LancamentoController;
+use App\Http\Controllers\LancamentoImportController;
 use App\Http\Controllers\LancamentoPrintTemplateController;
 use App\Http\Controllers\AnaliticoController;
 use App\Http\Controllers\AiPromptTemplateController;
@@ -171,6 +175,12 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EncerrarSessaoExpirada::
 
     Route::get('/guias', [GuiaController::class, 'index']);
     Route::post('/guias', [GuiaController::class, 'store']);
+    Route::get('/guias/importar/template', [GuiaImportController::class, 'template'])
+        ->middleware('permission:guias.manage');
+    Route::post('/guias/importar', [GuiaImportController::class, 'previsualizar'])
+        ->middleware('permission:guias.manage');
+    Route::post('/guias/importar/{guia_import_lote}/confirmar', [GuiaImportController::class, 'confirmar'])
+        ->middleware('permission:guias.manage');
     Route::get('/guias/{guia}', [GuiaController::class, 'show']);
     Route::patch('/guias/{guia}', [GuiaController::class, 'update'])->middleware('permission:guias.manage');
     Route::patch('/guias/{guia}/finalizar', [GuiaController::class, 'finalizar']);
@@ -180,6 +190,12 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EncerrarSessaoExpirada::
     Route::post('/guias/{guia}/buscar-senha-validade-unimed', [GuiaController::class, 'buscarSenhaValidadeUnimed']);
 
     Route::get('/antecipacoes', [AntecipacaoController::class, 'index']);
+    Route::get('/antecipacoes/importar/template', [AntecipacaoImportController::class, 'template'])
+        ->middleware('permission:antecipacoes.manage');
+    Route::post('/antecipacoes/importar', [AntecipacaoImportController::class, 'previsualizar'])
+        ->middleware('permission:antecipacoes.manage');
+    Route::post('/antecipacoes/importar/{antecipacao_import_lote}/confirmar', [AntecipacaoImportController::class, 'confirmar'])
+        ->middleware('permission:antecipacoes.manage');
     Route::get('/antecipacoes/{antecipacao}', [AntecipacaoController::class, 'show']);
     Route::patch('/antecipacoes/{antecipacao}', [AntecipacaoController::class, 'update'])->middleware('permission:antecipacoes.manage');
     Route::post('/antecipacoes/{antecipacao}/lancamentos', [LancamentoController::class, 'store']);
@@ -191,12 +207,24 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EncerrarSessaoExpirada::
     Route::get('/analiticos', [AnaliticoController::class, 'index']);
     Route::get('/analiticos/{analiticoLote}', [AnaliticoController::class, 'show']);
 
+    Route::get('/lancamentos/importar/template', [LancamentoImportController::class, 'template'])
+        ->middleware('permission:lancamentos.manage');
+    Route::post('/lancamentos/importar', [LancamentoImportController::class, 'previsualizar'])
+        ->middleware('permission:lancamentos.manage');
+    Route::post('/lancamentos/importar/{lancamento_import_lote}/confirmar', [LancamentoImportController::class, 'confirmar'])
+        ->middleware('permission:lancamentos.manage');
     Route::get('/lancamentos', [LancamentoController::class, 'index']);
     Route::get('/lancamentos/{lancamento}', [LancamentoController::class, 'show']);
     Route::patch('/lancamentos/{lancamento}', [LancamentoController::class, 'update'])->middleware('permission:lancamentos.manage');
     Route::delete('/lancamentos/{lancamento}', [LancamentoController::class, 'destroy']);
 
     Route::post('/guias/{guia}/conciliacao', [ConciliacaoController::class, 'store']);
+    Route::get('/conciliacoes/importar/template', [ConciliacaoImportController::class, 'template'])
+        ->middleware('permission:conciliacoes.manage');
+    Route::post('/conciliacoes/importar', [ConciliacaoImportController::class, 'previsualizar'])
+        ->middleware('permission:conciliacoes.manage');
+    Route::post('/conciliacoes/importar/{conciliacao_import_lote}/confirmar', [ConciliacaoImportController::class, 'confirmar'])
+        ->middleware('permission:conciliacoes.manage');
     Route::get('/conciliacoes', [ConciliacaoController::class, 'index']);
     Route::patch('/conciliacoes/{conciliacao}/marcar-conferido', [ConciliacaoController::class, 'marcarConferido']);
     Route::patch('/conciliacoes/{conciliacao}/marcar-pago', [ConciliacaoController::class, 'marcarPago']);

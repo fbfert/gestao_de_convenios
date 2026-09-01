@@ -59,3 +59,46 @@ export type ConciliacaoFilters = {
   profissional_id: string
   status: string
 }
+
+export type ConciliacaoImportLinhaDados = {
+  linha: number
+  numero_guia: string
+  convenio: string
+  convenio_id: number | null
+  guia_id: number | null
+  profissional: string
+  profissional_id: number | null
+  quantidade: number | null
+  valor_unitario: number | null
+  valor_total: number | null
+  referencia_analitico_convenio: string | null
+  status: 'pending' | 'reviewed' | 'paid' | null
+  conferido_em: string | null
+}
+
+export type ConciliacaoImportLinha = {
+  id: number
+  linha: number
+  status: 'valida' | 'erro' | 'importado' | 'atualizado' | 'ignorado'
+  matched_conciliacao_id: number | null
+  dados: ConciliacaoImportLinhaDados
+  erros: Record<string, string>
+}
+
+export type ConciliacaoImportLote = {
+  id: number
+  arquivo_nome_original: string
+  status: 'previsualizado' | 'confirmado'
+  confirmado_em: string | null
+  total_linhas: number
+  total_validas: number
+  total_invalidas: number
+  total_importados: number
+  total_atualizados: number
+  total_ignorados: number
+}
+
+export type ConciliacaoImportPreview = {
+  lote: ConciliacaoImportLote
+  linhas: ConciliacaoImportLinha[]
+}

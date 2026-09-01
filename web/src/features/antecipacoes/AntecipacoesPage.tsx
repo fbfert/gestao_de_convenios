@@ -1,7 +1,7 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import { ColunaOrdenavel } from '../../components/ui/ColunaOrdenavel'
 import { useOrdenacao } from '../../lib/useOrdenacao'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Select } from '../../components/ui/Select'
 import { translateStatus } from '../../lib/statusLabels'
 import { useConvenios, usePacientes } from '../../lib/queries/useReferenceData'
@@ -9,6 +9,7 @@ import { useAntecipacoes } from './useAntecipacoes'
 import type { AntecipacaoFilters } from './types'
 import { Tooltip } from '../../components/ui/Tooltip'
 import { usePode } from '../../lib/permissoes'
+import { Botao } from '../../components/ui/Botao'
 
 const defaultFilters: AntecipacaoFilters = {
   status: '',
@@ -42,6 +43,7 @@ function temSessaoFutura(antecipacao: {
 
 export function AntecipacoesPage() {
   const pode = usePode()
+  const navigate = useNavigate()
   const [filters, setFilters] = useState(defaultFilters)
   const [draftFilters, setDraftFilters] = useState(defaultFilters)
   const [page, setPage] = useState(1)
@@ -71,20 +73,28 @@ export function AntecipacoesPage() {
 
   return (
     <div className="space-y-8" data-testid="antecipacoes-page">
-      <section>
-        <p className="text-meta uppercase tracking-[0.3em] text-cyan-300/80">Antecipações</p>
-        <h2 className="mt-2 flex items-center gap-2 text-display font-semibold text-white">
-          Painel de agendamento
-          <Tooltip rotulo="O que é uma antecipação?">
-            <p className="font-semibold text-white">Cota de sessões por ciclo</p>
-            <p className="mt-1">
-              Uma antecipação é a cota de sessões autorizadas por ciclo (ex.: 12/mês) para um
-              paciente. Ela nasce sozinha quando uma guia é finalizada — não existe botão de criar
-              aqui. Cada sessão lançada em Sessões consome uma unidade; ao esgotar a cota ela fecha
-              sozinha.
-            </p>
-          </Tooltip>
-        </h2>
+      <section className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="text-meta uppercase tracking-[0.3em] text-cyan-300/80">Antecipações</p>
+          <h2 className="mt-2 flex items-center gap-2 text-display font-semibold text-white">
+            Painel de agendamento
+            <Tooltip rotulo="O que é uma antecipação?">
+              <p className="font-semibold text-white">Cota de sessões por ciclo</p>
+              <p className="mt-1">
+                Uma antecipação é a cota de sessões autorizadas por ciclo (ex.: 12/mês) para um
+                paciente. Ela nasce sozinha quando uma guia é finalizada — não existe botão de criar
+                aqui na tela. Cada sessão lançada em Sessões consome uma unidade; ao esgotar a cota
+                ela fecha sozinha. É possível trazer antecipações de fora pela importação de
+                planilha.
+              </p>
+            </Tooltip>
+          </h2>
+        </div>
+        {pode('antecipacoes.manage') ? (
+          <Botao variante="secundario" onClick={() => navigate('/antecipacoes/importar')} data-testid="antecipacao-importar">
+            Importar planilha
+          </Botao>
+        ) : null}
       </section>
 
       <section className="space-y-4 rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">

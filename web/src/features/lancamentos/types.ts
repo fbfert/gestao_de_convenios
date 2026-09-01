@@ -208,3 +208,48 @@ export type AnaliticoUnimedPreview = {
 }
 
 export type { LancamentoPrintTemplate, LancamentoPrintTemplateForm } from './printTemplate'
+
+export type LancamentoImportLinhaDados = {
+  linha: number
+  numero_guia: string
+  convenio: string
+  convenio_id: number | null
+  guia_id: number | null
+  antecipacao_id: number | null
+  profissional: string
+  profissional_id: number | null
+  data_sessao: string | null
+  hora_inicio: string | null
+  hora_fim: string | null
+  acompanhante: string | null
+  resumo_atividades: string | null
+  status: 'completed' | 'missed' | 'canceled' | null
+  observacoes: string | null
+}
+
+export type LancamentoImportLinha = {
+  id: number
+  linha: number
+  status: 'valida' | 'erro' | 'importado' | 'atualizado' | 'ignorado'
+  matched_lancamento_id: number | null
+  dados: LancamentoImportLinhaDados
+  erros: Record<string, string>
+}
+
+export type LancamentoImportLote = {
+  id: number
+  arquivo_nome_original: string
+  status: 'previsualizado' | 'confirmado'
+  confirmado_em: string | null
+  total_linhas: number
+  total_validas: number
+  total_invalidas: number
+  total_importados: number
+  total_atualizados: number
+  total_ignorados: number
+}
+
+export type LancamentoImportPreview = {
+  lote: LancamentoImportLote
+  linhas: LancamentoImportLinha[]
+}

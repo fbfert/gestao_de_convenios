@@ -189,6 +189,15 @@ export function LancamentosPage() {
               >
                 Importar transcrição
               </Link>
+              {pode('lancamentos.manage') ? (
+                <Link
+                  to="/lancamentos/importar-planilha"
+                  className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 h-10 px-4 text-corpo font-semibold text-white transition hover:bg-white/10"
+                  data-testid="lancamento-importar-planilha"
+                >
+                  Importar planilha
+                </Link>
+              ) : null}
               <Botao
                 variante="secundario"
                 onClick={() => window.print()}

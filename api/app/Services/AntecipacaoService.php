@@ -145,6 +145,24 @@ class AntecipacaoService
         $antecipacao->save();
     }
 
+    /**
+     * Mesmo incremento de consumirCota(), mas nunca lança
+     * AntecipacaoCotaEsgotadaException — usada só pela importação de Sessões
+     * históricas: a sessão já aconteceu de verdade, então travar por causa da
+     * cota (que é bookkeeping, não o fato em si) esconderia dado real. Fecha
+     * a Antecipação do mesmo jeito quando bate ou passa da cota.
+     */
+    public function consumirCotaForcado(Antecipacao $antecipacao): void
+    {
+        $antecipacao->qtd_utilizada++;
+
+        if ($antecipacao->qtd_utilizada >= $antecipacao->qtd_autorizada) {
+            $antecipacao->status = 'closed';
+        }
+
+        $antecipacao->save();
+    }
+
     private function calcularCicloFim(Carbon $inicio, string $frequencia): Carbon
     {
         return match ($frequencia) {

@@ -2,8 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Models\AuditLog;
+use App\Models\ConfiguracaoGlobal;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Support\PermissionCatalog;
 use App\Support\RoleCatalog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -182,6 +185,143 @@ class TenantsApiTest extends TestCase
         ])->assertJsonValidationErrors('ativo');
 
         $this->assertTrue(Tenant::query()->find($super->tenant_id)->ativo);
+    }
+
+    public function test_super_admin_acessa_outra_clinica_com_permissoes_totais_e_escopo_correto(): void
+    {
+        $superAdmin = $this->superAdmin();
+
+        // Sanctum::actingAs() não serve aqui: uma vez chamado, ele passa a
+        // ignorar qualquer token real mandado depois via withToken(), então
+        // o token de acesso (gerado por baixo) nunca seria de fato usado.
+        // Login de verdade é o único jeito de exercitar o token real.
+        $tokenHome = $this->postJson('/api/login', [
+            'email' => $superAdmin->email,
+            'password' => 'password',
+        ])->assertOk()->json('token');
+
+        $outra = Tenant::query()->create([
+            'nome' => 'Clínica Vizinha',
+            'slug' => 'clinica-vizinha',
+            'cnpj' => null,
+            'ativo' => true,
+        ]);
+
+        $resposta = $this->withToken($tokenHome)
+            ->postJson("/api/tenants/{$outra->id}/acessar")
+            ->assertOk()
+            ->assertJsonPath('user.tenant.id', $outra->id)
+            ->assertJsonPath('user.tenant.slug', 'clinica-vizinha')
+            ->assertJsonPath('user.acesso_super_admin', true)
+            ->assertJsonPath('user.role', 'admin');
+
+        $permissoesRecebidas = $resposta->json('user.permissions');
+        $this->assertEqualsCanonicalizing(PermissionCatalog::all(), $permissoesRecebidas);
+
+        $tokenAcesso = $resposta->json('token');
+        $this->assertNotEmpty($tokenAcesso);
+
+        $this->app['auth']->forgetGuards();
+
+        // Endpoint gated por `permission:configuracoes.manage` — o super admin
+        // não tem NENHUM papel atribuído em "clinica-vizinha", então só o
+        // bypass em User::hasPermissionTo() explica um 200 aqui.
+        $respostaConfig = $this->withToken($tokenAcesso)
+            ->getJson('/api/configuracoes/globais')
+            ->assertOk();
+
+        // E o dado devolvido é mesmo o da clínica-alvo, não da clínica de
+        // origem do super admin — confirma que TenantContext seguiu o token,
+        // não o tenant_id fixo do usuário.
+        $configDaOutra = ConfiguracaoGlobal::query()->where('tenant_id', $outra->id)->firstOrFail();
+        $this->assertSame($configDaOutra->itens_por_pagina, $respostaConfig->json('data.itens_por_pagina'));
+
+        $this->assertDatabaseHas('audit_logs', [
+            'tenant_id' => $outra->id,
+            'user_id' => $superAdmin->id,
+            'acao' => 'acesso.super_admin_entrar',
+            'entidade' => 'tenants',
+            'entidade_id' => $outra->id,
+        ]);
+    }
+
+    public function test_sair_do_acesso_derruba_so_o_token_de_acesso_e_home_continua_valido(): void
+    {
+        $superAdmin = $this->superAdmin();
+
+        $loginHome = $this->postJson('/api/login', [
+            'email' => $superAdmin->email,
+            'password' => 'password',
+        ])->assertOk();
+        $tokenHome = $loginHome->json('token');
+
+        $outra = Tenant::query()->create([
+            'nome' => 'Clínica Vizinha',
+            'slug' => 'clinica-vizinha',
+            'cnpj' => null,
+            'ativo' => true,
+        ]);
+
+        $tokenAcesso = $this->withToken($tokenHome)
+            ->postJson("/api/tenants/{$outra->id}/acessar")
+            ->assertOk()
+            ->json('token');
+
+        $this->app['auth']->forgetGuards();
+
+        $this->withToken($tokenAcesso)
+            ->postJson('/api/logout')
+            ->assertNoContent();
+
+        $this->assertDatabaseHas('audit_logs', [
+            'tenant_id' => $outra->id,
+            'user_id' => $superAdmin->id,
+            'acao' => 'acesso.super_admin_sair',
+        ]);
+
+        $this->app['auth']->forgetGuards();
+
+        // O token de acesso morreu, mas o token de origem (home) continua de pé.
+        $this->withToken($tokenAcesso)
+            ->getJson('/api/user')
+            ->assertUnauthorized();
+
+        $this->app['auth']->forgetGuards();
+
+        $this->withToken($tokenHome)
+            ->getJson('/api/user')
+            ->assertOk()
+            ->assertJsonPath('tenant.slug', 'clinica-exemplo')
+            ->assertJsonPath('acesso_super_admin', false);
+    }
+
+    public function test_recusa_acessar_clinica_inativa(): void
+    {
+        Sanctum::actingAs($this->superAdmin());
+
+        $inativa = Tenant::query()->create([
+            'nome' => 'Clínica Inativa',
+            'slug' => 'clinica-inativa-acesso',
+            'cnpj' => null,
+            'ativo' => false,
+        ]);
+
+        $this->postJson("/api/tenants/{$inativa->id}/acessar")
+            ->assertJsonValidationErrors('tenant');
+    }
+
+    public function test_bloqueia_acessar_para_quem_nao_e_super_admin(): void
+    {
+        Sanctum::actingAs($this->admin());
+
+        $outra = Tenant::query()->create([
+            'nome' => 'Clínica Vizinha',
+            'slug' => 'clinica-vizinha',
+            'cnpj' => null,
+            'ativo' => true,
+        ]);
+
+        $this->postJson("/api/tenants/{$outra->id}/acessar")->assertForbidden();
     }
 
     private function payload(array $sobrescreve = []): array

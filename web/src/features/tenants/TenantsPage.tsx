@@ -1,9 +1,11 @@
 import { useState, type FormEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../stores/authStore'
 import {
   getHttpErrorMessage,
   sugerirSlug,
   tenantVazio,
+  useAcessarTenant,
   useAtualizarTenant,
   useCriarTenant,
   useTenants,
@@ -12,6 +14,7 @@ import {
   type TenantForm,
 } from './useTenants'
 import { Botao } from '../../components/ui/Botao'
+import { useConfirm } from '../../components/ui/ConfirmDialog'
 
 function inputClasses() {
   return 'w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-corpo text-white outline-none transition placeholder:text-texto-suave focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20'
@@ -23,9 +26,12 @@ type Edicao = null | 'nova' | number
 export function TenantsPage() {
   const usuarioAtual = useAuthStore((state) => state.user)
   const tenantAtual = useAuthStore((state) => state.tenant)
+  const navigate = useNavigate()
+  const confirmar = useConfirm()
   const tenantsQuery = useTenants()
   const criar = useCriarTenant()
   const atualizar = useAtualizarTenant()
+  const acessar = useAcessarTenant()
 
   const [edicao, setEdicao] = useState<Edicao>(null)
   const [form, setForm] = useState<TenantForm>(tenantVazio)
@@ -84,6 +90,30 @@ export function TenantsPage() {
       fechar()
     } catch (submitError) {
       setError(getHttpErrorMessage(submitError, 'Não foi possível criar a clínica.'))
+    }
+  }
+
+  const handleAcessar = async (tenant: Tenant) => {
+    setMessage(null)
+    setError(null)
+
+    const ok = await confirmar({
+      titulo: `Acessar "${tenant.nome}"`,
+      descricao:
+        'Você vai atuar dentro desta clínica com acesso total, como super admin — não é a sua própria conta na clínica dela, é um acesso temporário e auditado. Uma faixa de aviso fica visível até você voltar. Confirma?',
+      confirmarTexto: 'Acessar clínica',
+      variante: 'primario',
+    })
+
+    if (!ok) {
+      return
+    }
+
+    try {
+      await acessar.mutateAsync(tenant.id)
+      navigate('/dashboard')
+    } catch (submitError) {
+      setError(getHttpErrorMessage(submitError, 'Não foi possível acessar esta clínica.'))
     }
   }
 
@@ -382,15 +412,29 @@ export function TenantsPage() {
                   </p>
                 </div>
 
-                <Botao
-                  type="button"
-                  variante="secundario"
-                  tamanho="sm"
-                  onClick={() => abrirEdicao(tenant)}
-                  data-testid={`tenant-editar-${tenant.slug}`}
-                >
-                  Editar
-                </Botao>
+                <div className="flex flex-wrap gap-2">
+                  {tenant.id !== tenantAtual?.id ? (
+                    <Botao
+                      type="button"
+                      variante="secundario"
+                      tamanho="sm"
+                      onClick={() => void handleAcessar(tenant)}
+                      disabled={!tenant.ativo || acessar.isPending}
+                      data-testid={`tenant-acessar-${tenant.slug}`}
+                    >
+                      Acessar
+                    </Botao>
+                  ) : null}
+                  <Botao
+                    type="button"
+                    variante="secundario"
+                    tamanho="sm"
+                    onClick={() => abrirEdicao(tenant)}
+                    data-testid={`tenant-editar-${tenant.slug}`}
+                  >
+                    Editar
+                  </Botao>
+                </div>
               </div>
             )}
           </article>

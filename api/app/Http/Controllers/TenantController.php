@@ -6,9 +6,13 @@ use App\Http\Requests\StoreTenantRequest;
 use App\Http\Requests\UpdateTenantRequest;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Support\Auditoria;
+use App\Support\AuthPayload;
 use App\Support\PermissionCatalog;
 use App\Support\RoleCatalog;
+use App\Support\SuperAdminAcesso;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Spatie\Permission\Models\Permission;
@@ -109,8 +113,12 @@ class TenantController extends Controller
         $dados = $request->validated();
 
         // Desativar a própria clínica deixaria quem está logado sem conseguir
-        // entrar de novo: o login recusa usuário de tenant inativo.
-        if (! $dados['ativo'] && $tenant->id === (int) $request->user()->tenant_id) {
+        // entrar de novo: o login recusa usuário de tenant inativo. Compara
+        // com o tenant "casa" de verdade (getRawOriginal), não com
+        // tenant_id (que se autocorrige durante um acesso de super admin) —
+        // senão desativar a clínica que está sendo visitada seria bloqueado
+        // por engano, achando que é a própria.
+        if (! $dados['ativo'] && $tenant->id === (int) $request->user()->getRawOriginal('tenant_id')) {
             throw ValidationException::withMessages([
                 'ativo' => 'Você não pode desativar a clínica à qual a sua própria conta pertence.',
             ]);
@@ -120,6 +128,49 @@ class TenantController extends Controller
 
         return response()->json([
             'data' => $this->paraArray($tenant->loadCount('users')),
+        ]);
+    }
+
+    /**
+     * "Acesso de super admin": gera um token novo, do próprio super admin,
+     * marcado (via ability) pra operar como o tenant-alvo — ver
+     * App\Support\SuperAdminAcesso e App\Models\User::getTenantIdAttribute().
+     * Não é login como outro usuário: continua sendo a conta do super admin,
+     * só que com o tenant e as permissões trocados enquanto esse token durar.
+     *
+     * O token original (da clínica do próprio super admin) continua válido
+     * — quem chama é responsável por guardá-lo pra "voltar". Sair desse modo
+     * é só invalidar este token específico via POST /logout (mesmo endpoint
+     * de sempre: ele já só derruba o token usado na própria requisição).
+     */
+    public function acessar(Request $request, Tenant $tenant): JsonResponse
+    {
+        if (! $tenant->ativo) {
+            throw ValidationException::withMessages([
+                'tenant' => ['Não é possível acessar uma clínica inativa.'],
+            ]);
+        }
+
+        $superAdmin = $request->user();
+
+        $token = $superAdmin->createToken(
+            "acesso-clinica-{$tenant->id}",
+            ['*', SuperAdminAcesso::abilityPara($tenant->id)],
+        )->plainTextToken;
+
+        Auditoria::registrar(
+            acao: 'acesso.super_admin_entrar',
+            entidade: 'tenants',
+            entidadeId: (int) $tenant->id,
+            payload: ['tenant_origem_id' => $superAdmin->tenant_id],
+            tenantId: (int) $tenant->id,
+            userId: $superAdmin->id,
+            comOrigem: true,
+        );
+
+        return response()->json([
+            'token' => $token,
+            'user' => AuthPayload::paraUsuario($superAdmin, $tenant->id),
         ]);
     }
 

@@ -1,3 +1,3 @@
 export { useLogin } from './useLogin'
-export { useLogout } from './useLogout'
+export { useLogout, useSairAcessoSuperAdmin } from './useLogout'
 export { useSessaoAtual } from './useSessaoAtual'

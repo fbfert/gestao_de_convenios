@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '../../api/client'
 import { getHttpErrorMessage } from '../../lib/httpError'
+import { useAuthStore, type LoginPayload } from '../../stores/authStore'
 
 export type Tenant = {
   id: number
@@ -105,6 +106,24 @@ export function useAtualizarTenant() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: chaveQuery })
+    },
+  })
+}
+
+/**
+ * "Acessar" uma clínica como super admin — POST /tenants/{id}/acessar devolve
+ * um token novo (mesma conta, tenant e permissões trocados enquanto durar).
+ * Não invalida a query de tenants nem mexe em cache: troca a sessão ativa e
+ * navegação/refetch do resto do app cuida do resto.
+ */
+export function useAcessarTenant() {
+  return useMutation({
+    mutationFn: async (tenantId: number) => {
+      const { data } = await apiClient.post<LoginPayload>(`/tenants/${tenantId}/acessar`)
+      return data
+    },
+    onSuccess: (data) => {
+      useAuthStore.getState().acessarComoSuperAdmin(data)
     },
   })
 }

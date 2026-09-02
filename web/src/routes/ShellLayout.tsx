@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { useLogout, useSessaoAtual } from '../features/auth'
+import { useLogout, useSairAcessoSuperAdmin, useSessaoAtual } from '../features/auth'
 import { usePode } from '../lib/permissoes'
 import { useAuthStore } from '../stores/authStore'
 import { Botao } from '../components/ui/Botao'
@@ -154,7 +154,9 @@ export function ShellLayout() {
   const location = useLocation()
   const user = useAuthStore((state) => state.user)
   const tenant = useAuthStore((state) => state.tenant)
+  const acessoSuperAdmin = useAuthStore((state) => state.acessoSuperAdmin)
   const logout = useLogout()
+  const sairAcesso = useSairAcessoSuperAdmin()
   const pode = usePode()
   // Reconsulta papel e permissoes: e o que faz uma mudanca de permissao valer
   // sem exigir que a pessoa saia e entre de novo.
@@ -255,8 +257,40 @@ export function ShellLayout() {
     navigate('/login', { replace: true })
   }
 
+  const handleVoltarClinica = async () => {
+    await sairAcesso.mutateAsync().catch(() => undefined)
+    navigate('/dashboard')
+  }
+
   return (
     <div className="min-h-screen bg-fundo text-texto" data-testid="shell-layout">
+      {/*
+        Faixa fixa, cor de alerta, acima até do cabeçalho: é a única coisa que
+        impede alguém de esquecer que está atuando dentro da clínica de outra
+        pessoa e mexer em algo achando que é a própria. Não some com scroll
+        nem com navegação — só quando a pessoa clica em "Voltar" ou faz logout.
+      */}
+      {acessoSuperAdmin.ativo ? (
+        <div
+          className="relative z-(--z-fixo) flex flex-wrap items-center justify-center gap-3 border-b border-amber-400/30 bg-amber-400/90 px-4 py-2 text-center text-corpo font-semibold text-amber-950"
+          data-testid="faixa-acesso-super-admin"
+        >
+          <span>
+            Você está acessando <strong>{tenant?.nome}</strong> como super admin — ações aqui
+            afetam os dados desta clínica.
+          </span>
+          <button
+            type="button"
+            onClick={() => void handleVoltarClinica()}
+            disabled={sairAcesso.isPending}
+            className="rounded-pilula border border-amber-950/30 bg-amber-950/10 px-3 py-1 text-meta font-semibold text-amber-950 transition hover:bg-amber-950/20 disabled:opacity-50"
+            data-testid="voltar-minha-clinica"
+          >
+            {sairAcesso.isPending ? 'Voltando...' : 'Voltar para minha clínica'}
+          </button>
+        </div>
+      ) : null}
+
       {/*
         `relative z-(--z-fixo)` e o que mantem o submenu na frente do
         conteudo — sem z-index explicito vence a ordem do DOM, e o <main> vem

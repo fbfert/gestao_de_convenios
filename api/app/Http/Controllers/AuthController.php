@@ -6,6 +6,7 @@ use App\Http\Requests\LoginRequest;
 use App\Models\User;
 use App\Support\Auditoria;
 use App\Support\AuthPayload;
+use App\Support\SuperAdminAcesso;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 use Illuminate\Http\Request;
@@ -65,14 +66,22 @@ class AuthController extends Controller
     public function logout(Request $request): Response
     {
         $usuario = $request->user();
+        // Sempre derruba só o token usado NESTA requisição — nunca todos os
+        // tokens do usuário. É o mesmo endpoint usado pra "sair do modo
+        // acesso de super admin" (ver TenantController::acessar): o token de
+        // origem, da própria clínica do super admin, não pode ser afetado.
         $token = $request->bearerToken() ? PersonalAccessToken::findToken($request->bearerToken()) : null;
+        $eraAcessoEstranho = SuperAdminAcesso::tenantIdDoToken($token) !== null;
         $token?->delete();
 
         if ($usuario) {
             Auditoria::registrar(
-                acao: 'acesso.logout',
+                acao: $eraAcessoEstranho ? 'acesso.super_admin_sair' : 'acesso.logout',
                 entidade: 'users',
                 entidadeId: (int) $usuario->id,
+                // $usuario->tenant_id já se autocorrige durante um acesso de
+                // super admin (ver User::getTenantIdAttribute()) — o evento
+                // fica registrado na clínica que estava sendo visitada.
                 tenantId: (int) $usuario->tenant_id,
                 userId: $usuario->id,
                 comOrigem: true,

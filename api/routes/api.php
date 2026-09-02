@@ -143,6 +143,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EncerrarSessaoExpirada::
     Route::get('/tenants', [TenantController::class, 'index'])->middleware('super-admin');
     Route::post('/tenants', [TenantController::class, 'store'])->middleware('super-admin');
     Route::put('/tenants/{tenant}', [TenantController::class, 'update'])->middleware('super-admin');
+    Route::post('/tenants/{tenant}/acessar', [TenantController::class, 'acessar'])->middleware('super-admin');
 
     Route::get('/usuarios', [UserController::class, 'index'])->middleware('permission:usuarios.manage');
     Route::post('/usuarios', [UserController::class, 'store'])->middleware('permission:usuarios.manage');

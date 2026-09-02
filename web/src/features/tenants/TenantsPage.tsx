@@ -31,6 +31,7 @@ export function TenantsPage() {
   const [form, setForm] = useState<TenantForm>(tenantVazio)
   const [edicaoForm, setEdicaoForm] = useState<TenantEdicaoForm>({
     nome: '',
+    slug: '',
     cnpj: '',
     ativo: true,
   })
@@ -50,7 +51,7 @@ export function TenantsPage() {
 
   const abrirEdicao = (tenant: Tenant) => {
     setEdicao(tenant.id)
-    setEdicaoForm({ nome: tenant.nome, cnpj: tenant.cnpj ?? '', ativo: tenant.ativo })
+    setEdicaoForm({ nome: tenant.nome, slug: tenant.slug, cnpj: tenant.cnpj ?? '', ativo: tenant.ativo })
     setMessage(null)
     setError(null)
   }
@@ -181,7 +182,7 @@ export function TenantsPage() {
                 data-testid="tenant-slug"
               />
               <span className="block text-meta text-slate-400">
-                Minúsculas, números e hífen. Não pode ser alterado depois.
+                Minúsculas, números e hífen. Pode ser alterado depois em Editar.
               </span>
             </label>
             <label className="space-y-2">
@@ -302,6 +303,21 @@ export function TenantsPage() {
                       className={inputClasses()}
                       required
                     />
+                  </label>
+                  <label className="space-y-2">
+                    <span className="text-corpo font-medium text-slate-200">Identificador</span>
+                    <input
+                      value={edicaoForm.slug}
+                      onChange={(event) =>
+                        setEdicaoForm((atual) => ({ ...atual, slug: event.target.value }))
+                      }
+                      className={inputClasses()}
+                      required
+                      data-testid="tenant-edicao-slug"
+                    />
+                    <span className="block text-meta text-slate-400">
+                      Minúsculas, números e hífen, começando por letra.
+                    </span>
                   </label>
                   <label className="space-y-2">
                     <span className="text-corpo font-medium text-slate-200">CNPJ</span>

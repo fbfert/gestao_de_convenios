@@ -26,6 +26,7 @@ export type TenantForm = {
 
 export type TenantEdicaoForm = {
   nome: string
+  slug: string
   cnpj: string
   ativo: boolean
 }
@@ -96,6 +97,7 @@ export function useAtualizarTenant() {
     mutationFn: async ({ id, form }: { id: number; form: TenantEdicaoForm }) => {
       const { data } = await apiClient.put<{ data: Tenant }>(`/tenants/${id}`, {
         nome: form.nome.trim(),
+        slug: form.slug.trim(),
         cnpj: form.cnpj.trim() || null,
         ativo: form.ativo,
       })

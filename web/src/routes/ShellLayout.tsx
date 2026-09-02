@@ -365,7 +365,7 @@ export function ShellLayout() {
                     <BotaoTema className="w-full justify-center" />
                   </div>
                   <p className="px-3 text-meta text-texto-suave">
-                    {tenant?.nome} · {tenant?.slug}
+                    {tenant?.nome}
                   </p>
                   <div className="mt-2 px-3">
                     <Botao
@@ -413,7 +413,7 @@ export function ShellLayout() {
             <div className="text-right">
               <p className="text-corpo font-medium text-texto">{user?.name}</p>
               <p className="text-meta text-texto-suave">
-                {tenant?.nome} · {tenant?.slug}
+                {tenant?.nome}
               </p>
             </div>
 

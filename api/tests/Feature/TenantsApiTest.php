@@ -136,15 +136,35 @@ class TenantsApiTest extends TestCase
 
         $this->putJson("/api/tenants/{$outra->id}", [
             'nome' => 'Clínica Vizinha Ltda',
+            'slug' => 'clinica-vizinha-ltda',
             'cnpj' => '99.888.777/0001-66',
             'ativo' => false,
-        ])->assertOk()->assertJsonPath('data.ativo', false);
+        ])->assertOk()->assertJsonPath('data.ativo', false)->assertJsonPath('data.slug', 'clinica-vizinha-ltda');
 
         $outra->refresh();
         $this->assertSame('Clínica Vizinha Ltda', $outra->nome);
         $this->assertFalse($outra->ativo);
-        // O slug e imutavel: nao esta no request e nao pode mudar sozinho.
-        $this->assertSame('clinica-vizinha', $outra->slug);
+        // O slug passou a ser editável (02/09/2026): não é mais imutável.
+        $this->assertSame('clinica-vizinha-ltda', $outra->slug);
+    }
+
+    public function test_recusa_editar_slug_para_um_ja_usado_por_outra_clinica(): void
+    {
+        Sanctum::actingAs($this->superAdmin());
+
+        $outra = Tenant::query()->create([
+            'nome' => 'Clínica Vizinha',
+            'slug' => 'clinica-vizinha',
+            'cnpj' => null,
+            'ativo' => true,
+        ]);
+
+        $this->putJson("/api/tenants/{$outra->id}", [
+            'nome' => 'Clínica Vizinha',
+            'slug' => 'clinica-exemplo',
+            'cnpj' => null,
+            'ativo' => true,
+        ])->assertJsonValidationErrors('slug');
     }
 
     public function test_impede_desativar_a_propria_clinica(): void
@@ -152,8 +172,11 @@ class TenantsApiTest extends TestCase
         $super = $this->superAdmin();
         Sanctum::actingAs($super);
 
+        $slugAtual = Tenant::query()->findOrFail($super->tenant_id)->slug;
+
         $this->putJson("/api/tenants/{$super->tenant_id}", [
             'nome' => 'Clínica Exemplo',
+            'slug' => $slugAtual,
             'cnpj' => null,
             'ativo' => false,
         ])->assertJsonValidationErrors('ativo');

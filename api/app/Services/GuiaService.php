@@ -45,6 +45,11 @@ class GuiaService
         );
 
         return $query
+            ->when(
+                Arr::get($filtros, 'mostrar_a_definir'),
+                fn ($query) => $query->comDadosADefinir(),
+                fn ($query) => $query->comDadosDefinidos(),
+            )
             ->when(Arr::get($filtros, 'status'), fn ($query, $status) => $query->where('status', $status))
             ->when(Arr::get($filtros, 'convenio_id'), fn ($query, $convenioId) => $query->where('convenio_id', $convenioId))
             ->when(Arr::get($filtros, 'paciente_id'), fn ($query, $pacienteId) => $query->where('paciente_id', $pacienteId))

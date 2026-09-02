@@ -32,6 +32,7 @@ class GuiaController extends Controller
                 'paciente_nome',
                 'validade_senha_vencendo_em_dias',
                 'alerta_negacao_pendente',
+                'mostrar_a_definir',
             ]), (int) $request->integer('per_page', 15))
         );
     }

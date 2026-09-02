@@ -72,6 +72,10 @@ class ConsultarStatusUnimedService
             $motivos[] = 'A Guia não pertence a Convênio Unimed RDA.';
         }
 
+        if ($guia->temDadosADefinir()) {
+            $motivos[] = 'A Guia precisa ter Especialidade e Profissional definidos para entrar na automação.';
+        }
+
         if (blank($guia->numero_guia)) {
             $motivos[] = 'A Guia precisa ter número da operadora para consulta de status.';
         }

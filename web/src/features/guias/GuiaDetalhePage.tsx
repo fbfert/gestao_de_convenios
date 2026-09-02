@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { GuiaDetalheResumo } from './GuiaDetalheResumo'
 import { GuiaStatusActions } from './GuiaStatusActions'
 import { getHttpErrorMessage, useBuscarSenhaValidadeGuiaUnimed, useConsultarGuiaUnimed, useGuia } from './useGuias'
+import { guiaTemDadosADefinir } from './aDefinir'
 import { useAuthStore } from '../../stores/authStore'
 import { useLancamentoPrintTemplate } from '../lancamentos/useLancamentos'
 import { buildGuiaTemplateData, renderLancamentoPrintTemplate } from '../lancamentos/printTemplate'
@@ -64,8 +65,9 @@ export function GuiaDetalhePage() {
 
   const guia = guiaQuery.data
   const isUnimed = guia.convenio?.connector_driver === 'unimed_rda'
-  const canConsultarUnimed = isUnimed && Boolean(guia.numero_guia) && !['approved', 'denied', 'canceled', 'finalized', 'needs_verification'].includes(guia.status)
-  const canBuscarSenhaValidade = isUnimed && guia.status === 'approved' && Boolean(guia.numero_guia) && (!guia.senha || !guia.validade_senha)
+  const temDadosADefinir = guiaTemDadosADefinir(guia)
+  const canConsultarUnimed = isUnimed && Boolean(guia.numero_guia) && !['approved', 'denied', 'canceled', 'finalized', 'needs_verification'].includes(guia.status) && !temDadosADefinir
+  const canBuscarSenhaValidade = isUnimed && guia.status === 'approved' && Boolean(guia.numero_guia) && (!guia.senha || !guia.validade_senha) && !temDadosADefinir
 
   const executarConsultarUnimed = async () => {
     try {

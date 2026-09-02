@@ -11,6 +11,9 @@ class Guia extends Model
 {
     use Auditable, BelongsToTenant, HasFactory;
 
+    /** Nome placeholder gravado em especialidade/profissional quando o dado real ainda não foi definido. */
+    public const NOME_A_DEFINIR = 'A DEFINIR';
+
     protected $fillable = [
         'tenant_id', 'solicitacao_id', 'solicitacao_item_id', 'convenio_id', 'paciente_id',
         'automacao_execucao_id', 'profissional_id', 'especialidade_id', 'numero_guia', 'tipo_terapia',
@@ -79,5 +82,30 @@ class Guia extends Model
     public function conciliacoes()
     {
         return $this->hasMany(ConciliacaoFinanceira::class);
+    }
+
+    /** Exclui guias com Especialidade ou Profissional ainda "A DEFINIR". */
+    public function scopeComDadosDefinidos($query)
+    {
+        return $query
+            ->whereDoesntHave('especialidade', fn ($q) => $q->whereRaw('UPPER(nome) = ?', [self::NOME_A_DEFINIR]))
+            ->whereDoesntHave('profissional', fn ($q) => $q->whereRaw('UPPER(nome) = ?', [self::NOME_A_DEFINIR]));
+    }
+
+    /** Só guias com Especialidade e/ou Profissional ainda "A DEFINIR". */
+    public function scopeComDadosADefinir($query)
+    {
+        return $query->where(function ($query) {
+            $query->whereHas('especialidade', fn ($q) => $q->whereRaw('UPPER(nome) = ?', [self::NOME_A_DEFINIR]))
+                ->orWhereHas('profissional', fn ($q) => $q->whereRaw('UPPER(nome) = ?', [self::NOME_A_DEFINIR]));
+        });
+    }
+
+    public function temDadosADefinir(): bool
+    {
+        $this->loadMissing(['especialidade', 'profissional']);
+
+        return mb_strtoupper((string) $this->especialidade?->nome) === self::NOME_A_DEFINIR
+            || mb_strtoupper((string) $this->profissional?->nome) === self::NOME_A_DEFINIR;
     }
 }

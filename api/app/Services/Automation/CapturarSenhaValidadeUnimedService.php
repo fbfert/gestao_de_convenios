@@ -68,6 +68,10 @@ class CapturarSenhaValidadeUnimedService
             $motivos[] = 'A Guia não pertence a Convênio Unimed RDA.';
         }
 
+        if ($guia->temDadosADefinir()) {
+            $motivos[] = 'A Guia precisa ter Especialidade e Profissional definidos para entrar na automação.';
+        }
+
         if (! $credential || blank($credential->password)) {
             $motivos[] = 'A credencial Unimed ativa não está configurada.';
         }

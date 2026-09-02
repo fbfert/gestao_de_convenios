@@ -21,6 +21,7 @@ import { GuiaAlertaNegacoes } from './GuiaAlertaNegacoes'
 import { GuiaStatusActions } from './GuiaStatusActions'
 import { statusTone } from './statusTone'
 import { SENHA_VENCENDO_EM_DIAS } from './senhaValidade'
+import { guiaTemDadosADefinir } from './aDefinir'
 import { Indicadores } from '../../components/ui/Indicadores'
 import { Tooltip, iconeLupa } from '../../components/ui/Tooltip'
 import { usePode } from '../../lib/permissoes'
@@ -36,6 +37,7 @@ const defaultFilters: GuiaFilters = {
   profissional_id: '',
   paciente_nome: '',
   validade_senha_vencendo_em_dias: '',
+  mostrar_a_definir: '',
 }
 
 const emptyForm: GuiaForm = {
@@ -54,11 +56,18 @@ function selectClasses() {
 }
 
 /** Mesma regra de elegibilidade usada em GuiaDetalhePage.tsx (canBuscarSenhaValidade). */
-function podeBuscarSenhaValidade(guia: { status: string; numero_guia: string | null; convenio?: { connector_driver?: string | null } }) {
+function podeBuscarSenhaValidade(guia: {
+  status: string
+  numero_guia: string | null
+  convenio?: { connector_driver?: string | null }
+  especialidade?: { nome?: string | null } | null
+  profissional?: { nome?: string | null } | null
+}) {
   return (
     guia.convenio?.connector_driver === 'unimed_rda' &&
     guia.status === 'approved' &&
-    Boolean(guia.numero_guia)
+    Boolean(guia.numero_guia) &&
+    !guiaTemDadosADefinir(guia)
   )
 }
 
@@ -193,6 +202,19 @@ export function GuiasPage() {
     setDraftFilters((current) => ({
       ...current,
       validade_senha_vencendo_em_dias: nextValue,
+    }))
+  }
+
+  const toggleADefinirBadge = () => {
+    const nextValue = draftFilters.mostrar_a_definir === '1' ? '' : '1'
+    setPage(1)
+    setFilters((current) => ({
+      ...current,
+      mostrar_a_definir: nextValue,
+    }))
+    setDraftFilters((current) => ({
+      ...current,
+      mostrar_a_definir: nextValue,
     }))
   }
 
@@ -334,6 +356,19 @@ export function GuiasPage() {
               {filters.validade_senha_vencendo_em_dias === String(SENHA_VENCENDO_EM_DIAS)
                 ? `Vencendo em ${SENHA_VENCENDO_EM_DIAS} dias`
                 : `Mostrar vencendo em ${SENHA_VENCENDO_EM_DIAS} dias`}
+            </button>
+            <button
+              type="button"
+              onClick={toggleADefinirBadge}
+              className={[
+                'inline-flex rounded-full border px-3 py-1.5 text-corpo font-semibold transition',
+                filters.mostrar_a_definir === '1'
+                  ? 'border-cyan-200/50 bg-cyan-300/20 text-white'
+                  : 'border-cyan-200/20 bg-white/5 text-cyan-50 hover:bg-white/10',
+              ].join(' ')}
+              data-testid="guia-filtro-a-definir"
+            >
+              {filters.mostrar_a_definir === '1' ? 'Guias A DEFINIR' : 'Mostrar guias A DEFINIR'}
             </button>
           </span>
         </div>
@@ -705,7 +740,8 @@ export function GuiasPage() {
                             </Badge>
                             {guia.status === 'under_review' &&
                             guia.convenio?.connector_driver === 'unimed_rda' &&
-                            guia.numero_guia ? (
+                            guia.numero_guia &&
+                            !guiaTemDadosADefinir(guia) ? (
                               <button
                                 type="button"
                                 onClick={() => handleVerificarStatus(guia.id)}

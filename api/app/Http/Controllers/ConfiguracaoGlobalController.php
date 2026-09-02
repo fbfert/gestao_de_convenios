@@ -41,6 +41,14 @@ class ConfiguracaoGlobalController extends Controller
             'unimed_verificacao_incerta_intervalo_minutos' => $configuracao->unimed_verificacao_incerta_intervalo_minutos,
             'unimed_verificacao_incerta_horario_inicio' => $this->paraHorario($configuracao->unimed_verificacao_incerta_horario_inicio),
             'unimed_verificacao_incerta_horario_fim' => $this->paraHorario($configuracao->unimed_verificacao_incerta_horario_fim),
+            'automacao_reconsulta_status_ativo' => $configuracao->automacao_reconsulta_status_ativo,
+            'automacao_captura_senha_validade_ativo' => $configuracao->automacao_captura_senha_validade_ativo,
+            'automacao_verificacao_incerta_ativo' => $configuracao->automacao_verificacao_incerta_ativo,
+            'automacao_sincronizacao_clinica_ativo' => $configuracao->automacao_sincronizacao_clinica_ativo,
+            'automacao_sincronizacao_clinica_intervalo_minutos' => $configuracao->automacao_sincronizacao_clinica_intervalo_minutos,
+            'automacao_expurgo_auditoria_ativo' => $configuracao->automacao_expurgo_auditoria_ativo,
+            'automacao_expurgo_carteirinhas_ativo' => $configuracao->automacao_expurgo_carteirinhas_ativo,
+            'automacao_verificacao_guias_diaria_ativo' => $configuracao->automacao_verificacao_guias_diaria_ativo,
         ];
     }
 

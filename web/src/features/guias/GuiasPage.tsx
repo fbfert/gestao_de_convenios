@@ -10,6 +10,7 @@ import { formatCarteirinha } from '../../lib/carteirinha'
 import { useConvenios, useEspecialidades, usePacientes, useProfissionais } from '../../lib/queries/useReferenceData'
 import {
   getHttpErrorMessage,
+  useBuscarSenhaValidadeGuiaUnimed,
   useConsultarGuiaUnimed,
   useGerarConciliacao,
   useCriarGuia,
@@ -52,6 +53,15 @@ function selectClasses() {
   return 'w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20'
 }
 
+/** Mesma regra de elegibilidade usada em GuiaDetalhePage.tsx (canBuscarSenhaValidade). */
+function podeBuscarSenhaValidade(guia: { status: string; numero_guia: string | null; convenio?: { connector_driver?: string | null } }) {
+  return (
+    guia.convenio?.connector_driver === 'unimed_rda' &&
+    guia.status === 'approved' &&
+    Boolean(guia.numero_guia)
+  )
+}
+
 export function GuiasPage() {
   const pode = usePode()
   const navigate = useNavigate()
@@ -63,7 +73,7 @@ export function GuiasPage() {
   const [form, setForm] = useState<GuiaForm>(emptyForm)
   const [formError, setFormError] = useState<string | null>(null)
   const [conciliacaoError, setConciliacaoError] = useState<string | null>(null)
-  const [progressoExecucaoId, setProgressoExecucaoId] = useState<number | null>(null)
+  const [progresso, setProgresso] = useState<{ id: number; tipo: 'status' | 'senha' } | null>(null)
 
   const { ordenacao, ordenarPor } = useOrdenacao({
     ordenar_por: 'numero_guia',
@@ -79,6 +89,7 @@ export function GuiasPage() {
   const criarGuia = useCriarGuia()
   const gerarConciliacao = useGerarConciliacao()
   const consultarGuiaUnimed = useConsultarGuiaUnimed()
+  const buscarSenhaValidadeUnimed = useBuscarSenhaValidadeGuiaUnimed()
   const confirmar = useConfirm()
   const { tratarErroUnimed, modalProps: automacaoUnimedModalProps } = useAutomacaoUnimedGate()
 
@@ -209,7 +220,7 @@ export function GuiasPage() {
   const executarVerificarStatus = async (guiaId: number) => {
     try {
       const execucao = await consultarGuiaUnimed.mutateAsync(guiaId)
-      setProgressoExecucaoId(execucao.id)
+      setProgresso({ id: execucao.id, tipo: 'status' })
     } catch (error) {
       tratarErroUnimed(error, 'Não foi possível consultar a Unimed.', () => executarVerificarStatus(guiaId))
     }
@@ -228,6 +239,32 @@ export function GuiasPage() {
     }
 
     await executarVerificarStatus(guiaId)
+  }
+
+  const executarBuscarSenhaValidade = async (guiaId: number) => {
+    try {
+      const execucao = await buscarSenhaValidadeUnimed.mutateAsync(guiaId)
+      setProgresso({ id: execucao.id, tipo: 'senha' })
+    } catch (error) {
+      tratarErroUnimed(error, 'Não foi possível buscar senha e validade na Unimed.', () =>
+        executarBuscarSenhaValidade(guiaId),
+      )
+    }
+  }
+
+  const handleBuscarSenhaValidade = async (guiaId: number) => {
+    const ok = await confirmar({
+      titulo: 'Buscar senha e validade na Unimed',
+      descricao: 'Consulta o portal da Unimed para capturar a senha e a validade de autorização desta guia. Confirma?',
+      confirmarTexto: 'Buscar senha/validade',
+      variante: 'primario',
+    })
+
+    if (!ok) {
+      return
+    }
+
+    await executarBuscarSenhaValidade(guiaId)
   }
 
   return (
@@ -701,8 +738,40 @@ export function GuiasPage() {
                         >
                           {guia.sessoes_autorizadas ?? '-'}
                         </td>
-                        <td data-rotulo="Senha" className="px-4 py-4 text-slate-200">{guia.senha ?? '-'}</td>
-                        <td data-rotulo="Validade" className="px-4 py-4 text-slate-200">{guia.validade_senha ?? '-'}</td>
+                        <td data-rotulo="Senha" className="px-4 py-4 text-slate-200">
+                          {guia.senha ? (
+                            guia.senha
+                          ) : podeBuscarSenhaValidade(guia) ? (
+                            <button
+                              type="button"
+                              onClick={() => handleBuscarSenhaValidade(guia.id)}
+                              disabled={buscarSenhaValidadeUnimed.isPending}
+                              className="inline-flex w-fit whitespace-nowrap rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-meta font-semibold text-emerald-100 transition hover:bg-emerald-400/20 disabled:opacity-50"
+                              data-testid={`guia-buscar-senha-${guia.id}`}
+                            >
+                              Buscar Senha
+                            </button>
+                          ) : (
+                            '-'
+                          )}
+                        </td>
+                        <td data-rotulo="Validade" className="px-4 py-4 text-slate-200">
+                          {guia.validade_senha ? (
+                            guia.validade_senha
+                          ) : podeBuscarSenhaValidade(guia) ? (
+                            <button
+                              type="button"
+                              onClick={() => handleBuscarSenhaValidade(guia.id)}
+                              disabled={buscarSenhaValidadeUnimed.isPending}
+                              className="inline-flex w-fit whitespace-nowrap rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-meta font-semibold text-emerald-100 transition hover:bg-emerald-400/20 disabled:opacity-50"
+                              data-testid={`guia-buscar-validade-${guia.id}`}
+                            >
+                              Buscar Validade
+                            </button>
+                          ) : (
+                            '-'
+                          )}
+                        </td>
                         <td data-rotulo="Última consulta" className="px-4 py-4 text-center text-slate-200">
                           {guia.unimed_last_checked_at || guia.ultima_automacao_unimed ? (
                             <Tooltip rotulo="Ver última consulta Unimed" icone={iconeLupa}>
@@ -797,11 +866,19 @@ export function GuiasPage() {
       ) : null}
 
       <AutomacaoProgressoModal
-        execucaoId={progressoExecucaoId}
-        onClose={() => setProgressoExecucaoId(null)}
-        titulo="Verificando status na Unimed"
-        descricao="Acompanhe a consulta de status desta guia no portal da Unimed."
-        mensagemExecutando="O robô está consultando o status desta guia no portal da Unimed..."
+        execucaoId={progresso?.id ?? null}
+        onClose={() => setProgresso(null)}
+        titulo={progresso?.tipo === 'senha' ? 'Buscando senha e validade na Unimed' : 'Verificando status na Unimed'}
+        descricao={
+          progresso?.tipo === 'senha'
+            ? 'Acompanhe a captura de senha e validade desta guia no portal da Unimed.'
+            : 'Acompanhe a consulta de status desta guia no portal da Unimed.'
+        }
+        mensagemExecutando={
+          progresso?.tipo === 'senha'
+            ? 'O robô está buscando a senha e a validade desta guia no portal da Unimed...'
+            : 'O robô está consultando o status desta guia no portal da Unimed...'
+        }
         queryKeysInvalidar={[['guias']]}
       />
 

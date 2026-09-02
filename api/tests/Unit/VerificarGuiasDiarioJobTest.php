@@ -42,6 +42,19 @@ class VerificarGuiasDiarioJobTest extends TestCase
         ]);
     }
 
+    public function test_nao_roda_quando_automacao_esta_desligada_para_o_tenant(): void
+    {
+        $this->criarGuiasUnderReview();
+        $tenant = Tenant::query()->where('slug', 'clinica-exemplo')->firstOrFail();
+        \App\Models\ConfiguracaoGlobal::doTenant($tenant->id)->update([
+            'automacao_verificacao_guias_diaria_ativo' => false,
+        ]);
+
+        app(VerificarGuiasDiarioJob::class)->handle(app(\App\Services\Connectors\ConnectorResolver::class));
+
+        $this->assertSame(0, ConectorExecucao::query()->count());
+    }
+
     private function criarGuiasUnderReview(): void
     {
         Guia::query()->delete();

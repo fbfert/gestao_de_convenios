@@ -22,6 +22,22 @@ export type ConfiguracoesGlobais = {
   unimed_verificacao_incerta_horario_inicio: string
   /** Horário (HH:MM) de fim da janela em que a confirmação de guia incerta pode rodar. */
   unimed_verificacao_incerta_horario_fim: string
+  /** Liga/desliga a reconsulta automática de status Unimed (o tick de 30 min continua rodando, só pula esta automação). */
+  automacao_reconsulta_status_ativo: boolean
+  /** Liga/desliga a busca automática de senha/validade para guias Unimed aprovadas. */
+  automacao_captura_senha_validade_ativo: boolean
+  /** Liga/desliga a confirmação automática de guia incerta pós-submit. */
+  automacao_verificacao_incerta_ativo: boolean
+  /** Liga/desliga a sincronização agendada com a clínica ("Sincronizar Agora" continua disponível). */
+  automacao_sincronizacao_clinica_ativo: boolean
+  /** Minutos entre sincronizações automáticas com a clínica. */
+  automacao_sincronizacao_clinica_intervalo_minutos: number
+  /** Liga/desliga o expurgo diário da trilha de auditoria. */
+  automacao_expurgo_auditoria_ativo: boolean
+  /** Liga/desliga o expurgo diário de imagens de carteirinha vencidas. */
+  automacao_expurgo_carteirinhas_ativo: boolean
+  /** Liga/desliga a verificação diária de guias em análise em convênios não-Unimed. */
+  automacao_verificacao_guias_diaria_ativo: boolean
 }
 
 export type ConfiguracoesGlobaisForm = {
@@ -36,6 +52,14 @@ export type ConfiguracoesGlobaisForm = {
   unimed_verificacao_incerta_intervalo_minutos: string
   unimed_verificacao_incerta_horario_inicio: string
   unimed_verificacao_incerta_horario_fim: string
+  automacao_reconsulta_status_ativo: boolean
+  automacao_captura_senha_validade_ativo: boolean
+  automacao_verificacao_incerta_ativo: boolean
+  automacao_sincronizacao_clinica_ativo: boolean
+  automacao_sincronizacao_clinica_intervalo_minutos: string
+  automacao_expurgo_auditoria_ativo: boolean
+  automacao_expurgo_carteirinhas_ativo: boolean
+  automacao_verificacao_guias_diaria_ativo: boolean
 }
 
 const chaveQuery = ['configuracoes', 'globais']
@@ -53,6 +77,14 @@ export function paraFormulario(dados: ConfiguracoesGlobais): ConfiguracoesGlobai
     unimed_verificacao_incerta_intervalo_minutos: String(dados.unimed_verificacao_incerta_intervalo_minutos),
     unimed_verificacao_incerta_horario_inicio: dados.unimed_verificacao_incerta_horario_inicio,
     unimed_verificacao_incerta_horario_fim: dados.unimed_verificacao_incerta_horario_fim,
+    automacao_reconsulta_status_ativo: dados.automacao_reconsulta_status_ativo,
+    automacao_captura_senha_validade_ativo: dados.automacao_captura_senha_validade_ativo,
+    automacao_verificacao_incerta_ativo: dados.automacao_verificacao_incerta_ativo,
+    automacao_sincronizacao_clinica_ativo: dados.automacao_sincronizacao_clinica_ativo,
+    automacao_sincronizacao_clinica_intervalo_minutos: String(dados.automacao_sincronizacao_clinica_intervalo_minutos),
+    automacao_expurgo_auditoria_ativo: dados.automacao_expurgo_auditoria_ativo,
+    automacao_expurgo_carteirinhas_ativo: dados.automacao_expurgo_carteirinhas_ativo,
+    automacao_verificacao_guias_diaria_ativo: dados.automacao_verificacao_guias_diaria_ativo,
   }
 }
 
@@ -99,6 +131,14 @@ export function useSalvarConfiguracoesGlobais() {
         unimed_verificacao_incerta_intervalo_minutos: Number(form.unimed_verificacao_incerta_intervalo_minutos),
         unimed_verificacao_incerta_horario_inicio: form.unimed_verificacao_incerta_horario_inicio,
         unimed_verificacao_incerta_horario_fim: form.unimed_verificacao_incerta_horario_fim,
+        automacao_reconsulta_status_ativo: form.automacao_reconsulta_status_ativo,
+        automacao_captura_senha_validade_ativo: form.automacao_captura_senha_validade_ativo,
+        automacao_verificacao_incerta_ativo: form.automacao_verificacao_incerta_ativo,
+        automacao_sincronizacao_clinica_ativo: form.automacao_sincronizacao_clinica_ativo,
+        automacao_sincronizacao_clinica_intervalo_minutos: Number(form.automacao_sincronizacao_clinica_intervalo_minutos),
+        automacao_expurgo_auditoria_ativo: form.automacao_expurgo_auditoria_ativo,
+        automacao_expurgo_carteirinhas_ativo: form.automacao_expurgo_carteirinhas_ativo,
+        automacao_verificacao_guias_diaria_ativo: form.automacao_verificacao_guias_diaria_ativo,
       })
       return data.data
     },

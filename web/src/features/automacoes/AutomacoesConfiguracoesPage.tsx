@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import {
   getHttpErrorMessage,
   paraFormulario,
@@ -24,13 +24,61 @@ const formVazio: ConfiguracoesGlobaisForm = {
   unimed_verificacao_incerta_intervalo_minutos: '60',
   unimed_verificacao_incerta_horario_inicio: '02:00',
   unimed_verificacao_incerta_horario_fim: '12:50',
+  automacao_reconsulta_status_ativo: true,
+  automacao_captura_senha_validade_ativo: true,
+  automacao_verificacao_incerta_ativo: true,
+  automacao_sincronizacao_clinica_ativo: true,
+  automacao_sincronizacao_clinica_intervalo_minutos: '5',
+  automacao_expurgo_auditoria_ativo: true,
+  automacao_expurgo_carteirinhas_ativo: true,
+  automacao_verificacao_guias_diaria_ativo: true,
+}
+
+type SecaoAutomacaoProps = {
+  titulo: string
+  descricao: string
+  ativo: boolean
+  onAlterarAtivo: (valor: boolean) => void
+  testIdAtivo: string
+  children?: ReactNode
 }
 
 /**
- * Edita só os dois campos de reagendamento Unimed, mas usa o mesmo endpoint
- * de Configurações Globais (PUT exige todos os campos) — por isso carrega e
- * reenvia o formulário inteiro, só a UI é que mostra um subconjunto.
+ * Cada automação vira uma seção com o mesmo formato: título, descrição, um
+ * switch de liga/desliga sempre visível no cabeçalho, e — quando a automação
+ * tem algum prazo configurável — os campos de intervalo logo abaixo,
+ * desabilitados enquanto ela estiver desligada (não faz sentido configurar
+ * o ritmo de algo que não está rodando).
  */
+function SecaoAutomacao({ titulo, descricao, ativo, onAlterarAtivo, testIdAtivo, children }: SecaoAutomacaoProps) {
+  return (
+    <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h3 className="text-subtitulo font-semibold text-white">{titulo}</h3>
+          <p className="mt-1 text-corpo text-slate-300">{descricao}</p>
+        </div>
+        <label className="inline-flex min-h-6 shrink-0 items-center gap-2 text-corpo font-medium text-slate-200">
+          <input
+            type="checkbox"
+            checked={ativo}
+            onChange={(event) => onAlterarAtivo(event.target.checked)}
+            className="size-4 rounded border-white/20 bg-white/10"
+            data-testid={testIdAtivo}
+          />
+          Ativa
+        </label>
+      </div>
+
+      {children ? (
+        <div aria-disabled={!ativo} className={ativo ? undefined : 'pointer-events-none opacity-50'}>
+          {children}
+        </div>
+      ) : null}
+    </section>
+  )
+}
+
 export function AutomacoesConfiguracoesPage() {
   const query = useConfiguracoesGlobais()
   const salvar = useSalvarConfiguracoesGlobais()
@@ -58,7 +106,7 @@ export function AutomacoesConfiguracoesPage() {
 
     try {
       await salvar.mutateAsync(form)
-      setMessage('Configurações de reconsulta Unimed salvas.')
+      setMessage('Configurações de automações salvas.')
     } catch (submitError) {
       setError(getHttpErrorMessage(submitError, 'Não foi possível salvar as configurações.'))
     }
@@ -70,9 +118,9 @@ export function AutomacoesConfiguracoesPage() {
         <p className="text-meta uppercase tracking-[0.3em] text-cyan-300/80">Automações</p>
         <h2 className="text-display font-semibold text-white">Configurações</h2>
         <p className="max-w-3xl text-corpo leading-6 text-slate-300">
-          Controla de quanto em quanto tempo o sistema volta a consultar o status de uma guia no
-          portal da Unimed (job que roda a cada 30 minutos, o dia inteiro). Os dois prazos abaixo
-          só se aplicam a guias de convênio Unimed RDA ainda em análise.
+          Liga, desliga e ajusta o ritmo de cada automação de fundo do sistema. Desligar uma
+          automação não afeta as ações manuais equivalentes (ex.: "Buscar senha/validade" numa
+          guia, ou "Sincronizar Agora") — elas continuam disponíveis normalmente.
         </p>
       </section>
 
@@ -84,14 +132,13 @@ export function AutomacoesConfiguracoesPage() {
         </p>
       ) : null}
 
-      <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
-        <h3 className="text-subtitulo font-semibold text-white">Reconsulta de status</h3>
-        <p className="mt-1 text-corpo text-slate-300">
-          Quando a consulta falha por erro técnico (timeout de automação, portal fora do ar), o
-          sistema tenta de novo bem antes do prazo normal — sem isso, uma falha pontual deixava a
-          guia parada até 24h, mesmo com o job rodando a cada 30 minutos.
-        </p>
-
+      <SecaoAutomacao
+        titulo="Reconsulta de status Unimed"
+        descricao="A cada 30 minutos, o sistema volta a consultar no portal da Unimed o status das guias RDA ainda em análise."
+        ativo={form.automacao_reconsulta_status_ativo}
+        onAlterarAtivo={(valor) => alterar('automacao_reconsulta_status_ativo', valor)}
+        testIdAtivo="automacoes-config-reconsulta-ativo"
+      >
         <div className="mt-5 grid gap-4 md:grid-cols-2">
           <label className="space-y-2">
             <span className="text-corpo font-medium text-slate-200">
@@ -132,18 +179,23 @@ export function AutomacoesConfiguracoesPage() {
             </span>
           </label>
         </div>
-      </section>
+      </SecaoAutomacao>
 
-      <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
-        <h3 className="text-subtitulo font-semibold text-white">Confirmação de guia incerta</h3>
-        <p className="mt-1 text-corpo text-slate-300">
-          Quando o robô finaliza uma guia no portal mas não consegue confirmar o resultado
-          (resposta ambígua, sem número de guia), o sistema não reenvia sozinho — em vez disso,
-          confirma buscando pelo paciente em "Exames em aberto" dentro da janela de horário abaixo.
-          O job que checa isso roda a cada 30 minutos, então um intervalo menor que 30 min não tem
-          efeito prático.
-        </p>
+      <SecaoAutomacao
+        titulo="Busca de senha e validade Unimed"
+        descricao='No mesmo ciclo de 30 minutos, busca a senha e a validade de guias Unimed já aprovadas que ainda não têm um dos dois. Sem prazo próprio — segue o ciclo da reconsulta de status.'
+        ativo={form.automacao_captura_senha_validade_ativo}
+        onAlterarAtivo={(valor) => alterar('automacao_captura_senha_validade_ativo', valor)}
+        testIdAtivo="automacoes-config-captura-senha-validade-ativo"
+      />
 
+      <SecaoAutomacao
+        titulo="Confirmação de guia incerta"
+        descricao={'Quando o robô finaliza uma guia no portal mas não consegue confirmar o resultado (resposta ambígua, sem número de guia), confirma buscando pelo paciente em "Exames em aberto" dentro da janela de horário abaixo. O job que checa isso roda a cada 30 minutos, então um intervalo menor que 30 min não tem efeito prático.'}
+        ativo={form.automacao_verificacao_incerta_ativo}
+        onAlterarAtivo={(valor) => alterar('automacao_verificacao_incerta_ativo', valor)}
+        testIdAtivo="automacoes-config-verificacao-ativo"
+      >
         <div className="mt-5 grid gap-4 md:grid-cols-3">
           <label className="space-y-2">
             <span className="text-corpo font-medium text-slate-200">Intervalo mínimo entre tentativas (minutos)</span>
@@ -184,7 +236,58 @@ export function AutomacoesConfiguracoesPage() {
             />
           </label>
         </div>
-      </section>
+      </SecaoAutomacao>
+
+      <SecaoAutomacao
+        titulo="Sincronização com a clínica"
+        descricao={'Sincroniza profissionais e pacientes com clinica.gestaonossa.com.br. O botão "Sincronizar Agora" continua funcionando mesmo com a automação desligada.'}
+        ativo={form.automacao_sincronizacao_clinica_ativo}
+        onAlterarAtivo={(valor) => alterar('automacao_sincronizacao_clinica_ativo', valor)}
+        testIdAtivo="automacoes-config-sync-clinica-ativo"
+      >
+        <div className="mt-5 grid gap-4 md:grid-cols-2">
+          <label className="space-y-2">
+            <span className="text-corpo font-medium text-slate-200">Intervalo entre sincronizações (minutos)</span>
+            <input
+              type="number"
+              min={5}
+              max={1440}
+              value={form.automacao_sincronizacao_clinica_intervalo_minutos}
+              onChange={(event) => alterar('automacao_sincronizacao_clinica_intervalo_minutos', event.target.value)}
+              className={inputClasses()}
+              required
+              data-testid="automacoes-config-sync-clinica-intervalo"
+            />
+            <span className="block text-meta text-slate-400">
+              O sistema checa a cada 5 minutos se já passou esse tempo. Padrão: 5 min.
+            </span>
+          </label>
+        </div>
+      </SecaoAutomacao>
+
+      <SecaoAutomacao
+        titulo="Expurgo de auditoria"
+        descricao="Apaga diariamente (03:30) os registros de auditoria vencidos, depois de exportá-los em CSV. O prazo de retenção é o mesmo da tela de Configurações gerais."
+        ativo={form.automacao_expurgo_auditoria_ativo}
+        onAlterarAtivo={(valor) => alterar('automacao_expurgo_auditoria_ativo', valor)}
+        testIdAtivo="automacoes-config-expurgo-auditoria-ativo"
+      />
+
+      <SecaoAutomacao
+        titulo="Expurgo de carteirinhas"
+        descricao="Apaga diariamente (03:45) as imagens de carteirinha vencidas. O prazo de retenção é o mesmo da tela de Configurações gerais."
+        ativo={form.automacao_expurgo_carteirinhas_ativo}
+        onAlterarAtivo={(valor) => alterar('automacao_expurgo_carteirinhas_ativo', valor)}
+        testIdAtivo="automacoes-config-expurgo-carteirinhas-ativo"
+      />
+
+      <SecaoAutomacao
+        titulo="Verificação diária de guias (outros convênios)"
+        descricao="Checa diariamente (02:00) o status de guias em análise de convênios que não são Unimed RDA, usando o conector de cada convênio."
+        ativo={form.automacao_verificacao_guias_diaria_ativo}
+        onAlterarAtivo={(valor) => alterar('automacao_verificacao_guias_diaria_ativo', valor)}
+        testIdAtivo="automacoes-config-verificacao-guias-diaria-ativo"
+      />
 
       {message ? (
         <p className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-corpo text-emerald-100">

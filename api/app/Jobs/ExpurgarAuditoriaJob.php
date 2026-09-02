@@ -32,10 +32,16 @@ class ExpurgarAuditoriaJob implements ShouldQueue
             // Lê sem criar: `doTenant()` criaria a linha de configuração de
             // toda clínica que nunca abriu a tela, e cada criação viraria mais
             // um evento na trilha que este job existe para enxugar.
-            $meses = ConfiguracaoGlobal::query()
+            $config = ConfiguracaoGlobal::query()
                 ->withoutGlobalScopes()
                 ->where('tenant_id', $tenant->id)
-                ->value('auditoria_retencao_meses') ?: 12;
+                ->first();
+
+            if ($config && ! $config->automacao_expurgo_auditoria_ativo) {
+                return;
+            }
+
+            $meses = $config?->auditoria_retencao_meses ?: 12;
             $corte = now()->subMonths($meses)->startOfDay();
 
             // `withoutGlobalScopes` porque o job roda fora de requisição: não

@@ -25,6 +25,14 @@ const formVazio: ConfiguracoesGlobaisForm = {
   unimed_verificacao_incerta_intervalo_minutos: '60',
   unimed_verificacao_incerta_horario_inicio: '02:00',
   unimed_verificacao_incerta_horario_fim: '12:50',
+  automacao_reconsulta_status_ativo: true,
+  automacao_captura_senha_validade_ativo: true,
+  automacao_verificacao_incerta_ativo: true,
+  automacao_sincronizacao_clinica_ativo: true,
+  automacao_sincronizacao_clinica_intervalo_minutos: '5',
+  automacao_expurgo_auditoria_ativo: true,
+  automacao_expurgo_carteirinhas_ativo: true,
+  automacao_verificacao_guias_diaria_ativo: true,
 }
 
 /** Atalhos de tempo de sessão, para não ter que calcular minutos na mão. */

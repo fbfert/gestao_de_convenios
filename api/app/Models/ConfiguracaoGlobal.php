@@ -25,6 +25,14 @@ class ConfiguracaoGlobal extends Model
         'unimed_verificacao_incerta_intervalo_minutos',
         'unimed_verificacao_incerta_horario_inicio',
         'unimed_verificacao_incerta_horario_fim',
+        'automacao_reconsulta_status_ativo',
+        'automacao_captura_senha_validade_ativo',
+        'automacao_verificacao_incerta_ativo',
+        'automacao_sincronizacao_clinica_ativo',
+        'automacao_sincronizacao_clinica_intervalo_minutos',
+        'automacao_expurgo_auditoria_ativo',
+        'automacao_expurgo_carteirinhas_ativo',
+        'automacao_verificacao_guias_diaria_ativo',
     ];
 
     protected $casts = [
@@ -37,15 +45,33 @@ class ConfiguracaoGlobal extends Model
         'unimed_recheck_horas_sucesso' => 'integer',
         'unimed_recheck_horas_falha' => 'integer',
         'unimed_verificacao_incerta_intervalo_minutos' => 'integer',
+        'automacao_reconsulta_status_ativo' => 'boolean',
+        'automacao_captura_senha_validade_ativo' => 'boolean',
+        'automacao_verificacao_incerta_ativo' => 'boolean',
+        'automacao_sincronizacao_clinica_ativo' => 'boolean',
+        'automacao_sincronizacao_clinica_intervalo_minutos' => 'integer',
+        'automacao_expurgo_auditoria_ativo' => 'boolean',
+        'automacao_expurgo_carteirinhas_ativo' => 'boolean',
+        'automacao_verificacao_guias_diaria_ativo' => 'boolean',
     ];
 
     /**
      * Configuração do tenant, criando a linha com os padrões se ainda não
      * existir. Nunca devolve null: quem lê não precisa tratar o caso de um
      * tenant que nunca abriu a tela.
+     *
+     * Quando cria, o `INSERT` só leva `tenant_id` — os demais campos ficam a
+     * cargo dos defaults da coluna no banco, que a instância recém-criada em
+     * memória não enxerga sozinha (Eloquent não busca de volta o que o banco
+     * preencheu). Sem o `fresh()`, o primeiro tenant a nunca ter aberto a
+     * tela de configurações leria todo campo com default (inclusive os
+     * liga/desliga de automação) como `null`, e a automação seria pulada por
+     * engano — só passa despercebido quando algo já criou a linha antes.
      */
     public static function doTenant(int $tenantId): self
     {
-        return static::query()->firstOrCreate(['tenant_id' => $tenantId]);
+        $configuracao = static::query()->firstOrCreate(['tenant_id' => $tenantId]);
+
+        return $configuracao->wasRecentlyCreated ? $configuracao->fresh() : $configuracao;
     }
 }

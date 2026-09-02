@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\ConectorExecucao;
+use App\Models\ConfiguracaoGlobal;
 use App\Models\Guia;
 use App\Services\Connectors\ConnectorResolver;
 use Illuminate\Bus\Queueable;
@@ -28,6 +29,16 @@ class VerificarGuiasDiarioJob implements ShouldQueue
             ->get()
             ->groupBy('convenio_id')
             ->each(function ($guias) use ($resolver) {
+                $tenantId = $guias->first()->tenant_id;
+                $ativo = ConfiguracaoGlobal::query()
+                    ->withoutGlobalScopes()
+                    ->where('tenant_id', $tenantId)
+                    ->value('automacao_verificacao_guias_diaria_ativo');
+
+                if ($ativo === false) {
+                    return;
+                }
+
                 $convenio = $guias->first()->convenio;
                 $connector = $resolver->resolver($convenio);
 

@@ -45,6 +45,19 @@ class UpdateConfiguracaoGlobalRequest extends FormRequest
             'unimed_verificacao_incerta_intervalo_minutos' => ['required', 'integer', 'min:5', 'max:1440'],
             'unimed_verificacao_incerta_horario_inicio' => ['required', 'date_format:H:i'],
             'unimed_verificacao_incerta_horario_fim' => ['required', 'date_format:H:i', 'after:unimed_verificacao_incerta_horario_inicio'],
+
+            // Liga/desliga por automação. Desligada, a automação simplesmente
+            // não roda no próximo tick — nenhum dado é perdido, e uma ação
+            // manual equivalente (quando existe, como "Sincronizar Agora" ou
+            // "Buscar senha/validade") continua funcionando normalmente.
+            'automacao_reconsulta_status_ativo' => ['required', 'boolean'],
+            'automacao_captura_senha_validade_ativo' => ['required', 'boolean'],
+            'automacao_verificacao_incerta_ativo' => ['required', 'boolean'],
+            'automacao_sincronizacao_clinica_ativo' => ['required', 'boolean'],
+            'automacao_sincronizacao_clinica_intervalo_minutos' => ['required', 'integer', 'min:5', 'max:1440'],
+            'automacao_expurgo_auditoria_ativo' => ['required', 'boolean'],
+            'automacao_expurgo_carteirinhas_ativo' => ['required', 'boolean'],
+            'automacao_verificacao_guias_diaria_ativo' => ['required', 'boolean'],
         ];
     }
 

@@ -25,6 +25,9 @@ class EnfileirarConsultasUnimedDueJob implements ShouldQueue
         $this->onQueue('automacoes');
     }
 
+    /** @var array<int, ConfiguracaoGlobal> */
+    private array $configPorTenant = [];
+
     public function handle(
         ConsultarStatusUnimedService $consultarStatus,
         CapturarSenhaValidadeUnimedService $capturarSenhaValidade,
@@ -44,6 +47,10 @@ class EnfileirarConsultasUnimedDueJob implements ShouldQueue
             ->orderBy('id')
             ->get()
             ->each(function (Guia $guia) use ($consultarStatus) {
+                if (! $this->configPara($guia->tenant_id)->automacao_reconsulta_status_ativo) {
+                    return;
+                }
+
                 $lock = Cache::lock("automacao:unimed:due:tenant:{$guia->tenant_id}:consult_status_batch", 60);
 
                 if (! $lock->get()) {
@@ -72,6 +79,10 @@ class EnfileirarConsultasUnimedDueJob implements ShouldQueue
             ->orderBy('id')
             ->get()
             ->each(function (Guia $guia) use ($capturarSenhaValidade) {
+                if (! $this->configPara($guia->tenant_id)->automacao_captura_senha_validade_ativo) {
+                    return;
+                }
+
                 $lock = Cache::lock("automacao:unimed:due:tenant:{$guia->tenant_id}:capture_authorization_data_batch", 60);
 
                 if (! $lock->get()) {
@@ -106,7 +117,11 @@ class EnfileirarConsultasUnimedDueJob implements ShouldQueue
             ->orderBy('id')
             ->get()
             ->each(function (SolicitacaoItem $item) use ($confirmarGuiaIncerta) {
-                $config = ConfiguracaoGlobal::doTenant($item->tenant_id);
+                $config = $this->configPara($item->tenant_id);
+
+                if (! $config->automacao_verificacao_incerta_ativo) {
+                    return;
+                }
 
                 if (! $this->dentroDaJanela($config)) {
                     return;
@@ -132,6 +147,11 @@ class EnfileirarConsultasUnimedDueJob implements ShouldQueue
                     $lock->release();
                 }
             });
+    }
+
+    private function configPara(int $tenantId): ConfiguracaoGlobal
+    {
+        return $this->configPorTenant[$tenantId] ??= ConfiguracaoGlobal::doTenant($tenantId);
     }
 
     private function dentroDaJanela(ConfiguracaoGlobal $config): bool

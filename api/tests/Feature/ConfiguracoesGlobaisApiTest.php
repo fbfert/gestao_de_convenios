@@ -30,7 +30,15 @@ class ConfiguracoesGlobaisApiTest extends TestCase
             ->assertJsonPath('data.unimed_recheck_horas_falha', 2)
             ->assertJsonPath('data.unimed_verificacao_incerta_intervalo_minutos', 60)
             ->assertJsonPath('data.unimed_verificacao_incerta_horario_inicio', '02:00')
-            ->assertJsonPath('data.unimed_verificacao_incerta_horario_fim', '12:50');
+            ->assertJsonPath('data.unimed_verificacao_incerta_horario_fim', '12:50')
+            ->assertJsonPath('data.automacao_reconsulta_status_ativo', true)
+            ->assertJsonPath('data.automacao_captura_senha_validade_ativo', true)
+            ->assertJsonPath('data.automacao_verificacao_incerta_ativo', true)
+            ->assertJsonPath('data.automacao_sincronizacao_clinica_ativo', true)
+            ->assertJsonPath('data.automacao_sincronizacao_clinica_intervalo_minutos', 5)
+            ->assertJsonPath('data.automacao_expurgo_auditoria_ativo', true)
+            ->assertJsonPath('data.automacao_expurgo_carteirinhas_ativo', true)
+            ->assertJsonPath('data.automacao_verificacao_guias_diaria_ativo', true);
     }
 
     public function test_salva_e_valida_os_limites(): void
@@ -72,6 +80,30 @@ class ConfiguracoesGlobaisApiTest extends TestCase
         ]))->assertJsonValidationErrors('unimed_verificacao_incerta_horario_fim');
     }
 
+    public function test_liga_e_desliga_automacoes_individualmente(): void
+    {
+        $this->autenticarComToken();
+
+        $this->putJson('/api/configuracoes/globais', $this->payloadValido([
+            'automacao_reconsulta_status_ativo' => false,
+            'automacao_captura_senha_validade_ativo' => false,
+            'automacao_verificacao_incerta_ativo' => false,
+            'automacao_sincronizacao_clinica_ativo' => false,
+            'automacao_sincronizacao_clinica_intervalo_minutos' => 15,
+            'automacao_expurgo_auditoria_ativo' => false,
+            'automacao_expurgo_carteirinhas_ativo' => false,
+            'automacao_verificacao_guias_diaria_ativo' => false,
+        ]))->assertOk()
+            ->assertJsonPath('data.automacao_reconsulta_status_ativo', false)
+            ->assertJsonPath('data.automacao_captura_senha_validade_ativo', false)
+            ->assertJsonPath('data.automacao_verificacao_incerta_ativo', false)
+            ->assertJsonPath('data.automacao_sincronizacao_clinica_ativo', false)
+            ->assertJsonPath('data.automacao_sincronizacao_clinica_intervalo_minutos', 15)
+            ->assertJsonPath('data.automacao_expurgo_auditoria_ativo', false)
+            ->assertJsonPath('data.automacao_expurgo_carteirinhas_ativo', false)
+            ->assertJsonPath('data.automacao_verificacao_guias_diaria_ativo', false);
+    }
+
     private function payloadValido(array $overrides = []): array
     {
         return array_merge([
@@ -86,6 +118,14 @@ class ConfiguracoesGlobaisApiTest extends TestCase
             'unimed_verificacao_incerta_intervalo_minutos' => 60,
             'unimed_verificacao_incerta_horario_inicio' => '02:00',
             'unimed_verificacao_incerta_horario_fim' => '12:50',
+            'automacao_reconsulta_status_ativo' => true,
+            'automacao_captura_senha_validade_ativo' => true,
+            'automacao_verificacao_incerta_ativo' => true,
+            'automacao_sincronizacao_clinica_ativo' => true,
+            'automacao_sincronizacao_clinica_intervalo_minutos' => 5,
+            'automacao_expurgo_auditoria_ativo' => true,
+            'automacao_expurgo_carteirinhas_ativo' => true,
+            'automacao_verificacao_guias_diaria_ativo' => true,
         ], $overrides);
     }
 

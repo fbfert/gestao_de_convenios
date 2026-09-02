@@ -5,6 +5,7 @@ namespace App\Services\Automation;
 use App\Exceptions\AutomationConcurrencyException;
 use App\Jobs\ExecutarAutomacaoUnimedJob;
 use App\Models\AutomacaoExecucao;
+use App\Models\ConfiguracaoGlobal;
 use App\Models\Guia;
 use App\Models\UnimedRdaCredential;
 use Illuminate\Validation\ValidationException;
@@ -48,11 +49,26 @@ class CapturarSenhaValidadeUnimedService
             ]);
         }
 
+        // Antes desta guia era reprocessada a cada tick de 30 min do job em
+        // lote (sem cooldown proprio). Agora so volta a ficar elegivel apos
+        // o intervalo configurado em /automacoes/configuracoes — se a
+        // captura tiver sucesso a guia sai da query (senha+validade
+        // preenchidas) antes mesmo deste prazo valer.
+        $intervaloHoras = $this->intervaloHoras($guia->tenant_id);
+        $guia->forceFill([
+            'unimed_senha_validade_next_check_at' => now()->addHours($intervaloHoras),
+        ])->save();
+
         if ($dispatch) {
             ExecutarAutomacaoUnimedJob::dispatch($execucao->id);
         }
 
         return $execucao;
+    }
+
+    private function intervaloHoras(int $tenantId): int
+    {
+        return ConfiguracaoGlobal::doTenant($tenantId)->unimed_captura_senha_validade_intervalo_horas ?: 6;
     }
 
     public function avaliar(Guia $guia): array

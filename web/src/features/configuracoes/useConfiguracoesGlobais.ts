@@ -26,6 +26,8 @@ export type ConfiguracoesGlobais = {
   automacao_reconsulta_status_ativo: boolean
   /** Liga/desliga a busca automática de senha/validade para guias Unimed aprovadas. */
   automacao_captura_senha_validade_ativo: boolean
+  /** Horas entre tentativas de busca de senha/validade por guia — 1, 6, 12 ou 24. */
+  unimed_captura_senha_validade_intervalo_horas: number
   /** Liga/desliga a confirmação automática de guia incerta pós-submit. */
   automacao_verificacao_incerta_ativo: boolean
   /** Liga/desliga a sincronização agendada com a clínica ("Sincronizar Agora" continua disponível). */
@@ -54,6 +56,7 @@ export type ConfiguracoesGlobaisForm = {
   unimed_verificacao_incerta_horario_fim: string
   automacao_reconsulta_status_ativo: boolean
   automacao_captura_senha_validade_ativo: boolean
+  unimed_captura_senha_validade_intervalo_horas: string
   automacao_verificacao_incerta_ativo: boolean
   automacao_sincronizacao_clinica_ativo: boolean
   automacao_sincronizacao_clinica_intervalo_minutos: string
@@ -79,6 +82,7 @@ export function paraFormulario(dados: ConfiguracoesGlobais): ConfiguracoesGlobai
     unimed_verificacao_incerta_horario_fim: dados.unimed_verificacao_incerta_horario_fim,
     automacao_reconsulta_status_ativo: dados.automacao_reconsulta_status_ativo,
     automacao_captura_senha_validade_ativo: dados.automacao_captura_senha_validade_ativo,
+    unimed_captura_senha_validade_intervalo_horas: String(dados.unimed_captura_senha_validade_intervalo_horas),
     automacao_verificacao_incerta_ativo: dados.automacao_verificacao_incerta_ativo,
     automacao_sincronizacao_clinica_ativo: dados.automacao_sincronizacao_clinica_ativo,
     automacao_sincronizacao_clinica_intervalo_minutos: String(dados.automacao_sincronizacao_clinica_intervalo_minutos),
@@ -133,6 +137,7 @@ export function useSalvarConfiguracoesGlobais() {
         unimed_verificacao_incerta_horario_fim: form.unimed_verificacao_incerta_horario_fim,
         automacao_reconsulta_status_ativo: form.automacao_reconsulta_status_ativo,
         automacao_captura_senha_validade_ativo: form.automacao_captura_senha_validade_ativo,
+        unimed_captura_senha_validade_intervalo_horas: Number(form.unimed_captura_senha_validade_intervalo_horas),
         automacao_verificacao_incerta_ativo: form.automacao_verificacao_incerta_ativo,
         automacao_sincronizacao_clinica_ativo: form.automacao_sincronizacao_clinica_ativo,
         automacao_sincronizacao_clinica_intervalo_minutos: Number(form.automacao_sincronizacao_clinica_intervalo_minutos),

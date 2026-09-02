@@ -7,6 +7,7 @@ import {
   type ConfiguracoesGlobaisForm,
 } from '../configuracoes/useConfiguracoesGlobais'
 import { Botao } from '../../components/ui/Botao'
+import { Select } from '../../components/ui/Select'
 
 function inputClasses() {
   return 'w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-corpo text-white outline-none transition placeholder:text-texto-suave focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20'
@@ -26,6 +27,7 @@ const formVazio: ConfiguracoesGlobaisForm = {
   unimed_verificacao_incerta_horario_fim: '12:50',
   automacao_reconsulta_status_ativo: true,
   automacao_captura_senha_validade_ativo: true,
+  unimed_captura_senha_validade_intervalo_horas: '6',
   automacao_verificacao_incerta_ativo: true,
   automacao_sincronizacao_clinica_ativo: true,
   automacao_sincronizacao_clinica_intervalo_minutos: '5',
@@ -183,11 +185,29 @@ export function AutomacoesConfiguracoesPage() {
 
       <SecaoAutomacao
         titulo="Busca de senha e validade Unimed"
-        descricao='No mesmo ciclo de 30 minutos, busca a senha e a validade de guias Unimed já aprovadas que ainda não têm um dos dois. Sem prazo próprio — segue o ciclo da reconsulta de status.'
+        descricao="Busca a senha e a validade de guias Unimed já aprovadas que ainda não têm um dos dois. O job de fila continua checando a cada 30 minutos, mas cada guia só é reprocessada depois do intervalo escolhido abaixo."
         ativo={form.automacao_captura_senha_validade_ativo}
         onAlterarAtivo={(valor) => alterar('automacao_captura_senha_validade_ativo', valor)}
         testIdAtivo="automacoes-config-captura-senha-validade-ativo"
-      />
+      >
+        <div className="mt-5 grid gap-4 md:grid-cols-2">
+          <label className="space-y-2">
+            <span className="text-corpo font-medium text-slate-200">Intervalo entre tentativas por guia</span>
+            <Select
+              value={form.unimed_captura_senha_validade_intervalo_horas}
+              onChange={(event) => alterar('unimed_captura_senha_validade_intervalo_horas', event.target.value)}
+              className={inputClasses()}
+              data-testid="automacoes-config-captura-senha-validade-intervalo"
+            >
+              <option value="1">1 hora</option>
+              <option value="6">6 horas</option>
+              <option value="12">12 horas</option>
+              <option value="24">24 horas</option>
+            </Select>
+            <span className="block text-meta text-slate-400">Padrão: 6 horas.</span>
+          </label>
+        </div>
+      </SecaoAutomacao>
 
       <SecaoAutomacao
         titulo="Confirmação de guia incerta"

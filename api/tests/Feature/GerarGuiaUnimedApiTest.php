@@ -7,6 +7,7 @@ use App\Jobs\EnfileirarConsultasUnimedDueJob;
 use App\Models\AuditLog;
 use App\Models\AutomacaoExecucao;
 use App\Models\AutomacaoEvento;
+use App\Models\ConfiguracaoGlobal;
 use App\Models\Convenio;
 use App\Models\ConvenioEspecialidadeMapeamento;
 use App\Models\ConvenioProfissionalMapeamento;
@@ -459,6 +460,58 @@ class GerarGuiaUnimedApiTest extends TestCase
             'operacao' => 'consult_status_batch',
         ]);
         Queue::assertPushed(ExecutarAutomacaoUnimedJob::class, 1);
+    }
+
+    public function test_endpoint_enfileira_busca_manual_de_senha_validade_unimed(): void
+    {
+        Queue::fake();
+        $this->autenticar();
+        $guia = $this->criarGuiaUnimedPendente(['status' => 'approved']);
+
+        $this->postJson("/api/guias/{$guia->id}/buscar-senha-validade-unimed")
+            ->assertAccepted()
+            ->assertJsonPath('data.status', 'queued')
+            ->assertJsonPath('data.operacao', 'capture_authorization_data_batch')
+            ->assertJsonPath('data.guia_id', $guia->id);
+
+        $guia->refresh();
+        $intervalo = ConfiguracaoGlobal::doTenant($guia->tenant_id)->unimed_captura_senha_validade_intervalo_horas;
+        $this->assertNotNull($guia->unimed_senha_validade_next_check_at);
+        $this->assertTrue($guia->unimed_senha_validade_next_check_at->between(
+            now()->addHours($intervalo)->subMinute(),
+            now()->addHours($intervalo)->addMinute(),
+        ));
+        Queue::assertPushed(ExecutarAutomacaoUnimedJob::class);
+    }
+
+    public function test_scheduler_leve_respeita_cooldown_da_busca_de_senha_validade(): void
+    {
+        Queue::fake();
+        Guia::query()->delete();
+        $due = $this->criarGuiaUnimedPendente([
+            'status' => 'approved',
+            'unimed_senha_validade_next_check_at' => now()->subMinute(),
+        ]);
+        $future = $this->criarGuiaUnimedPendente([
+            'status' => 'approved',
+            'unimed_senha_validade_next_check_at' => now()->addHours(3),
+        ]);
+
+        (new EnfileirarConsultasUnimedDueJob())->handle(
+            app(ConsultarStatusUnimedService::class),
+            app(CapturarSenhaValidadeUnimedService::class),
+            app(\App\Services\Automation\ConfirmarGuiaIncertaUnimedService::class),
+        );
+
+        $this->assertSame(1, AutomacaoExecucao::query()->where('operacao', 'capture_authorization_data_batch')->count());
+        $this->assertDatabaseHas('automacao_execucoes', [
+            'guia_id' => $due->id,
+            'operacao' => 'capture_authorization_data_batch',
+        ]);
+        $this->assertDatabaseMissing('automacao_execucoes', [
+            'guia_id' => $future->id,
+            'operacao' => 'capture_authorization_data_batch',
+        ]);
     }
 
     public function test_circuit_breaker_pausa_conector_em_falha_estrutural(): void

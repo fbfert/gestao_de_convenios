@@ -33,6 +33,7 @@ class ConfiguracoesGlobaisApiTest extends TestCase
             ->assertJsonPath('data.unimed_verificacao_incerta_horario_fim', '12:50')
             ->assertJsonPath('data.automacao_reconsulta_status_ativo', true)
             ->assertJsonPath('data.automacao_captura_senha_validade_ativo', true)
+            ->assertJsonPath('data.unimed_captura_senha_validade_intervalo_horas', 6)
             ->assertJsonPath('data.automacao_verificacao_incerta_ativo', true)
             ->assertJsonPath('data.automacao_sincronizacao_clinica_ativo', true)
             ->assertJsonPath('data.automacao_sincronizacao_clinica_intervalo_minutos', 5)
@@ -78,6 +79,11 @@ class ConfiguracoesGlobaisApiTest extends TestCase
             'unimed_verificacao_incerta_horario_inicio' => '13:00',
             'unimed_verificacao_incerta_horario_fim' => '12:50',
         ]))->assertJsonValidationErrors('unimed_verificacao_incerta_horario_fim');
+
+        // Intervalo da busca de senha/validade so aceita as 4 opcoes da tela.
+        $this->putJson('/api/configuracoes/globais', $this->payloadValido([
+            'unimed_captura_senha_validade_intervalo_horas' => 3,
+        ]))->assertJsonValidationErrors('unimed_captura_senha_validade_intervalo_horas');
     }
 
     public function test_liga_e_desliga_automacoes_individualmente(): void
@@ -87,6 +93,7 @@ class ConfiguracoesGlobaisApiTest extends TestCase
         $this->putJson('/api/configuracoes/globais', $this->payloadValido([
             'automacao_reconsulta_status_ativo' => false,
             'automacao_captura_senha_validade_ativo' => false,
+            'unimed_captura_senha_validade_intervalo_horas' => 24,
             'automacao_verificacao_incerta_ativo' => false,
             'automacao_sincronizacao_clinica_ativo' => false,
             'automacao_sincronizacao_clinica_intervalo_minutos' => 15,
@@ -96,6 +103,7 @@ class ConfiguracoesGlobaisApiTest extends TestCase
         ]))->assertOk()
             ->assertJsonPath('data.automacao_reconsulta_status_ativo', false)
             ->assertJsonPath('data.automacao_captura_senha_validade_ativo', false)
+            ->assertJsonPath('data.unimed_captura_senha_validade_intervalo_horas', 24)
             ->assertJsonPath('data.automacao_verificacao_incerta_ativo', false)
             ->assertJsonPath('data.automacao_sincronizacao_clinica_ativo', false)
             ->assertJsonPath('data.automacao_sincronizacao_clinica_intervalo_minutos', 15)
@@ -120,6 +128,7 @@ class ConfiguracoesGlobaisApiTest extends TestCase
             'unimed_verificacao_incerta_horario_fim' => '12:50',
             'automacao_reconsulta_status_ativo' => true,
             'automacao_captura_senha_validade_ativo' => true,
+            'unimed_captura_senha_validade_intervalo_horas' => 6,
             'automacao_verificacao_incerta_ativo' => true,
             'automacao_sincronizacao_clinica_ativo' => true,
             'automacao_sincronizacao_clinica_intervalo_minutos' => 5,

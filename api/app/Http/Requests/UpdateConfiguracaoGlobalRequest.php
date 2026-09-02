@@ -52,6 +52,10 @@ class UpdateConfiguracaoGlobalRequest extends FormRequest
             // "Buscar senha/validade") continua funcionando normalmente.
             'automacao_reconsulta_status_ativo' => ['required', 'boolean'],
             'automacao_captura_senha_validade_ativo' => ['required', 'boolean'],
+
+            // Ritmo da busca de senha/validade — deixou de seguir o ciclo de
+            // 30 min da reconsulta de status. Só as 4 opções da tela.
+            'unimed_captura_senha_validade_intervalo_horas' => ['required', 'integer', 'in:1,6,12,24'],
             'automacao_verificacao_incerta_ativo' => ['required', 'boolean'],
             'automacao_sincronizacao_clinica_ativo' => ['required', 'boolean'],
             'automacao_sincronizacao_clinica_intervalo_minutos' => ['required', 'integer', 'min:5', 'max:1440'],

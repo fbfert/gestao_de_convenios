@@ -77,6 +77,10 @@ class EnfileirarConsultasUnimedDueJob implements ShouldQueue
                 $query->whereNull('senha')
                     ->orWhereNull('validade_senha');
             })
+            ->where(function ($query) {
+                $query->whereNull('unimed_senha_validade_next_check_at')
+                    ->orWhere('unimed_senha_validade_next_check_at', '<=', now());
+            })
             ->orderBy('tenant_id')
             ->orderBy('id')
             ->get()

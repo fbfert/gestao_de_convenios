@@ -17,6 +17,7 @@ class Medico extends Model
         'tenant_id',
         'nome',
         'crm',
+        'crm_uf',
         'especialidade_medica',
         'telefone',
         'email',

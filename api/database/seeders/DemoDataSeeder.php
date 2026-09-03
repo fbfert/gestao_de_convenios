@@ -189,14 +189,14 @@ class DemoDataSeeder extends Seeder
     private function criarMedicos(): void
     {
         $medicos = [
-            ['Dr. Carlos Almeida', 'CRM/SC 12345', 'Neurologia Infantil'],
-            ['Dra. Sofia Bertoldi', 'CRM/SC 23456', 'Pediatria'],
-            ['Dr. Henrique Duarte', 'CRM/SC 34567', 'Ortopedia'],
-            ['Dra. Larissa Fontes', 'CRM/SC 45678', 'Psiquiatria Infantil'],
-            ['Dr. Gustavo Peixoto', 'CRM/SC 56789', 'Neuropediatria'],
-            ['Dra. Mariana Cordeiro', 'CRM/SC 67890', 'Fisiatria'],
-            ['Dr. Leonardo Bastos', 'CRM/SC 78901', 'Clínica Geral'],
-            ['Dra. Patrícia Vieira', 'CRM/SC 89012', 'Otorrinolaringologia'],
+            ['Dr. Carlos Almeida', '12345', 'Neurologia Infantil'],
+            ['Dra. Sofia Bertoldi', '23456', 'Pediatria'],
+            ['Dr. Henrique Duarte', '34567', 'Ortopedia'],
+            ['Dra. Larissa Fontes', '45678', 'Psiquiatria Infantil'],
+            ['Dr. Gustavo Peixoto', '56789', 'Neuropediatria'],
+            ['Dra. Mariana Cordeiro', '67890', 'Fisiatria'],
+            ['Dr. Leonardo Bastos', '78901', 'Clínica Geral'],
+            ['Dra. Patrícia Vieira', '89012', 'Otorrinolaringologia'],
         ];
 
         foreach ($medicos as $i => [$nome, $crm, $especialidade]) {
@@ -204,6 +204,7 @@ class DemoDataSeeder extends Seeder
                 ['tenant_id' => $this->tenant->id, 'nome' => $nome],
                 [
                     'crm' => $crm,
+                    'crm_uf' => 'SC',
                     'especialidade_medica' => $especialidade,
                     'telefone' => sprintf('(47) 3%03d-%04d', 200 + $i, 1000 + $i * 7),
                     'email' => 'contato'.($i + 1).'@consultorio.test',

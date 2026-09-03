@@ -52,6 +52,7 @@ export type MedicoRef = {
   id: number
   nome: string
   crm: string
+  crm_uf: string | null
   especialidade_medica: string
   telefone: string
   email: string | null

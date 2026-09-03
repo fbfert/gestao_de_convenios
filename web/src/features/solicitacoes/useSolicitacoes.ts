@@ -151,7 +151,7 @@ export function useCriarMedicoRapido() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (payload: { nome: string; crm?: string; especialidade_medica?: string }) => {
+    mutationFn: async (payload: { nome: string; crm?: string; crm_uf?: string; especialidade_medica?: string }) => {
       const { data } = await apiClient.post<{ data: MedicoRef }>(
         '/solicitacoes/medicos-rapido',
         payload,

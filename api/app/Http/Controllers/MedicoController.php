@@ -23,6 +23,7 @@ class MedicoController extends Controller
                     $query->where(function ($nested) use ($busca) {
                         $nested->where('nome', 'like', "%{$busca}%")
                             ->orWhere('crm', 'like', "%{$busca}%")
+                            ->orWhere('crm_uf', 'like', "%{$busca}%")
                             ->orWhere('especialidade_medica', 'like', "%{$busca}%");
                     });
                 })

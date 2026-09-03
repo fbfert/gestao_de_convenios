@@ -74,10 +74,11 @@ class BrowserTenantSeeder extends Seeder
         $medico = Medico::query()->updateOrCreate(
             [
                 'tenant_id' => $tenant->id,
-                'crm' => 'CRM 998877',
+                'crm' => '998877',
             ],
             [
                 'nome' => 'Dr. Carlos Beta',
+                'crm_uf' => 'SP',
                 'especialidade_medica' => 'Clínica Geral',
                 'telefone' => '(11) 98888-9001',
                 'email' => 'carlos.beta@clinica-beta.test',

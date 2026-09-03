@@ -25,6 +25,7 @@ export type Solicitacao = {
     id: number
     nome: string
     crm: string
+    crm_uf: string | null
     especialidade_medica: string
   }
   paciente?: {
@@ -169,13 +170,16 @@ export type PedidoMedicoSuggestion = {
   similaridade: number
   carteirinha?: string
   crm?: string
+  crm_uf?: string | null
 }
 
 export type PedidoMedicoAiDados = {
   paciente_nome?: string | null
   medico_nome?: string | null
-  /** CRM do médico solicitante lido no documento, se identificável. */
+  /** CRM (somente dígitos) do médico solicitante lido no documento, se identificável. */
   medico_crm?: string | null
+  /** UF do CRM do médico solicitante lido no documento, se identificável. */
+  medico_crm_uf?: string | null
   /** Especialidade médica do profissional solicitante (ex. "Pediatria") — não
    *  confundir com `especialidades`, que é a terapia pedida para o paciente. */
   medico_especialidade?: string | null

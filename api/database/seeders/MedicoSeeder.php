@@ -15,21 +15,24 @@ class MedicoSeeder extends Seeder
         $medicos = [
             [
                 'nome' => 'Dr. Carlos Almeida',
-                'crm' => 'CRM 123456',
+                'crm' => '123456',
+                'crm_uf' => 'SP',
                 'especialidade_medica' => 'Clínica Geral',
                 'telefone' => '(11) 95555-0101',
                 'email' => 'carlos.almeida@clinica-exemplo.test',
             ],
             [
                 'nome' => 'Dra. Helena Soares',
-                'crm' => 'CRM 234567',
+                'crm' => '234567',
+                'crm_uf' => 'SP',
                 'especialidade_medica' => 'Neurologia',
                 'telefone' => '(11) 95555-0102',
                 'email' => 'helena.soares@clinica-exemplo.test',
             ],
             [
                 'nome' => 'Dr. Pedro Nogueira',
-                'crm' => 'CRM 345678',
+                'crm' => '345678',
+                'crm_uf' => 'SP',
                 'especialidade_medica' => 'Pediatria',
                 'telefone' => '(11) 95555-0103',
                 'email' => 'pedro.nogueira@clinica-exemplo.test',
@@ -44,6 +47,7 @@ class MedicoSeeder extends Seeder
                 ],
                 [
                     'nome' => $medico['nome'],
+                    'crm_uf' => $medico['crm_uf'],
                     'especialidade_medica' => $medico['especialidade_medica'],
                     'telefone' => $medico['telefone'],
                     'email' => $medico['email'],

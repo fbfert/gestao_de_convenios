@@ -32,7 +32,8 @@ class MedicosApiTest extends TestCase
 
         $this->postJson('/api/medicos', [
             'nome' => 'Dra. Laura Martins',
-            'crm' => 'CRM 777888',
+            'crm' => '777888',
+            'crm_uf' => 'SC',
             'especialidade_medica' => 'Dermatologia',
             'telefone' => '(11) 95555-0199',
             'email' => 'laura.martins@clinica-exemplo.test',
@@ -40,13 +41,29 @@ class MedicosApiTest extends TestCase
         ])
             ->assertCreated()
             ->assertJsonPath('data.nome', 'Dra. Laura Martins')
-            ->assertJsonPath('data.crm', 'CRM 777888')
+            ->assertJsonPath('data.crm', '777888')
+            ->assertJsonPath('data.crm_uf', 'SC')
             ->assertJsonPath('data.ativo', true);
 
         $this->assertDatabaseHas('medicos', [
             'nome' => 'Dra. Laura Martins',
-            'crm' => 'CRM 777888',
+            'crm' => '777888',
+            'crm_uf' => 'SC',
         ]);
+    }
+
+    public function test_crm_com_letras_e_rejeitado(): void
+    {
+        $this->autenticar();
+
+        $this->postJson('/api/medicos', [
+            'nome' => 'Dra. Laura Martins',
+            'crm' => 'CRM-SC 777888',
+            'crm_uf' => 'SC',
+            'especialidade_medica' => 'Dermatologia',
+            'telefone' => '(11) 95555-0199',
+            'ativo' => true,
+        ])->assertJsonValidationErrors(['crm']);
     }
 
     public function test_atualiza_medico_e_pode_desativar(): void
@@ -101,7 +118,8 @@ class MedicosApiTest extends TestCase
 
         $this->postJson('/api/medicos', [
             'nome' => 'Dr. Bloqueado',
-            'crm' => 'CRM 555666',
+            'crm' => '555666',
+            'crm_uf' => 'SC',
             'especialidade_medica' => 'Cardiologia',
             'telefone' => '(11) 96666-0000',
         ])->assertForbidden();

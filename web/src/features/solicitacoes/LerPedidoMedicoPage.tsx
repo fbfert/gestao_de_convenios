@@ -293,6 +293,7 @@ export function LerPedidoMedicoPage() {
   const [medicoModo, setMedicoModo] = useState<'existente' | 'novo'>('existente')
   const [novoMedicoNome, setNovoMedicoNome] = useState('')
   const [novoMedicoCrm, setNovoMedicoCrm] = useState('')
+  const [novoMedicoCrmUf, setNovoMedicoCrmUf] = useState('')
   const [novoMedicoEspecialidade, setNovoMedicoEspecialidade] = useState('')
   const [novoMedicoError, setNovoMedicoError] = useState<string | null>(null)
 
@@ -359,6 +360,7 @@ export function LerPedidoMedicoPage() {
         id: item.id,
         nome: item.nome,
         crm: item.crm ?? '',
+        crm_uf: item.crm_uf ?? null,
         especialidade_medica: '',
         telefone: '',
         email: null,
@@ -501,12 +503,14 @@ export function LerPedidoMedicoPage() {
       const medico = await criarMedico.mutateAsync({
         nome: novoMedicoNome.trim(),
         crm: novoMedicoCrm.trim() || undefined,
+        crm_uf: novoMedicoCrmUf.trim() || undefined,
         especialidade_medica: novoMedicoEspecialidade.trim() || undefined,
       })
       setCreatedMedicos((current) => [...current, medico])
       setForm((current) => ({ ...current, medico_id: String(medico.id) }))
       setNovoMedicoNome('')
       setNovoMedicoCrm('')
+      setNovoMedicoCrmUf('')
       setNovoMedicoEspecialidade('')
       setMedicoModo('existente')
       avancar()
@@ -818,6 +822,7 @@ export function LerPedidoMedicoPage() {
               if (modo === 'novo' && novoMedicoNome.trim() === '') {
                 setNovoMedicoNome(extractedMedico)
                 setNovoMedicoCrm(resultado.dados.medico_crm?.trim() ?? '')
+                setNovoMedicoCrmUf(resultado.dados.medico_crm_uf?.trim().toUpperCase() ?? '')
                 setNovoMedicoEspecialidade(resultado.dados.medico_especialidade?.trim() ?? '')
               }
             }}
@@ -860,7 +865,7 @@ export function LerPedidoMedicoPage() {
                 {medicos.map((item) => (
                   <option key={item.id} value={item.id}>
                     {item.nome}
-                    {item.crm ? ` · ${item.crm}` : ''}
+                    {item.crm ? ` · ${item.crm}${item.crm_uf ? `/${item.crm_uf}` : ''}` : ''}
                   </option>
                 ))}
               </Select>
@@ -882,19 +887,35 @@ export function LerPedidoMedicoPage() {
               </label>
 
               <div className="grid gap-4 sm:grid-cols-2">
-                <label className="block space-y-2">
-                  <span className="text-corpo font-medium text-slate-200">CRM</span>
-                  <input
-                    value={novoMedicoCrm}
-                    onChange={(event) => setNovoMedicoCrm(event.target.value)}
-                    placeholder="12345/SC"
-                    className={selectClasses()}
-                    data-testid="pedido-medico-novo-medico-crm"
-                  />
-                  <span className="block text-meta text-slate-400">
-                    Opcional aqui — dá pra completar depois em Cadastros → Médicos.
-                  </span>
-                </label>
+                <div className="flex gap-3">
+                  <label className="flex-1 space-y-2">
+                    <span className="text-corpo font-medium text-slate-200">CRM</span>
+                    <input
+                      value={novoMedicoCrm}
+                      onChange={(event) => setNovoMedicoCrm(event.target.value.replace(/\D/g, ''))}
+                      inputMode="numeric"
+                      placeholder="Somente números"
+                      className={selectClasses()}
+                      data-testid="pedido-medico-novo-medico-crm"
+                    />
+                  </label>
+                  <label className="w-24 space-y-2">
+                    <span className="text-corpo font-medium text-slate-200">UF</span>
+                    <input
+                      value={novoMedicoCrmUf}
+                      onChange={(event) =>
+                        setNovoMedicoCrmUf(event.target.value.replace(/[^a-zA-Z]/g, '').slice(0, 2).toUpperCase())
+                      }
+                      maxLength={2}
+                      placeholder="SC"
+                      className={selectClasses()}
+                      data-testid="pedido-medico-novo-medico-crm-uf"
+                    />
+                  </label>
+                </div>
+                <span className="block text-meta text-slate-400 sm:col-span-2">
+                  Opcional aqui — dá pra completar depois em Cadastros → Médicos.
+                </span>
                 <label className="block space-y-2">
                   <span className="text-corpo font-medium text-slate-200">Especialidade médica</span>
                   <input
@@ -1169,7 +1190,9 @@ export function LerPedidoMedicoPage() {
                     Médico solicitante
                   </span>
                   {medicoEscolhido?.nome ?? '—'}
-                  {medicoEscolhido?.crm && medicoEscolhido.crm !== 'PENDENTE' ? ` · CRM ${medicoEscolhido.crm}` : ''}
+                  {medicoEscolhido?.crm
+                    ? ` · CRM ${medicoEscolhido.crm}${medicoEscolhido.crm_uf ? `/${medicoEscolhido.crm_uf}` : ''}`
+                    : ''}
                 </p>
                 <p>
                   <span className="block text-meta uppercase tracking-wide text-slate-400">

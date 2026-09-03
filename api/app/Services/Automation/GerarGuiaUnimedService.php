@@ -218,6 +218,7 @@ class GerarGuiaUnimedService
                 'id' => $item->solicitacao->medico_id,
                 'nome' => $item->solicitacao->medico?->nome,
                 'crm' => $item->solicitacao->medico?->crm,
+                'crm_uf' => $item->solicitacao->medico?->crm_uf,
             ],
             'paciente' => [
                 'id' => $item->solicitacao->paciente_id,

@@ -11,6 +11,7 @@ import { Indicadores } from '../../components/ui/Indicadores'
 const emptyForm: MedicoForm = {
   nome: '',
   crm: '',
+  crm_uf: '',
   especialidade_medica: '',
   telefone: '',
   email: '',
@@ -29,6 +30,7 @@ function toForm(medico: Medico): MedicoForm {
   return {
     nome: medico.nome,
     crm: medico.crm,
+    crm_uf: medico.crm_uf ?? '',
     especialidade_medica: medico.especialidade_medica,
     telefone: medico.telefone,
     email: medico.email ?? '',
@@ -210,15 +212,37 @@ export function MedicosPage() {
               />
             </label>
 
-            <label className="block space-y-2">
-              <span className="text-corpo font-medium text-slate-200">CRM</span>
-              <input
-                value={form.crm}
-                onChange={(event) => setForm((current) => ({ ...current, crm: event.target.value }))}
-                className={selectClasses()}
-                data-testid="medico-crm"
-              />
-            </label>
+            <div className="flex gap-4">
+              <label className="flex-1 space-y-2">
+                <span className="text-corpo font-medium text-slate-200">CRM</span>
+                <input
+                  value={form.crm}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, crm: event.target.value.replace(/\D/g, '') }))
+                  }
+                  inputMode="numeric"
+                  placeholder="Somente números"
+                  className={selectClasses()}
+                  data-testid="medico-crm"
+                />
+              </label>
+              <label className="w-28 space-y-2">
+                <span className="text-corpo font-medium text-slate-200">UF</span>
+                <input
+                  value={form.crm_uf}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      crm_uf: event.target.value.replace(/[^a-zA-Z]/g, '').slice(0, 2).toUpperCase(),
+                    }))
+                  }
+                  maxLength={2}
+                  placeholder="SC"
+                  className={selectClasses()}
+                  data-testid="medico-crm-uf"
+                />
+              </label>
+            </div>
 
             <label className="block space-y-2">
               <span className="text-corpo font-medium text-slate-200">Especialidade médica</span>
@@ -375,7 +399,9 @@ export function MedicosPage() {
                       <div className="font-medium">{medico.nome}</div>
                       <div className="text-meta text-slate-400">#{medico.id}</div>
                     </td>
-                    <td data-rotulo="CRM" className="px-4 py-4 text-slate-200">{medico.crm}</td>
+                    <td data-rotulo="CRM" className="px-4 py-4 text-slate-200">
+                      {medico.crm ? `${medico.crm}${medico.crm_uf ? ` · ${medico.crm_uf}` : ''}` : '-'}
+                    </td>
                     <td data-rotulo="Especialidade" className="px-4 py-4 text-slate-200">{medico.especialidade_medica}</td>
                     <td data-rotulo="Contato" className="px-4 py-4 text-slate-200">
                       <div>{medico.telefone}</div>

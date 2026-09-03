@@ -25,6 +25,7 @@ class SolicitacaoResource extends JsonResource
                 'id' => $this->medico->id,
                 'nome' => $this->medico->nome,
                 'crm' => $this->medico->crm,
+                'crm_uf' => $this->medico->crm_uf,
                 'especialidade_medica' => $this->medico->especialidade_medica,
             ]),
             'paciente' => $this->whenLoaded('paciente', fn () => [

@@ -73,7 +73,7 @@ class PedidoMedicoAiService
                   acabavam descritas em `observacoes` — visíveis para o
                   operador, mas fora dos campos do formulário.
                 */
-                'text' => $prompt->user_prompt."\n\nRetorne somente JSON com as chaves: paciente_nome, medico_nome, medico_crm (CRM do médico solicitante, só o registro, ex. \"12345\" ou \"CRM/SC 12345\" se a UF estiver explícita; null se não identificável), medico_especialidade (especialidade médica do profissional solicitante, ex. \"Pediatria\", \"Neurologia\"; null se não identificável — não confundir com a especialidade/terapia do pedido, que vai em especialidades), especialidades (array com o nome de cada especialidade citada no pedido, uma por item, mesmo que seja só uma), cids (array com cada CID citado no pedido, um por item, no formato \"CÓDIGO\" ou \"CÓDIGO - descrição\" quando a descrição também aparecer no documento; vazio se nenhum CID for identificável), solicitado_em no formato YYYY-MM-DD quando possível, observacoes para informações incertas ou não entendidas. Não repita em observacoes as especialidades ou CIDs já listados em especialidades/cids.",
+                'text' => $prompt->user_prompt."\n\nRetorne somente JSON com as chaves: paciente_nome, medico_nome, medico_crm (somente os dígitos do CRM do médico solicitante, sem prefixos nem a UF, ex. \"12345\"; null se não identificável), medico_crm_uf (a UF do CRM, 2 letras maiúsculas, ex. \"SC\"; null se não identificável), medico_especialidade (especialidade médica do profissional solicitante, ex. \"Pediatria\", \"Neurologia\"; null se não identificável — não confundir com a especialidade/terapia do pedido, que vai em especialidades), especialidades (array com o nome de cada especialidade citada no pedido, uma por item, mesmo que seja só uma), cids (array com cada CID citado no pedido, um por item, no formato \"CÓDIGO\" ou \"CÓDIGO - descrição\" quando a descrição também aparecer no documento; vazio se nenhum CID for identificável), solicitado_em no formato YYYY-MM-DD quando possível, observacoes para informações incertas ou não entendidas. Não repita em observacoes as especialidades ou CIDs já listados em especialidades/cids.",
             ],
         ];
 
@@ -198,12 +198,13 @@ class PedidoMedicoAiService
     private function sugerirMedicos(int $tenantId, string $nome): array
     {
         return $this->rankByNome(
-            Medico::query()->where('tenant_id', $tenantId)->get(['id', 'nome', 'crm']),
+            Medico::query()->where('tenant_id', $tenantId)->get(['id', 'nome', 'crm', 'crm_uf']),
             $nome,
             fn ($medico) => [
                 'id' => $medico->id,
                 'nome' => $medico->nome,
                 'crm' => $medico->crm,
+                'crm_uf' => $medico->crm_uf,
             ],
         );
     }

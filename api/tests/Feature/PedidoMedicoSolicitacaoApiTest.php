@@ -201,7 +201,7 @@ class PedidoMedicoSolicitacaoApiTest extends TestCase
         ])
             ->assertCreated()
             ->assertJsonPath('data.nome', 'Dra. Nova IA')
-            ->assertJsonPath('data.crm', 'PENDENTE')
+            ->assertJsonPath('data.crm', null)
             ->assertJsonPath('data.especialidade_medica', 'Pendente');
     }
 
@@ -211,12 +211,14 @@ class PedidoMedicoSolicitacaoApiTest extends TestCase
 
         $this->postJson('/api/solicitacoes/medicos-rapido', [
             'nome' => 'Dr. Extraido Pela IA',
-            'crm' => '12345/SC',
+            'crm' => '12345',
+            'crm_uf' => 'sc',
             'especialidade_medica' => 'Pediatria',
         ])
             ->assertCreated()
             ->assertJsonPath('data.nome', 'Dr. Extraido Pela IA')
-            ->assertJsonPath('data.crm', '12345/SC')
+            ->assertJsonPath('data.crm', '12345')
+            ->assertJsonPath('data.crm_uf', 'SC')
             ->assertJsonPath('data.especialidade_medica', 'Pediatria');
     }
 
@@ -237,7 +239,8 @@ class PedidoMedicoSolicitacaoApiTest extends TestCase
                                 'text' => json_encode([
                                     'paciente_nome' => 'Ana Paula Ribeiro',
                                     'medico_nome' => 'Carlos Almeida',
-                                    'medico_crm' => '54321/SC',
+                                    'medico_crm' => '54321',
+                                    'medico_crm_uf' => 'SC',
                                     'medico_especialidade' => 'Neurologia',
                                     'especialidades' => ['Fisioterapia'],
                                     // Descricao ligeiramente diferente do cadastro, so pra
@@ -258,7 +261,8 @@ class PedidoMedicoSolicitacaoApiTest extends TestCase
         ])->assertOk();
 
         $analisar
-            ->assertJsonPath('data.dados.medico_crm', '54321/SC')
+            ->assertJsonPath('data.dados.medico_crm', '54321')
+            ->assertJsonPath('data.dados.medico_crm_uf', 'SC')
             ->assertJsonPath('data.dados.medico_especialidade', 'Neurologia');
 
         $cids = $analisar->json('data.sugestoes.cids');

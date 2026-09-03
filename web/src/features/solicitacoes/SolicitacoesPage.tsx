@@ -257,9 +257,14 @@ export function SolicitacoesPage() {
     [solicitacoes, selectedSolicitacaoId],
   )
 
+  // Convênio do FILTRO da lista, não o do formulário de Nova Solicitação —
+  // achado 03/09/2026: usava form.convenio_id por engano, e como o
+  // formulário sempre pré-seleciona o primeiro convênio em ordem alfabética
+  // (ver useEffect abaixo), o indicador mostrava sempre "Celos" (Convênios
+  // ordena por nome), mesmo sem filtro nenhum aplicado na lista.
   const currentConvenio = useMemo(
-    () => convenios.find((item) => String(item.id) === form.convenio_id),
-    [convenios, form.convenio_id],
+    () => convenios.find((item) => String(item.id) === filters.convenio_id),
+    [convenios, filters.convenio_id],
   )
 
   const handleFilterSubmit = (event: FormEvent<HTMLFormElement>) => {

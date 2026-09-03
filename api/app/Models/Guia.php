@@ -110,4 +110,27 @@ class Guia extends Model
         return mb_strtoupper((string) $this->especialidade?->nome) === self::NOME_A_DEFINIR
             || mb_strtoupper((string) $this->profissional?->nome) === self::NOME_A_DEFINIR;
     }
+
+    /**
+     * Exclui guias cuja Solicitação de origem é "histórico" (rastro de guia
+     * migrada, reconstruído depois — ver App\Services\SolicitacaoService).
+     * Independente de A DEFINIR de propósito: uma guia histórica continua
+     * fora da automação mesmo depois de Especialidade/Profissional serem
+     * corrigidos, porque o motivo de excluir é ela ser um registro antigo,
+     * não faltar dado.
+     */
+    public function scopeNaoHistorica($query)
+    {
+        return $query->whereDoesntHave(
+            'solicitacaoItem.solicitacao',
+            fn ($q) => $q->where('status', 'historico'),
+        );
+    }
+
+    public function ehHistorica(): bool
+    {
+        $this->loadMissing('solicitacaoItem.solicitacao');
+
+        return $this->solicitacaoItem?->solicitacao?->status === 'historico';
+    }
 }

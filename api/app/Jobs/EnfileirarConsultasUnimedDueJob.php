@@ -38,6 +38,7 @@ class EnfileirarConsultasUnimedDueJob implements ShouldQueue
             ->with('convenio')
             ->whereHas('convenio', fn ($query) => $query->where('connector_driver', 'unimed_rda'))
             ->comDadosDefinidos()
+            ->naoHistorica()
             ->whereNotNull('numero_guia')
             ->whereNotIn('status', ['approved', 'denied', 'canceled', 'finalized', 'needs_verification'])
             ->where(function ($query) {
@@ -71,6 +72,7 @@ class EnfileirarConsultasUnimedDueJob implements ShouldQueue
             ->with('convenio')
             ->whereHas('convenio', fn ($query) => $query->where('connector_driver', 'unimed_rda'))
             ->comDadosDefinidos()
+            ->naoHistorica()
             ->where('status', 'approved')
             ->whereNotNull('numero_guia')
             ->where(function ($query) {

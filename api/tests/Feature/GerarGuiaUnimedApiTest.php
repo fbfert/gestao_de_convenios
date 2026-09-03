@@ -514,6 +514,55 @@ class GerarGuiaUnimedApiTest extends TestCase
         ]);
     }
 
+    public function test_guia_de_solicitacao_historica_fica_fora_do_scheduler(): void
+    {
+        Queue::fake();
+        Guia::query()->delete();
+
+        $normal = $this->criarGuiaUnimedPendente(['unimed_next_check_at' => now()->subMinute()]);
+        $historica = $this->criarGuiaUnimedPendente(['unimed_next_check_at' => now()->subMinute()]);
+        $historica->solicitacaoItem->solicitacao->update(['status' => 'historico']);
+
+        (new EnfileirarConsultasUnimedDueJob())->handle(
+            app(ConsultarStatusUnimedService::class),
+            app(CapturarSenhaValidadeUnimedService::class),
+            app(\App\Services\Automation\ConfirmarGuiaIncertaUnimedService::class),
+        );
+
+        $this->assertDatabaseHas('automacao_execucoes', [
+            'guia_id' => $normal->id,
+            'operacao' => 'consult_status_batch',
+        ]);
+        $this->assertDatabaseMissing('automacao_execucoes', [
+            'guia_id' => $historica->id,
+            'operacao' => 'consult_status_batch',
+        ]);
+    }
+
+    public function test_endpoints_manuais_recusam_guia_de_solicitacao_historica(): void
+    {
+        $this->autenticar();
+        $motivoHistorico = 'A Guia pertence a uma Solicitação histórica e não entra em automação.';
+
+        // status default (under_review) é o elegível pra consulta de status —
+        // isola o motivo histórico, sem misturar com "status não elegível".
+        $guiaStatus = $this->criarGuiaUnimedPendente();
+        $guiaStatus->solicitacaoItem->solicitacao->update(['status' => 'historico']);
+
+        $this->postJson("/api/guias/{$guiaStatus->id}/consultar-unimed")
+            ->assertStatus(422)
+            ->assertJsonPath('errors.guia', [$motivoHistorico]);
+
+        // approved é o elegível pra busca de senha/validade — mesma lógica,
+        // guia separada pra não misturar motivos.
+        $guiaSenha = $this->criarGuiaUnimedPendente(['status' => 'approved']);
+        $guiaSenha->solicitacaoItem->solicitacao->update(['status' => 'historico']);
+
+        $this->postJson("/api/guias/{$guiaSenha->id}/buscar-senha-validade-unimed")
+            ->assertStatus(422)
+            ->assertJsonPath('errors.guia', [$motivoHistorico]);
+    }
+
     public function test_circuit_breaker_pausa_conector_em_falha_estrutural(): void
     {
         $item = $this->prepararItemUnimed();

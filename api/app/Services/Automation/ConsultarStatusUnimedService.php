@@ -76,6 +76,10 @@ class ConsultarStatusUnimedService
             $motivos[] = 'A Guia precisa ter Especialidade e Profissional definidos para entrar na automação.';
         }
 
+        if ($guia->ehHistorica()) {
+            $motivos[] = 'A Guia pertence a uma Solicitação histórica e não entra em automação.';
+        }
+
         if (blank($guia->numero_guia)) {
             $motivos[] = 'A Guia precisa ter número da operadora para consulta de status.';
         }

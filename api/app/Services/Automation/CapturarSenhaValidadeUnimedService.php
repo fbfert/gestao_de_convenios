@@ -88,6 +88,10 @@ class CapturarSenhaValidadeUnimedService
             $motivos[] = 'A Guia precisa ter Especialidade e Profissional definidos para entrar na automação.';
         }
 
+        if ($guia->ehHistorica()) {
+            $motivos[] = 'A Guia pertence a uma Solicitação histórica e não entra em automação.';
+        }
+
         if (! $credential || blank($credential->password)) {
             $motivos[] = 'A credencial Unimed ativa não está configurada.';
         }

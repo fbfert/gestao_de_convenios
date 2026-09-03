@@ -46,9 +46,24 @@ class GuiaService
 
         return $query
             ->when(
-                Arr::get($filtros, 'mostrar_a_definir'),
-                fn ($query) => $query->comDadosADefinir(),
-                fn ($query) => $query->comDadosDefinidos(),
+                Arr::get($filtros, 'mostrar_historico'),
+                fn ($query) => $query->comStatusHistorico(),
+                fn ($query) => $query->semStatusHistorico(),
+            )
+            // Filtro de A DEFINIR só faz sentido dentro do universo "vivo"
+            // (não histórico): boa parte das 2238 guias históricas ainda tem
+            // Especialidade/Profissional "A DEFINIR" (a triagem está em
+            // andamento aos poucos), e o botão "Histórico" precisa mostrar
+            // TODAS elas de uma vez, corrigidas ou não — senão a exclusão
+            // padrão de A DEFINIR escondia justamente as que mais precisam
+            // de revisão.
+            ->when(
+                ! Arr::get($filtros, 'mostrar_historico'),
+                fn ($query) => $query->when(
+                    Arr::get($filtros, 'mostrar_a_definir'),
+                    fn ($query) => $query->comDadosADefinir(),
+                    fn ($query) => $query->comDadosDefinidos(),
+                ),
             )
             ->when(Arr::get($filtros, 'status'), fn ($query, $status) => $query->where('status', $status))
             ->when(Arr::get($filtros, 'convenio_id'), fn ($query, $convenioId) => $query->where('convenio_id', $convenioId))

@@ -33,6 +33,15 @@ const statusLabels: Record<StatusEntidade, Record<string, string>> = {
     denied: 'Negado',
     needs_verification: 'Verificar Restrição',
     expired: 'Vencido',
+    // Guia migrada de planilha antiga (nunca entra em automação) — o
+    // resultado real fica guardado no próprio status, só prefixado, pra não
+    // virar um "Histórico" genérico que esconde o que de fato aconteceu.
+    historico_under_review: 'Histórico · Em análise',
+    historico_approved: 'Histórico · Autorizado',
+    historico_finalized: 'Histórico · Finalizado',
+    historico_canceled: 'Histórico · Cancelado',
+    historico_denied: 'Histórico · Negado',
+    historico_needs_verification: 'Histórico · Verificar Restrição',
   },
   antecipacoes: {
     open: 'Aberta',

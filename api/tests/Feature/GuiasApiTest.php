@@ -206,6 +206,60 @@ class GuiasApiTest extends TestCase
             ->assertJsonMissing(['id' => $idNegada]);
     }
 
+    public function test_status_historico_fica_fora_da_listagem_padrao_e_so_aparece_com_mostrar_historico(): void
+    {
+        $this->autenticar();
+
+        $normal = $this->postJson('/api/guias', $this->payloadGuia('Unimed'))->assertCreated()->json('data.id');
+        $historica = $this->postJson('/api/guias', $this->payloadGuia('SC Saúde'))->assertCreated()->json('data.id');
+        Guia::query()->whereKey($historica)->update(['status' => 'historico_denied']);
+
+        // assertJsonMissing/assertJsonCount não servem aqui: o tenant pode
+        // ter outras guias de seed, e um fragmento {"id": N} pode bater sem
+        // querer com um id aninhado (convênio, paciente...). Confere pelos
+        // ids de fato retornados na lista.
+        $padrao = collect($this->getJson('/api/guias?per_page=100')->assertOk()->json('data'))->pluck('id');
+        $this->assertTrue($padrao->contains($normal));
+        $this->assertFalse($padrao->contains($historica));
+
+        $comHistorico = collect($this->getJson('/api/guias?mostrar_historico=1&per_page=100')->assertOk()->json('data'));
+        $this->assertFalse($comHistorico->pluck('id')->contains($normal));
+        $this->assertTrue($comHistorico->pluck('id')->contains($historica));
+        $this->assertSame('historico_denied', $comHistorico->firstWhere('id', $historica)['status']);
+    }
+
+    public function test_historico_mostra_mesmo_a_que_ainda_esta_a_definir(): void
+    {
+        $this->autenticar();
+        $tenantId = Tenant::query()->where('slug', 'clinica-exemplo')->value('id');
+
+        $especialidadeADefinir = Especialidade::query()->create(['tenant_id' => $tenantId, 'nome' => 'A DEFINIR', 'ativo' => true]);
+        $profissionalADefinir = Profissional::query()->create([
+            'tenant_id' => $tenantId,
+            'especialidade_id' => $especialidadeADefinir->id,
+            'nome' => 'A DEFINIR',
+            'conselho_registro' => null,
+            'ativo' => true,
+        ]);
+
+        $payload = $this->payloadGuia('Unimed');
+        $payload['especialidade_id'] = $especialidadeADefinir->id;
+        $payload['profissional_id'] = $profissionalADefinir->id;
+        $historicaADefinir = $this->postJson('/api/guias', $payload)->assertCreated()->json('data.id');
+        Guia::query()->whereKey($historicaADefinir)->update(['status' => 'historico_approved']);
+
+        // Antes da correção: o filtro padrão de A DEFINIR (ligado o tempo
+        // todo, exceto quando A DEFINIR é o que se está pedindo) escondia
+        // justamente as guias históricas que mais precisam de revisão.
+        $comHistorico = collect($this->getJson('/api/guias?mostrar_historico=1&per_page=100')->assertOk()->json('data'));
+        $this->assertTrue($comHistorico->pluck('id')->contains($historicaADefinir));
+
+        // E o botão "Mostrar guias A DEFINIR" sozinho (sem Histórico) não
+        // precisa trazer as históricas — cada botão cobre seu próprio caso.
+        $soADefinir = collect($this->getJson('/api/guias?mostrar_a_definir=1&per_page=100')->assertOk()->json('data'));
+        $this->assertFalse($soADefinir->pluck('id')->contains($historicaADefinir));
+    }
+
     public function test_detalhe_expoe_relacionamentos_da_guia(): void
     {
         $this->autenticar();

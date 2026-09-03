@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Concerns\Auditable;
 use App\Concerns\BelongsToTenant;
+use App\Support\GuiaStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -132,5 +133,24 @@ class Guia extends Model
         $this->loadMissing('solicitacaoItem.solicitacao');
 
         return $this->solicitacaoItem?->solicitacao?->status === 'historico';
+    }
+
+    /**
+     * Exclui guias cujo próprio `status` já é uma variante "histórico_*"
+     * (ex.: histórico_denied) — usado pra listagem/exibição padrão. Distinto
+     * de scopeNaoHistorica(): aquele olha a Solicitação de origem (pra
+     * automação); este olha o status da própria guia (pra tela), que é onde
+     * o resultado real (aprovado/negado/...) fica guardado depois do
+     * prefixo — ver App\Support\GuiaStatus::paraHistorico().
+     */
+    public function scopeSemStatusHistorico($query)
+    {
+        return $query->whereNotIn('status', GuiaStatus::ALL_HISTORICO);
+    }
+
+    /** Só guias com status "histórico_*". */
+    public function scopeComStatusHistorico($query)
+    {
+        return $query->whereIn('status', GuiaStatus::ALL_HISTORICO);
     }
 }

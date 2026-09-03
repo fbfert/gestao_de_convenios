@@ -33,6 +33,7 @@ class GuiaController extends Controller
                 'validade_senha_vencendo_em_dias',
                 'alerta_negacao_pendente',
                 'mostrar_a_definir',
+                'mostrar_historico',
             ]), (int) $request->integer('per_page', 15))
         );
     }

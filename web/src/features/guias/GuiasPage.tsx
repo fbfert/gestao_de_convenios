@@ -38,6 +38,7 @@ const defaultFilters: GuiaFilters = {
   paciente_nome: '',
   validade_senha_vencendo_em_dias: '',
   mostrar_a_definir: '',
+  mostrar_historico: '',
 }
 
 const emptyForm: GuiaForm = {
@@ -218,6 +219,25 @@ export function GuiasPage() {
     }))
   }
 
+  // Filtro exclusivo: liga mostra só guias com status "histórico_*" (ver
+  // GuiaStatus::paraHistorico() no backend) e limpa o filtro de Status
+  // normal, que lista só os valores reais — os dois brigariam pelo mesmo
+  // campo se ficassem preenchidos ao mesmo tempo.
+  const toggleHistoricoBadge = () => {
+    const nextValue = draftFilters.mostrar_historico === '1' ? '' : '1'
+    setPage(1)
+    setFilters((current) => ({
+      ...current,
+      status: '',
+      mostrar_historico: nextValue,
+    }))
+    setDraftFilters((current) => ({
+      ...current,
+      status: '',
+      mostrar_historico: nextValue,
+    }))
+  }
+
   const handleGerarConciliacao = async (guideId: number) => {
     setConciliacaoError(null)
 
@@ -369,6 +389,19 @@ export function GuiasPage() {
               data-testid="guia-filtro-a-definir"
             >
               {filters.mostrar_a_definir === '1' ? 'Guias A DEFINIR' : 'Mostrar guias A DEFINIR'}
+            </button>
+            <button
+              type="button"
+              onClick={toggleHistoricoBadge}
+              className={[
+                'inline-flex rounded-full border px-3 py-1.5 text-corpo font-semibold transition',
+                filters.mostrar_historico === '1'
+                  ? 'border-cyan-200/50 bg-cyan-300/20 text-white'
+                  : 'border-cyan-200/20 bg-white/5 text-cyan-50 hover:bg-white/10',
+              ].join(' ')}
+              data-testid="guia-filtro-historico"
+            >
+              {filters.mostrar_historico === '1' ? 'Histórico' : 'Mostrar Histórico'}
             </button>
           </span>
         </div>

@@ -100,6 +100,7 @@ export type GuiaFilters = {
   paciente_nome: string
   validade_senha_vencendo_em_dias: string
   mostrar_a_definir: string
+  mostrar_historico: string
 }
 
 export type GuiaForm = {

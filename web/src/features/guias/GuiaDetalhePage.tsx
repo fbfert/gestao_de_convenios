@@ -66,7 +66,12 @@ export function GuiaDetalhePage() {
   const guia = guiaQuery.data
   const isUnimed = guia.convenio?.connector_driver === 'unimed_rda'
   const temDadosADefinir = guiaTemDadosADefinir(guia)
-  const canConsultarUnimed = isUnimed && Boolean(guia.numero_guia) && !['approved', 'denied', 'canceled', 'finalized', 'needs_verification'].includes(guia.status) && !temDadosADefinir
+  // Igualdade estrita a 'under_review', não "não está numa lista de status
+  // terminais" — achado 03/09/2026: com a lista de exclusão, um status
+  // historico_under_review passava disfarçado de elegível (nenhum dos 6
+  // valores prefixados bate com o array), habilitando o botão pra uma guia
+  // histórica. GuiasPage.tsx já usava igualdade nesse mesmo botão.
+  const canConsultarUnimed = isUnimed && Boolean(guia.numero_guia) && guia.status === 'under_review' && !temDadosADefinir
   const canBuscarSenhaValidade = isUnimed && guia.status === 'approved' && Boolean(guia.numero_guia) && (!guia.senha || !guia.validade_senha) && !temDadosADefinir
 
   const executarConsultarUnimed = async () => {

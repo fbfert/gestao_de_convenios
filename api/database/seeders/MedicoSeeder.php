@@ -44,6 +44,7 @@ class MedicoSeeder extends Seeder
                 [
                     'tenant_id' => $tenant->id,
                     'crm' => $medico['crm'],
+                    'crm_uf' => $medico['crm_uf'],
                 ],
                 [
                     'nome' => $medico['nome'],

@@ -96,7 +96,10 @@ function mergeById<T extends { id: number }>(primary: T[], secondary: T[]) {
 }
 
 function suggestionTitle(suggestion: PedidoMedicoSuggestion) {
-  const extra = suggestion.carteirinha || suggestion.crm
+  // CRM sozinho não identifica o médico: o número se repete entre estados
+  // diferentes, então a UF entra junto sempre que houver um CRM pra mostrar.
+  const crm = suggestion.crm ? `${suggestion.crm}${suggestion.crm_uf ? `/${suggestion.crm_uf}` : ''}` : undefined
+  const extra = suggestion.carteirinha || crm
   return extra ? `${suggestion.nome} · ${extra}` : suggestion.nome
 }
 

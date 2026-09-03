@@ -3,11 +3,13 @@
 namespace Tests\Feature;
 
 use App\Models\AuditLog;
+use App\Models\AutomacaoExecucao;
 use App\Models\Convenio;
 use App\Models\ConciliacaoFinanceira;
 use App\Models\Antecipacao;
 use App\Models\Especialidade;
 use App\Models\Guia;
+use App\Models\Medico;
 use App\Models\Paciente;
 use App\Models\Profissional;
 use App\Models\Solicitacao;
@@ -307,6 +309,59 @@ class GuiasApiTest extends TestCase
             ->assertJsonPath('data.antecipacoes.0.qtd_utilizada', 3)
             ->assertJsonPath('data.conciliacoes.0.id', $conciliacao->id)
             ->assertJsonPath('data.conciliacoes.0.status', 'pending');
+    }
+
+    public function test_detalhe_expoe_medico_solicitante_e_estrategia_unimed(): void
+    {
+        $this->autenticar();
+
+        $tenant = Tenant::query()->where('slug', 'clinica-exemplo')->firstOrFail();
+        $payload = $this->payloadGuia('Unimed');
+
+        $medico = Medico::query()->create([
+            'tenant_id' => $tenant->id,
+            'nome' => 'Dr. Solicitante Teste',
+            'crm' => '11223',
+            'crm_uf' => 'SC',
+            'especialidade_medica' => 'Clínica Geral',
+            'telefone' => '(47) 90000-0000',
+            'ativo' => true,
+        ]);
+
+        $solicitacao = Solicitacao::query()->create([
+            'tenant_id' => $tenant->id,
+            'paciente_id' => $payload['paciente_id'],
+            'profissional_id' => $payload['profissional_id'],
+            'especialidade_id' => $payload['especialidade_id'],
+            'convenio_id' => $payload['convenio_id'],
+            'medico_id' => $medico->id,
+            'status' => 'under_review',
+            'solicitado_em' => today(),
+        ]);
+
+        $execucao = AutomacaoExecucao::query()->create([
+            'tenant_id' => $tenant->id,
+            'operacao' => 'gerar_guia_unimed',
+            'status' => 'succeeded',
+            'idempotency_key' => 'test-'.uniqid(),
+            'resultado' => ['status' => 'succeeded', 'medico_strategy' => 'nao_cooperado'],
+        ]);
+
+        $guia = Guia::query()->create([
+            'tenant_id' => $tenant->id,
+            ...$payload,
+            'solicitacao_id' => $solicitacao->id,
+            'automacao_execucao_id' => $execucao->id,
+            'status' => 'under_review',
+        ]);
+
+        $this->getJson("/api/guias/{$guia->id}")
+            ->assertOk()
+            ->assertJsonPath('data.medico_solicitante.id', $medico->id)
+            ->assertJsonPath('data.medico_solicitante.nome', 'Dr. Solicitante Teste')
+            ->assertJsonPath('data.medico_solicitante.crm', '11223')
+            ->assertJsonPath('data.medico_solicitante.crm_uf', 'SC')
+            ->assertJsonPath('data.medico_unimed_strategy', 'nao_cooperado');
     }
 
     public function test_criacao_valida_campos_obrigatorios(): void

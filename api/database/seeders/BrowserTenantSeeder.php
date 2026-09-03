@@ -75,10 +75,10 @@ class BrowserTenantSeeder extends Seeder
             [
                 'tenant_id' => $tenant->id,
                 'crm' => '998877',
+                'crm_uf' => 'SP',
             ],
             [
                 'nome' => 'Dr. Carlos Beta',
-                'crm_uf' => 'SP',
                 'especialidade_medica' => 'Clínica Geral',
                 'telefone' => '(11) 98888-9001',
                 'email' => 'carlos.beta@clinica-beta.test',

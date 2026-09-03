@@ -51,6 +51,22 @@ class GuiaResource extends JsonResource
                 'id' => $this->especialidade->id,
                 'nome' => $this->especialidade->nome,
             ]),
+            'medico_solicitante' => $this->whenLoaded('solicitacao', fn () => $this->solicitacao?->medico ? [
+                'id' => $this->solicitacao->medico->id,
+                'nome' => $this->solicitacao->medico->nome,
+                'crm' => $this->solicitacao->medico->crm,
+                'crm_uf' => $this->solicitacao->medico->crm_uf,
+            ] : null),
+            // 'crm'/'nome' = achado como cooperado no portal por essa via de
+            // busca; 'nao_cooperado' = a busca caiu no fallback (ver
+            // selecionarPrestador em worker-unimed/src/operations/gerarGuia.js);
+            // null = guia sem automação de geração (criada manualmente/importada).
+            'medico_unimed_strategy' => $this->whenLoaded(
+                'automacaoExecucao',
+                fn () => is_array($this->automacaoExecucao?->resultado)
+                    ? ($this->automacaoExecucao->resultado['medico_strategy'] ?? null)
+                    : null
+            ),
             'solicitacao_item' => $this->whenLoaded('solicitacaoItem', fn () => $this->solicitacaoItem ? [
                 'id' => $this->solicitacaoItem->id,
                 'especialidade_id' => $this->solicitacaoItem->especialidade_id,

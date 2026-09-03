@@ -29,7 +29,7 @@ class GuiaService
     {
         $query = $this->aplicarEscopoOwn(
             Guia::query()->with([
-                'solicitacao',
+                'solicitacao.medico',
                 'convenio',
                 'paciente',
                 'profissional',
@@ -150,7 +150,7 @@ class GuiaService
     public function buscar(int $id): Guia
     {
         return Guia::query()->with([
-            'solicitacao',
+            'solicitacao.medico',
             'convenio',
             'paciente',
             'profissional',

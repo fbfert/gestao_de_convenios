@@ -47,6 +47,29 @@ function fieldClasses() {
   return 'w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20'
 }
 
+/**
+ * `medico_unimed_strategy` vem de `medico_strategy` no resultado da execução
+ * que gerou a guia (ver selecionarPrestador em
+ * worker-unimed/src/operations/gerarGuia.js): 'crm'/'nome' é a via que achou
+ * o médico como cooperado no portal; 'nao_cooperado' é o fallback quando a
+ * busca não achou. Guia sem geração automatizada (manual/importada) não tem
+ * esse dado.
+ */
+function medicoUnimedStatus(strategy: 'crm' | 'nome' | 'nao_cooperado' | null | undefined): {
+  texto: string
+  tone: 'sucesso' | 'perigo' | 'neutro'
+} {
+  if (strategy === 'crm' || strategy === 'nome') {
+    return { texto: 'Cooperado', tone: 'sucesso' }
+  }
+
+  if (strategy === 'nao_cooperado') {
+    return { texto: 'Não cooperado', tone: 'perigo' }
+  }
+
+  return { texto: 'Não verificado', tone: 'neutro' }
+}
+
 const formVazio: GuiaEditForm = {
   profissional_id: '',
   especialidade_id: '',
@@ -77,6 +100,7 @@ export function GuiaDetalheResumo({ guia }: { guia: Guia }) {
   }, [guia.id])
 
   const validadeVencendo = isSenhaVencendo(guia.validade_senha)
+  const statusUnimedMedico = medicoUnimedStatus(guia.medico_unimed_strategy)
 
   const iniciarEdicao = () => {
     setForm({
@@ -160,6 +184,22 @@ export function GuiaDetalheResumo({ guia }: { guia: Guia }) {
             {guia.profissional?.nome ?? guia.profissional_id}
           </DetailItem>
           <DetailItem label="Especialidade">{guia.especialidade?.nome ?? guia.especialidade_id}</DetailItem>
+          <DetailItem label="Médico solicitante">
+            <p>{guia.medico_solicitante?.nome ?? '-'}</p>
+            {guia.medico_solicitante?.crm ? (
+              <p className="mt-1 text-meta font-normal text-slate-300">
+                CRM {guia.medico_solicitante.crm}
+                {guia.medico_solicitante.crm_uf ? `/${guia.medico_solicitante.crm_uf}` : ''}
+              </p>
+            ) : null}
+          </DetailItem>
+          {guia.convenio?.connector_driver === 'unimed_rda' ? (
+            <DetailItem label="Cooperado na Unimed">
+              <Badge tone={statusUnimedMedico.tone} data-testid="guia-medico-cooperado-unimed">
+                {statusUnimedMedico.texto}
+              </Badge>
+            </DetailItem>
+          ) : null}
           <DetailItem label="Solicitação">{guia.data_solicitacao}</DetailItem>
           <DetailItem label="Finalização">{guia.data_finalizacao ?? '-'}</DetailItem>
           <DetailItem label="Senha">{guia.senha ?? '-'}</DetailItem>

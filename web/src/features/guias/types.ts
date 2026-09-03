@@ -26,6 +26,8 @@ export type Guia = {
   convenio?: GuiaReferencia
   profissional?: GuiaReferencia
   especialidade?: GuiaReferencia
+  medico_solicitante?: GuiaMedicoSolicitante | null
+  medico_unimed_strategy?: 'crm' | 'nome' | 'nao_cooperado' | null
   solicitacao_item?: GuiaSolicitacaoItem | null
   automacao_execucao?: GuiaAutomacaoExecucao | null
   ultima_automacao_unimed?: GuiaAutomacaoExecucao | null
@@ -43,6 +45,13 @@ export type GuiaReferencia = {
 
 export type GuiaPaciente = GuiaReferencia & {
   carteirinha: string
+}
+
+export type GuiaMedicoSolicitante = {
+  id: number
+  nome: string
+  crm: string | null
+  crm_uf: string | null
 }
 
 export type GuiaSolicitacaoItem = {

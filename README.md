@@ -33,6 +33,8 @@ gestao-convenios/
 | [`docs/roadmap-mvp.md`](docs/roadmap-mvp.md) | Checklist ordenado de execução da Etapa 1 |
 | [`docs/resumo-entregas-2026-08-14.md`](docs/resumo-entregas-2026-08-14.md) | O que entrou em produção em 13 e 14/08/2026, com as pendências registradas |
 | [`docs/resumo-entregas-2026-08-26.md`](docs/resumo-entregas-2026-08-26.md) | Design system, responsividade e contrato de design — 26/08/2026 |
+| [`docs/resumo-entregas-2026-09-02.md`](docs/resumo-entregas-2026-09-02.md) | Liga/desliga por automação, guias "A DEFINIR" fora do padrão, intervalo próprio de senha/validade, clínicas — 02/09/2026 |
+| [`docs/resumo-entregas-2026-09-03.md`](docs/resumo-entregas-2026-09-03.md) | Status Histórico (rastro do xlsx migrado), CRM/UF do médico, médico solicitante na guia — 03/09/2026 |
 | [`design-system-xiax-agenda.md`](design-system-xiax-agenda.md) | A receita da pele: tokens, tipografia, e as regras fiscalizadas por teste |
 | [`PROMPT-CLAUDE-CODE.md`](PROMPT-CLAUDE-CODE.md) | Prompt pronto pra rodar no Claude Code e gerar o esqueleto inicial |
 

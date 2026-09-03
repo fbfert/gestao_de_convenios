@@ -11,6 +11,7 @@ use App\Models\Guia;
 use App\Models\Paciente;
 use App\Models\Profissional;
 use App\Models\Solicitacao;
+use App\Models\SolicitacaoItem;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -162,6 +163,44 @@ class GuiasApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.status', 'denied');
 
+        $this->getJson('/api/guias?alerta_negacao_pendente=1')
+            ->assertOk()
+            ->assertJsonMissing(['id' => $idNegada]);
+    }
+
+    public function test_alerta_negacao_nao_lista_guia_historica(): void
+    {
+        $this->autenticar();
+        $tenantId = Tenant::query()->where('slug', 'clinica-exemplo')->value('id');
+
+        $idNegada = $this->postJson('/api/guias', $this->payloadGuia('Unimed'))->assertCreated()->json('data.id');
+        $this->patchJson("/api/guias/{$idNegada}/negar", [])->assertOk();
+
+        $guia = Guia::query()->findOrFail($idNegada);
+        $solicitacao = Solicitacao::query()->create([
+            'tenant_id' => $tenantId,
+            'paciente_id' => $guia->paciente_id,
+            'profissional_id' => $guia->profissional_id,
+            'especialidade_id' => $guia->especialidade_id,
+            'convenio_id' => $guia->convenio_id,
+            'medico_id' => null,
+            'status' => 'historico',
+            'solicitado_em' => today(),
+            'observacoes' => 'Rastro histórico de teste',
+        ]);
+        $item = SolicitacaoItem::query()->create([
+            'tenant_id' => $tenantId,
+            'solicitacao_id' => $solicitacao->id,
+            'especialidade_id' => $guia->especialidade_id,
+            'profissional_id' => $guia->profissional_id,
+            'quantidade' => 10,
+            'status_operacional' => 'guia_generated',
+        ]);
+        $guia->forceFill(['solicitacao_id' => $solicitacao->id, 'solicitacao_item_id' => $item->id])->save();
+
+        // Negada e pendente de alerta, mas histórica: não é uma negação de
+        // verdade pra alguém agir agora, é passado migrado — não deve
+        // aparecer pedindo "nova solicitação".
         $this->getJson('/api/guias?alerta_negacao_pendente=1')
             ->assertOk()
             ->assertJsonMissing(['id' => $idNegada]);

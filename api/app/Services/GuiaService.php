@@ -58,7 +58,11 @@ class GuiaService
                 ->whereHas('paciente', fn ($query) => $query->where('nome', 'like', '%' . $pacienteNome . '%')))
             ->when(Arr::get($filtros, 'alerta_negacao_pendente'), fn ($query) => $query
                 ->where('status', GuiaStatus::DENIED)
-                ->whereNull('alerta_negacao_ocultado_em'))
+                ->whereNull('alerta_negacao_ocultado_em')
+                // Guia histórica (rastro de migração, nunca entra em automação —
+                // ver Guia::naoHistorica()) não precisa de "nova solicitação":
+                // já é passado resolvido, não uma negação pendente de ação.
+                ->naoHistorica())
             ->when(Arr::get($filtros, 'validade_senha_vencendo_em_dias') !== null, function ($query) use ($filtros) {
                 $dias = (int) $filtros['validade_senha_vencendo_em_dias'];
 

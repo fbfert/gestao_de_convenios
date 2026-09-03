@@ -44,6 +44,7 @@ const defaultFilters: SolicitacaoFilters = {
   paciente: '',
   profissional: '',
   medico: '',
+  mostrar_historico: '',
 }
 
 const emptyForm: SolicitacaoForm = {
@@ -95,6 +96,8 @@ function statusTone(status: string): NonNullable<BadgeProps['tone']> {
       return 'perigo'
     case 'expired':
       return 'alerta'
+    case 'historico':
+      return 'neutro'
     case 'guia_gerada':
     case 'registered':
     default:
@@ -265,6 +268,17 @@ export function SolicitacoesPage() {
     setFilters(draftFilters)
   }
 
+  // Filtro exclusivo: liga mostra só as solicitações "Histórico" (rastro de
+  // guias antigas migradas sem automação por trás — ver GuiaService) e some
+  // com o filtro de Status normal, pra não brigarem pelo mesmo campo.
+  const toggleHistoricoBadge = () => {
+    const ligado = draftFilters.mostrar_historico === '1'
+    const proximo = ligado ? '' : '1'
+    setPage(1)
+    setFilters((current) => ({ ...current, status: '', mostrar_historico: proximo }))
+    setDraftFilters((current) => ({ ...current, status: '', mostrar_historico: proximo }))
+  }
+
   const handleNew = () => {
     navigate('/solicitacoes/nova')
     setForm((current) => ({
@@ -405,14 +419,30 @@ export function SolicitacoesPage() {
           </div>
         </div>
 
-        <Indicadores
-          itens={[
-            { rotulo: 'Total na página', valor: solicitacoesQuery.data?.meta?.total ?? 0 },
-            { rotulo: 'Página atual', valor: page },
-            { rotulo: 'Status ativo', valor: filters.status || 'Todos' },
-            { rotulo: 'Convênio', valor: currentConvenio?.nome ?? 'Todos' },
-          ]}
-        />
+        <div className="flex flex-wrap items-center gap-2">
+          <Indicadores
+            itens={[
+              { rotulo: 'Total na página', valor: solicitacoesQuery.data?.meta?.total ?? 0 },
+              { rotulo: 'Página atual', valor: page },
+              { rotulo: 'Status ativo', valor: filters.status || 'Todos' },
+              { rotulo: 'Convênio', valor: currentConvenio?.nome ?? 'Todos' },
+            ]}
+          />
+
+          <button
+            type="button"
+            onClick={toggleHistoricoBadge}
+            className={[
+              'inline-flex rounded-full border px-3 py-1.5 text-corpo font-semibold transition',
+              filters.mostrar_historico === '1'
+                ? 'border-cyan-200/50 bg-cyan-300/20 text-white'
+                : 'border-cyan-200/20 bg-white/5 text-cyan-50 hover:bg-white/10',
+            ].join(' ')}
+            data-testid="solicitacao-filtro-historico"
+          >
+            {filters.mostrar_historico === '1' ? 'Histórico' : 'Mostrar Histórico'}
+          </button>
+        </div>
       </section>
       ) : null}
 

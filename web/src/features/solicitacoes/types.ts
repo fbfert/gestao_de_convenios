@@ -6,6 +6,7 @@ export type SolicitacaoStatus =
   | 'guia_gerada'
   | 'approved'
   | 'denied'
+  | 'historico'
 
 export type Solicitacao = {
   id: number
@@ -138,6 +139,7 @@ export type SolicitacaoFilters = {
   paciente: string
   profissional: string
   medico: string
+  mostrar_historico: string
 }
 
 export type SolicitacaoForm = {

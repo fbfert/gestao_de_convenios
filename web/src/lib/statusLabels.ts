@@ -15,6 +15,7 @@ const statusLabels: Record<StatusEntidade, Record<string, string>> = {
     canceled: 'Cancelado',
     denied: 'Negado',
     expired: 'Vencido',
+    historico: 'Histórico',
   },
   guias: {
     registered: 'Cadastrado',

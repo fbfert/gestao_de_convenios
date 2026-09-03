@@ -395,6 +395,42 @@ class SolicitacoesApiTest extends TestCase
         $this->patchJson("/api/solicitacoes/{$id}", ['cid_ids' => [Cid::query()->where('codigo', 'F84.0')->firstOrFail()->id]])->assertForbidden();
     }
 
+    public function test_solicitacao_historico_fica_fora_da_listagem_padrao_e_so_aparece_com_mostrar_historico(): void
+    {
+        $this->autenticar();
+        $payload = $this->payloadSolicitacao('Unimed');
+        $normal = $this->postJson('/api/solicitacoes', $payload)->assertCreated()->json('data.id');
+
+        $tenantId = Tenant::query()->where('slug', 'clinica-exemplo')->value('id');
+        $historico = Solicitacao::query()->create([
+            'tenant_id' => $tenantId,
+            'paciente_id' => $payload['paciente_id'],
+            'profissional_id' => $payload['profissional_id'],
+            'especialidade_id' => $payload['especialidade_id'],
+            'convenio_id' => $payload['convenio_id'],
+            'medico_id' => null,
+            'status' => 'historico',
+            'solicitado_em' => today()->subMonths(6),
+            'observacoes' => 'Rastro histórico de teste',
+        ]);
+
+        // Padrão: nem por status=historico direto nem sem filtro nenhum ela aparece.
+        $this->getJson('/api/solicitacoes')
+            ->assertOk()
+            ->assertJsonMissing(['id' => $historico->id]);
+
+        // mostrar_historico=1 inverte: só ela aparece, a normal some.
+        $this->getJson('/api/solicitacoes?mostrar_historico=1')
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $historico->id)
+            ->assertJsonCount(1, 'data');
+
+        $this->assertDatabaseHas('solicitacoes', [
+            'id' => $normal,
+            'status' => 'under_review',
+        ]);
+    }
+
     public function test_usuariode_um_tenant_nao_enxerga_solicitacao_de_outro_tenant_via_http(): void
     {
         $solicitacaoOutroTenant = $this->criarSolicitacaoDeOutroTenant();

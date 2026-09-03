@@ -23,6 +23,14 @@ class SolicitacaoService
      */
     private const STATUS_PERMITIDOS = ['under_review', 'ready_for_automation', 'denied'];
 
+    /**
+     * 'historico' também fica fora de propósito: é gravado só por backfill
+     * direto (rastro de guias antigas migradas sem Solicitação de origem),
+     * nunca por uma transição manual da tela. listar() já exclui esse status
+     * por padrão (ver filtro `mostrar_historico`), então nenhuma automação e
+     * nenhuma listagem comum precisa saber que ele existe.
+     */
+
     /** Status de Guia que contam como "aprovada pela operadora" pro sync. */
     private const GUIA_STATUS_APROVADA = ['approved', 'finalized'];
 
@@ -51,6 +59,11 @@ class SolicitacaoService
                 'guia.antecipacoes',
                 'guia.conciliacoes',
             ])
+            ->when(
+                Arr::get($filtros, 'mostrar_historico'),
+                fn ($query) => $query->where('status', 'historico'),
+                fn ($query) => $query->where('status', '!=', 'historico'),
+            )
             ->when(Arr::get($filtros, 'status'), fn ($query, $status) => $query->where('status', $status))
             ->when(Arr::get($filtros, 'convenio_id'), fn ($query, $convenioId) => $query->where('convenio_id', $convenioId))
             ->when(Arr::get($filtros, 'medico_id'), fn ($query, $medicoId) => $query->where('medico_id', $medicoId))

@@ -70,6 +70,17 @@ type ListResponse<T> = {
   data: T[]
 }
 
+export type ListMeta = {
+  current_page: number
+  last_page: number
+  per_page: number
+  total: number
+}
+
+type PaginatedListResponse<T> = ListResponse<T> & {
+  meta?: ListMeta
+}
+
 export function useConvenios() {
   return useQuery({
     queryKey: ['convenios'],
@@ -144,6 +155,18 @@ export function usePacientes(filtros?: { busca?: string; convenio_id?: string | 
   })
 }
 
+/** Um paciente por id — usado para exibir o nome de um paciente pré-selecionado por link (ex.: alerta de guia negada), sem depender da lista inteira. */
+export function usePaciente(id: number | null) {
+  return useQuery({
+    queryKey: ['paciente', id],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ data: PacienteRef }>(`/pacientes/${id}`)
+      return data.data
+    },
+    enabled: id !== null,
+  })
+}
+
 export function useMedicos() {
   return useQuery({
     queryKey: ['medicos'],
@@ -151,5 +174,77 @@ export function useMedicos() {
       const { data } = await apiClient.get<ListResponse<MedicoRef>>('/medicos')
       return data.data
     },
+  })
+}
+
+/**
+ * Busca paginada de pacientes, usada pelo modal de seleção. `busca` só
+ * dispara a partir de 2 caracteres — abaixo disso a lista fica com o
+ * resultado da página anterior, então o hook nem chega a habilitar.
+ */
+export function usePacientesBusca(params: {
+  busca: string
+  page: number
+  convenioId?: string | number
+  enabled?: boolean
+}) {
+  const habilitado = (params.enabled ?? true) && params.busca.trim().length >= 2
+
+  return useQuery({
+    queryKey: ['pacientes-busca', params.busca, params.page, params.convenioId ?? ''],
+    queryFn: async () => {
+      const { data } = await apiClient.get<PaginatedListResponse<PacienteRef>>('/pacientes', {
+        params: {
+          busca: params.busca,
+          convenio_id: params.convenioId || undefined,
+          page: params.page,
+        },
+      })
+
+      return { itens: data.data, meta: data.meta ?? null }
+    },
+    enabled: habilitado,
+  })
+}
+
+export function usePacientesRecentes(params?: { convenioId?: string | number; enabled?: boolean }) {
+  return useQuery({
+    queryKey: ['pacientes-recentes', params?.convenioId ?? ''],
+    queryFn: async () => {
+      const { data } = await apiClient.get<ListResponse<PacienteRef>>('/pacientes/recentes', {
+        params: { convenio_id: params?.convenioId || undefined },
+      })
+
+      return data.data
+    },
+    enabled: params?.enabled ?? true,
+  })
+}
+
+/** Busca paginada de médicos, usada pelo modal de seleção — ver usePacientesBusca. */
+export function useMedicosBusca(params: { busca: string; page: number; enabled?: boolean }) {
+  const habilitado = (params.enabled ?? true) && params.busca.trim().length >= 2
+
+  return useQuery({
+    queryKey: ['medicos-busca', params.busca, params.page],
+    queryFn: async () => {
+      const { data } = await apiClient.get<PaginatedListResponse<MedicoRef>>('/medicos', {
+        params: { busca: params.busca, page: params.page },
+      })
+
+      return { itens: data.data, meta: data.meta ?? null }
+    },
+    enabled: habilitado,
+  })
+}
+
+export function useMedicosRecentes(params?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: ['medicos-recentes'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<ListResponse<MedicoRef>>('/medicos/recentes')
+      return data.data
+    },
+    enabled: params?.enabled ?? true,
   })
 }

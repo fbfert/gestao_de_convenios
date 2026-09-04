@@ -10,6 +10,8 @@ use App\Models\ConfiguracaoGlobal;
 use App\Models\Paciente;
 use App\Models\PacienteDocumento;
 use App\Models\PacienteTelefone;
+use App\Models\Solicitacao;
+use App\Support\PaginaListagem;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -43,35 +45,73 @@ class PacienteController extends Controller
         $status = $request->string('status')->toString();
         $vencidas = $request->string('carteirinha')->toString();
 
-        return PacienteResource::collection(
-            Paciente::query()
-                ->select('pacientes.*')
-                ->with(['convenio', 'telefones'])
-                ->when($convenioId, fn ($query) => $query->where('convenio_id', $convenioId))
-                ->when($status === 'ativos', fn ($query) => $query->where('ativo', true))
-                ->when($status === 'inativos', fn ($query) => $query->where('ativo', false))
-                ->when($vencidas === 'vencidas', fn ($query) => $query
-                    ->whereNotNull('validade_carteirinha')
-                    ->whereDate('validade_carteirinha', '<', now()))
-                ->when($vencidas === 'sem_validade', fn ($query) => $query->whereNull('validade_carteirinha'))
-                ->when($busca !== '', function ($query) use ($busca) {
-                    $digitos = preg_replace('/\D+/', '', $busca);
+        $query = Paciente::query()
+            ->select('pacientes.*')
+            ->with(['convenio', 'telefones'])
+            ->when($convenioId, fn ($query) => $query->where('convenio_id', $convenioId))
+            ->when($status === 'ativos', fn ($query) => $query->where('ativo', true))
+            ->when($status === 'inativos', fn ($query) => $query->where('ativo', false))
+            ->when($vencidas === 'vencidas', fn ($query) => $query
+                ->whereNotNull('validade_carteirinha')
+                ->whereDate('validade_carteirinha', '<', now()))
+            ->when($vencidas === 'sem_validade', fn ($query) => $query->whereNull('validade_carteirinha'))
+            ->when($busca !== '', function ($query) use ($busca) {
+                $digitos = preg_replace('/\D+/', '', $busca);
 
-                    $query->where(function ($nested) use ($busca, $digitos) {
-                        $nested->where('nome', 'like', "%{$busca}%")
-                            ->orWhere('carteirinha', 'like', "%{$busca}%");
+                $query->where(function ($nested) use ($busca, $digitos) {
+                    $nested->where('nome', 'like', "%{$busca}%")
+                        ->orWhere('carteirinha', 'like', "%{$busca}%");
 
-                        // Busca por CPF e telefone digitados com ou sem
-                        // mascara: os dois sao guardados so com digitos.
-                        if ($digitos !== '') {
-                            $nested->orWhere('cpf', 'like', "%{$digitos}%")
-                                ->orWhereHas('telefones', fn ($t) => $t->where('numero', 'like', "%{$digitos}%"));
-                        }
-                    });
-                })
-                ->tap(fn ($query) => $this->ordenar($query, $request))
-                ->get()
-        );
+                    // Busca por CPF e telefone digitados com ou sem
+                    // mascara: os dois sao guardados so com digitos.
+                    if ($digitos !== '') {
+                        $nested->orWhere('cpf', 'like', "%{$digitos}%")
+                            ->orWhereHas('telefones', fn ($t) => $t->where('numero', 'like', "%{$digitos}%"));
+                    }
+                });
+            })
+            ->tap(fn ($query) => $this->ordenar($query, $request));
+
+        return PacienteResource::collection(PaginaListagem::aplicar($query, $request));
+    }
+
+    /**
+     * Pacientes distintos usados nas solicitações mais recentes do tenant —
+     * lista inicial do modal de busca antes de digitar qualquer termo.
+     *
+     * `convenio_id` é opcional: o modal passa quando aberto de um formulário
+     * que já tem convênio escolhido, para não sugerir paciente de outro
+     * convênio que nem pode ser selecionado ali.
+     */
+    public function recentes(Request $request): AnonymousResourceCollection
+    {
+        $limite = 10;
+        $convenioId = $request->integer('convenio_id');
+
+        // Com filtro de convênio, olha uma janela maior de solicitações
+        // recentes antes de filtrar — senão os `limite` mais recentes do
+        // tenant podem ser todos de outro convênio e a lista some vazia.
+        $ids = Solicitacao::query()
+            ->selectRaw('paciente_id, MAX(created_at) as ultima_em')
+            ->whereNotNull('paciente_id')
+            ->groupBy('paciente_id')
+            ->orderByDesc('ultima_em')
+            ->limit($convenioId ? $limite * 5 : $limite)
+            ->pluck('paciente_id')
+            ->all();
+
+        $ordem = array_flip($ids);
+
+        $pacientes = Paciente::query()
+            ->with(['convenio', 'telefones'])
+            ->whereIn('id', $ids)
+            ->when($convenioId, fn ($query) => $query->where('convenio_id', $convenioId))
+            ->get()
+            ->sortBy(fn ($paciente) => $ordem[$paciente->id])
+            ->values()
+            ->take($limite);
+
+        return PacienteResource::collection($pacientes);
     }
 
     private function ordenar($query, Request $request): void

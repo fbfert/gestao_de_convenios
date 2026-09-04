@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateProfissionalRequest;
 use App\Http\Resources\ProfissionalResource;
 use App\Models\Profissional;
 use App\Support\OrdenaListagem;
+use App\Support\PaginaListagem;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -19,41 +20,40 @@ class ProfissionalController extends Controller
         $especialidadeId = $request->integer('especialidade_id');
         $incluirInativos = $request->boolean('incluir_inativos');
 
-        return ProfissionalResource::collection(
-            Profissional::query()
-                ->with(['especialidade', 'especialidades'])
-                ->when(! $incluirInativos, fn ($query) => $query->where('ativo', true))
-                // Filtra pela ligacao, nao pela coluna: quem atua na
-                // especialidade tem que aparecer mesmo que ela nao seja a
-                // principal dele.
-                ->when($especialidadeId, fn ($query) => $query->whereHas(
-                    'especialidades',
-                    fn ($nested) => $nested->where('especialidades.id', $especialidadeId),
-                ))
-                ->when($busca !== '', function ($query) use ($busca) {
-                    $query->where(function ($nested) use ($busca) {
-                        $nested->where('nome', 'like', "%{$busca}%")
-                            ->orWhere('conselho_registro', 'like', "%{$busca}%")
-                            ->orWhereHas('especialidade', function ($especialidadeQuery) use ($busca) {
-                                $especialidadeQuery->where('nome', 'like', "%{$busca}%");
-                            });
-                    });
-                })
-                ->tap(fn ($query) => OrdenaListagem::aplicar(
-                    $query,
-                    $request->only(['ordenar_por', 'direcao']),
-                    [
-                        'nome' => 'nome',
-                        'conselho' => 'conselho_registro',
-                        'repasse' => 'percentual_repasse',
-                        'status' => 'ativo',
-                    ],
-                    padrao: 'nome',
-                    direcaoPadrao: 'asc',
-                    desempate: 'nome',
-                ))
-                ->get()
-        );
+        $query = Profissional::query()
+            ->with(['especialidade', 'especialidades'])
+            ->when(! $incluirInativos, fn ($query) => $query->where('ativo', true))
+            // Filtra pela ligacao, nao pela coluna: quem atua na
+            // especialidade tem que aparecer mesmo que ela nao seja a
+            // principal dele.
+            ->when($especialidadeId, fn ($query) => $query->whereHas(
+                'especialidades',
+                fn ($nested) => $nested->where('especialidades.id', $especialidadeId),
+            ))
+            ->when($busca !== '', function ($query) use ($busca) {
+                $query->where(function ($nested) use ($busca) {
+                    $nested->where('nome', 'like', "%{$busca}%")
+                        ->orWhere('conselho_registro', 'like', "%{$busca}%")
+                        ->orWhereHas('especialidade', function ($especialidadeQuery) use ($busca) {
+                            $especialidadeQuery->where('nome', 'like', "%{$busca}%");
+                        });
+                });
+            })
+            ->tap(fn ($query) => OrdenaListagem::aplicar(
+                $query,
+                $request->only(['ordenar_por', 'direcao']),
+                [
+                    'nome' => 'nome',
+                    'conselho' => 'conselho_registro',
+                    'repasse' => 'percentual_repasse',
+                    'status' => 'ativo',
+                ],
+                padrao: 'nome',
+                direcaoPadrao: 'asc',
+                desempate: 'nome',
+            ));
+
+        return ProfissionalResource::collection(PaginaListagem::aplicar($query, $request));
     }
 
     public function store(StoreProfissionalRequest $request): JsonResponse

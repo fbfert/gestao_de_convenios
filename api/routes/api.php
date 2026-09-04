@@ -95,8 +95,9 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EncerrarSessaoExpirada::
     Route::patch('/configuracoes/unimed/mapeamentos/profissionais/{profissionalMapeamento}', [ConvenioProfissionalMapeamentoController::class, 'update'])->middleware('permission:configuracoes.unimed.manage');
 
     Route::get('/pacientes', [PacienteController::class, 'index']);
-    // Antes da rota com {paciente}: sem isso "ler-carteirinha" e "importar"
-    // seriam lidos como id de paciente.
+    // Antes da rota com {paciente}: sem isso "ler-carteirinha", "importar" e
+    // "recentes" seriam lidos como id de paciente.
+    Route::get('/pacientes/recentes', [PacienteController::class, 'recentes']);
     Route::post('/pacientes/ler-carteirinha', [PacienteController::class, 'lerCarteirinha']);
     Route::get('/pacientes/importar/template', [PacienteImportController::class, 'template'])
         ->middleware('permission:dashboard.pacientes');
@@ -125,7 +126,8 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EncerrarSessaoExpirada::
     Route::get('/convenios/{convenio}/valores', [ConvenioController::class, 'valores'])->middleware('permission:convenios.manage');
     Route::post('/convenios/{convenio}/valores', [ConvenioController::class, 'storeValor'])->middleware('permission:convenios.manage');
     Route::patch('/convenios/{convenio}/valores/{valor}/encerrar', [ConvenioController::class, 'encerrarValor'])->middleware('permission:convenios.manage');
-    Route::get('/medicos', [MedicoController::class, 'index'])->middleware('permission:medicos.manage');
+    Route::get('/medicos', [MedicoController::class, 'index'])->middleware('permission:medicos.view|medicos.manage');
+    Route::get('/medicos/recentes', [MedicoController::class, 'recentes'])->middleware('permission:medicos.view|medicos.manage');
     Route::post('/medicos', [MedicoController::class, 'store'])->middleware('permission:medicos.manage');
     Route::patch('/medicos/{medico}', [MedicoController::class, 'update'])->middleware('permission:medicos.manage');
 

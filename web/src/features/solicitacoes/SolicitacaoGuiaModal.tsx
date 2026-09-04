@@ -1,8 +1,7 @@
 import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/react'
 import { useEffect, useState, type ReactNode } from 'react'
-import { Select } from '../../components/ui/Select'
 import { usePode } from '../../lib/permissoes'
-import { useMedicos } from '../../lib/queries/useReferenceData'
+import type { MedicoRef } from '../../lib/queries/useReferenceData'
 import { GuiaDetalheResumo } from '../guias/GuiaDetalheResumo'
 import { getHttpErrorMessage, useGuia } from '../guias/useGuias'
 import { abrirPedidoMedico, useAtualizarSolicitacao, type SolicitacaoEditForm } from './useSolicitacoes'
@@ -10,6 +9,7 @@ import { SolicitacaoAnexos } from './SolicitacaoAnexos'
 import type { Solicitacao } from './types'
 import { Botao } from '../../components/ui/Botao'
 import { CidsCampo } from '../cids/CidsCampo'
+import { SelecionarMedicoModal } from './SelecionarMedicoModal'
 
 type SolicitacaoGuiaModalProps = {
   solicitacao: Solicitacao | null
@@ -38,12 +38,13 @@ const formVazio: SolicitacaoEditForm = {
 
 function SolicitacaoDados({ solicitacao }: { solicitacao: Solicitacao }) {
   const pode = usePode()
-  const medicosQuery = useMedicos()
   const atualizar = useAtualizarSolicitacao()
 
   const [editando, setEditando] = useState(false)
   const [form, setForm] = useState<SolicitacaoEditForm>(formVazio)
   const [erro, setErro] = useState<string | null>(null)
+  const [medicoSelecionado, setMedicoSelecionado] = useState<MedicoRef | null>(null)
+  const [medicoModalAberto, setMedicoModalAberto] = useState(false)
 
   useEffect(() => {
     setEditando(false)
@@ -56,6 +57,9 @@ function SolicitacaoDados({ solicitacao }: { solicitacao: Solicitacao }) {
       solicitado_em: solicitacao.solicitado_em.slice(0, 10),
       observacoes: solicitacao.observacoes ?? '',
     })
+    setMedicoSelecionado(
+      solicitacao.medico ? { ...solicitacao.medico, telefone: '', email: null, ativo: true } : null,
+    )
     setErro(null)
     setEditando(true)
   }
@@ -111,21 +115,26 @@ function SolicitacaoDados({ solicitacao }: { solicitacao: Solicitacao }) {
           <div className="grid gap-4 md:grid-cols-2">
             <label className="block space-y-2">
               <span className="text-corpo font-medium text-slate-200">Médico solicitante</span>
-              <Select
-                value={form.medico_id}
-                onChange={(event) => setForm((current) => ({ ...current, medico_id: event.target.value }))}
-                className={fieldClasses()}
+              <button
+                type="button"
+                onClick={() => setMedicoModalAberto(true)}
+                className={`${fieldClasses()} flex items-center justify-between text-left`}
                 data-testid="solicitacao-modal-medico"
               >
-                <option value="" disabled>
-                  Selecione
-                </option>
-                {(medicosQuery.data ?? []).map((medico) => (
-                  <option key={medico.id} value={medico.id}>
-                    {medico.nome}
-                  </option>
-                ))}
-              </Select>
+                <span className={medicoSelecionado ? '' : 'text-slate-400'}>
+                  {medicoSelecionado ? medicoSelecionado.nome : 'Buscar médico...'}
+                </span>
+                <span className="text-cyan-200">🔍</span>
+              </button>
+
+              <SelecionarMedicoModal
+                open={medicoModalAberto}
+                onClose={() => setMedicoModalAberto(false)}
+                onSelecionar={(medico) => {
+                  setMedicoSelecionado(medico)
+                  setForm((current) => ({ ...current, medico_id: String(medico.id) }))
+                }}
+              />
             </label>
             <label className="block space-y-2">
               <span className="text-corpo font-medium text-slate-200">CID</span>

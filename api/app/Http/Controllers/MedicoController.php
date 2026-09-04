@@ -6,7 +6,9 @@ use App\Http\Requests\StoreMedicoRequest;
 use App\Http\Requests\UpdateMedicoRequest;
 use App\Http\Resources\MedicoResource;
 use App\Models\Medico;
+use App\Models\Solicitacao;
 use App\Support\OrdenaListagem;
+use App\Support\PaginaListagem;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -17,31 +19,58 @@ class MedicoController extends Controller
     {
         $busca = trim((string) $request->string('busca'));
 
-        return MedicoResource::collection(
-            Medico::query()
-                ->when($busca !== '', function ($query) use ($busca) {
-                    $query->where(function ($nested) use ($busca) {
-                        $nested->where('nome', 'like', "%{$busca}%")
-                            ->orWhere('crm', 'like', "%{$busca}%")
-                            ->orWhere('crm_uf', 'like', "%{$busca}%")
-                            ->orWhere('especialidade_medica', 'like', "%{$busca}%");
-                    });
-                })
-                ->tap(fn ($query) => OrdenaListagem::aplicar(
-                    $query,
-                    $request->only(['ordenar_por', 'direcao']),
-                    [
-                        'nome' => 'nome',
-                        'crm' => 'crm',
-                        'especialidade' => 'especialidade_medica',
-                        'status' => 'ativo',
-                    ],
-                    padrao: 'nome',
-                    direcaoPadrao: 'asc',
-                    desempate: 'nome',
-                ))
-                ->get()
-        );
+        $query = Medico::query()
+            ->when($busca !== '', function ($query) use ($busca) {
+                $query->where(function ($nested) use ($busca) {
+                    $nested->where('nome', 'like', "%{$busca}%")
+                        ->orWhere('crm', 'like', "%{$busca}%")
+                        ->orWhere('crm_uf', 'like', "%{$busca}%")
+                        ->orWhere('especialidade_medica', 'like', "%{$busca}%");
+                });
+            })
+            ->tap(fn ($query) => OrdenaListagem::aplicar(
+                $query,
+                $request->only(['ordenar_por', 'direcao']),
+                [
+                    'nome' => 'nome',
+                    'crm' => 'crm',
+                    'especialidade' => 'especialidade_medica',
+                    'status' => 'ativo',
+                ],
+                padrao: 'nome',
+                direcaoPadrao: 'asc',
+                desempate: 'nome',
+            ));
+
+        return MedicoResource::collection(PaginaListagem::aplicar($query, $request));
+    }
+
+    /**
+     * Médicos distintos usados nas solicitações mais recentes do tenant —
+     * lista inicial do modal de busca antes de digitar qualquer termo.
+     */
+    public function recentes(): AnonymousResourceCollection
+    {
+        $limite = 10;
+
+        $ids = Solicitacao::query()
+            ->selectRaw('medico_id, MAX(created_at) as ultima_em')
+            ->whereNotNull('medico_id')
+            ->groupBy('medico_id')
+            ->orderByDesc('ultima_em')
+            ->limit($limite)
+            ->pluck('medico_id')
+            ->all();
+
+        $ordem = array_flip($ids);
+
+        $medicos = Medico::query()
+            ->whereIn('id', $ids)
+            ->get()
+            ->sortBy(fn ($medico) => $ordem[$medico->id])
+            ->values();
+
+        return MedicoResource::collection($medicos);
     }
 
     public function store(StoreMedicoRequest $request): JsonResponse

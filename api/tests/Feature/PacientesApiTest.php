@@ -2,8 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Models\Cid;
 use App\Models\Convenio;
+use App\Models\Especialidade;
+use App\Models\Medico;
 use App\Models\Paciente;
+use App\Models\Profissional;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -91,6 +95,66 @@ class PacientesApiTest extends TestCase
             ->assertJsonValidationErrors(['convenio_id']);
     }
 
+    public function test_pagina_pacientes_quando_page_informado(): void
+    {
+        $this->autenticar();
+
+        $total = Paciente::query()->count();
+        $perPage = 4;
+        $ultimaPagina = (int) ceil($total / $perPage);
+        $naUltimaPagina = $total - ($ultimaPagina - 1) * $perPage;
+
+        // Sem `page`: mantém o comportamento de sempre, lista inteira.
+        $this->getJson('/api/pacientes')
+            ->assertOk()
+            ->assertJsonCount($total, 'data')
+            ->assertJsonMissingPath('meta');
+
+        // Com `page`: pagina.
+        $this->getJson("/api/pacientes?page=1&per_page={$perPage}")
+            ->assertOk()
+            ->assertJsonCount($perPage, 'data')
+            ->assertJsonPath('meta.current_page', 1)
+            ->assertJsonPath('meta.last_page', $ultimaPagina)
+            ->assertJsonPath('meta.total', $total);
+
+        $this->getJson("/api/pacientes?page={$ultimaPagina}&per_page={$perPage}")
+            ->assertOk()
+            ->assertJsonCount($naUltimaPagina, 'data');
+    }
+
+    public function test_recentes_lista_pacientes_das_solicitacoes_mais_recentes(): void
+    {
+        $this->autenticar();
+
+        $this->postJson('/api/solicitacoes', $this->payloadSolicitacao('Ana Paula Ribeiro'))
+            ->assertCreated();
+        $this->postJson('/api/solicitacoes', $this->payloadSolicitacao('Bruno Henrique Lima'))
+            ->assertCreated();
+
+        // O mais recente (Bruno) vem antes do mais antigo (Ana) — e um
+        // paciente sem nenhuma solicitação (Felipe) não aparece.
+        $this->getJson('/api/pacientes/recentes')
+            ->assertOk()
+            ->assertJsonPath('data.0.nome', 'Bruno Henrique Lima')
+            ->assertJsonPath('data.1.nome', 'Ana Paula Ribeiro')
+            ->assertJsonMissing(['nome' => 'Felipe Gomes Nogueira']);
+    }
+
+    public function test_recentes_filtra_por_convenio_quando_informado(): void
+    {
+        $this->autenticar();
+
+        $this->postJson('/api/solicitacoes', $this->payloadSolicitacao('Ana Paula Ribeiro'))
+            ->assertCreated();
+
+        $celos = Convenio::query()->where('nome', 'Celos')->firstOrFail();
+
+        $this->getJson("/api/pacientes/recentes?convenio_id={$celos->id}")
+            ->assertOk()
+            ->assertJsonMissing(['nome' => 'Ana Paula Ribeiro']);
+    }
+
     public function test_isolamento_cross_tenant_em_detalhe_e_atualizacao(): void
     {
         $pacienteExterno = $this->criarPacienteExterno();
@@ -110,6 +174,25 @@ class PacientesApiTest extends TestCase
     {
         $user = User::query()->where('email', 'admin@clinica-exemplo.test')->firstOrFail();
         Sanctum::actingAs($user);
+    }
+
+    private function payloadSolicitacao(string $pacienteNome): array
+    {
+        $convenio = Convenio::query()->where('nome', 'Unimed')->firstOrFail();
+        $especialidade = Especialidade::query()->where('nome', 'Fisioterapia')->firstOrFail();
+        $profissional = Profissional::query()->where('especialidade_id', $especialidade->id)->firstOrFail();
+        $medico = Medico::query()->where('nome', 'Dr. Carlos Almeida')->firstOrFail();
+        $paciente = Paciente::query()->where('nome', $pacienteNome)->firstOrFail();
+
+        return [
+            'paciente_id' => $paciente->id,
+            'profissional_id' => $profissional->id,
+            'especialidade_id' => $especialidade->id,
+            'convenio_id' => $convenio->id,
+            'medico_id' => $medico->id,
+            'cid_ids' => [Cid::query()->where('codigo', 'F84.0')->firstOrFail()->id],
+            'solicitado_em' => today()->toDateString(),
+        ];
     }
 
     private function criarTenantExterno(): Tenant

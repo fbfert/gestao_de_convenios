@@ -2,7 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Models\Cid;
+use App\Models\Convenio;
+use App\Models\Especialidade;
 use App\Models\Medico;
+use App\Models\Paciente;
+use App\Models\Profissional;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -123,6 +128,67 @@ class MedicosApiTest extends TestCase
             'especialidade_medica' => 'Cardiologia',
             'telefone' => '(11) 96666-0000',
         ])->assertForbidden();
+
+        // Sem medicos.view nem medicos.manage, também não lista.
+        $this->getJson('/api/medicos')->assertForbidden();
+    }
+
+    public function test_usuario_com_apenas_medicos_view_pode_listar_mas_nao_gerenciar(): void
+    {
+        $user = User::query()->where('email', 'profissional@clinica-exemplo.test')->firstOrFail();
+        $tenant = Tenant::query()->where('slug', 'clinica-exemplo')->firstOrFail();
+
+        app(PermissionRegistrar::class)->setPermissionsTeamId($tenant->id);
+        $user->givePermissionTo('medicos.view');
+
+        Sanctum::actingAs($user);
+
+        $this->getJson('/api/medicos')
+            ->assertOk()
+            ->assertJsonCount(3, 'data');
+
+        $this->postJson('/api/medicos', [
+            'nome' => 'Dr. Bloqueado',
+            'crm' => '555666',
+            'crm_uf' => 'SC',
+            'especialidade_medica' => 'Cardiologia',
+            'telefone' => '(11) 96666-0000',
+        ])->assertForbidden();
+    }
+
+    public function test_recentes_lista_medicos_das_solicitacoes_mais_recentes(): void
+    {
+        $this->autenticar();
+
+        $this->postJson('/api/solicitacoes', $this->payloadSolicitacao('Dr. Carlos Almeida'))
+            ->assertCreated();
+        $this->postJson('/api/solicitacoes', $this->payloadSolicitacao('Dra. Helena Soares'))
+            ->assertCreated();
+
+        $this->getJson('/api/medicos/recentes')
+            ->assertOk()
+            ->assertJsonPath('data.0.nome', 'Dra. Helena Soares')
+            ->assertJsonPath('data.1.nome', 'Dr. Carlos Almeida')
+            ->assertJsonMissing(['nome' => 'Dr. Pedro Nogueira']);
+    }
+
+    private function payloadSolicitacao(string $medicoNome): array
+    {
+        $convenio = Convenio::query()->where('nome', 'Unimed')->firstOrFail();
+        $especialidade = Especialidade::query()->where('nome', 'Fisioterapia')->firstOrFail();
+        $profissional = Profissional::query()->where('especialidade_id', $especialidade->id)->firstOrFail();
+        $medico = Medico::query()->where('nome', $medicoNome)->firstOrFail();
+        $paciente = Paciente::query()->where('convenio_id', $convenio->id)->firstOrFail();
+
+        return [
+            'paciente_id' => $paciente->id,
+            'profissional_id' => $profissional->id,
+            'especialidade_id' => $especialidade->id,
+            'convenio_id' => $convenio->id,
+            'medico_id' => $medico->id,
+            'cid_ids' => [Cid::query()->where('codigo', 'F84.0')->firstOrFail()->id],
+            'solicitado_em' => today()->toDateString(),
+        ];
     }
 
     private function autenticar(): void

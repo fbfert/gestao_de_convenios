@@ -1,7 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { Select } from '../../components/ui/Select'
-import { useMedicos } from '../../lib/queries/useReferenceData'
+import type { MedicoRef } from '../../lib/queries/useReferenceData'
 import {
   getHttpErrorMessage,
   useAtualizarSolicitacao,
@@ -10,6 +9,7 @@ import {
 } from './useSolicitacoes'
 import { Botao } from '../../components/ui/Botao'
 import { CidsCampo } from '../cids/CidsCampo'
+import { SelecionarMedicoModal } from './SelecionarMedicoModal'
 
 function fieldClasses() {
   return 'w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20'
@@ -28,11 +28,12 @@ export function SolicitacaoEditarPage() {
   const navigate = useNavigate()
 
   const solicitacaoQuery = useSolicitacao(solicitacaoId)
-  const medicosQuery = useMedicos()
   const atualizar = useAtualizarSolicitacao()
 
   const [form, setForm] = useState<SolicitacaoEditForm>(formVazio)
   const [erro, setErro] = useState<string | null>(null)
+  const [medicoSelecionado, setMedicoSelecionado] = useState<MedicoRef | null>(null)
+  const [medicoModalAberto, setMedicoModalAberto] = useState(false)
 
   useEffect(() => {
     const solicitacao = solicitacaoQuery.data
@@ -46,6 +47,10 @@ export function SolicitacaoEditarPage() {
       solicitado_em: solicitacao.solicitado_em.slice(0, 10),
       observacoes: solicitacao.observacoes ?? '',
     })
+
+    if (solicitacao.medico) {
+      setMedicoSelecionado({ ...solicitacao.medico, telefone: '', email: null, ativo: true })
+    }
   }, [solicitacaoQuery.data])
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -110,22 +115,27 @@ export function SolicitacaoEditarPage() {
 
           <label className="block space-y-2">
             <span className="text-corpo font-medium text-slate-200">Médico solicitante</span>
-            <Select
-              value={form.medico_id}
-              onChange={(event) => setForm((current) => ({ ...current, medico_id: event.target.value }))}
-              className={fieldClasses()}
+            <button
+              type="button"
+              onClick={() => setMedicoModalAberto(true)}
+              className={`${fieldClasses()} flex items-center justify-between text-left`}
               data-testid="solicitacao-editar-medico"
             >
-              <option value="" disabled>
-                Selecione
-              </option>
-              {(medicosQuery.data ?? []).map((medico) => (
-                <option key={medico.id} value={medico.id}>
-                  {medico.nome}
-                </option>
-              ))}
-            </Select>
+              <span className={medicoSelecionado ? '' : 'text-slate-400'}>
+                {medicoSelecionado ? medicoSelecionado.nome : 'Buscar médico...'}
+              </span>
+              <span className="text-cyan-200">🔍</span>
+            </button>
           </label>
+
+          <SelecionarMedicoModal
+            open={medicoModalAberto}
+            onClose={() => setMedicoModalAberto(false)}
+            onSelecionar={(medico) => {
+              setMedicoSelecionado(medico)
+              setForm((current) => ({ ...current, medico_id: String(medico.id) }))
+            }}
+          />
 
           <label className="block space-y-2">
             <span className="text-corpo font-medium text-slate-200">CID</span>

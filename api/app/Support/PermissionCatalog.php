@@ -44,6 +44,7 @@ class PermissionCatalog
         'conciliacoes.viewOwn' => 'Abrir apenas as próprias conciliações',
         'conciliacoes.manage' => 'Executar e alterar conciliações',
         'profissionais.manage' => 'Cadastrar e alterar profissionais',
+        'medicos.view' => 'Consultar médicos',
         'medicos.manage' => 'Cadastrar e alterar médicos',
         'especialidades.manage' => 'Cadastrar e alterar especialidades',
         'usuarios.manage' => 'Cadastrar e alterar usuários',

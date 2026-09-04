@@ -46,6 +46,7 @@ class RoleCatalog
             'conciliacoes.viewOwn',
             'conciliacoes.manage',
             'profissionais.manage',
+            'medicos.view',
             'medicos.manage',
             'especialidades.manage',
             'usuarios.manage',
@@ -85,6 +86,7 @@ class RoleCatalog
             'conciliacoes.viewOwn',
             'conciliacoes.manage',
             'profissionais.manage',
+            'medicos.view',
             'medicos.manage',
         ],
         'profissional' => [

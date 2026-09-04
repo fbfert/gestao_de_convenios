@@ -18,12 +18,15 @@ import type { Solicitacao, SolicitacaoFilters, SolicitacaoForm, SolicitacaoStatu
 import {
   useConvenios,
   useEspecialidades,
-  useMedicos,
-  usePacientes,
+  usePaciente,
   useProfissionais,
+  type MedicoRef,
+  type PacienteRef,
 } from '../../lib/queries/useReferenceData'
 import { formatCarteirinha } from '../../lib/carteirinha'
 import { SolicitacaoGuiaModal } from './SolicitacaoGuiaModal'
+import { SelecionarPacienteModal } from './SelecionarPacienteModal'
+import { SelecionarMedicoModal } from './SelecionarMedicoModal'
 import { AutomacaoProgressoModal } from '../automacoes/AutomacaoProgressoModal'
 import { AutomacaoUnimedDesativadaModal } from '../configuracoes/AutomacaoUnimedDesativadaModal'
 import { useAutomacaoUnimedGate } from '../configuracoes/useAutomacaoUnimedGate'
@@ -122,6 +125,10 @@ export function SolicitacoesPage() {
   const [progressoExecucaoId, setProgressoExecucaoId] = useState<number | null>(null)
   const [form, setForm] = useState<SolicitacaoForm>(emptyForm)
   const [formError, setFormError] = useState<string | null>(null)
+  const [pacienteSelecionado, setPacienteSelecionado] = useState<PacienteRef | null>(null)
+  const [medicoSelecionado, setMedicoSelecionado] = useState<MedicoRef | null>(null)
+  const [pacienteModalAberto, setPacienteModalAberto] = useState(false)
+  const [medicoModalAberto, setMedicoModalAberto] = useState(false)
 
   const { ordenacao, ordenarPor } = useOrdenacao({
     ordenar_por: 'id',
@@ -131,10 +138,12 @@ export function SolicitacoesPage() {
   const conveniosQuery = useConvenios()
   // O código do procedimento é por convênio, então a listagem acompanha o convênio do form.
   const especialidadesQuery = useEspecialidades({ convenio_id: form.convenio_id })
-  const medicosQuery = useMedicos()
-  const pacientesQuery = usePacientes({ convenio_id: form.convenio_id })
   // Todos os profissionais: cada linha de item filtra pela sua própria especialidade.
   const profissionaisQuery = useProfissionais()
+  // Paciente pré-preenchido por link (alerta de guia negada) — ver useEffect
+  // de searchParams abaixo. Sem isso o botão de Paciente mostraria só o id.
+  const pacienteIdParam = isCreateRoute ? searchParams.get('paciente_id') : null
+  const pacientePreSelecionadoQuery = usePaciente(pacienteIdParam ? Number(pacienteIdParam) : null)
   const solicitacoesQuery = useSolicitacoes({ ...filters, ...ordenacao }, page)
   const criarSolicitacao = useCriarSolicitacao()
   const atualizarStatusSolicitacao = useAtualizarStatusSolicitacao()
@@ -147,21 +156,18 @@ export function SolicitacoesPage() {
     () => especialidadesQuery.data ?? emptyArray,
     [especialidadesQuery.data],
   )
-  const pacientes = useMemo(() => pacientesQuery.data ?? emptyArray, [pacientesQuery.data])
-  const pacienteSelecionado = useMemo(
-    () => pacientes.find((item) => String(item.id) === form.paciente_id),
-    [pacientes, form.paciente_id],
-  )
   const profissionais = useMemo(
     () => profissionaisQuery.data ?? emptyArray,
     [profissionaisQuery.data],
   )
-  const medicos = useMemo(() => medicosQuery.data ?? emptyArray, [medicosQuery.data])
+  const convenioSelecionado = useMemo(
+    () => convenios.find((item) => String(item.id) === form.convenio_id),
+    [convenios, form.convenio_id],
+  )
 
-  const formReady = convenios.length > 0 && especialidades.length > 0 && medicos.length > 0
+  const formReady = convenios.length > 0 && especialidades.length > 0
   const formIsComplete =
     formReady &&
-    pacientes.length > 0 &&
     profissionais.length > 0 &&
     form.convenio_id !== '' &&
     form.paciente_id !== '' &&
@@ -179,41 +185,22 @@ export function SolicitacoesPage() {
     )
   }, [convenios, formReady])
 
+  // Se o convênio mudar depois de um paciente escolhido, a seleção pode não
+  // pertencer mais a esse convênio (o cadastro de paciente é por convênio) —
+  // limpa para o usuário escolher de novo, em vez de mandar um id incoerente.
   useEffect(() => {
-    if (pacientes.length === 0) {
-      return
+    if (pacienteSelecionado && String(pacienteSelecionado.convenio_id) !== form.convenio_id) {
+      setPacienteSelecionado(null)
+      setForm((current) => ({ ...current, paciente_id: '' }))
     }
-
-    setForm((current) => {
-      const hasSelected = pacientes.some((paciente) => String(paciente.id) === current.paciente_id)
-      if (hasSelected) {
-        return current
-      }
-
-      return {
-        ...current,
-        paciente_id: String(pacientes[0].id),
-      }
-    })
-  }, [pacientes])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.convenio_id])
 
   useEffect(() => {
-    if (medicos.length === 0) {
-      return
+    if (pacientePreSelecionadoQuery.data) {
+      setPacienteSelecionado(pacientePreSelecionadoQuery.data)
     }
-
-    setForm((current) => {
-      const hasSelected = medicos.some((medico) => String(medico.id) === current.medico_id)
-      if (hasSelected) {
-        return current
-      }
-
-      return {
-        ...current,
-        medico_id: String(medicos[0].id),
-      }
-    })
-  }, [medicos])
+  }, [pacientePreSelecionadoQuery.data])
 
   // Pré-preenche a partir do "Nova Solicitação" do alerta de guia negada
   // (GuiaAlertaNegacoes), que navega pra cá com esses query params. So roda
@@ -477,7 +464,6 @@ export function SolicitacoesPage() {
                   setForm((current) => ({
                     ...current,
                     convenio_id: event.target.value,
-                    paciente_id: '',
                   }))
                 }
                 className={selectClasses()}
@@ -508,29 +494,34 @@ export function SolicitacoesPage() {
 
             <label className="block space-y-2">
               <span className="text-corpo font-medium text-slate-200">Paciente</span>
-              <Select
-                value={form.paciente_id}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    paciente_id: event.target.value,
-                  }))
-                }
-                className={selectClasses()}
+              <button
+                type="button"
+                onClick={() => setPacienteModalAberto(true)}
+                disabled={form.convenio_id === ''}
+                className={`${selectClasses()} flex items-center justify-between text-left disabled:opacity-60`}
                 data-testid="solicitacao-paciente"
-                disabled={pacientesQuery.isLoading || pacientes.length === 0}
               >
-                <option value="" disabled>
-                  Selecione
-                </option>
-                {pacientes.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.nome} · {formatCarteirinha(item.carteirinha, item.convenio?.carteirinha_blocos ?? undefined)}
-                    {item.convenio?.nome ? ` · ${item.convenio.nome}` : ''}
-                  </option>
-                ))}
-              </Select>
+                <span className={pacienteSelecionado ? '' : 'text-slate-400'}>
+                  {pacienteSelecionado
+                    ? `${pacienteSelecionado.nome} · ${formatCarteirinha(pacienteSelecionado.carteirinha, pacienteSelecionado.convenio?.carteirinha_blocos ?? undefined)}`
+                    : form.convenio_id === ''
+                      ? 'Selecione o convênio primeiro'
+                      : 'Buscar paciente...'}
+                </span>
+                <span className="text-cyan-200">🔍</span>
+              </button>
             </label>
+
+            <SelecionarPacienteModal
+              open={pacienteModalAberto}
+              onClose={() => setPacienteModalAberto(false)}
+              onSelecionar={(paciente) => {
+                setPacienteSelecionado(paciente)
+                setForm((current) => ({ ...current, paciente_id: String(paciente.id) }))
+              }}
+              convenioId={form.convenio_id}
+              carteirinhaBlocos={convenioSelecionado?.carteirinha_blocos}
+            />
 
             <SolicitacaoItensFields
               itens={form.itens}
@@ -542,28 +533,27 @@ export function SolicitacoesPage() {
 
             <label className="block space-y-2">
               <span className="text-corpo font-medium text-slate-200">Médico solicitante</span>
-              <Select
-                value={form.medico_id}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    medico_id: event.target.value,
-                  }))
-                }
-                className={selectClasses()}
+              <button
+                type="button"
+                onClick={() => setMedicoModalAberto(true)}
+                className={`${selectClasses()} flex items-center justify-between text-left`}
                 data-testid="solicitacao-medico"
-                disabled={medicosQuery.isLoading || medicos.length === 0}
               >
-                <option value="" disabled>
-                  Selecione
-                </option>
-                {medicos.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.nome}
-                  </option>
-                ))}
-              </Select>
+                <span className={medicoSelecionado ? '' : 'text-slate-400'}>
+                  {medicoSelecionado ? medicoSelecionado.nome : 'Buscar médico...'}
+                </span>
+                <span className="text-cyan-200">🔍</span>
+              </button>
             </label>
+
+            <SelecionarMedicoModal
+              open={medicoModalAberto}
+              onClose={() => setMedicoModalAberto(false)}
+              onSelecionar={(medico) => {
+                setMedicoSelecionado(medico)
+                setForm((current) => ({ ...current, medico_id: String(medico.id) }))
+              }}
+            />
 
             <label className="block space-y-2">
               <span className="text-corpo font-medium text-slate-200">Data</span>
@@ -799,9 +789,7 @@ export function SolicitacoesPage() {
                         onClick={() => setSelectedSolicitacaoId(solicitacao.id)}
                         data-testid={`solicitacao-paciente-${solicitacao.id}`}
                       >
-                        {solicitacao.paciente?.nome ??
-                          pacientes.find((item) => item.id === solicitacao.paciente_id)?.nome ??
-                          solicitacao.paciente_id}
+                        {solicitacao.paciente?.nome ?? solicitacao.paciente_id}
                       </button>
                     </td>
                     <td data-rotulo="Convênio" className="px-4 py-4 text-slate-200">

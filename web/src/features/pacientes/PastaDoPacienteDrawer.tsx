@@ -1,10 +1,12 @@
 import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/react'
 import { useRef, useState, type ChangeEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Badge } from '../../components/ui/Badge'
 import { Botao } from '../../components/ui/Botao'
 import { ConfirmarExclusao } from '../../components/ui/ConfirmarExclusao'
 import { DOCUMENTO_LABELS, TODOS_DOCUMENTOS, type DocumentoTipo } from '../../lib/documentoTipos'
 import { formatCarteirinha } from '../../lib/carteirinha'
+import { formatarCpf, formatarTelefone } from '../../lib/documentos'
 import {
   abrirPacienteArquivo,
   getHttpErrorMessage,
@@ -215,6 +217,72 @@ export function PastaDoPacienteDrawer({
                 Fechar
               </button>
             </div>
+
+            {paciente ? (
+              <div
+                className="space-y-3 rounded-superficie border border-linha bg-fundo p-4 shadow-e1"
+                data-testid="pasta-dados-cadastrais"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <p className="text-corpo font-semibold text-white">Dados cadastrais</p>
+                  <div className="flex items-center gap-2">
+                    <Badge tone={paciente.ativo ? 'sucesso' : 'perigo'}>
+                      {paciente.ativo ? 'Ativo' : 'Inativo'}
+                    </Badge>
+                    <Botao
+                      variante="secundario"
+                      tamanho="sm"
+                      onClick={() => {
+                        onClose()
+                        navigate(`/pacientes/${paciente.id}/editar`)
+                      }}
+                      data-testid="pasta-editar-cadastro"
+                    >
+                      Editar cadastro
+                    </Botao>
+                  </div>
+                </div>
+
+                <div className="grid gap-3 text-corpo text-slate-200 sm:grid-cols-2">
+                  <p>
+                    <span className="block text-meta uppercase tracking-wide text-slate-400">CPF</span>
+                    {paciente.cpf ? formatarCpf(paciente.cpf) : '-'}
+                  </p>
+                  <p>
+                    <span className="block text-meta uppercase tracking-wide text-slate-400">
+                      Data de nascimento
+                    </span>
+                    {paciente.data_nascimento
+                      ? new Date(`${paciente.data_nascimento}T12:00:00`).toLocaleDateString('pt-BR')
+                      : '-'}
+                  </p>
+                  <p>
+                    <span className="block text-meta uppercase tracking-wide text-slate-400">Telefone</span>
+                    {(() => {
+                      const principal =
+                        (paciente.telefones ?? []).find((telefone) => telefone.principal) ??
+                        (paciente.telefones ?? [])[0]
+                      const numero = principal?.numero ?? paciente.telefone
+
+                      return numero ? formatarTelefone(numero) : '-'
+                    })()}
+                  </p>
+                  <p>
+                    <span className="block text-meta uppercase tracking-wide text-slate-400">
+                      Validade da carteirinha
+                    </span>
+                    {paciente.validade_carteirinha ? (
+                      <span className={paciente.carteirinha_vencida ? 'text-amber-200' : undefined}>
+                        {new Date(`${paciente.validade_carteirinha}T12:00:00`).toLocaleDateString('pt-BR')}
+                        {paciente.carteirinha_vencida ? ' · vencida' : ''}
+                      </span>
+                    ) : (
+                      '-'
+                    )}
+                  </p>
+                </div>
+              </div>
+            ) : null}
 
             <div className="flex flex-wrap gap-2">
               <Botao

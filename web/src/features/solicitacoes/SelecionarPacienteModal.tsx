@@ -79,6 +79,16 @@ export function SelecionarPacienteModal({
     buscaQuery.data?.meta && buscaQuery.data.meta.current_page < buscaQuery.data.meta.last_page,
   )
 
+  // Sem resultado no convênio selecionado: busca de novo, sem o filtro, só
+  // pra saber se o paciente existe em outro — sem isso "não encontrado" fica
+  // ambíguo entre "não existe" e "existe, mas no convênio errado".
+  const outroConvenioQuery = usePacientesBusca({
+    busca: debounced,
+    page: 1,
+    enabled: open && semResultado,
+  })
+  const encontradosEmOutroConvenio = semResultado ? outroConvenioQuery.data?.itens ?? [] : []
+
   const carteirinhaPreenchida = carteirinhaBlocos
     ? isCarteirinhaCompleta(novoBlocos, carteirinhaBlocos)
     : novoCarteirinha.trim() !== ''
@@ -183,10 +193,34 @@ export function SelecionarPacienteModal({
               ) : null}
             </div>
 
+            {semResultado && encontradosEmOutroConvenio.length > 0 ? (
+              <div
+                className="mt-4 space-y-2 rounded-superficie border border-amber-400/30 bg-amber-400/10 p-4 shadow-e1"
+                data-testid="selecionar-paciente-outro-convenio"
+              >
+                <p className="text-corpo font-medium text-amber-100">
+                  {encontradosEmOutroConvenio.length === 1
+                    ? 'Encontramos este paciente, mas em outro convênio:'
+                    : 'Encontramos pacientes com esse nome em outro convênio:'}
+                </p>
+                <ul className="space-y-1 text-corpo text-amber-50">
+                  {encontradosEmOutroConvenio.map((item) => (
+                    <li key={item.id}>
+                      {item.nome} · {item.convenio?.nome ?? 'convênio não identificado'}
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-meta text-amber-200/80">
+                  Confira se o convênio selecionado nesta solicitação está certo, ou se o cadastro
+                  do paciente precisa ser corrigido.
+                </p>
+              </div>
+            ) : null}
+
             {semResultado ? (
               <div className="mt-4 space-y-3 rounded-superficie border border-linha bg-fundo p-4 shadow-e1">
                 <p className="text-corpo font-medium text-slate-200">
-                  Nenhum paciente encontrado. Cadastrar novo:
+                  Nenhum paciente encontrado neste convênio. Cadastrar novo:
                 </p>
 
                 <label className="block space-y-2">

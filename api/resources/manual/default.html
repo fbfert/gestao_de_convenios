@@ -436,6 +436,31 @@
   <a href="#conciliacao">Conciliação</a> — cada tela com a chave de correspondência explicada na respectiva seção.
 </p>
 
+<h3>Pacientes duplicados</h3>
+<p>
+  O botão <span class="btn">Buscar Duplicados</span>, ao lado dos contadores Total/Ativos/Inativos, compara os
+  nomes de todos os pacientes cadastrados no gescon e lista os pares com <strong>90% ou mais de semelhança</strong> —
+  inclusive quando um dos dois já está inativo (é comum a duplicata ter sido "resolvida" desativando um lado sem
+  migrar o histórico). Enquanto essa lista está aberta, o cadastro/listagem normal de pacientes fica escondido.
+</p>
+<p>Para cada par encontrado:</p>
+<ul>
+  <li>Dois botões, um por paciente do par, deixam escolher qual cadastro <strong>vence</strong> (fica) — a escolha é sempre manual, o sistema nunca decide sozinho, nem em lote.</li>
+  <li>Escolhido o vencedor, a linha pode ser marcada com a caixa de seleção; <span class="btn">Selecionar todos</span> marca de uma vez todos os pares que já têm vencedor escolhido.</li>
+  <li><span class="btn">Unificar selecionados</span> mostra antes quantas solicitações, guias e antecipações serão movidas, pede confirmação e então processa cada par, com uma janela mostrando o andamento (aguardando → unificando → unificado/falhou).</li>
+</ul>
+<p>Ao unificar um par, o cadastro vencedor recebe tudo do outro lado: solicitações, guias, antecipações, telefones, documentos e a pasta de arquivos passam a apontar para ele.</p>
+<div class="aviso">
+  <strong>A carteirinha do vencedor nunca é substituída.</strong> Só campos vazios (CPF, data de nascimento) são
+  preenchidos com o que o outro cadastro tinha; telefone é sempre atualizado, por ser dado de contato. O cadastro
+  perdedor <strong>não é apagado</strong> — fica inativo e marcado como "mesclado", preservando o histórico.
+</div>
+<div class="nota">
+  Se os dois lados do par já estiverem vinculados à sincronização com o clinica (ver <a href="#configuracoes">
+  Configurações → Sincronização com o clinica</a>) com vínculos diferentes, a tela pede para escolher qual dos dois
+  vínculos manter antes de liberar a unificação daquele par.
+</div>
+
 <h2 class="secao" id="solicitacoes">6. Solicitações <span class="rota">/solicitacoes</span></h2>
 <div class="objetivo">Objetivo: registrar o pedido de autorização de terapia enviado ao convênio — o primeiro passo do atendimento, antes de existir uma guia.</div>
 <h3>Como criar</h3>
@@ -1017,6 +1042,31 @@
   em <a href="#guias">Guias</a> enquanto a execução automática fica pendente ou é investigada.
 </div>
 
+<h3>Configurações das automações <span class="rota">/automacoes/configuracoes</span></h3>
+<p>
+  Liga, desliga e ajusta o ritmo de cada automação de fundo do sistema: reconsulta de status Unimed, busca de
+  senha/validade, confirmação de guia incerta, sincronização com o clinica, e os expurgos diários de auditoria e
+  de carteirinhas. Desligar uma automação não afeta a ação manual equivalente — por exemplo, o botão
+  <span class="btn">Sincronizar Agora</span> (ver <a href="#configuracoes">Configurações → Sincronização com o
+  clinica</a>) continua funcionando mesmo com a sincronização automática desligada.
+</p>
+<h4 style="margin:16px 0 4px;font-size:15px;">Sincronização com o clinica: três janelas de horário</h4>
+<p>
+  Em vez de um intervalo único, a sincronização com o clinica roda em ritmos diferentes conforme o horário — o
+  volume de mudanças de cadastro varia bastante entre horário comercial, fim de tarde e madrugada:
+</p>
+<table>
+  <tr><th>Janela</th><th>Horário padrão</th><th>Intervalo padrão</th></tr>
+  <tr><td>Diurno</td><td>08:00–18:00</td><td>10 minutos</td></tr>
+  <tr><td>Noturno</td><td>18:00–22:00</td><td>30 minutos</td></tr>
+  <tr><td>Madrugada</td><td>22:00–07:59 (cruza a meia-noite)</td><td>60 minutos</td></tr>
+</table>
+<div class="nota">
+  Tanto os horários de início/fim quanto o intervalo de cada janela são editáveis nesta tela. Se as três janelas
+  deixarem uma lacuna nas 24 horas por causa de uma reconfiguração manual, o intervalo da janela
+  <strong>Madrugada</strong> cobre o que sobrar.
+</div>
+
 <h2 class="secao" id="permissoes">19. Perfis e Permissões <span class="rota">/permissoes</span></h2>
 <div class="objetivo">Objetivo: definir os papéis da clínica e exatamente o que cada um vê e faz. O catálogo de permissões é fixo; o que a clínica monta é a combinação delas em cada papel.</div>
 <p>
@@ -1137,10 +1187,12 @@
 <p>
   O gescon convive com o <strong>clinica</strong> (clinica.gestaonossa.com.br, o sistema de agenda/cadastro).
   Profissionais e Pacientes ficam <strong>espelhados nos dois sentidos</strong>: cadastrar ou alterar em qualquer um
-  dos dois reflete no outro. A sincronização roda sozinha a cada 5 minutos.
+  dos dois reflete no outro. A sincronização roda sozinha, num ritmo que varia por horário — ver
+  <a href="#automacoes">Automações → Configurações das automações</a>.
 </p>
 <table>
   <tr><th>Botão</th><th>O que faz</th></tr>
+  <tr><td><span class="btn">Configurar</span></td><td>Leva direto para <a href="#automacoes">Automações → Configurações</a>, onde ficam os horários e intervalos da sincronização.</td></tr>
   <tr><td><span class="btn">Sincronizar Agora</span></td><td>Dispara uma rodada na hora, em vez de esperar o próximo ciclo automático, e mostra o resultado assim que termina.</td></tr>
 </table>
 <p>
@@ -1152,6 +1204,24 @@
 <div class="nota">
   Se a conexão com o clinica ainda não foi configurada para a clínica, a tela avisa e não há execução para mostrar.
   Configurar a conexão é tarefa da equipe técnica.
+</div>
+
+<h4 style="margin:16px 0 4px;font-size:15px;">Pendências de vinculação e de envio</h4>
+<p>
+  Antes de criar um cadastro novo — de qualquer lado — o sistema verifica se já não existe alguém com nome muito
+  parecido (90% ou mais de semelhança) do outro lado. Achando um candidato, ele <strong>nunca decide sozinho</strong>:
+  abre uma pendência nesta mesma tela, para confirmação manual.
+</p>
+<table>
+  <tr><th>Pendência</th><th>Quando aparece</th><th>O que fazer</th></tr>
+  <tr><td><strong>Pendências de vinculação</strong></td><td>Um paciente chegou do clinica sem CPF batendo com nada, mas o nome é parecido com alguém já cadastrado no gescon sem vínculo.</td><td>Clique no candidato sugerido para vincular — o gescon nunca sobrescreve a carteirinha, só preenche o que estiver vazio — ou em "Não é a mesma pessoa" para deixar criar um cadastro novo.</td></tr>
+  <tr><td><strong>Pendências de envio</strong></td><td>Um paciente ou profissional do gescon está prestes a ser criado no clinica, mas já existe lá alguém com nome parecido ainda não vinculado a nada.</td><td>Vincule ao candidato certo — o gescon passa a apontar pra esse registro do clinica, sem criar outro — ou diga que é gente diferente para criar normalmente na próxima rodada.</td></tr>
+</table>
+<div class="nota">
+  Essa verificação existe por causa de um caso real: um paciente cadastrado nos dois sistemas com nomes quase
+  iguais acabou com dois cadastros no gescon — um deles com carteirinha <code>SYNC-CLINICA-102</code>, um valor de
+  preenchimento automático que nunca deveria substituir uma carteirinha de verdade. Ver também
+  <a href="#pacientes">Pacientes → Pacientes duplicados</a>, que resolve duplicatas dentro do próprio gescon.
 </div>
 
 <h3>Globais</h3>

@@ -28,12 +28,16 @@ class ClinicaApiClient
         return $this->request()->post('/profissionais', $payload)->throw()->json();
     }
 
-    /** $updatedAtAtual: token de concorrência otimista (If-Match) — ver ConcorrenciaOtimista no clinica. */
+    /**
+     * $updatedAtAtual: token de concorrência otimista (If-Match) — ver ConcorrenciaOtimista no clinica.
+     * PUT, não PATCH: a rota de lá só aceita PUT (confirmado em
+     * clinica/routes/api.php) — mandar PATCH sempre devolvia 405.
+     */
     public function atualizarProfissional(int $clinicaId, array $payload, string $updatedAtAtual): array
     {
         return $this->request()
             ->withHeaders(['If-Match' => $updatedAtAtual])
-            ->patch("/profissionais/{$clinicaId}", $payload)->throw()->json();
+            ->put("/profissionais/{$clinicaId}", $payload)->throw()->json();
     }
 
     /** @return array{data: list<array<string, mixed>>, meta: array{last_page: int}} */
@@ -52,11 +56,12 @@ class ClinicaApiClient
         return $this->request()->post('/pacientes', $payload)->throw()->json();
     }
 
+    /** PUT, não PATCH — mesmo motivo de atualizarProfissional(). */
     public function atualizarPaciente(int $clinicaId, array $payload, string $updatedAtAtual): array
     {
         return $this->request()
             ->withHeaders(['If-Match' => $updatedAtAtual])
-            ->patch("/pacientes/{$clinicaId}", $payload)->throw()->json();
+            ->put("/pacientes/{$clinicaId}", $payload)->throw()->json();
     }
 
     public function listarCbos(): array

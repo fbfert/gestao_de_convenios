@@ -22,7 +22,6 @@ use App\Services\SolicitacaoService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -42,29 +41,29 @@ class SolicitacaoController extends Controller
 
     public function store(StoreSolicitacaoRequest $request): JsonResponse
     {
-        return (new SolicitacaoResource($this->service->criar($request->validated())->load(['paciente', 'profissional', 'especialidade', 'convenio', 'medico', 'cidCadastros', 'itens.especialidade.convenioMapeamentos', 'itens.profissional', 'itens.documentos', 'itens.guia', 'itens.automacaoExecucoes', 'documentos', 'guia'])))
+        return (new SolicitacaoResource($this->service->criar($request->validated())->load(['paciente', 'profissional', 'especialidade', 'convenio', 'medico', 'cidCadastros', 'itens.especialidade.convenioMapeamentos', 'itens.profissional', 'itens.documentos.arquivo', 'itens.guia', 'itens.automacaoExecucoes', 'documentos.arquivo', 'guia'])))
             ->response()
             ->setStatusCode(201);
     }
 
     public function show(Solicitacao $solicitacao): SolicitacaoResource
     {
-        return new SolicitacaoResource($solicitacao->load(['paciente', 'profissional', 'especialidade', 'convenio', 'medico', 'cidCadastros', 'itens.especialidade.convenioMapeamentos', 'itens.profissional', 'itens.documentos', 'itens.guia', 'itens.automacaoExecucoes', 'documentos', 'guia.paciente', 'guia.convenio', 'guia.profissional', 'guia.especialidade', 'guia.solicitacaoItem.especialidade', 'guia.solicitacaoItem.profissional', 'guia.antecipacoes', 'guia.conciliacoes']));
+        return new SolicitacaoResource($solicitacao->load(['paciente', 'profissional', 'especialidade', 'convenio', 'medico', 'cidCadastros', 'itens.especialidade.convenioMapeamentos', 'itens.profissional', 'itens.documentos.arquivo', 'itens.guia', 'itens.automacaoExecucoes', 'documentos.arquivo', 'guia.paciente', 'guia.convenio', 'guia.profissional', 'guia.especialidade', 'guia.solicitacaoItem.especialidade', 'guia.solicitacaoItem.profissional', 'guia.antecipacoes', 'guia.conciliacoes']));
     }
 
     public function update(UpdateSolicitacaoRequest $request, Solicitacao $solicitacao): SolicitacaoResource
     {
-        return new SolicitacaoResource($this->service->atualizar($solicitacao, $request->validated())->load(['paciente', 'profissional', 'especialidade', 'convenio', 'medico', 'cidCadastros', 'itens.especialidade.convenioMapeamentos', 'itens.profissional', 'itens.documentos', 'itens.guia', 'itens.automacaoExecucoes', 'documentos', 'guia']));
+        return new SolicitacaoResource($this->service->atualizar($solicitacao, $request->validated())->load(['paciente', 'profissional', 'especialidade', 'convenio', 'medico', 'cidCadastros', 'itens.especialidade.convenioMapeamentos', 'itens.profissional', 'itens.documentos.arquivo', 'itens.guia', 'itens.automacaoExecucoes', 'documentos.arquivo', 'guia']));
     }
 
     public function aprovar(MutateSolicitacaoStatusRequest $request, Solicitacao $solicitacao): SolicitacaoResource
     {
-        return new SolicitacaoResource($this->service->aprovar($solicitacao)->load(['paciente', 'profissional', 'especialidade', 'convenio', 'medico', 'cidCadastros', 'itens.especialidade.convenioMapeamentos', 'itens.profissional', 'itens.documentos', 'itens.guia', 'itens.automacaoExecucoes', 'documentos', 'guia']));
+        return new SolicitacaoResource($this->service->aprovar($solicitacao)->load(['paciente', 'profissional', 'especialidade', 'convenio', 'medico', 'cidCadastros', 'itens.especialidade.convenioMapeamentos', 'itens.profissional', 'itens.documentos.arquivo', 'itens.guia', 'itens.automacaoExecucoes', 'documentos.arquivo', 'guia']));
     }
 
     public function negar(MutateSolicitacaoStatusRequest $request, Solicitacao $solicitacao): SolicitacaoResource
     {
-        return new SolicitacaoResource($this->service->negar($solicitacao)->load(['paciente', 'profissional', 'especialidade', 'convenio', 'medico', 'cidCadastros', 'itens.especialidade.convenioMapeamentos', 'itens.profissional', 'itens.documentos', 'itens.guia', 'itens.automacaoExecucoes', 'documentos', 'guia']));
+        return new SolicitacaoResource($this->service->negar($solicitacao)->load(['paciente', 'profissional', 'especialidade', 'convenio', 'medico', 'cidCadastros', 'itens.especialidade.convenioMapeamentos', 'itens.profissional', 'itens.documentos.arquivo', 'itens.guia', 'itens.automacaoExecucoes', 'documentos.arquivo', 'guia']));
     }
 
     public function enviarItemUnimed(
@@ -105,7 +104,7 @@ class SolicitacaoController extends Controller
 
     public function updateStatus(UpdateSolicitacaoStatusRequest $request, Solicitacao $solicitacao): SolicitacaoResource
     {
-        return new SolicitacaoResource($this->service->alterarStatus($solicitacao, $request->validated('status'))->load(['paciente', 'profissional', 'especialidade', 'convenio', 'medico', 'cidCadastros', 'itens.especialidade.convenioMapeamentos', 'itens.profissional', 'itens.documentos', 'itens.guia', 'itens.automacaoExecucoes', 'documentos', 'guia']));
+        return new SolicitacaoResource($this->service->alterarStatus($solicitacao, $request->validated('status'))->load(['paciente', 'profissional', 'especialidade', 'convenio', 'medico', 'cidCadastros', 'itens.especialidade.convenioMapeamentos', 'itens.profissional', 'itens.documentos.arquivo', 'itens.guia', 'itens.automacaoExecucoes', 'documentos.arquivo', 'guia']));
     }
 
     public function analisarPedidoMedico(AnalyzePedidoMedicoRequest $request, PedidoMedicoAiService $pedidoMedicoAi): JsonResponse
@@ -125,15 +124,6 @@ class SolicitacaoController extends Controller
                 ],
                 ...$resultado,
             ],
-        ]);
-    }
-
-    public function pedidoMedico(Solicitacao $solicitacao)
-    {
-        abort_unless($solicitacao->pedido_medico_path && Storage::disk('local')->exists($solicitacao->pedido_medico_path), 404);
-
-        return response()->file(Storage::disk('local')->path($solicitacao->pedido_medico_path), [
-            'Content-Type' => $solicitacao->pedido_medico_mime ?? 'application/octet-stream',
         ]);
     }
 

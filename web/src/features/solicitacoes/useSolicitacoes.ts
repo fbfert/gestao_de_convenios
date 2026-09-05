@@ -183,25 +183,6 @@ export function useCriarCidRapido() {
   })
 }
 
-export async function abrirPedidoMedico(solicitacaoId: number, nomeOriginal?: string | null) {
-  const { data } = await apiClient.get<Blob>(`/solicitacoes/${solicitacaoId}/pedido-medico`, {
-    responseType: 'blob',
-  })
-  const url = window.URL.createObjectURL(data)
-  const opened = window.open(url, '_blank', 'noreferrer')
-
-  if (opened) {
-    window.setTimeout(() => window.URL.revokeObjectURL(url), 1000)
-    return
-  }
-
-  const link = document.createElement('a')
-  link.href = url
-  link.download = nomeOriginal || `pedido-medico-${solicitacaoId}`
-  link.click()
-  window.setTimeout(() => window.URL.revokeObjectURL(url), 1000)
-}
-
 export function useAnexarDocumento() {
   const queryClient = useQueryClient()
 
@@ -233,6 +214,37 @@ export function useAnexarDocumento() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['solicitacoes'] })
+    },
+  })
+}
+
+/** Anexa à solicitação um arquivo que já existe na pasta do paciente, sem upload. */
+export function useVincularDocumento() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      solicitacaoId,
+      pacienteArquivoId,
+      solicitacaoItemId,
+    }: {
+      solicitacaoId: number
+      pacienteArquivoId: number
+      solicitacaoItemId?: number | null
+    }) => {
+      const { data } = await apiClient.post<{ data: Solicitacao }>(
+        `/solicitacoes/${solicitacaoId}/documentos/vincular`,
+        {
+          paciente_arquivo_id: pacienteArquivoId,
+          solicitacao_item_id: solicitacaoItemId || undefined,
+        },
+      )
+
+      return data.data
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['solicitacoes'] })
+      await queryClient.invalidateQueries({ queryKey: ['pacientes-arquivos'] })
     },
   })
 }

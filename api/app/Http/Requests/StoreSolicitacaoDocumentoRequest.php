@@ -2,13 +2,16 @@
 
 namespace App\Http\Requests;
 
-use App\Models\SolicitacaoDocumento;
+use App\Concerns\ValidaTipoESolicitacaoItemDoDocumento;
+use App\Models\PacienteArquivo;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 class StoreSolicitacaoDocumentoRequest extends FormRequest
 {
+    use ValidaTipoESolicitacaoItemDoDocumento;
+
     public function authorize(): bool
     {
         return true;
@@ -20,7 +23,7 @@ class StoreSolicitacaoDocumentoRequest extends FormRequest
             // 5 MB é o teto aceito pelo portal da Unimed (worker-unimed/src/operations/gerarGuia.js),
             // então recusamos aqui para o operador descobrir na hora do anexo, não no envio.
             'arquivo' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png,gif', 'max:5120'],
-            'tipo' => ['required', 'string', Rule::in(SolicitacaoDocumento::TIPOS)],
+            'tipo' => ['required', 'string', Rule::in(PacienteArquivo::TIPOS)],
             'solicitacao_item_id' => ['nullable', 'integer'],
         ];
     }
@@ -36,46 +39,7 @@ class StoreSolicitacaoDocumentoRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator) {
-            $tipo = (string) $this->input('tipo');
-            $itemId = $this->input('solicitacao_item_id');
-
-            if (! in_array($tipo, SolicitacaoDocumento::TIPOS, true)) {
-                return;
-            }
-
-            $exigeItem = in_array($tipo, SolicitacaoDocumento::TIPOS_POR_ITEM, true);
-
-            if ($exigeItem && ! $itemId) {
-                $validator->errors()->add(
-                    'solicitacao_item_id',
-                    'Este anexo precisa estar vinculado a uma especialidade da solicitação.',
-                );
-
-                return;
-            }
-
-            if (! $exigeItem && $itemId) {
-                $validator->errors()->add(
-                    'solicitacao_item_id',
-                    'Este anexo pertence à solicitação inteira e não a uma especialidade.',
-                );
-
-                return;
-            }
-
-            if (! $itemId) {
-                return;
-            }
-
-            $solicitacao = $this->route('solicitacao');
-            $pertence = $solicitacao?->itens()->whereKey($itemId)->exists();
-
-            if (! $pertence) {
-                $validator->errors()->add(
-                    'solicitacao_item_id',
-                    'A especialidade informada não pertence a esta solicitação.',
-                );
-            }
+            $this->validarTipoEItem($validator, (string) $this->input('tipo'), $this->input('solicitacao_item_id'));
         });
     }
 }

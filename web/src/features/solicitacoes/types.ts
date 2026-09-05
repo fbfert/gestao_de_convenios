@@ -81,39 +81,18 @@ export type SolicitacaoItem = {
   documentos?: SolicitacaoDocumento[]
 }
 
-export type SolicitacaoDocumentoTipo =
-  | 'pedido_medico'
-  | 'laudo_medico'
-  | 'plano_individualizado'
-  | 'relatorio_evolucao'
+export type { DocumentoTipo as SolicitacaoDocumentoTipo } from '../../lib/documentoTipos'
+export { DOCUMENTO_LABELS, DOCUMENTOS_DA_SOLICITACAO, DOCUMENTOS_POR_ITEM } from '../../lib/documentoTipos'
+import type { DocumentoTipo } from '../../lib/documentoTipos'
 
 export type SolicitacaoDocumento = {
   id: number
   solicitacao_item_id?: number | null
-  tipo: SolicitacaoDocumentoTipo | string
+  tipo: DocumentoTipo | string
   nome_original: string
   mime: string | null
   url?: string
 }
-
-export const DOCUMENTO_LABELS: Record<SolicitacaoDocumentoTipo, string> = {
-  pedido_medico: 'Pedido Médico',
-  laudo_medico: 'Laudo Médico',
-  plano_individualizado: 'Plano Individualizado',
-  relatorio_evolucao: 'Relatório de Evolução',
-}
-
-/** Anexos que valem para a solicitação inteira. */
-export const DOCUMENTOS_DA_SOLICITACAO: SolicitacaoDocumentoTipo[] = [
-  'pedido_medico',
-  'laudo_medico',
-]
-
-/** Anexos que existem por especialidade, ou seja, por item. */
-export const DOCUMENTOS_POR_ITEM: SolicitacaoDocumentoTipo[] = [
-  'plano_individualizado',
-  'relatorio_evolucao',
-]
 
 export type PaginatedResponse<T> = {
   data: T[]

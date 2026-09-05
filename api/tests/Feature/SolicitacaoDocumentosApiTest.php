@@ -72,7 +72,10 @@ class SolicitacaoDocumentosApiTest extends TestCase
         $this->assertDatabaseHas('solicitacao_documentos', [
             'solicitacao_id' => $solicitacao->id,
             'solicitacao_item_id' => $itemId,
+        ]);
+        $this->assertDatabaseHas('paciente_arquivos', [
             'tipo' => 'plano_individualizado',
+            'nome_original' => 'plano.png',
         ]);
 
         $documentoId = collect($plano->json('data.documentos'))
@@ -82,6 +85,9 @@ class SolicitacaoDocumentosApiTest extends TestCase
 
         $this->deleteJson("/api/solicitacoes/{$solicitacao->id}/documentos/{$documentoId}")->assertOk();
         $this->assertDatabaseMissing('solicitacao_documentos', ['id' => $documentoId]);
+        // Remover o vínculo não apaga o arquivo: ele continua na pasta do paciente,
+        // reaproveitável por outra solicitação.
+        $this->assertDatabaseHas('paciente_arquivos', ['nome_original' => 'plano.png']);
     }
 
     public function test_recusa_documento_por_item_sem_especialidade_vinculada(): void

@@ -44,6 +44,12 @@ class Paciente extends Model
         return $this->hasMany(PacienteDocumento::class);
     }
 
+    /** Pasta do paciente: pedido médico, laudo médico, plano individualizado, etc. */
+    public function arquivos()
+    {
+        return $this->hasMany(PacienteArquivo::class);
+    }
+
     public function solicitacoes()
     {
         return $this->hasMany(Solicitacao::class);

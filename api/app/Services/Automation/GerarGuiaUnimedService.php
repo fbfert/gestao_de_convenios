@@ -30,7 +30,7 @@ class GerarGuiaUnimedService
         $item->loadMissing([
             'solicitacao.convenio',
             'solicitacao.paciente',
-            'solicitacao.documentos',
+            'solicitacao.documentos.arquivo',
             'especialidade',
             'profissional',
             'guia',
@@ -194,8 +194,8 @@ class GerarGuiaUnimedService
             'solicitacao.convenio',
             'solicitacao.medico',
             'solicitacao.cidCadastros',
-            'solicitacao.documentos',
-            'documentos',
+            'solicitacao.documentos.arquivo',
+            'documentos.arquivo',
             'especialidade',
             'profissional',
         ]);
@@ -250,30 +250,32 @@ class GerarGuiaUnimedService
 
     private function pedidoMedico(SolicitacaoItem $item)
     {
-        $item->loadMissing('solicitacao.documentos');
+        $item->loadMissing('solicitacao.documentos.arquivo');
 
         return $item->solicitacao?->documentos
-            ->firstWhere('tipo', 'pedido_medico');
+            ->first(fn ($documento) => $documento->arquivo?->tipo === 'pedido_medico')
+            ?->arquivo;
     }
 
     private function documentosPayload(SolicitacaoItem $item): array
     {
-        $item->loadMissing(['solicitacao.documentos', 'documentos']);
+        $item->loadMissing(['solicitacao.documentos.arquivo', 'documentos.arquivo']);
 
         // Documentos da Solicitação valem para todos os itens; os por item só valem para
         // o seu. Sem o filtro, o Plano de uma especialidade subiria na guia de outra.
         return $item->solicitacao?->documentos
             ->whereNull('solicitacao_item_id')
             ->merge($item->documentos)
-            ->reject(fn ($documento) => $documento->tipo === 'pedido_medico')
-            ->map(fn ($documento) => [
-                'id' => $documento->id,
-                'tipo' => $documento->tipo,
-                'nome_original' => $documento->nome_original,
-                'mime' => $documento->mime,
-                'path' => $documento->path,
-                'local_path' => $this->localPath($documento->path),
-                'size' => $this->fileSize($documento->path),
+            ->map(fn ($documento) => $documento->arquivo)
+            ->reject(fn ($arquivo) => $arquivo === null || $arquivo->tipo === 'pedido_medico')
+            ->map(fn ($arquivo) => [
+                'id' => $arquivo->id,
+                'tipo' => $arquivo->tipo,
+                'nome_original' => $arquivo->nome_original,
+                'mime' => $arquivo->mime,
+                'path' => $arquivo->path,
+                'local_path' => $this->localPath($arquivo->path),
+                'size' => $this->fileSize($arquivo->path),
             ])
             ->values()
             ->all() ?? [];

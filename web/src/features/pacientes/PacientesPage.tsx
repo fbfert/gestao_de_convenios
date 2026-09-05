@@ -20,6 +20,7 @@ import { Tooltip } from '../../components/ui/Tooltip'
 import { Botao } from '../../components/ui/Botao'
 import { Badge } from '../../components/ui/Badge'
 import { usePode } from '../../lib/permissoes'
+import { PastaDoPacienteDrawer } from './PastaDoPacienteDrawer'
 
 const emptyForm: PacienteForm = {
   nome: '',
@@ -101,6 +102,7 @@ export function PacientesPage() {
   // migrarem de bloco assim que um bloco anterior ficava incompleto.
   const [blocosDigitados, setBlocosDigitados] = useState<string[]>([])
   const [formError, setFormError] = useState<string | null>(null)
+  const [pastaAberta, setPastaAberta] = useState<Paciente | null>(null)
   const carregadoPacienteRef = useRef<number | null>(null)
 
   const pacientesQuery = usePacientesCrud(filtros)
@@ -725,7 +727,14 @@ export function PacientesPage() {
                 {pacientes.map((paciente) => (
                   <tr key={paciente.id} data-testid={`paciente-row-${paciente.id}`}>
                     <td data-rotulo="Nome" data-rotulo-bloco className="px-4 py-4 text-slate-100">
-                      <div className="font-semibold text-texto">{paciente.nome}</div>
+                      <button
+                        type="button"
+                        onClick={() => setPastaAberta(paciente)}
+                        className="font-semibold text-texto underline-offset-2 hover:underline"
+                        data-testid={`paciente-abrir-pasta-${paciente.id}`}
+                      >
+                        {paciente.nome}
+                      </button>
                       <div className="text-meta text-slate-400">#{paciente.id}</div>
                     </td>
                     <td data-rotulo="Carteirinha" className="px-4 py-4 tabular-nums text-slate-200">
@@ -796,6 +805,8 @@ export function PacientesPage() {
         )}
       </section>
       ) : null}
+
+      <PastaDoPacienteDrawer paciente={pastaAberta} onClose={() => setPastaAberta(null)} />
     </div>
   )
 }

@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreSolicitacaoDocumentoRequest;
+use App\Http\Requests\VincularSolicitacaoDocumentoRequest;
 use App\Http\Resources\SolicitacaoResource;
+use App\Models\PacienteArquivo;
 use App\Models\Solicitacao;
 use App\Models\SolicitacaoDocumento;
 use Illuminate\Http\JsonResponse;
@@ -22,10 +24,10 @@ class SolicitacaoDocumentoController extends Controller
         'medico',
         'itens.especialidade.convenioMapeamentos',
         'itens.profissional',
-        'itens.documentos',
+        'itens.documentos.arquivo',
         'itens.guia',
         'itens.automacaoExecucoes',
-        'documentos',
+        'documentos.arquivo',
         'guia',
     ];
 
@@ -36,43 +38,59 @@ class SolicitacaoDocumentoController extends Controller
         $tipo = (string) $request->validated('tipo');
         $itemId = $request->validated('solicitacao_item_id');
 
-        // O worker escolhe o Pedido Médico com firstWhere('tipo', 'pedido_medico'), então
-        // um segundo arquivo do mesmo tipo tornaria o envio ambíguo.
-        if ($tipo === 'pedido_medico' && $solicitacao->documentos()->where('tipo', 'pedido_medico')->exists()) {
-            return response()->json([
-                'message' => 'Esta solicitação já possui um Pedido Médico. Remova o atual antes de anexar outro.',
-                'errors' => ['tipo' => ['Esta solicitação já possui um Pedido Médico anexado.']],
-            ], 422);
+        if ($erro = $this->recusaSegundoPedidoMedico($solicitacao, $tipo)) {
+            return $erro;
         }
 
-        $arquivo = $request->file('arquivo');
+        $arquivoUpload = $request->file('arquivo');
         $tenantId = (int) $solicitacao->tenant_id;
-        $extensao = $arquivo->getClientOriginalExtension() ?: $arquivo->guessExtension();
+        $extensao = $arquivoUpload->getClientOriginalExtension() ?: $arquivoUpload->guessExtension();
         $nomeArmazenado = Str::uuid()->toString().($extensao ? '.'.$extensao : '');
-        $path = $arquivo->storeAs("solicitacoes/{$tenantId}/{$solicitacao->id}", $nomeArmazenado, 'local');
+        $path = $arquivoUpload->storeAs("solicitacoes/{$tenantId}/{$solicitacao->id}", $nomeArmazenado, 'local');
 
-        $documento = DB::transaction(function () use ($solicitacao, $tipo, $itemId, $arquivo, $path, $tenantId) {
-            $documento = $solicitacao->documentos()->create([
+        $documento = DB::transaction(function () use ($solicitacao, $tipo, $itemId, $arquivoUpload, $path, $tenantId) {
+            $arquivo = PacienteArquivo::query()->create([
                 'tenant_id' => $tenantId,
-                'solicitacao_item_id' => $itemId,
+                'paciente_id' => $solicitacao->paciente_id,
                 'tipo' => $tipo,
-                'nome_original' => $arquivo->getClientOriginalName(),
-                'mime' => $arquivo->getClientMimeType(),
+                'nome_original' => $arquivoUpload->getClientOriginalName(),
+                'mime' => $arquivoUpload->getClientMimeType(),
                 'path' => $path,
             ]);
 
-            // Campos legados na Solicitação: continuam alimentando a tela de detalhe
-            // e o botão "Abrir pedido" que já existiam antes dos anexos por item.
-            if ($tipo === 'pedido_medico') {
-                $solicitacao->forceFill([
-                    'pedido_medico_path' => $path,
-                    'pedido_medico_nome_original' => $documento->nome_original,
-                    'pedido_medico_mime' => $documento->mime,
-                ])->save();
-            }
-
-            return $documento;
+            return $solicitacao->documentos()->create([
+                'tenant_id' => $tenantId,
+                'solicitacao_item_id' => $itemId,
+                'paciente_arquivo_id' => $arquivo->id,
+            ]);
         });
+
+        return (new SolicitacaoResource($solicitacao->fresh()->load(self::RELACOES)))
+            ->additional(['meta' => ['documento_id' => $documento->id]])
+            ->response()
+            ->setStatusCode(201);
+    }
+
+    /**
+     * Anexa um arquivo que já existe na pasta do paciente, sem upload — só
+     * cria o vínculo (o arquivo pode já estar servindo outra solicitação).
+     */
+    public function vincular(
+        VincularSolicitacaoDocumentoRequest $request,
+        Solicitacao $solicitacao,
+    ): JsonResponse {
+        $arquivo = PacienteArquivo::query()->findOrFail($request->validated('paciente_arquivo_id'));
+        $itemId = $request->validated('solicitacao_item_id');
+
+        if ($erro = $this->recusaSegundoPedidoMedico($solicitacao, $arquivo->tipo)) {
+            return $erro;
+        }
+
+        $documento = $solicitacao->documentos()->create([
+            'tenant_id' => $solicitacao->tenant_id,
+            'solicitacao_item_id' => $itemId,
+            'paciente_arquivo_id' => $arquivo->id,
+        ]);
 
         return (new SolicitacaoResource($solicitacao->fresh()->load(self::RELACOES)))
             ->additional(['meta' => ['documento_id' => $documento->id]])
@@ -83,13 +101,15 @@ class SolicitacaoDocumentoController extends Controller
     public function download(Solicitacao $solicitacao, SolicitacaoDocumento $documento): BinaryFileResponse
     {
         $this->garantirVinculo($solicitacao, $documento);
-        abort_unless(Storage::disk('local')->exists($documento->path), 404);
+        $documento->loadMissing('arquivo');
+        abort_unless(Storage::disk('local')->exists($documento->arquivo->path), 404);
 
-        return response()->file(Storage::disk('local')->path($documento->path), [
-            'Content-Type' => $documento->mime ?? 'application/octet-stream',
+        return response()->file(Storage::disk('local')->path($documento->arquivo->path), [
+            'Content-Type' => $documento->arquivo->mime ?? 'application/octet-stream',
         ]);
     }
 
+    /** Remove só o vínculo — o arquivo continua na pasta do paciente. */
     public function destroy(Solicitacao $solicitacao, SolicitacaoDocumento $documento): JsonResponse|SolicitacaoResource
     {
         $this->garantirVinculo($solicitacao, $documento);
@@ -101,26 +121,27 @@ class SolicitacaoDocumentoController extends Controller
             ], 422);
         }
 
-        DB::transaction(function () use ($solicitacao, $documento) {
-            $path = $documento->path;
-            $eraPedidoMedico = $documento->tipo === 'pedido_medico';
-
-            $documento->delete();
-
-            if ($eraPedidoMedico && $solicitacao->pedido_medico_path === $path) {
-                $solicitacao->forceFill([
-                    'pedido_medico_path' => null,
-                    'pedido_medico_nome_original' => null,
-                    'pedido_medico_mime' => null,
-                ])->save();
-            }
-
-            if (filled($path) && Storage::disk('local')->exists($path)) {
-                Storage::disk('local')->delete($path);
-            }
-        });
+        $documento->delete();
 
         return new SolicitacaoResource($solicitacao->fresh()->load(self::RELACOES));
+    }
+
+    private function recusaSegundoPedidoMedico(Solicitacao $solicitacao, string $tipo): ?JsonResponse
+    {
+        // O worker escolhe o Pedido Médico com firstWhere('tipo', 'pedido_medico'), então
+        // um segundo arquivo do mesmo tipo tornaria o envio ambíguo.
+        $jaTem = $tipo === 'pedido_medico' && $solicitacao->documentos()
+            ->whereHas('arquivo', fn ($q) => $q->where('tipo', 'pedido_medico'))
+            ->exists();
+
+        if (! $jaTem) {
+            return null;
+        }
+
+        return response()->json([
+            'message' => 'Esta solicitação já possui um Pedido Médico. Remova o atual antes de anexar outro.',
+            'errors' => ['tipo' => ['Esta solicitação já possui um Pedido Médico anexado.']],
+        ], 422);
     }
 
     private function garantirVinculo(Solicitacao $solicitacao, SolicitacaoDocumento $documento): void
@@ -129,8 +150,10 @@ class SolicitacaoDocumentoController extends Controller
     }
 
     /**
-     * Depois que a Guia existe, o anexo faz parte do que foi enviado à operadora:
-     * removê-lo apagaria a evidência do que sustentou aquela autorização.
+     * Depois que a Guia existe, o vínculo faz parte do que foi enviado à
+     * operadora: removê-lo apagaria a evidência do que sustentou aquela
+     * autorização. Trava só este vínculo — o arquivo pode continuar servindo
+     * outra solicitação.
      */
     private function motivoParaBloquearRemocao(
         Solicitacao $solicitacao,

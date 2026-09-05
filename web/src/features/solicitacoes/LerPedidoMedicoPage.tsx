@@ -1,6 +1,6 @@
 import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/react'
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Select } from '../../components/ui/Select'
 import {
   useCids,
@@ -278,6 +278,7 @@ function Etapas({
 
 export function LerPedidoMedicoPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [passo, setPasso] = useState(0)
   const [arquivo, setArquivo] = useState<File | null>(null)
   const [resultado, setResultado] = useState<PedidoMedicoAiResult | null>(null)
@@ -307,6 +308,25 @@ export function LerPedidoMedicoPage() {
   /** Termo de CID sem cadastro parecido que o operador clicou pra cadastrar —
    *  ver CidsCampo. */
   const [cidNovoTermo, setCidNovoTermo] = useState<string | null>(null)
+
+  // Vindo da pasta do paciente (?paciente_id=X&convenio_id=Y): pré-preenche
+  // convênio e paciente, mas o operador ainda precisa enviar o arquivo — a
+  // leitura por IA não tem como pular essa etapa.
+  useEffect(() => {
+    const pacienteIdParam = searchParams.get('paciente_id')
+    const convenioIdParam = searchParams.get('convenio_id')
+
+    if (!pacienteIdParam && !convenioIdParam) {
+      return
+    }
+
+    setForm((current) => ({
+      ...current,
+      paciente_id: pacienteIdParam ?? current.paciente_id,
+      convenio_id: convenioIdParam ?? current.convenio_id,
+    }))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const conveniosQuery = useConvenios()
   const cidsQuery = useCids()

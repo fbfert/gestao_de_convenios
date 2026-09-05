@@ -81,13 +81,35 @@ class SolicitacaoResource extends JsonResource
             'status' => $this->status,
             'solicitado_em' => $this->solicitado_em?->toDateString(),
             'observacoes' => $this->observacoes,
-            'pedido_medico' => $this->pedido_medico_path ? [
-                'nome_original' => $this->pedido_medico_nome_original,
-                'mime' => $this->pedido_medico_mime,
-                'url' => url("/api/solicitacoes/{$this->id}/pedido-medico"),
-            ] : null,
+            'pedido_medico' => $this->pedidoMedico(),
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
+        ];
+    }
+
+    /**
+     * Deriva do vínculo (tipo=pedido_medico, sem item) em vez de colunas
+     * legadas na Solicitação — toda solicitação tem esse vínculo, inclusive
+     * as anteriores à tabela solicitacao_documentos (ver backfill).
+     */
+    private function pedidoMedico(): ?array
+    {
+        if (! $this->relationLoaded('documentos')) {
+            return null;
+        }
+
+        $documento = $this->documentos
+            ->whereNull('solicitacao_item_id')
+            ->first(fn ($documento) => $documento->arquivo?->tipo === 'pedido_medico');
+
+        if (! $documento) {
+            return null;
+        }
+
+        return [
+            'nome_original' => $documento->arquivo->nome_original,
+            'mime' => $documento->arquivo->mime,
+            'url' => url("/api/solicitacoes/{$documento->solicitacao_id}/documentos/{$documento->id}"),
         ];
     }
 
@@ -96,9 +118,9 @@ class SolicitacaoResource extends JsonResource
         return [
             'id' => $documento->id,
             'solicitacao_item_id' => $documento->solicitacao_item_id,
-            'tipo' => $documento->tipo,
-            'nome_original' => $documento->nome_original,
-            'mime' => $documento->mime,
+            'tipo' => $documento->arquivo->tipo,
+            'nome_original' => $documento->arquivo->nome_original,
+            'mime' => $documento->arquivo->mime,
             'url' => url("/api/solicitacoes/{$documento->solicitacao_id}/documentos/{$documento->id}"),
         ];
     }

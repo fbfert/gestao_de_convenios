@@ -1,10 +1,12 @@
 import { useRef, useState, type ChangeEvent } from 'react'
 import { ConfirmarExclusao } from '../../components/ui/ConfirmarExclusao'
+import { usePacienteArquivos } from '../pacientes/usePacienteArquivos'
 import {
   abrirDocumento,
   getHttpErrorMessage,
   useAnexarDocumento,
   useRemoverDocumento,
+  useVincularDocumento,
 } from './useSolicitacoes'
 import {
   DOCUMENTOS_DA_SOLICITACAO,
@@ -19,6 +21,7 @@ const ACCEPT = 'application/pdf,image/jpeg,image/png,image/gif'
 
 type SlotProps = {
   solicitacaoId: number
+  pacienteId: number
   tipo: SolicitacaoDocumentoTipo
   obrigatorio?: boolean
   itemId?: number | null
@@ -30,6 +33,7 @@ type SlotProps = {
 
 function DocumentoSlot({
   solicitacaoId,
+  pacienteId,
   tipo,
   obrigatorio = false,
   itemId = null,
@@ -40,9 +44,43 @@ function DocumentoSlot({
   const inputRef = useRef<HTMLInputElement>(null)
   const anexar = useAnexarDocumento()
   const remover = useRemoverDocumento()
+  const vincular = useVincularDocumento()
   const [aExcluir, setAExcluir] = useState<SolicitacaoDocumento | null>(null)
+  const [arquivoEscolhido, setArquivoEscolhido] = useState('')
   const doTipo = documentos.filter((documento) => documento.tipo === tipo)
-  const ocupado = anexar.isPending || remover.isPending
+  const ocupado = anexar.isPending || remover.isPending || vincular.isPending
+
+  const pacienteArquivosQuery = usePacienteArquivos(pacienteId)
+  const jaAnexadosIds = new Set(doTipo.map((documento) => documento.id))
+  // A pasta lista todo arquivo do paciente daquele tipo — inclusive os que já
+  // viraram anexo desta mesma solicitação/item, que ficam de fora aqui.
+  const candidatos = (pacienteArquivosQuery.data ?? []).filter(
+    (arquivo) =>
+      arquivo.tipo === tipo &&
+      !arquivo.vinculos.some(
+        (v) => v.solicitacao_id === solicitacaoId && v.solicitacao_item_id === (itemId ?? null),
+      ) &&
+      !jaAnexadosIds.has(arquivo.id),
+  )
+
+  const handleVincular = async () => {
+    if (!arquivoEscolhido) {
+      return
+    }
+
+    onError(null)
+
+    try {
+      await vincular.mutateAsync({
+        solicitacaoId,
+        pacienteArquivoId: Number(arquivoEscolhido),
+        solicitacaoItemId: itemId,
+      })
+      setArquivoEscolhido('')
+    } catch (error) {
+      onError(getHttpErrorMessage(error, 'Não foi possível usar este arquivo da pasta.'))
+    }
+  }
 
   const handleFile = async (event: ChangeEvent<HTMLInputElement>) => {
     const arquivo = event.target.files?.[0]
@@ -120,6 +158,33 @@ function DocumentoSlot({
           className="hidden"
         />
       </div>
+
+      {candidatos.length > 0 ? (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <select
+            value={arquivoEscolhido}
+            onChange={(event) => setArquivoEscolhido(event.target.value)}
+            className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-meta text-white outline-none"
+            data-testid={`anexo-pasta-select-${tipo}${itemId ? `-item-${itemId}` : ''}`}
+          >
+            <option value="">Usar da pasta do paciente...</option>
+            {candidatos.map((arquivo) => (
+              <option key={arquivo.id} value={arquivo.id}>
+                {arquivo.nome_original}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={() => void handleVincular()}
+            disabled={ocupado || !arquivoEscolhido}
+            className="rounded-full border border-cyan-300/30 bg-cyan-400/10 px-3 py-1.5 text-meta font-semibold text-cyan-100 transition hover:bg-cyan-400/20 disabled:opacity-50"
+            data-testid={`anexo-pasta-vincular-${tipo}${itemId ? `-item-${itemId}` : ''}`}
+          >
+            {vincular.isPending ? 'Vinculando...' : 'Vincular'}
+          </button>
+        </div>
+      ) : null}
 
       {doTipo.length === 0 ? (
         <p className="mt-2 text-meta text-slate-400">
@@ -209,6 +274,7 @@ export function SolicitacaoAnexos({ solicitacao }: { solicitacao: Solicitacao })
           <DocumentoSlot
             key={tipo}
             solicitacaoId={solicitacao.id}
+            pacienteId={solicitacao.paciente_id}
             tipo={tipo}
             obrigatorio={tipo === 'pedido_medico'}
             documentos={documentosDaSolicitacao}
@@ -235,6 +301,7 @@ export function SolicitacaoAnexos({ solicitacao }: { solicitacao: Solicitacao })
               <DocumentoSlot
                 key={tipo}
                 solicitacaoId={solicitacao.id}
+                pacienteId={solicitacao.paciente_id}
                 tipo={tipo}
                 itemId={item.id}
                 documentos={item.documentos ?? []}

@@ -4,7 +4,7 @@ import { usePode } from '../../lib/permissoes'
 import type { MedicoRef } from '../../lib/queries/useReferenceData'
 import { GuiaDetalheResumo } from '../guias/GuiaDetalheResumo'
 import { getHttpErrorMessage, useGuia } from '../guias/useGuias'
-import { abrirPedidoMedico, useAtualizarSolicitacao, type SolicitacaoEditForm } from './useSolicitacoes'
+import { useAtualizarSolicitacao, type SolicitacaoEditForm } from './useSolicitacoes'
 import { SolicitacaoAnexos } from './SolicitacaoAnexos'
 import type { Solicitacao } from './types'
 import { Botao } from '../../components/ui/Botao'
@@ -201,9 +201,6 @@ export function SolicitacaoGuiaModal({ solicitacao, onClose }: SolicitacaoGuiaMo
   const guiaId = solicitacao?.guia?.id ?? null
   const guiaQuery = useGuia(guiaId)
   const open = solicitacao !== null
-  const temDocumentoPedidoMedico = (solicitacao?.documentos ?? []).some(
-    (documento) => documento.tipo === 'pedido_medico',
-  )
 
   return (
     <Dialog open={open} onClose={onClose} className="relative z-(--z-dialogo)">
@@ -236,33 +233,6 @@ export function SolicitacaoGuiaModal({ solicitacao, onClose }: SolicitacaoGuiaMo
               {solicitacao ? <SolicitacaoDados solicitacao={solicitacao} /> : null}
 
               {solicitacao ? <SolicitacaoAnexos solicitacao={solicitacao} /> : null}
-
-              {/* Fallback para solicitações antigas, anteriores à tabela de documentos:
-                  elas têm o arquivo no campo legado mas nenhuma linha em solicitacao_documentos. */}
-              {solicitacao?.pedido_medico && !temDocumentoPedidoMedico ? (
-                <div className="rounded-3xl border border-cyan-400/20 bg-cyan-500/10 p-5 text-corpo text-cyan-50">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p className="font-semibold">Pedido médico anexado</p>
-                      <p className="mt-1 text-cyan-50/80">
-                        {solicitacao.pedido_medico.nome_original ?? 'Arquivo do pedido médico'}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        void abrirPedidoMedico(
-                          solicitacao.id,
-                          solicitacao.pedido_medico?.nome_original,
-                        )
-                      }
-                      className="rounded-2xl border border-cyan-300/30 bg-cyan-400/10 px-4 py-2 text-corpo font-semibold text-cyan-50 transition hover:bg-cyan-400/20"
-                    >
-                      Abrir pedido
-                    </button>
-                  </div>
-                </div>
-              ) : null}
 
               {!solicitacao?.guia ? (
                 <div

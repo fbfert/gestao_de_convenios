@@ -30,6 +30,7 @@ use App\Http\Controllers\AiSettingsController;
 use App\Http\Controllers\ClinicaSyncController;
 use App\Http\Controllers\ConfiguracaoGlobalController;
 use App\Http\Controllers\ManualController;
+use App\Http\Controllers\PacienteArquivoController;
 use App\Http\Controllers\PacienteController;
 use App\Http\Controllers\PacienteImportController;
 use App\Http\Controllers\UserController;
@@ -108,6 +109,10 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EncerrarSessaoExpirada::
     Route::get('/pacientes/{paciente}', [PacienteController::class, 'show']);
     Route::post('/pacientes', [PacienteController::class, 'store']);
     Route::patch('/pacientes/{paciente}', [PacienteController::class, 'update']);
+    Route::get('/pacientes/{paciente}/arquivos', [PacienteArquivoController::class, 'index']);
+    Route::post('/pacientes/{paciente}/arquivos', [PacienteArquivoController::class, 'store']);
+    Route::get('/pacientes/{paciente}/arquivos/{arquivo}', [PacienteArquivoController::class, 'download']);
+    Route::delete('/pacientes/{paciente}/arquivos/{arquivo}', [PacienteArquivoController::class, 'destroy']);
     Route::get('/profissionais', [ProfissionalController::class, 'index']);
     Route::post('/profissionais', [ProfissionalController::class, 'store'])->middleware('permission:profissionais.manage');
     Route::patch('/profissionais/{profissional}', [ProfissionalController::class, 'update'])->middleware('permission:profissionais.manage');
@@ -166,8 +171,8 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EncerrarSessaoExpirada::
     Route::post('/solicitacoes/cids-rapido', [SolicitacaoController::class, 'storeCidRapido']);
     Route::get('/solicitacoes/{solicitacao}', [SolicitacaoController::class, 'show']);
     Route::patch('/solicitacoes/{solicitacao}', [SolicitacaoController::class, 'update'])->middleware('permission:solicitacoes.manage');
-    Route::get('/solicitacoes/{solicitacao}/pedido-medico', [SolicitacaoController::class, 'pedidoMedico']);
     Route::post('/solicitacoes/{solicitacao}/documentos', [SolicitacaoDocumentoController::class, 'store']);
+    Route::post('/solicitacoes/{solicitacao}/documentos/vincular', [SolicitacaoDocumentoController::class, 'vincular']);
     Route::get('/solicitacoes/{solicitacao}/documentos/{documento}', [SolicitacaoDocumentoController::class, 'download']);
     Route::delete('/solicitacoes/{solicitacao}/documentos/{documento}', [SolicitacaoDocumentoController::class, 'destroy']);
     Route::patch('/solicitacoes/{solicitacao}/status', [SolicitacaoController::class, 'updateStatus']);

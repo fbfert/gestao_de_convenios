@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Exceptions\SolicitacaoStatusInvalidoException;
 use App\Models\Guia;
+use App\Models\PacienteArquivo;
 use App\Models\Solicitacao;
 use App\Support\TenantContext;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -46,10 +47,10 @@ class SolicitacaoService
                 'cidCadastros',
                 'itens.especialidade.convenioMapeamentos',
                 'itens.profissional',
-                'itens.documentos',
+                'itens.documentos.arquivo',
                 'itens.guia',
                 'itens.automacaoExecucoes',
-                'documentos',
+                'documentos.arquivo',
                 'guia.paciente',
                 'guia.convenio',
                 'guia.profissional',
@@ -128,7 +129,7 @@ class SolicitacaoService
                 'status' => 'under_review',
                 'solicitado_em' => $dados['solicitado_em'],
                 'observacoes' => $dados['observacoes'] ?? null,
-            ] + $pedidoMedico['campos']);
+            ]);
 
             $solicitacao->cidCadastros()->sync($dados['cid_ids'] ?? []);
 
@@ -143,9 +144,16 @@ class SolicitacaoService
                 ]);
             }
 
-            if ($pedidoMedico['documento']) {
-                $solicitacao->documentos()->create($pedidoMedico['documento'] + [
+            if ($pedidoMedico) {
+                $arquivo = PacienteArquivo::query()->create($pedidoMedico + [
                     'tenant_id' => $tenantId,
+                    'paciente_id' => $dados['paciente_id'],
+                ]);
+
+                $solicitacao->documentos()->create([
+                    'tenant_id' => $tenantId,
+                    'solicitacao_item_id' => null,
+                    'paciente_arquivo_id' => $arquivo->id,
                 ]);
             }
 
@@ -153,17 +161,17 @@ class SolicitacaoService
         });
     }
 
-    private function resolverPedidoMedico(array $dados, int $tenantId): array
+    private function resolverPedidoMedico(array $dados, int $tenantId): ?array
     {
         $uploadId = $dados['pedido_medico_upload_id'] ?? null;
 
         if (! $uploadId) {
-            return ['campos' => [], 'documento' => null];
+            return null;
         }
 
         $prefix = "pedidos-medicos/pendentes/{$tenantId}/";
         if (! str_starts_with($uploadId, $prefix) || ! Storage::disk('local')->exists($uploadId)) {
-            return ['campos' => [], 'documento' => null];
+            return null;
         }
 
         $target = str_replace('/pendentes/', '/solicitacoes/', $uploadId);
@@ -172,20 +180,11 @@ class SolicitacaoService
         $mime = $dados['pedido_medico_mime'] ?? Storage::disk('local')->mimeType($target);
 
         return [
-            'campos' => [
-                'pedido_medico_path' => $target,
-                'pedido_medico_nome_original' => $nomeOriginal,
-                'pedido_medico_mime' => $mime,
-                'pedido_medico_ai_result' => $dados['pedido_medico_ai_result'] ?? null,
-            ],
-            'documento' => [
-                'solicitacao_item_id' => null,
-                'tipo' => 'pedido_medico',
-                'nome_original' => $nomeOriginal,
-                'mime' => $mime,
-                'path' => $target,
-                'metadata' => $dados['pedido_medico_ai_result'] ?? null,
-            ],
+            'tipo' => 'pedido_medico',
+            'nome_original' => $nomeOriginal,
+            'mime' => $mime,
+            'path' => $target,
+            'metadata' => $dados['pedido_medico_ai_result'] ?? null,
         ];
     }
 

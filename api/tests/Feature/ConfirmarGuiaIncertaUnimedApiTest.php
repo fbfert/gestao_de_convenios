@@ -13,6 +13,7 @@ use App\Models\Especialidade;
 use App\Models\Guia;
 use App\Models\Medico;
 use App\Models\Paciente;
+use App\Models\PacienteArquivo;
 use App\Models\Profissional;
 use App\Models\Solicitacao;
 use App\Models\SolicitacaoItem;
@@ -275,19 +276,22 @@ class ConfirmarGuiaIncertaUnimedApiTest extends TestCase
             'status' => 'ready_for_automation',
             'solicitado_em' => today(),
             'observacoes' => null,
-            'pedido_medico_path' => $comPedidoMedico ? 'pedidos-medicos/teste.pdf' : null,
-            'pedido_medico_nome_original' => $comPedidoMedico ? 'pedido.pdf' : null,
-            'pedido_medico_mime' => $comPedidoMedico ? 'application/pdf' : null,
         ]);
 
         if ($comPedidoMedico) {
-            $solicitacao->documentos()->create([
+            $arquivo = PacienteArquivo::query()->create([
                 'tenant_id' => $tenantId,
-                'solicitacao_item_id' => null,
+                'paciente_id' => $paciente->id,
                 'tipo' => 'pedido_medico',
                 'nome_original' => 'pedido.pdf',
                 'mime' => 'application/pdf',
                 'path' => 'pedidos-medicos/teste.pdf',
+            ]);
+
+            $solicitacao->documentos()->create([
+                'tenant_id' => $tenantId,
+                'solicitacao_item_id' => null,
+                'paciente_arquivo_id' => $arquivo->id,
             ]);
         }
 

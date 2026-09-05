@@ -36,6 +36,9 @@ coverage/
 # Segredos do deploy (o .example fica versionado)
 deploy/.secrets.env
 
+# Backups de banco de dados: dados reais de pacientes (PHI), nunca versionar.
+deploy/backups/
+
 
 # Bytecode do Python — gerado ao rodar os scripts das skills, e especifico da
 # versao do interpretador (cpython-314). Nao serve para outra maquina.

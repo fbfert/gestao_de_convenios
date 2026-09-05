@@ -15,6 +15,7 @@ use App\Models\Especialidade;
 use App\Models\Guia;
 use App\Models\Medico;
 use App\Models\Paciente;
+use App\Models\PacienteArquivo;
 use App\Models\Profissional;
 use App\Models\Solicitacao;
 use App\Models\SolicitacaoItem;
@@ -134,30 +135,26 @@ class GerarGuiaUnimedApiTest extends TestCase
             'status_operacional' => 'pending',
         ]);
 
-        $solicitacao->documentos()->create([
-            'tenant_id' => $item->tenant_id,
-            'solicitacao_item_id' => null,
-            'tipo' => 'laudo_medico',
-            'nome_original' => 'laudo-geral.pdf',
-            'mime' => 'application/pdf',
-            'path' => 'solicitacoes/laudo-geral.pdf',
-        ]);
-        $solicitacao->documentos()->create([
-            'tenant_id' => $item->tenant_id,
-            'solicitacao_item_id' => $item->id,
-            'tipo' => 'plano_individualizado',
-            'nome_original' => 'plano-do-item.pdf',
-            'mime' => 'application/pdf',
-            'path' => 'solicitacoes/plano-do-item.pdf',
-        ]);
-        $solicitacao->documentos()->create([
-            'tenant_id' => $item->tenant_id,
-            'solicitacao_item_id' => $outroItem->id,
-            'tipo' => 'plano_individualizado',
-            'nome_original' => 'plano-de-outra-especialidade.pdf',
-            'mime' => 'application/pdf',
-            'path' => 'solicitacoes/plano-de-outra.pdf',
-        ]);
+        $criarVinculo = function (?int $itemId, string $tipo, string $nomeOriginal, string $path) use ($solicitacao, $item) {
+            $arquivo = PacienteArquivo::query()->create([
+                'tenant_id' => $item->tenant_id,
+                'paciente_id' => $solicitacao->paciente_id,
+                'tipo' => $tipo,
+                'nome_original' => $nomeOriginal,
+                'mime' => 'application/pdf',
+                'path' => $path,
+            ]);
+
+            $solicitacao->documentos()->create([
+                'tenant_id' => $item->tenant_id,
+                'solicitacao_item_id' => $itemId,
+                'paciente_arquivo_id' => $arquivo->id,
+            ]);
+        };
+
+        $criarVinculo(null, 'laudo_medico', 'laudo-geral.pdf', 'solicitacoes/laudo-geral.pdf');
+        $criarVinculo($item->id, 'plano_individualizado', 'plano-do-item.pdf', 'solicitacoes/plano-do-item.pdf');
+        $criarVinculo($outroItem->id, 'plano_individualizado', 'plano-de-outra-especialidade.pdf', 'solicitacoes/plano-de-outra.pdf');
 
         $execucao = app(GerarGuiaUnimedService::class)->enviar($item->fresh());
         $payload = app(GerarGuiaUnimedService::class)->payloadParaWorker($execucao);
@@ -773,19 +770,22 @@ class GerarGuiaUnimedApiTest extends TestCase
             'status' => 'ready_for_automation',
             'solicitado_em' => today(),
             'observacoes' => null,
-            'pedido_medico_path' => $comPedidoMedico ? 'pedidos-medicos/teste.pdf' : null,
-            'pedido_medico_nome_original' => $comPedidoMedico ? 'pedido.pdf' : null,
-            'pedido_medico_mime' => $comPedidoMedico ? 'application/pdf' : null,
         ]);
 
         if ($comPedidoMedico) {
-            $solicitacao->documentos()->create([
+            $arquivo = PacienteArquivo::query()->create([
                 'tenant_id' => $tenantId,
-                'solicitacao_item_id' => null,
+                'paciente_id' => $paciente->id,
                 'tipo' => 'pedido_medico',
                 'nome_original' => 'pedido.pdf',
                 'mime' => 'application/pdf',
                 'path' => 'pedidos-medicos/teste.pdf',
+            ]);
+
+            $solicitacao->documentos()->create([
+                'tenant_id' => $tenantId,
+                'solicitacao_item_id' => null,
+                'paciente_arquivo_id' => $arquivo->id,
             ]);
         }
 

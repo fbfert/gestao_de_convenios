@@ -7,22 +7,15 @@ use App\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Vínculo entre uma Solicitação (ou um item dela) e um documento da pasta do
+ * paciente (PacienteArquivo). O arquivo em si mora em PacienteArquivo e pode
+ * estar vinculado a mais de uma solicitação; remover este registro só desfaz
+ * o vínculo — nunca apaga o arquivo.
+ */
 class SolicitacaoDocumento extends Model
 {
     use Auditable, BelongsToTenant, HasFactory;
-
-    /** Anexos que valem para a Solicitação inteira. */
-    public const TIPOS_DA_SOLICITACAO = ['pedido_medico', 'laudo_medico'];
-
-    /** Anexos que existem por especialidade, ou seja, por item da Solicitação. */
-    public const TIPOS_POR_ITEM = ['plano_individualizado', 'relatorio_evolucao'];
-
-    public const TIPOS = [
-        'pedido_medico',
-        'laudo_medico',
-        'plano_individualizado',
-        'relatorio_evolucao',
-    ];
 
     protected $table = 'solicitacao_documentos';
 
@@ -30,15 +23,7 @@ class SolicitacaoDocumento extends Model
         'tenant_id',
         'solicitacao_id',
         'solicitacao_item_id',
-        'tipo',
-        'nome_original',
-        'mime',
-        'path',
-        'metadata',
-    ];
-
-    protected $casts = [
-        'metadata' => 'array',
+        'paciente_arquivo_id',
     ];
 
     public function solicitacao()
@@ -49,5 +34,25 @@ class SolicitacaoDocumento extends Model
     public function item()
     {
         return $this->belongsTo(SolicitacaoItem::class, 'solicitacao_item_id');
+    }
+
+    public function arquivo()
+    {
+        return $this->belongsTo(PacienteArquivo::class, 'paciente_arquivo_id');
+    }
+
+    /**
+     * Depois que a Guia existe, o vínculo é evidência do que foi enviado à
+     * operadora e não pode mais ser removido — mas isso trava só este
+     * vínculo, não o arquivo (que pode estar servindo outra solicitação).
+     */
+    public function estaTravado(): bool
+    {
+        if ($this->solicitacao_item_id) {
+            return (bool) $this->item?->guia()->exists();
+        }
+
+        return $this->solicitacao->itens()->whereHas('guia')->exists()
+            || $this->solicitacao->guia()->exists();
     }
 }

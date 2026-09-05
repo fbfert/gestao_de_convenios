@@ -27,7 +27,15 @@ export async function login(page, credential) {
     })
   }
 
-  await page.locator(NOVO_EXAME_BOTAO).waitFor({ timeout: DEFAULT_TIMEOUT })
+  // waitProcessing() acima engole o próprio timeout (silencioso de propósito) —
+  // se o portal demorar mais que DEFAULT_TIMEOUT pra sair do "Processando...",
+  // essa espera aqui é quem realmente sente o atraso. Mesmo padrão do
+  // FINALIZAR_TIMEOUT em gerarGuia.js: já vimos essa home pós-login legitimamente
+  // demorar mais que 5s pra renderizar sob carga real do portal (04/09, 23h-1h,
+  // duas execuções seguidas estouraram os 5s aqui e pausaram a automação via
+  // WORKER_INTERNAL_FATAL sem ser um seletor quebrado).
+  const LOGIN_HOME_TIMEOUT = Math.max(DEFAULT_TIMEOUT, 30000)
+  await page.locator(NOVO_EXAME_BOTAO).waitFor({ timeout: LOGIN_HOME_TIMEOUT })
 }
 
 /**

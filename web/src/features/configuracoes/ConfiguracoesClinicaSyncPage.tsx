@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom'
 import {
   getHttpErrorMessage,
   useClinicaSyncStatus,
@@ -226,6 +227,7 @@ function SecaoPushPendencias() {
 }
 
 export function ConfiguracoesClinicaSyncPage() {
+  const navigate = useNavigate()
   const query = useClinicaSyncStatus()
   const sincronizar = useSincronizarClinicaAgora()
 
@@ -267,14 +269,24 @@ export function ConfiguracoesClinicaSyncPage() {
             ) : null}
           </div>
 
-          <Botao
-            type="button"
-            carregando={sincronizar.isPending}
-            onClick={() => sincronizar.mutate()}
-            data-testid="clinica-sync-agora"
-          >
-            {sincronizar.isPending ? 'Sincronizando...' : 'Sincronizar Agora'}
-          </Botao>
+          <div className="flex flex-wrap gap-2">
+            <Botao
+              type="button"
+              variante="secundario"
+              onClick={() => navigate('/automacoes/configuracoes')}
+              data-testid="clinica-sync-configurar"
+            >
+              Configurar
+            </Botao>
+            <Botao
+              type="button"
+              carregando={sincronizar.isPending}
+              onClick={() => sincronizar.mutate()}
+              data-testid="clinica-sync-agora"
+            >
+              {sincronizar.isPending ? 'Sincronizando...' : 'Sincronizar Agora'}
+            </Botao>
+          </div>
         </div>
 
         {sincronizar.isError ? (

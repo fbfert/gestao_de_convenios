@@ -19,10 +19,13 @@ class PacienteDuplicadoService
      */
     public function buscar(int $tenantId): array
     {
+        // SEM filtro de ativo de propósito: é comum a duplicata já ter sido
+        // "resolvida" desativando um dos dois lados sem migrar o histórico
+        // (foi exatamente o que aconteceu com Abner #518/#30) — se filtrasse
+        // por ativo=true o caso que motivou este relatório nunca apareceria.
         $pacientes = Paciente::with('convenio')
             ->where('tenant_id', $tenantId)
-            ->where('ativo', true)
-            ->get(['id', 'nome', 'cpf', 'carteirinha', 'convenio_id', 'clinica_id']);
+            ->get(['id', 'nome', 'cpf', 'carteirinha', 'convenio_id', 'clinica_id', 'ativo']);
 
         $pares = [];
 
@@ -62,6 +65,7 @@ class PacienteDuplicadoService
             'carteirinha' => $paciente->carteirinha,
             'convenio' => $paciente->convenio?->nome,
             'vinculado_clinica' => $paciente->clinica_id !== null,
+            'ativo' => $paciente->ativo,
         ];
     }
 

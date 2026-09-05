@@ -19,9 +19,19 @@ export type ClinicaPacientePendencia = {
   candidatos: ClinicaPacienteCandidato[]
 }
 
+type PacienteDuplicadoResumo = {
+  id: number
+  nome: string
+  cpf: string | null
+  carteirinha: string | null
+  convenio: string | null
+  vinculado_clinica: boolean
+  ativo: boolean
+}
+
 export type PacienteDuplicado = {
-  paciente_a: { id: number; nome: string; cpf: string | null; carteirinha: string | null; convenio: string | null; vinculado_clinica: boolean }
-  paciente_b: { id: number; nome: string; cpf: string | null; carteirinha: string | null; convenio: string | null; vinculado_clinica: boolean }
+  paciente_a: PacienteDuplicadoResumo
+  paciente_b: PacienteDuplicadoResumo
   similaridade: number
 }
 

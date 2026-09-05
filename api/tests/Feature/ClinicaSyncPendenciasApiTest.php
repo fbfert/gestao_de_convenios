@@ -160,4 +160,35 @@ class ClinicaSyncPendenciasApiTest extends TestCase
         $nomes = collect($resposta->json())->map(fn ($par) => [$par['paciente_a']['nome'], $par['paciente_b']['nome']]);
         $this->assertTrue($nomes->contains(['Abner dos Santos Beiger', 'Abner Santos Beiger']));
     }
+
+    /** Caso real: a duplicata as vezes ja foi "resolvida" desativando um dos dois lados, sem migrar historico. */
+    public function test_duplicados_inclui_pacientes_inativos(): void
+    {
+        $this->autenticar();
+        $convenioId = $this->convenioId();
+
+        Paciente::query()->create([
+            'tenant_id' => $this->tenantId(),
+            'nome' => 'Abner dos Santos Beiger',
+            'carteirinha' => '33333333333',
+            'convenio_id' => $convenioId,
+            'ativo' => true,
+        ]);
+        Paciente::query()->create([
+            'tenant_id' => $this->tenantId(),
+            'nome' => 'Abner dos Santos Beiger',
+            'carteirinha' => 'SYNC-CLINICA-102',
+            'convenio_id' => $convenioId,
+            'clinica_id' => 102,
+            'ativo' => false,
+        ]);
+
+        $resposta = $this->getJson('/api/configuracoes/clinica-sync/duplicados')->assertOk();
+
+        $par = collect($resposta->json())->firstWhere('similaridade', 100.0);
+        $this->assertNotNull($par);
+        $ativos = [$par['paciente_a']['ativo'], $par['paciente_b']['ativo']];
+        sort($ativos);
+        $this->assertSame([false, true], $ativos);
+    }
 }

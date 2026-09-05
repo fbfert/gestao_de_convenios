@@ -181,10 +181,12 @@ function SecaoDuplicados() {
                     <td className="py-2 pr-4">
                       #{par.paciente_a.id} {par.paciente_a.nome}
                       {par.paciente_a.carteirinha ? ` · ${par.paciente_a.carteirinha}` : ''}
+                      {!par.paciente_a.ativo ? ' · inativo' : ''}
                     </td>
                     <td className="py-2 pr-4">
                       #{par.paciente_b.id} {par.paciente_b.nome}
                       {par.paciente_b.carteirinha ? ` · ${par.paciente_b.carteirinha}` : ''}
+                      {!par.paciente_b.ativo ? ' · inativo' : ''}
                     </td>
                     <td className="py-2">{par.similaridade}%</td>
                   </tr>

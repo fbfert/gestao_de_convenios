@@ -3,24 +3,27 @@ import { apiClient } from '../../api/client'
 import { getHttpErrorMessage } from '../../lib/httpError'
 import type { Medico, MedicoForm } from './types'
 import type { Ordenacao } from '../../lib/useOrdenacao'
+import type { ListMeta } from '../../lib/queries/useReferenceData'
 
-type ListResponse<T> = {
+type PaginatedListResponse<T> = {
   data: T[]
+  meta?: ListMeta
 }
 
-export function useMedicos(busca: string, ordenacao?: Ordenacao) {
+export function useMedicos(busca: string, ordenacao?: Ordenacao, page?: number) {
   return useQuery({
-    queryKey: ['medicos', busca, ordenacao],
+    queryKey: ['medicos', busca, ordenacao, page],
     queryFn: async () => {
-      const { data } = await apiClient.get<ListResponse<Medico>>('/medicos', {
+      const { data } = await apiClient.get<PaginatedListResponse<Medico>>('/medicos', {
         params: {
           busca: busca || undefined,
           ordenar_por: ordenacao?.ordenar_por,
           direcao: ordenacao?.direcao,
+          page,
         },
       })
 
-      return data.data
+      return data
     },
   })
 }

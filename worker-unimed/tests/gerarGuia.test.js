@@ -108,6 +108,27 @@ test('fallback de medico nao cooperado', async () => {
   assert.equal(result.medico_strategy, 'nao_cooperado')
 })
 
+test('medico com nome abreviado casa com o cadastro completo do cooperado', async () => {
+  const result = await runScenario('provider-name-abbreviated', {
+    medico: { nome: 'Edison T. F. A. Westarb' },
+  })
+
+  assert.equal(result.status, 'succeeded')
+  assert.equal(result.medico_strategy, 'nome')
+})
+
+test('match ambiguo de medico nao decide sozinho e pede confirmacao', async () => {
+  const result = await runScenario('provider-name-ambiguous', {
+    medico: { nome: 'Carlos Eduardo Almeida' },
+  })
+
+  assert.equal(result.status, 'failed')
+  assert.equal(result.error_code, 'PRESTADOR_NOME_AMBIGUO')
+  assert.equal(result.medico_nome_lido, 'Carlos Eduardo Almeida')
+  assert.equal(result.medico_sugestao_portal, 'CARLOS ALMEIDA')
+  assert.equal(result.medico_similaridade, 60)
+})
+
 test('campos genericos continuam o fluxo', async () => {
   const result = await runScenario('generic', {
     usa_descricao_generica: true,

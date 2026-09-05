@@ -205,7 +205,7 @@ class PedidoMedicoSolicitacaoApiTest extends TestCase
             'nome' => 'Dra. Nova IA',
         ])
             ->assertCreated()
-            ->assertJsonPath('data.nome', 'Dra. Nova IA')
+            ->assertJsonPath('data.nome', 'Nova IA')
             ->assertJsonPath('data.crm', null)
             ->assertJsonPath('data.especialidade_medica', 'Pendente');
     }
@@ -221,7 +221,7 @@ class PedidoMedicoSolicitacaoApiTest extends TestCase
             'especialidade_medica' => 'Pediatria',
         ])
             ->assertCreated()
-            ->assertJsonPath('data.nome', 'Dr. Extraido Pela IA')
+            ->assertJsonPath('data.nome', 'Extraido Pela IA')
             ->assertJsonPath('data.crm', '12345')
             ->assertJsonPath('data.crm_uf', 'SC')
             ->assertJsonPath('data.especialidade_medica', 'Pediatria');
@@ -321,7 +321,7 @@ class PedidoMedicoSolicitacaoApiTest extends TestCase
         $especialidade = Especialidade::query()->where('nome', 'Fisioterapia')->firstOrFail();
         $profissional = Profissional::query()->where('especialidade_id', $especialidade->id)->firstOrFail();
         $paciente = Paciente::query()->where('convenio_id', $convenio->id)->firstOrFail();
-        $medico = Medico::query()->where('nome', 'Dr. Carlos Almeida')->firstOrFail();
+        $medico = Medico::query()->where('nome', 'Carlos Almeida')->firstOrFail();
 
         return [
             'paciente_id' => $paciente->id,

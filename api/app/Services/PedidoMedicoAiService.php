@@ -8,6 +8,7 @@ use App\Models\Cid;
 use App\Models\Especialidade;
 use App\Models\Medico;
 use App\Models\Paciente;
+use App\Support\NomeMedicoNormalizer;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
@@ -136,6 +137,13 @@ class PedidoMedicoAiService
         $texto = $this->extrairTexto($response->json());
         $dados = $this->parseJson($texto);
 
+        // "Dr./Dra." no nome lido não existe no cadastro do cooperado na
+        // Unimed — mantê-lo aqui já entraria torto na tela de revisão e na
+        // busca por nome do médico (sugerirMedicos logo abaixo).
+        if (isset($dados['medico_nome']) && is_string($dados['medico_nome'])) {
+            $dados['medico_nome'] = NomeMedicoNormalizer::semPrefixo($dados['medico_nome']);
+        }
+
         return [
             'model' => $model,
             'raw_text' => $texto,
@@ -206,6 +214,7 @@ class PedidoMedicoAiService
                 'crm' => $medico->crm,
                 'crm_uf' => $medico->crm_uf,
             ],
+            comparacaoAproximada: true,
         );
     }
 
@@ -340,14 +349,29 @@ class PedidoMedicoAiService
             ->all();
     }
 
-    private function rankByNome($items, string $nome, callable $mapper): array
+    /**
+     * @param  bool  $comparacaoAproximada  Além do similar_text (char a char),
+     *                                      também tenta a comparação por tokens/
+     *                                      iniciais de NomeMedicoNormalizer — nomes
+     *                                      lidos abreviados (ex. "Edison T. F. A.
+     *                                      Westarb") têm similar_text baixo contra o
+     *                                      cadastro completo mesmo sendo a mesma
+     *                                      pessoa. Só faz sentido pra nome de médico;
+     *                                      pacientes/especialidades/CIDs não têm essa
+     *                                      abreviação por iniciais.
+     */
+    private function rankByNome($items, string $nome, callable $mapper, bool $comparacaoAproximada = false): array
     {
         $needle = mb_strtolower(trim($nome));
 
         return $items
-            ->map(function ($item) use ($needle, $mapper) {
+            ->map(function ($item) use ($needle, $mapper, $nome, $comparacaoAproximada) {
                 $candidate = mb_strtolower($item->nome);
                 similar_text($needle, $candidate, $percent);
+
+                if ($comparacaoAproximada) {
+                    $percent = max($percent, NomeMedicoNormalizer::similaridadeAproximada($nome, $item->nome));
+                }
 
                 return $mapper($item) + ['similaridade' => round($percent, 2)];
             })

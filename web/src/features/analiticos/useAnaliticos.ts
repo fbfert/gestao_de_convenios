@@ -1,9 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
 import { apiClient } from '../../api/client'
 import type { AnaliticoUnimedLote } from '../lancamentos/types'
+import type { ListMeta } from '../../lib/queries/useReferenceData'
 
-type ListResponse<T> = {
+type PaginatedListResponse<T> = {
   data: T[]
+  meta?: ListMeta
 }
 
 export type AnaliticoUnimedLoteLinhaDetalhe = {
@@ -63,14 +65,14 @@ export type AnaliticoLoteFilters = {
   importado_ate: string
 }
 
-export function useAnaliticosLotes(filters: AnaliticoLoteFilters) {
+export function useAnaliticosLotes(filters: AnaliticoLoteFilters, page?: number) {
   return useQuery({
-    queryKey: ['analiticos', filters],
+    queryKey: ['analiticos', filters, page],
     queryFn: async () => {
-      const { data } = await apiClient.get<ListResponse<AnaliticoUnimedLote>>('/analiticos', {
-        params: filters,
+      const { data } = await apiClient.get<PaginatedListResponse<AnaliticoUnimedLote>>('/analiticos', {
+        params: { ...filters, page },
       })
-      return data.data
+      return data
     },
   })
 }

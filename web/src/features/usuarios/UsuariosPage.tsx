@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { ColunaOrdenavel } from '../../components/ui/ColunaOrdenavel'
 import { useOrdenacao } from '../../lib/useOrdenacao'
+import { useListaNaUrl } from '../../lib/useListaNaUrl'
 import { useMatch, useNavigate } from 'react-router-dom'
 import { Select } from '../../components/ui/Select'
+import { Paginacao } from '../../components/ui/Paginacao'
 import {
   getHttpErrorMessage,
   useAtualizarUsuario,
@@ -49,9 +51,8 @@ export function UsuariosPage() {
   // Criar e editar acontecem em tela propria: com a lista junto, o formulario
   // ficava espremido e a pagina rolava de volta ao topo a cada acao.
   const isFormRoute = isCreateRoute || isEditRoute
-  const [filters, setFilters] = useState({ busca: '' })
-  const [draftFilters, setDraftFilters] = useState({ busca: '' })
-  const [page, setPage] = useState(1)
+  const { filters, page, setFilters, setPage, searchParams } = useListaNaUrl({ busca: '' })
+  const [draftFilters, setDraftFilters] = useState(filters)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [form, setForm] = useState<UsuarioForm>(emptyForm)
   const [formError, setFormError] = useState<string | null>(null)
@@ -75,6 +76,7 @@ export function UsuariosPage() {
   const totalPages = usuariosQuery.data?.meta?.last_page ?? 1
   const totalAtivos = usuarios.filter((usuario) => usuario.ativo).length
   const totalProfissionais = usuarios.filter((usuario) => usuario.role === 'profissional').length
+  const query = searchParams.toString()
 
   useEffect(() => {
     if (roles.length === 0) {
@@ -142,12 +144,11 @@ export function UsuariosPage() {
 
   const handleFilterSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    setPage(1)
     setFilters(draftFilters)
   }
 
   const handleNew = () => {
-    navigate('/usuarios/novo')
+    navigate({ pathname: '/usuarios/novo', search: query })
     setEditingId(null)
     setForm(emptyForm)
     setFormError(null)
@@ -186,7 +187,7 @@ export function UsuariosPage() {
 
       setEditingId(null)
       setForm(emptyForm)
-      navigate('/usuarios')
+      navigate({ pathname: '/usuarios', search: query })
     } catch (error) {
       setFormError(getHttpErrorMessage(error, 'Não foi possível salvar o usuário.'))
     }
@@ -196,7 +197,7 @@ export function UsuariosPage() {
     setEditingId(usuario.id)
     setForm(toForm(usuario))
     setFormError(null)
-    navigate(`/usuarios/${usuario.id}/editar`)
+    navigate({ pathname: `/usuarios/${usuario.id}/editar`, search: query })
   }
 
   const handleToggleAtivo = async (usuario: Usuario) => {
@@ -218,7 +219,7 @@ export function UsuariosPage() {
     setEditingId(null)
     setForm(emptyForm)
     setFormError(null)
-    navigate('/usuarios')
+    navigate({ pathname: '/usuarios', search: query })
   }
 
   const handleRoleChange = (value: string) => {
@@ -552,31 +553,7 @@ export function UsuariosPage() {
           </div>
         )}
 
-        <div className="flex items-center justify-between gap-3">
-          <Botao
-            type="button"
-            variante="secundario"
-            tamanho="sm"
-            onClick={() => setPage((current) => Math.max(1, current - 1))}
-            disabled={page <= 1 || usuariosQuery.isFetching}
-          >
-            Anterior
-          </Botao>
-
-          <p className="inline-flex min-h-6 items-center text-corpo text-slate-300">
-            Página {page} de {totalPages}
-          </p>
-
-          <Botao
-            type="button"
-            variante="secundario"
-            tamanho="sm"
-            onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
-            disabled={page >= totalPages || usuariosQuery.isFetching}
-          >
-            Próxima
-          </Botao>
-        </div>
+        <Paginacao page={page} totalPages={totalPages} onChange={setPage} />
       </section>
       ) : null}
     </div>

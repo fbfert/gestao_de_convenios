@@ -28,13 +28,16 @@ class MedicosApiTest extends TestCase
         $this->getJson('/api/medicos')
             ->assertOk()
             ->assertJsonCount(3, 'data')
-            ->assertJsonPath('data.0.nome', 'Dr. Carlos Almeida');
+            ->assertJsonPath('data.0.nome', 'Carlos Almeida');
     }
 
     public function test_cria_medico_para_o_tenant_autenticado(): void
     {
         $this->autenticar();
 
+        // Cadastro com prefixo "Dra." de propósito: o portal da Unimed não
+        // cadastra o cooperado com esse prefixo, e ele atrapalha a busca por
+        // nome na automação — por isso o cadastro remove sozinho.
         $this->postJson('/api/medicos', [
             'nome' => 'Dra. Laura Martins',
             'crm' => '777888',
@@ -45,16 +48,64 @@ class MedicosApiTest extends TestCase
             'ativo' => true,
         ])
             ->assertCreated()
-            ->assertJsonPath('data.nome', 'Dra. Laura Martins')
+            ->assertJsonPath('data.nome', 'Laura Martins')
             ->assertJsonPath('data.crm', '777888')
             ->assertJsonPath('data.crm_uf', 'SC')
             ->assertJsonPath('data.ativo', true);
 
         $this->assertDatabaseHas('medicos', [
-            'nome' => 'Dra. Laura Martins',
+            'nome' => 'Laura Martins',
             'crm' => '777888',
             'crm_uf' => 'SC',
         ]);
+    }
+
+    public function test_remove_prefixo_dr_em_todas_as_variacoes_ao_cadastrar_ou_atualizar(): void
+    {
+        $this->autenticar();
+
+        $variacoes = [
+            'Dr. Fulano Teste' => 'Fulano Teste',
+            'Dr Fulano Teste' => 'Fulano Teste',
+            'DRA. FULANO TESTE' => 'FULANO TESTE',
+            'Dra Fulano Teste' => 'Fulano Teste',
+        ];
+
+        $i = 0;
+        foreach ($variacoes as $nomeComPrefixo => $nomeEsperado) {
+            $this->postJson('/api/medicos', [
+                'nome' => $nomeComPrefixo,
+                'crm' => (string) (900000 + $i++),
+                'crm_uf' => 'SC',
+                'especialidade_medica' => 'Clínica Geral',
+                'telefone' => '(11) 95555-0100',
+                'ativo' => true,
+            ])
+                ->assertCreated()
+                ->assertJsonPath('data.nome', $nomeEsperado);
+        }
+
+        $medico = Medico::query()->where('nome', 'Fulano Teste')->firstOrFail();
+
+        $this->patchJson("/api/medicos/{$medico->id}", ['nome' => 'Dr. Fulano Teste Atualizado'])
+            ->assertOk()
+            ->assertJsonPath('data.nome', 'Fulano Teste Atualizado');
+    }
+
+    public function test_nome_sem_prefixo_nao_e_afetado(): void
+    {
+        $this->autenticar();
+
+        $this->postJson('/api/medicos', [
+            'nome' => 'Drica Fernandes',
+            'crm' => '900099',
+            'crm_uf' => 'SC',
+            'especialidade_medica' => 'Clínica Geral',
+            'telefone' => '(11) 95555-0100',
+            'ativo' => true,
+        ])
+            ->assertCreated()
+            ->assertJsonPath('data.nome', 'Drica Fernandes');
     }
 
     public function test_crm_com_letras_e_rejeitado(): void
@@ -76,7 +127,7 @@ class MedicosApiTest extends TestCase
         $this->autenticar();
 
         $medico = Medico::query()
-            ->where('nome', 'Dr. Carlos Almeida')
+            ->where('nome', 'Carlos Almeida')
             ->firstOrFail();
 
         $this->patchJson("/api/medicos/{$medico->id}", [
@@ -102,12 +153,12 @@ class MedicosApiTest extends TestCase
 
         $this->getJson('/api/medicos')
             ->assertOk()
-            ->assertJsonMissing(['nome' => 'Dr. Externo']);
+            ->assertJsonMissing(['nome' => 'Externo']);
     }
 
     public function test_medico_de_outro_tenant_retorna_404_no_binding(): void
     {
-        $medico = Medico::query()->where('nome', 'Dr. Carlos Almeida')->firstOrFail();
+        $medico = Medico::query()->where('nome', 'Carlos Almeida')->firstOrFail();
         $user = $this->criarUsuarioAutorizadoDeOutroTenant();
         Sanctum::actingAs($user);
 
@@ -160,16 +211,16 @@ class MedicosApiTest extends TestCase
     {
         $this->autenticar();
 
-        $this->postJson('/api/solicitacoes', $this->payloadSolicitacao('Dr. Carlos Almeida'))
+        $this->postJson('/api/solicitacoes', $this->payloadSolicitacao('Carlos Almeida'))
             ->assertCreated();
-        $this->postJson('/api/solicitacoes', $this->payloadSolicitacao('Dra. Helena Soares'))
+        $this->postJson('/api/solicitacoes', $this->payloadSolicitacao('Helena Soares'))
             ->assertCreated();
 
         $this->getJson('/api/medicos/recentes')
             ->assertOk()
-            ->assertJsonPath('data.0.nome', 'Dra. Helena Soares')
-            ->assertJsonPath('data.1.nome', 'Dr. Carlos Almeida')
-            ->assertJsonMissing(['nome' => 'Dr. Pedro Nogueira']);
+            ->assertJsonPath('data.0.nome', 'Helena Soares')
+            ->assertJsonPath('data.1.nome', 'Carlos Almeida')
+            ->assertJsonMissing(['nome' => 'Pedro Nogueira']);
     }
 
     private function payloadSolicitacao(string $medicoNome): array
@@ -208,7 +259,7 @@ class MedicosApiTest extends TestCase
 
         Medico::query()->create([
             'tenant_id' => $tenant->id,
-            'nome' => 'Dr. Externo',
+            'nome' => 'Externo',
             'crm' => 'CRM 999999',
             'especialidade_medica' => 'Clínica Geral',
             'telefone' => '(11) 90000-0000',

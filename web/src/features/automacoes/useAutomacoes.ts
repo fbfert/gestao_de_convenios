@@ -41,6 +41,20 @@ export function useAutomacao(id: number | null, options: { acompanharProgresso?:
   })
 }
 
+export function useAtualizarNomeMedico() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ id, nome }: { id: number; nome: string }) => {
+      const { data } = await apiClient.patch<{ data: { id: number; nome: string } }>(`/medicos/${id}`, { nome })
+      return data.data
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['medicos'] })
+    },
+  })
+}
+
 export function useReprocessarAutomacao() {
   const queryClient = useQueryClient()
 

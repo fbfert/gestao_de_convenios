@@ -1,4 +1,4 @@
-import { Link, useParams } from 'react-router-dom'
+import { Link, useLocation, useParams } from 'react-router-dom'
 import { useAnaliticoLote } from './useAnaliticos'
 
 function formatEmpty(value: string | number | null | undefined) {
@@ -68,6 +68,8 @@ function DetailTable({
 
 export function AnaliticoDetalhePage() {
   const params = useParams()
+  const location = useLocation()
+  const voltarPara = (location.state as { from?: string } | null)?.from ?? '/analiticos'
   const loteId = params.id ? Number(params.id) : null
   const loteQuery = useAnaliticoLote(Number.isFinite(loteId ?? NaN) ? loteId : null)
   const data = loteQuery.data
@@ -79,7 +81,7 @@ export function AnaliticoDetalhePage() {
           <div>
             <div className="flex items-center gap-3">
               <Link
-                to="/analiticos"
+                to={voltarPara}
                 className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-corpo font-semibold text-white transition hover:bg-white/10"
               >
                 Voltar

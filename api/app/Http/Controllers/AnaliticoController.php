@@ -7,11 +7,13 @@ use App\Http\Resources\AnaliticoUnimedLoteResource;
 use App\Models\AnaliticoUnimedLote;
 use Illuminate\Http\Request;
 use App\Support\OrdenaListagem;
+use App\Support\PaginaListagem;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class AnaliticoController extends Controller
 {
-    public function index(Request $request): JsonResponse
+    public function index(Request $request): AnonymousResourceCollection
     {
         $lotes = AnaliticoUnimedLote::query()
             ->when($request->string('busca')->trim()->toString() !== '', function ($query) use ($request) {
@@ -40,13 +42,12 @@ class AnaliticoController extends Controller
                 padrao: 'importado_em',
                 direcaoPadrao: 'desc',
                 desempate: 'id',
-            ))
-            ->limit(20)
-            ->get();
+            ));
 
-        return response()->json([
-            'data' => AnaliticoUnimedLoteResource::collection($lotes)->resolve(),
-        ]);
+        // Mesmo idioma de MedicoController@index/PacienteController@index:
+        // sem `page` na query string devolve tudo; com `page`, pagina de
+        // verdade (meta/links no formato padrão do Laravel).
+        return AnaliticoUnimedLoteResource::collection(PaginaListagem::aplicar($lotes, $request));
     }
 
     public function show(AnaliticoUnimedLote $analiticoLote): JsonResponse

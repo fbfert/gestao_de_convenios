@@ -8,6 +8,8 @@ import type {
   AnaliticoUnimedPreview,
 } from '../lancamentos/types'
 import { useAnaliticosLotes, type AnaliticoLoteFilters } from './useAnaliticos'
+import { useListaNaUrl } from '../../lib/useListaNaUrl'
+import { Paginacao } from '../../components/ui/Paginacao'
 import { Tooltip } from '../../components/ui/Tooltip'
 import { Botao } from '../../components/ui/Botao'
 
@@ -155,6 +157,10 @@ function LotesTable({
   filtros,
   onFiltroChange,
   onLimparFiltros,
+  page,
+  totalPages,
+  onPageChange,
+  fromHref,
 }: {
   rows: Array<{
     id: number
@@ -173,6 +179,10 @@ function LotesTable({
   filtros: AnaliticoLoteFilters
   onFiltroChange: (campo: keyof AnaliticoLoteFilters, valor: string) => void
   onLimparFiltros: () => void
+  page: number
+  totalPages: number
+  onPageChange: (page: number) => void
+  fromHref: string
 }) {
   return (
     <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
@@ -281,6 +291,7 @@ function LotesTable({
                   <td data-rotulo="Ações" data-rotulo-bloco className="px-4 py-4">
                     <Link
                       to={`/analiticos/${lote.id}`}
+                      state={{ from: fromHref }}
                       className="inline-flex rounded-2xl border border-cyan-300/30 bg-cyan-400/10 px-4 py-2 text-corpo font-semibold text-cyan-100 transition hover:bg-cyan-400/20"
                     >
                       Abrir
@@ -299,6 +310,8 @@ function LotesTable({
           </table>
         </div>
       )}
+
+      <Paginacao page={page} totalPages={totalPages} onChange={onPageChange} />
     </section>
   )
 }
@@ -308,14 +321,17 @@ export function AnaliticosPage() {
   const [preview, setPreview] = useState<AnaliticoUnimedPreview | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [salvo, setSalvo] = useState(false)
-  const [filtros, setFiltros] = useState<AnaliticoLoteFilters>({
+  const { filters: filtros, page, setFilters: setFiltros, setPage, searchParams } = useListaNaUrl<AnaliticoLoteFilters>({
     busca: '',
     status: '',
     importado_de: '',
     importado_ate: '',
   })
   const importarAnalitico = useImportarAnaliticoUnimed()
-  const lotesQuery = useAnaliticosLotes(filtros)
+  const lotesQuery = useAnaliticosLotes(filtros, page)
+  const totalPages = lotesQuery.data?.meta?.last_page ?? 1
+  const query = searchParams.toString()
+  const fromHref = query ? `/analiticos?${query}` : '/analiticos'
 
   const analiticoRows = useMemo(() => preview?.analitico.linhas.slice(0, 8) ?? [], [preview])
   const glosaRows = useMemo(() => preview?.glosas.linhas.slice(0, 8) ?? [], [preview])
@@ -356,10 +372,10 @@ export function AnaliticosPage() {
   }
 
   const handleFiltroChange = (campo: keyof AnaliticoLoteFilters, valor: string) => {
-    setFiltros((current) => ({
-      ...current,
+    setFiltros({
+      ...filtros,
       [campo]: valor,
-    }))
+    })
   }
 
   const limparFiltros = () => {
@@ -415,12 +431,16 @@ export function AnaliticosPage() {
       </section>
 
       <LotesTable
-        rows={lotesQuery.data ?? []}
+        rows={lotesQuery.data?.data ?? []}
         isLoading={lotesQuery.isLoading}
         isError={lotesQuery.isError}
         filtros={filtros}
         onFiltroChange={handleFiltroChange}
         onLimparFiltros={limparFiltros}
+        page={page}
+        totalPages={totalPages}
+        onPageChange={setPage}
+        fromHref={fromHref}
       />
 
       <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">

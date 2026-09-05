@@ -81,7 +81,7 @@ class SolicitacaoImportServiceTest extends TestCase
             'paciente_cpf' => $paciente->cpf ?? '',
             'paciente_carteirinha' => $paciente->cpf ? '' : $paciente->carteirinha,
             'convenio' => 'Unimed',
-            'medico' => 'Dr. Carlos Almeida',
+            'medico' => 'Carlos Almeida',
             'cids' => 'F84.0',
             'solicitado_em' => '15/01/2026',
             'status' => '',
@@ -101,6 +101,17 @@ class SolicitacaoImportServiceTest extends TestCase
         $resultado = $service->previsualizar($arquivo, $this->tenantId());
 
         $this->assertSame(1, $resultado['lote']['total_validas']);
+        $this->assertSame('valida', $resultado['linhas'][0]['status']);
+        $this->assertSame([], $resultado['linhas'][0]['erros']);
+    }
+
+    public function test_previsualizar_acha_medico_mesmo_com_prefixo_dr_na_planilha(): void
+    {
+        $service = app(SolicitacaoImportService::class);
+        $arquivo = $this->arquivoXlsx([$this->linhaBasica(['medico' => 'Dr. Carlos Almeida'])]);
+
+        $resultado = $service->previsualizar($arquivo, $this->tenantId());
+
         $this->assertSame('valida', $resultado['linhas'][0]['status']);
         $this->assertSame([], $resultado['linhas'][0]['erros']);
     }
@@ -246,7 +257,7 @@ class SolicitacaoImportServiceTest extends TestCase
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->fromArray([
             ['Convênio de Saúde', 'Médico Solicitante', 'Código CID', 'Data do Pedido', 'Área de Atendimento', 'Terapeuta', 'CPF do Paciente'],
-            ['Unimed', 'Dr. Carlos Almeida', 'F84.0', '15/01/2026', 'Fisioterapia', $profissional->nome, $paciente->cpf ?? '39053344705'],
+            ['Unimed', 'Carlos Almeida', 'F84.0', '15/01/2026', 'Fisioterapia', $profissional->nome, $paciente->cpf ?? '39053344705'],
         ], null, 'A1');
 
         $caminho = tempnam(sys_get_temp_dir(), 'solicitacoes-import-livre-').'.xlsx';

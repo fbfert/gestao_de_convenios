@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { ColunaOrdenavel } from '../../components/ui/ColunaOrdenavel'
 import { useOrdenacao } from '../../lib/useOrdenacao'
+import { useListaNaUrl } from '../../lib/useListaNaUrl'
 import { useMatch, useNavigate } from 'react-router-dom'
 import { getHttpErrorMessage, useAtualizarMedico, useCriarMedico, useMedicos } from './useMedicos'
 import type { Medico, MedicoForm } from './types'
 import { Badge } from '../../components/ui/Badge'
 import { Botao } from '../../components/ui/Botao'
+import { Paginacao } from '../../components/ui/Paginacao'
 import { Indicadores } from '../../components/ui/Indicadores'
 
 const emptyForm: MedicoForm = {
@@ -47,8 +49,8 @@ export function MedicosPage() {
   const routeEditingId = editRouteMatch ? Number(editRouteMatch.params.id) : null
   const isEditRoute = routeEditingId !== null && Number.isInteger(routeEditingId)
   const isFormRoute = isCreateRoute || isEditRoute
-  const [busca, setBusca] = useState('')
-  const [draftBusca, setDraftBusca] = useState('')
+  const { filters, page, setFilters, setPage, searchParams } = useListaNaUrl({ busca: '' })
+  const [draftBusca, setDraftBusca] = useState(filters.busca)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [form, setForm] = useState<MedicoForm>(emptyForm)
   const [formError, setFormError] = useState<string | null>(null)
@@ -59,11 +61,13 @@ export function MedicosPage() {
     direcao: 'asc',
   })
 
-  const medicosQuery = useMedicos(busca, ordenacao)
+  const medicosQuery = useMedicos(filters.busca, ordenacao, page)
   const criarMedico = useCriarMedico()
   const atualizarMedico = useAtualizarMedico()
 
-  const medicos = useMemo(() => medicosQuery.data ?? [], [medicosQuery.data])
+  const medicos = useMemo(() => medicosQuery.data?.data ?? [], [medicosQuery.data])
+  const totalPages = medicosQuery.data?.meta?.last_page ?? 1
+  const query = searchParams.toString()
   const medicoEmEdicao = useMemo(
     () => (isEditRoute ? medicos.find((medico) => medico.id === routeEditingId) ?? null : null),
     [isEditRoute, routeEditingId, medicos],
@@ -95,11 +99,11 @@ export function MedicosPage() {
 
   const handleFilterSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    setBusca(draftBusca.trim())
+    setFilters({ busca: draftBusca.trim() })
   }
 
   const handleNew = () => {
-    navigate('/medicos/novo')
+    navigate({ pathname: '/medicos/novo', search: query })
     setEditingId(null)
     setForm(emptyForm)
     setFormError(null)
@@ -123,7 +127,7 @@ export function MedicosPage() {
       setForm(emptyForm)
       setEditingId(null)
       carregadoRef.current = null
-      navigate('/medicos')
+      navigate({ pathname: '/medicos', search: query })
     } catch (error) {
       setFormError(getHttpErrorMessage(error, 'Não foi possível salvar o médico.'))
     }
@@ -133,7 +137,7 @@ export function MedicosPage() {
     setEditingId(medico.id)
     setForm(toForm(medico))
     setFormError(null)
-    navigate(`/medicos/${medico.id}/editar`)
+    navigate({ pathname: `/medicos/${medico.id}/editar`, search: query })
   }
 
   const handleToggleAtivo = async (medico: Medico) => {
@@ -154,7 +158,7 @@ export function MedicosPage() {
     setForm(emptyForm)
     setFormError(null)
     carregadoRef.current = null
-    navigate('/medicos')
+    navigate({ pathname: '/medicos', search: query })
   }
 
   return (
@@ -178,9 +182,9 @@ export function MedicosPage() {
 
         <Indicadores
           itens={[
-            { rotulo: 'Total', valor: medicos.length },
-            { rotulo: 'Ativos', valor: totalAtivos },
-            { rotulo: 'Inativos', valor: totalInativos },
+            { rotulo: 'Total', valor: medicosQuery.data?.meta?.total ?? medicos.length },
+            { rotulo: 'Ativos (pág.)', valor: totalAtivos },
+            { rotulo: 'Inativos (pág.)', valor: totalInativos },
           ]}
         />
       </section>
@@ -446,6 +450,8 @@ export function MedicosPage() {
             </table>
           </div>
         )}
+
+        <Paginacao page={page} totalPages={totalPages} onChange={setPage} />
       </section>
       ) : null}
     </div>

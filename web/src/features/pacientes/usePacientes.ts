@@ -2,9 +2,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '../../api/client'
 import { getHttpErrorMessage } from '../../lib/httpError'
 import type { LeituraCarteirinha, Paciente, PacienteForm } from './types'
+import type { ListMeta } from '../../lib/queries/useReferenceData'
 
-type ListResponse<T> = {
+type PaginatedListResponse<T> = {
   data: T[]
+  meta?: ListMeta
 }
 
 export type PacientesConsulta = {
@@ -16,11 +18,11 @@ export type PacientesConsulta = {
   direcao: 'asc' | 'desc'
 }
 
-export function usePacientesCrud(consulta: PacientesConsulta) {
+export function usePacientesCrud(consulta: PacientesConsulta, page?: number) {
   return useQuery({
-    queryKey: ['pacientes', 'crud', consulta],
+    queryKey: ['pacientes', 'crud', consulta, page],
     queryFn: async () => {
-      const { data } = await apiClient.get<ListResponse<Paciente>>('/pacientes', {
+      const { data } = await apiClient.get<PaginatedListResponse<Paciente>>('/pacientes', {
         params: {
           busca: consulta.busca || undefined,
           convenio_id: consulta.convenio_id || undefined,
@@ -28,10 +30,11 @@ export function usePacientesCrud(consulta: PacientesConsulta) {
           carteirinha: consulta.carteirinha || undefined,
           ordenar_por: consulta.ordenar_por || undefined,
           direcao: consulta.direcao,
+          page,
         },
       })
 
-      return data.data
+      return data
     },
   })
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { Botao } from '../../components/ui/Botao'
 import { Select } from '../../components/ui/Select'
 import { useEspecialidades, useProfissionais } from '../../lib/queries/useReferenceData'
@@ -28,6 +28,8 @@ export function GuiaEditarPage() {
   const { id } = useParams()
   const guiaId = id && /^\d+$/.test(id) ? Number(id) : null
   const navigate = useNavigate()
+  const location = useLocation()
+  const voltarPara = (location.state as { from?: string } | null)?.from ?? '/guias'
 
   const guiaQuery = useGuia(guiaId)
   const especialidadesQuery = useEspecialidades()
@@ -69,7 +71,7 @@ export function GuiaEditarPage() {
 
     try {
       await atualizar.mutateAsync({ id: guiaId, payload: form })
-      navigate('/guias')
+      navigate(voltarPara)
     } catch (error) {
       setErro(getHttpErrorMessage(error, 'Não foi possível salvar as alterações.'))
     }
@@ -79,7 +81,7 @@ export function GuiaEditarPage() {
 
   return (
     <div className="space-y-6" data-testid="guia-editar-page">
-      <Link to="/guias" className="inline-flex min-h-6 items-center text-corpo font-semibold text-cyan-200 hover:text-cyan-100">
+      <Link to={voltarPara} className="inline-flex min-h-6 items-center text-corpo font-semibold text-cyan-200 hover:text-cyan-100">
         ← Voltar para guias
       </Link>
 
@@ -281,7 +283,7 @@ export function GuiaEditarPage() {
             <Botao type="submit" variante="primario" disabled={atualizar.isPending} data-testid="guia-editar-salvar">
               {atualizar.isPending ? 'Salvando...' : 'Salvar alterações'}
             </Botao>
-            <Botao variante="secundario" onClick={() => navigate('/guias')}>
+            <Botao variante="secundario" onClick={() => navigate(voltarPara)}>
               Cancelar
             </Botao>
           </div>

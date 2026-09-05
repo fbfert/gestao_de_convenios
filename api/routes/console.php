@@ -9,6 +9,7 @@ use App\Jobs\ExpurgarCarteirinhasJob;
 use App\Jobs\SincronizarClinicaJob;
 use App\Jobs\VerificarGuiasDiarioJob;
 use App\Models\AutomacaoEvento;
+use App\Models\Medico;
 use Illuminate\Support\Facades\Storage;
 
 Artisan::command('inspire', function () {
@@ -50,6 +51,22 @@ Artisan::command('automacao:limpar-evidencias {--dry-run} {--days=30}', function
         'deleted' => $dryRun ? [] : $candidates,
     ], JSON_PRETTY_PRINT));
 })->purpose('Limpa evidencias tecnicas antigas sem remover documentos medicos.');
+
+Artisan::command('medicos:normalizar-nomes', function () {
+    $atualizados = 0;
+
+    Medico::query()->chunkById(200, function ($medicos) use (&$atualizados) {
+        foreach ($medicos as $medico) {
+            $medico->nome = $medico->nome; // dispara o mutator, que remove o prefixo se houver
+            if ($medico->isDirty('nome')) {
+                $medico->save();
+                $atualizados++;
+            }
+        }
+    });
+
+    $this->info("Nomes normalizados: {$atualizados}");
+})->purpose('Remove prefixos "Dr./Dra." (e variacoes) do nome de medicos ja cadastrados.');
 
 Schedule::job(new VerificarGuiasDiarioJob)->dailyAt('02:00');
 Schedule::job(new EnfileirarConsultasUnimedDueJob)->everyThirtyMinutes()->withoutOverlapping();

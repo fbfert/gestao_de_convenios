@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { ColunaOrdenavel } from '../../components/ui/ColunaOrdenavel'
 import { useOrdenacao } from '../../lib/useOrdenacao'
+import { useListaNaUrl } from '../../lib/useListaNaUrl'
 import { Link, useMatch, useNavigate } from 'react-router-dom'
 import { Badge } from '../../components/ui/Badge'
 import { Botao } from '../../components/ui/Botao'
+import { Paginacao } from '../../components/ui/Paginacao'
 import { Select } from '../../components/ui/Select'
 import { translateStatus } from '../../lib/statusLabels'
 import { formatCarteirinha } from '../../lib/carteirinha'
@@ -76,9 +78,8 @@ export function GuiasPage() {
   const pode = usePode()
   const navigate = useNavigate()
   const isCreateRoute = useMatch('/guias/nova') !== null
-  const [filters, setFilters] = useState(defaultFilters)
-  const [draftFilters, setDraftFilters] = useState(defaultFilters)
-  const [page, setPage] = useState(1)
+  const { filters, page, setFilters, setPage, searchParams } = useListaNaUrl(defaultFilters)
+  const [draftFilters, setDraftFilters] = useState(filters)
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [form, setForm] = useState<GuiaForm>(emptyForm)
   const [formError, setFormError] = useState<string | null>(null)
@@ -110,6 +111,8 @@ export function GuiasPage() {
   const profissionaisFiltro = useMemo(() => profissionaisFiltroQuery.data ?? [], [profissionaisFiltroQuery.data])
   const guias = guiasQuery.data?.data ?? []
   const totalPages = guiasQuery.data?.meta?.last_page ?? 1
+  const query = searchParams.toString()
+  const fromHref = query ? `/guias?${query}` : '/guias'
 
   const formIsReady =
     convenios.length > 0 &&
@@ -159,12 +162,11 @@ export function GuiasPage() {
 
   const handleFilterSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    setPage(1)
     setFilters(draftFilters)
   }
 
   const handleNew = () => {
-    navigate('/guias/nova')
+    navigate({ pathname: '/guias/nova', search: query })
     setForm(emptyForm)
     setFormError(null)
   }
@@ -183,7 +185,7 @@ export function GuiasPage() {
         profissional_id: current.profissional_id,
       }))
       if (isCreateRoute) {
-        navigate('/guias')
+        navigate({ pathname: '/guias', search: query })
       } else {
         setIsFormOpen(false)
       }
@@ -195,11 +197,7 @@ export function GuiasPage() {
   const toggleVencendoBadge = () => {
     const threshold = String(SENHA_VENCENDO_EM_DIAS)
     const nextValue = draftFilters.validade_senha_vencendo_em_dias === threshold ? '' : threshold
-    setPage(1)
-    setFilters((current) => ({
-      ...current,
-      validade_senha_vencendo_em_dias: nextValue,
-    }))
+    setFilters({ ...filters, validade_senha_vencendo_em_dias: nextValue })
     setDraftFilters((current) => ({
       ...current,
       validade_senha_vencendo_em_dias: nextValue,
@@ -208,11 +206,7 @@ export function GuiasPage() {
 
   const toggleADefinirBadge = () => {
     const nextValue = draftFilters.mostrar_a_definir === '1' ? '' : '1'
-    setPage(1)
-    setFilters((current) => ({
-      ...current,
-      mostrar_a_definir: nextValue,
-    }))
+    setFilters({ ...filters, mostrar_a_definir: nextValue })
     setDraftFilters((current) => ({
       ...current,
       mostrar_a_definir: nextValue,
@@ -225,12 +219,7 @@ export function GuiasPage() {
   // campo se ficassem preenchidos ao mesmo tempo.
   const toggleHistoricoBadge = () => {
     const nextValue = draftFilters.mostrar_historico === '1' ? '' : '1'
-    setPage(1)
-    setFilters((current) => ({
-      ...current,
-      status: '',
-      mostrar_historico: nextValue,
-    }))
+    setFilters({ ...filters, status: '', mostrar_historico: nextValue })
     setDraftFilters((current) => ({
       ...current,
       status: '',
@@ -419,7 +408,7 @@ export function GuiasPage() {
                 variante="secundario"
                 onClick={() => {
                   if (isCreateRoute) {
-                    navigate('/guias')
+                    navigate({ pathname: '/guias', search: query })
                     return
                   }
 
@@ -748,7 +737,7 @@ export function GuiasPage() {
                   {guias.map((guia) => (
                     <tr key={guia.id} data-testid={`guia-row-${guia.id}`}>
                       <td data-rotulo="Nº Guia" className="px-4 py-4 font-medium text-white">
-                        <Link to={`/guias/${guia.id}`} className="inline-flex min-h-6 items-center font-semibold text-texto decoration-acento/60 underline-offset-4 transition hover:underline hover:text-acento-intenso">
+                        <Link to={`/guias/${guia.id}`} state={{ from: fromHref }} className="inline-flex min-h-6 items-center font-semibold text-texto decoration-acento/60 underline-offset-4 transition hover:underline hover:text-acento-intenso">
                           {guia.numero_guia ?? 'Aguardando número'}
                         </Link>
                       </td>
@@ -885,6 +874,7 @@ export function GuiasPage() {
                             {pode('guias.manage') ? (
                               <Link
                                 to={`/guias/${guia.id}/editar`}
+                                state={{ from: fromHref }}
                                 className="block w-full rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-center text-meta font-semibold text-white transition hover:bg-white/10"
                                 data-testid={`guia-editar-${guia.id}`}
                               >
@@ -908,29 +898,7 @@ export function GuiasPage() {
           </div>
         )}
 
-        <div className="flex items-center justify-between gap-3">
-          <button
-            type="button"
-            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-corpo font-medium text-white transition hover:bg-white/10 disabled:opacity-50"
-            onClick={() => setPage((current) => Math.max(1, current - 1))}
-            disabled={page <= 1 || guiasQuery.isFetching}
-          >
-            Anterior
-          </button>
-
-          <p className="inline-flex min-h-6 items-center text-corpo text-slate-300">
-            Página {page} de {totalPages}
-          </p>
-
-          <button
-            type="button"
-            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-corpo font-medium text-white transition hover:bg-white/10 disabled:opacity-50"
-            onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
-            disabled={page >= totalPages || guiasQuery.isFetching}
-          >
-            Próxima
-          </button>
-        </div>
+        <Paginacao page={page} totalPages={totalPages} onChange={setPage} />
       </section>
       ) : null}
 

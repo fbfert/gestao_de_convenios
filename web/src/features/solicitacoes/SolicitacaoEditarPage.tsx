@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import type { MedicoRef } from '../../lib/queries/useReferenceData'
 import {
   getHttpErrorMessage,
@@ -26,6 +26,8 @@ export function SolicitacaoEditarPage() {
   const { id } = useParams()
   const solicitacaoId = id && /^\d+$/.test(id) ? Number(id) : null
   const navigate = useNavigate()
+  const location = useLocation()
+  const voltarPara = (location.state as { from?: string } | null)?.from ?? '/solicitacoes'
 
   const solicitacaoQuery = useSolicitacao(solicitacaoId)
   const atualizar = useAtualizarSolicitacao()
@@ -63,7 +65,7 @@ export function SolicitacaoEditarPage() {
 
     try {
       await atualizar.mutateAsync({ id: solicitacaoId, payload: form })
-      navigate('/solicitacoes')
+      navigate(voltarPara)
     } catch (error) {
       setErro(getHttpErrorMessage(error, 'Não foi possível salvar as alterações.'))
     }
@@ -73,7 +75,7 @@ export function SolicitacaoEditarPage() {
 
   return (
     <div className="space-y-6" data-testid="solicitacao-editar-page">
-      <Link to="/solicitacoes" className="inline-flex min-h-6 items-center text-corpo font-semibold text-cyan-200 hover:text-cyan-100">
+      <Link to={voltarPara} className="inline-flex min-h-6 items-center text-corpo font-semibold text-cyan-200 hover:text-cyan-100">
         ← Voltar para solicitações
       </Link>
 
@@ -181,7 +183,7 @@ export function SolicitacaoEditarPage() {
             >
               {atualizar.isPending ? 'Salvando...' : 'Salvar alterações'}
             </Botao>
-            <Botao type="button" variante="secundario" onClick={() => navigate('/solicitacoes')}>
+            <Botao type="button" variante="secundario" onClick={() => navigate(voltarPara)}>
               Cancelar
             </Botao>
           </div>

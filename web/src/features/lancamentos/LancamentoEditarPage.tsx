@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { Botao } from '../../components/ui/Botao'
 import { Select } from '../../components/ui/Select'
 import { useProfissionais } from '../../lib/queries/useReferenceData'
@@ -28,6 +28,8 @@ export function LancamentoEditarPage() {
   const { id } = useParams()
   const lancamentoId = id && /^\d+$/.test(id) ? Number(id) : null
   const navigate = useNavigate()
+  const location = useLocation()
+  const voltarPara = (location.state as { from?: string } | null)?.from ?? '/lancamentos'
 
   const lancamentoQuery = useLancamento(lancamentoId)
   const profissionaisQuery = useProfissionais()
@@ -63,7 +65,7 @@ export function LancamentoEditarPage() {
 
     try {
       await atualizar.mutateAsync({ id: lancamentoId, payload: form })
-      navigate('/lancamentos')
+      navigate(voltarPara)
     } catch (error) {
       setErro(getHttpErrorMessage(error, 'Não foi possível salvar as alterações.'))
     }
@@ -73,7 +75,7 @@ export function LancamentoEditarPage() {
 
   return (
     <div className="space-y-6" data-testid="lancamento-editar-page">
-      <Link to="/lancamentos" className="inline-flex min-h-6 items-center text-corpo font-semibold text-cyan-200 hover:text-cyan-100">
+      <Link to={voltarPara} className="inline-flex min-h-6 items-center text-corpo font-semibold text-cyan-200 hover:text-cyan-100">
         ← Voltar para sessões
       </Link>
 
@@ -198,7 +200,7 @@ export function LancamentoEditarPage() {
             <Botao type="submit" variante="primario" disabled={atualizar.isPending} data-testid="lancamento-editar-salvar">
               {atualizar.isPending ? 'Salvando...' : 'Salvar alterações'}
             </Botao>
-            <Botao variante="secundario" onClick={() => navigate('/lancamentos')}>
+            <Botao variante="secundario" onClick={() => navigate(voltarPara)}>
               Cancelar
             </Botao>
           </div>

@@ -113,7 +113,7 @@ class GerarGuiaUnimedApiTest extends TestCase
         $execucao = app(GerarGuiaUnimedService::class)->enviar($item);
         $payload = app(GerarGuiaUnimedService::class)->payloadParaWorker($execucao);
 
-        $this->assertSame('Dr. Carlos Almeida', $payload['medico']['nome']);
+        $this->assertSame('Carlos Almeida', $payload['medico']['nome']);
         $this->assertNotEmpty($payload['medico']['crm']);
         $this->assertNotEmpty($payload['codigo_procedimento']);
         $this->assertNotEmpty($payload['codigo_profissional_operadora']);

@@ -175,6 +175,77 @@ export function normalize(value) {
   return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase()
 }
 
+const CONECTORES_NOME = new Set(['DE', 'DA', 'DO', 'DOS', 'DAS', 'E'])
+
+// O portal cadastra o cooperado sem "Dr./Dra." \u2014 mantido no nome que
+// buscamos, esse prefixo s\u00f3 atrapalha a compara\u00e7\u00e3o. Exige espa\u00e7o (ou ponto
+// seguido de espa\u00e7o) depois do prefixo pra n\u00e3o cortar nomes que por acaso
+// comecem com essas letras (ex. "Drica").
+export function stripPrefixoDr(value) {
+  return String(value ?? '').replace(/^(dr|dra)\.?\s+/i, '')
+}
+
+function tokenizarNome(value) {
+  return normalize(stripPrefixoDr(String(value ?? '')))
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((token) => token.replace(/\.$/, ''))
+}
+
+/**
+ * Similaridade 0-100 entre um nome lido (possivelmente abreviado, ex. "Edison
+ * T. F. A. Westarb") e um nome candidato completo do portal, tolerando
+ * iniciais no meio do nome.
+ *
+ * Mesma l\u00f3gica do lado API (`NomeMedicoNormalizer::similaridadeAproximada` em
+ * api/app/Support/NomeMedicoNormalizer.php) \u2014 mantenha as duas em sincronia.
+ *
+ * Primeiro e \u00faltimo token (nome e sobrenome) precisam bater exatamente; sem
+ * isso o score \u00e9 0 \u2014 nunca um "quase certo" com sobrenome diferente. Tokens
+ * do meio contam como batidos se forem iguais ou uma inicial de um token do
+ * candidato (ignorando conectores como "de", "da", "dos").
+ */
+export function compararNomes(nomeLido, nomeCandidato) {
+  const tokensLido = tokenizarNome(nomeLido)
+  const tokensCandidato = tokenizarNome(nomeCandidato)
+
+  if (tokensLido.length === 0 || tokensCandidato.length === 0) return 0
+
+  const primeiroOk = tokensLido[0] === tokensCandidato[0]
+  const ultimoOk = tokensLido[tokensLido.length - 1] === tokensCandidato[tokensCandidato.length - 1]
+
+  if (!primeiroOk || !ultimoOk) return 0
+
+  const meioLido = tokensLido.slice(1, -1)
+  const meioCandidato = tokensCandidato.slice(1, -1).filter((token) => !CONECTORES_NOME.has(token))
+
+  if (meioLido.length === 0) return 100
+
+  let indice = 0
+  let casados = 0
+
+  for (const token of meioLido) {
+    let encontrado = -1
+    for (let i = indice; i < meioCandidato.length; i += 1) {
+      const candidatoToken = meioCandidato[i]
+      if (candidatoToken === token || (token.length === 1 && candidatoToken.startsWith(token))) {
+        encontrado = i
+        break
+      }
+    }
+    if (encontrado !== -1) {
+      casados += 1
+      indice = encontrado + 1
+    }
+  }
+
+  return Math.round(60 + (40 * casados) / meioLido.length)
+}
+
+export const LIMIAR_AUTO_ACEITE_NOME = 90
+export const LIMIAR_MINIMO_SUGESTAO_NOME = 60
+
 export class WorkerResultError extends Error {
   constructor(result) {
     super(result.message ?? result.error_code ?? 'Worker result error')

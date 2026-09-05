@@ -1,6 +1,7 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import { ColunaOrdenavel } from '../../components/ui/ColunaOrdenavel'
 import { useOrdenacao } from '../../lib/useOrdenacao'
+import { useListaNaUrl } from '../../lib/useListaNaUrl'
 import { Link, useNavigate } from 'react-router-dom'
 import { Select } from '../../components/ui/Select'
 import { translateStatus } from '../../lib/statusLabels'
@@ -10,6 +11,7 @@ import type { AntecipacaoFilters } from './types'
 import { Tooltip } from '../../components/ui/Tooltip'
 import { usePode } from '../../lib/permissoes'
 import { Botao } from '../../components/ui/Botao'
+import { Paginacao } from '../../components/ui/Paginacao'
 
 const defaultFilters: AntecipacaoFilters = {
   status: '',
@@ -44,9 +46,8 @@ function temSessaoFutura(antecipacao: {
 export function AntecipacoesPage() {
   const pode = usePode()
   const navigate = useNavigate()
-  const [filters, setFilters] = useState(defaultFilters)
-  const [draftFilters, setDraftFilters] = useState(defaultFilters)
-  const [page, setPage] = useState(1)
+  const { filters, page, setFilters, setPage, searchParams } = useListaNaUrl(defaultFilters)
+  const [draftFilters, setDraftFilters] = useState(filters)
 
   const { ordenacao, ordenarPor } = useOrdenacao({
     ordenar_por: 'id',
@@ -61,13 +62,14 @@ export function AntecipacoesPage() {
   const pacientes = useMemo(() => pacientesQuery.data ?? [], [pacientesQuery.data])
   const antecipacoes = antecipacoesQuery.data?.data ?? []
   const totalPages = antecipacoesQuery.data?.meta?.last_page ?? 1
+  const query = searchParams.toString()
+  const fromHref = query ? `/antecipacoes?${query}` : '/antecipacoes'
   const alertasContinuidade = antecipacoes.filter((antecipacao) => {
     return antecipacao.status === 'open' && !temSessaoFutura(antecipacao)
   })
 
   const handleFilterSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    setPage(1)
     setFilters(draftFilters)
   }
 
@@ -301,6 +303,7 @@ export function AntecipacoesPage() {
                       {pode('antecipacoes.manage') ? (
                         <Link
                           to={`/antecipacoes/${antecipacao.id}/editar`}
+                          state={{ from: fromHref }}
                           className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-meta font-semibold text-white transition hover:bg-white/10"
                           data-testid={`antecipacao-editar-${antecipacao.id}`}
                         >
@@ -323,29 +326,7 @@ export function AntecipacoesPage() {
           </div>
         )}
 
-        <div className="flex items-center justify-between gap-3">
-          <button
-            type="button"
-            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-corpo font-medium text-white transition hover:bg-white/10 disabled:opacity-50"
-            onClick={() => setPage((current) => Math.max(1, current - 1))}
-            disabled={page <= 1 || antecipacoesQuery.isFetching}
-          >
-            Anterior
-          </button>
-
-          <p className="inline-flex min-h-6 items-center text-corpo text-slate-300">
-            Página {page} de {totalPages}
-          </p>
-
-          <button
-            type="button"
-            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-corpo font-medium text-white transition hover:bg-white/10 disabled:opacity-50"
-            onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
-            disabled={page >= totalPages || antecipacoesQuery.isFetching}
-          >
-            Próxima
-          </button>
-        </div>
+        <Paginacao page={page} totalPages={totalPages} onChange={setPage} />
       </section>
     </div>
   )

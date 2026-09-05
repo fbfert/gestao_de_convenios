@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import {
   getHttpErrorMessage,
   useAntecipacao,
@@ -26,6 +26,8 @@ export function AntecipacaoEditarPage() {
   const { id } = useParams()
   const antecipacaoId = id && /^\d+$/.test(id) ? Number(id) : null
   const navigate = useNavigate()
+  const location = useLocation()
+  const voltarPara = (location.state as { from?: string } | null)?.from ?? '/antecipacoes'
 
   const antecipacaoQuery = useAntecipacao(antecipacaoId)
   const atualizar = useAtualizarAntecipacao()
@@ -58,7 +60,7 @@ export function AntecipacaoEditarPage() {
 
     try {
       await atualizar.mutateAsync({ id: antecipacaoId, payload: form })
-      navigate('/antecipacoes')
+      navigate(voltarPara)
     } catch (error) {
       setErro(getHttpErrorMessage(error, 'Não foi possível salvar as alterações.'))
     }
@@ -80,7 +82,7 @@ export function AntecipacaoEditarPage() {
   return (
     <>
     <div className="space-y-6 print:hidden" data-testid="antecipacao-editar-page">
-      <Link to="/antecipacoes" className="inline-flex min-h-6 items-center text-corpo font-semibold text-cyan-200 hover:text-cyan-100">
+      <Link to={voltarPara} className="inline-flex min-h-6 items-center text-corpo font-semibold text-cyan-200 hover:text-cyan-100">
         ← Voltar para antecipações
       </Link>
 
@@ -178,7 +180,7 @@ export function AntecipacaoEditarPage() {
             <Botao type="submit" carregando={atualizar.isPending} data-testid="antecipacao-editar-salvar">
               {atualizar.isPending ? 'Salvando...' : 'Salvar alterações'}
             </Botao>
-            <Botao type="button" variante="secundario" onClick={() => navigate('/antecipacoes')}>
+            <Botao type="button" variante="secundario" onClick={() => navigate(voltarPara)}>
               Cancelar
             </Botao>
           </div>

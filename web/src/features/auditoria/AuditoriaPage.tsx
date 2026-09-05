@@ -2,6 +2,8 @@ import { useMemo, useState, type FormEvent } from 'react'
 import { Select } from '../../components/ui/Select'
 import { Tooltip } from '../../components/ui/Tooltip'
 import { Botao } from '../../components/ui/Botao'
+import { Paginacao } from '../../components/ui/Paginacao'
+import { useListaNaUrl } from '../../lib/useListaNaUrl'
 import {
   exportarAuditoria,
   getHttpErrorMessage,
@@ -152,9 +154,13 @@ function Evento({ item }: { item: AuditItem }) {
 }
 
 export function AuditoriaPage() {
-  const [filtros, setFiltros] = useState<AuditFiltros>(filtrosVazios)
-  const [rascunho, setRascunho] = useState<AuditFiltros>(filtrosVazios)
-  const [pagina, setPagina] = useState(1)
+  const {
+    filters: filtros,
+    page: pagina,
+    setFilters: setFiltros,
+    setPage: setPagina,
+  } = useListaNaUrl<AuditFiltros>(filtrosVazios)
+  const [rascunho, setRascunho] = useState<AuditFiltros>(filtros)
   const [erro, setErro] = useState<string | null>(null)
   const [exportando, setExportando] = useState(false)
 
@@ -173,14 +179,12 @@ export function AuditoriaPage() {
 
   const aplicar = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    setPagina(1)
     setFiltros(rascunho)
   }
 
   const limpar = () => {
     setRascunho(filtrosVazios)
     setFiltros(filtrosVazios)
-    setPagina(1)
   }
 
   const exportar = async () => {
@@ -364,31 +368,7 @@ export function AuditoriaPage() {
         )}
       </section>
 
-      {totalPaginas > 1 ? (
-        <div className="flex items-center justify-between gap-4">
-          <button
-            type="button"
-            onClick={() => setPagina((atual) => Math.max(1, atual - 1))}
-            disabled={pagina <= 1}
-            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-corpo text-white transition hover:bg-white/10 disabled:opacity-40"
-          >
-            Anterior
-          </button>
-
-          <span className="inline-flex min-h-6 items-center text-corpo text-slate-300">
-            Página {pagina} de {totalPaginas}
-          </span>
-
-          <button
-            type="button"
-            onClick={() => setPagina((atual) => Math.min(totalPaginas, atual + 1))}
-            disabled={pagina >= totalPaginas}
-            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-corpo text-white transition hover:bg-white/10 disabled:opacity-40"
-          >
-            Próxima
-          </button>
-        </div>
-      ) : null}
+      {totalPaginas > 1 ? <Paginacao page={pagina} totalPages={totalPaginas} onChange={setPagina} /> : null}
     </div>
   )
 }

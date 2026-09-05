@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { ColunaOrdenavel } from '../../components/ui/ColunaOrdenavel'
 import { useOrdenacao } from '../../lib/useOrdenacao'
+import { useListaNaUrl } from '../../lib/useListaNaUrl'
 import { Botao } from '../../components/ui/Botao'
+import { Paginacao } from '../../components/ui/Paginacao'
 import { Indicadores } from '../../components/ui/Indicadores'
 import { Link, useMatch, useNavigate, useSearchParams } from 'react-router-dom'
 import { translateStatus } from '../../lib/statusLabels'
@@ -57,9 +59,8 @@ export function LancamentosPage() {
   const [searchParams] = useSearchParams()
   const initialAntecipacaoId = searchParams.get('antecipacao_id') ?? ''
 
-  const [filters, setFilters] = useState(defaultFilters)
-  const [draftFilters, setDraftFilters] = useState(defaultFilters)
-  const [page, setPage] = useState(1)
+  const { filters, page, setFilters, setPage, searchParams: paginaSearchParams } = useListaNaUrl(defaultFilters)
+  const [draftFilters, setDraftFilters] = useState(filters)
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [form, setForm] = useState<LancamentoForm>({
     ...emptyForm,
@@ -82,6 +83,8 @@ export function LancamentosPage() {
   const antecipacoes = useMemo(() => antecipacoesQuery.data?.data ?? [], [antecipacoesQuery.data])
   const lancamentos = lancamentosQuery.data?.data ?? []
   const totalPages = lancamentosQuery.data?.meta?.last_page ?? 1
+  const query = paginaSearchParams.toString()
+  const fromHref = query ? `/lancamentos?${query}` : '/lancamentos'
 
   useEffect(() => {
     if (antecipacoes.length === 0) {
@@ -111,12 +114,11 @@ export function LancamentosPage() {
 
   const handleFilterSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    setPage(1)
     setFilters(draftFilters)
   }
 
   const handleNew = () => {
-    navigate('/lancamentos/novo')
+    navigate({ pathname: '/lancamentos/novo', search: query })
     setForm((current) => ({
       ...emptyForm,
       antecipacao_id: current.antecipacao_id || initialAntecipacaoId || current.antecipacao_id,
@@ -132,7 +134,7 @@ export function LancamentosPage() {
     try {
       await criarLancamento.mutateAsync(form)
       if (isCreateRoute) {
-        navigate('/lancamentos')
+        navigate({ pathname: '/lancamentos', search: query })
       } else {
         setIsFormOpen(false)
       }
@@ -250,7 +252,7 @@ export function LancamentosPage() {
                 variante="secundario"
                 onClick={() => {
                   if (isCreateRoute) {
-                    navigate('/lancamentos')
+                    navigate({ pathname: '/lancamentos', search: query })
                     return
                   }
 
@@ -537,6 +539,7 @@ export function LancamentosPage() {
                         {pode('lancamentos.manage') ? (
                           <Link
                             to={`/lancamentos/${lancamento.id}/editar`}
+                            state={{ from: fromHref }}
                             className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-meta font-semibold text-white transition hover:bg-white/10"
                             data-testid={`lancamento-editar-${lancamento.id}`}
                           >
@@ -558,29 +561,7 @@ export function LancamentosPage() {
             </div>
           )}
 
-          <div className="flex items-center justify-between gap-3">
-            <button
-              type="button"
-              className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-corpo font-medium text-white transition hover:bg-white/10 disabled:opacity-50"
-              onClick={() => setPage((current) => Math.max(1, current - 1))}
-              disabled={page <= 1 || lancamentosQuery.isFetching}
-            >
-              Anterior
-            </button>
-
-            <p className="inline-flex min-h-6 items-center text-corpo text-slate-300">
-              Página {page} de {totalPages}
-            </p>
-
-            <button
-              type="button"
-              className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-corpo font-medium text-white transition hover:bg-white/10 disabled:opacity-50"
-              onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
-              disabled={page >= totalPages || lancamentosQuery.isFetching}
-            >
-              Próxima
-            </button>
-          </div>
+          <Paginacao page={page} totalPages={totalPages} onChange={setPage} />
         </section>
         ) : null}
       </div>

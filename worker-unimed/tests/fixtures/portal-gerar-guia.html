@@ -282,7 +282,21 @@
         return
       }
 
-      const providerName = name.includes('NAO COOPERADO') ? 'MEDICO NAO COOPERADO' : 'DR. CARLOS ALMEIDA'
+      let providerName
+      if (name.includes('NAO COOPERADO')) {
+        providerName = 'MEDICO NAO COOPERADO'
+      } else if (scenario === 'provider-name-abbreviated') {
+        // Nome lido abreviado ("Edison T. F. A. Westarb") contra o cadastro
+        // completo do cooperado na Unimed — mesmo exemplo relatado ao vivo.
+        providerName = 'EDISON TEODORO FERREIRA DE ANDRADE WESTARB'
+      } else if (scenario === 'provider-name-ambiguous') {
+        // Nome lido traz um nome do meio que o cadastro cooperado nao tem
+        // ("Carlos EDUARDO Almeida" vs "CARLOS ALMEIDA") — nome e sobrenome
+        // batem, mas nao o bastante pra aceitar sozinho.
+        providerName = 'CARLOS ALMEIDA'
+      } else {
+        providerName = 'DR. CARLOS ALMEIDA'
+      }
       const tr = popupWin.document.createElement('tr')
       tr.setAttribute('data-prestador-row', '')
       tr.innerHTML = \`<td>\${providerName}</td><td>OK - Ativo</td>\`

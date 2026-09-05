@@ -35,7 +35,7 @@ class SolicitacoesApiTest extends TestCase
             ->assertJsonPath('data.convenio_id', $payload['convenio_id'])
             ->assertJsonPath('data.itens.0.quantidade', 10);
         $this->assertSame($payload['medico_id'], $create->json('data.medico_id'));
-        $this->assertSame('Dr. Carlos Almeida', $create->json('data.medico.nome'));
+        $this->assertSame('Carlos Almeida', $create->json('data.medico.nome'));
 
         $id = $create->json('data.id');
         $tenantId = Tenant::query()->where('slug', 'clinica-exemplo')->value('id');
@@ -69,7 +69,7 @@ class SolicitacoesApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.id', $id)
             ->assertJsonPath('data.status', 'under_review')
-            ->assertJsonPath('data.medico.nome', 'Dr. Carlos Almeida')
+            ->assertJsonPath('data.medico.nome', 'Carlos Almeida')
             ->assertJsonPath('data.itens.0.especialidade_id', $payload['especialidade_id'])
             ->assertJsonPath('data.guia.id', $guia->id);
     }
@@ -452,7 +452,7 @@ class SolicitacoesApiTest extends TestCase
         $convenio = Convenio::query()->where('nome', $convenioNome)->firstOrFail();
         $especialidade = Especialidade::query()->where('nome', 'Fisioterapia')->firstOrFail();
         $profissional = Profissional::query()->where('especialidade_id', $especialidade->id)->firstOrFail();
-        $medico = Medico::query()->where('nome', 'Dr. Carlos Almeida')->firstOrFail();
+        $medico = Medico::query()->where('nome', 'Carlos Almeida')->firstOrFail();
 
         return [
             'paciente_id' => $this->pacienteIdPorConvenio($convenio->id),
@@ -520,7 +520,7 @@ class SolicitacoesApiTest extends TestCase
             'convenio_id' => $convenio->id,
             'medico_id' => Medico::query()->create([
                 'tenant_id' => $tenant->id,
-                'nome' => 'Dr. Externo',
+                'nome' => 'Externo',
                 'crm' => 'CRM 999999',
                 'especialidade_medica' => 'Clínica Geral',
                 'telefone' => '(11) 90000-0000',

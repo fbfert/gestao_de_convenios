@@ -3,7 +3,7 @@ import { MoreVertical } from 'lucide-react'
 import { DropdownMenu } from 'radix-ui'
 import { ColunaOrdenavel } from '../../components/ui/ColunaOrdenavel'
 import { useOrdenacao } from '../../lib/useOrdenacao'
-import { Link, useMatch, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useMatch, useNavigate, useSearchParams } from 'react-router-dom'
 import { translateStatus } from '../../lib/statusLabels'
 import { Select } from '../../components/ui/Select'
 import {
@@ -39,6 +39,8 @@ import { Indicadores } from '../../components/ui/Indicadores'
 import { Tooltip } from '../../components/ui/Tooltip'
 import { usePode } from '../../lib/permissoes'
 import { Botao } from '../../components/ui/Botao'
+import { Paginacao } from '../../components/ui/Paginacao'
+import { useListaNaUrl } from '../../lib/useListaNaUrl'
 import { Badge, type BadgeProps } from '../../components/ui/Badge'
 
 const emptyArray: never[] = []
@@ -119,9 +121,15 @@ export function SolicitacoesPage() {
   const navigate = useNavigate()
   const isCreateRoute = useMatch('/solicitacoes/nova') !== null
   const [searchParams] = useSearchParams()
-  const [filters, setFilters] = useState(defaultFilters)
-  const [draftFilters, setDraftFilters] = useState(defaultFilters)
-  const [page, setPage] = useState(1)
+  const location = useLocation()
+  // `state.from` só existe quando chegamos aqui (nova/editar) a partir da
+  // lista — usado pra voltar mantendo página/filtro; `fromHref` é o inverso,
+  // calculado na PRÓPRIA lista a partir da query string atual, pra passar
+  // adiante em `state` (nunca na URL de /nova — essa já usa query string
+  // pra outra coisa: pré-preencher paciente/convênio por deep link).
+  const voltarPara = (location.state as { from?: string } | null)?.from ?? '/solicitacoes'
+  const { filters, page, setFilters, setPage } = useListaNaUrl(defaultFilters)
+  const [draftFilters, setDraftFilters] = useState(filters)
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [selectedSolicitacaoId, setSelectedSolicitacaoId] = useState<number | null>(null)
   const [progressoExecucaoId, setProgressoExecucaoId] = useState<number | null>(null)
@@ -236,6 +244,7 @@ export function SolicitacoesPage() {
   }, [isCreateRoute])
 
   const totalPages = solicitacoesQuery.data?.meta?.last_page ?? 1
+  const fromHref = !isCreateRoute && searchParams.toString() ? `/solicitacoes?${searchParams.toString()}` : '/solicitacoes'
 
   const solicitacoes = useMemo(
     () => solicitacoesQuery.data?.data ?? emptyArray,
@@ -260,7 +269,6 @@ export function SolicitacoesPage() {
 
   const handleFilterSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    setPage(1)
     setFilters(draftFilters)
   }
 
@@ -270,13 +278,12 @@ export function SolicitacoesPage() {
   const toggleHistoricoBadge = () => {
     const ligado = draftFilters.mostrar_historico === '1'
     const proximo = ligado ? '' : '1'
-    setPage(1)
-    setFilters((current) => ({ ...current, status: '', mostrar_historico: proximo }))
+    setFilters({ ...filters, status: '', mostrar_historico: proximo })
     setDraftFilters((current) => ({ ...current, status: '', mostrar_historico: proximo }))
   }
 
   const handleNew = () => {
-    navigate('/solicitacoes/nova')
+    navigate('/solicitacoes/nova', { state: { from: fromHref } })
     setForm((current) => ({
       ...emptyForm,
       convenio_id: current.convenio_id,
@@ -293,7 +300,7 @@ export function SolicitacoesPage() {
     setFormError(null)
     setSolicitacaoCriada(null)
     if (isCreateRoute) {
-      navigate('/solicitacoes')
+      navigate(voltarPara)
       return
     }
 
@@ -325,7 +332,7 @@ export function SolicitacoesPage() {
     }))
     setSolicitacaoCriada(null)
     if (isCreateRoute) {
-      navigate('/solicitacoes')
+      navigate(voltarPara)
     } else {
       setIsFormOpen(false)
     }
@@ -988,6 +995,7 @@ export function SolicitacoesPage() {
                               >
                                 <Link
                                   to={`/solicitacoes/${solicitacao.id}/editar`}
+                                  state={{ from: fromHref }}
                                   data-testid={`solicitacao-editar-${solicitacao.id}`}
                                 >
                                   Editar
@@ -1012,31 +1020,7 @@ export function SolicitacoesPage() {
           </div>
         )}
 
-        <div className="flex items-center justify-between gap-3">
-          <Botao
-            type="button"
-            variante="secundario"
-            tamanho="sm"
-            onClick={() => setPage((current) => Math.max(1, current - 1))}
-            disabled={page <= 1 || solicitacoesQuery.isFetching}
-          >
-            Anterior
-          </Botao>
-
-          <p className="inline-flex min-h-6 items-center text-corpo text-slate-300">
-            Página {page} de {totalPages}
-          </p>
-
-          <Botao
-            type="button"
-            variante="secundario"
-            tamanho="sm"
-            onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
-            disabled={page >= totalPages || solicitacoesQuery.isFetching}
-          >
-            Próxima
-          </Botao>
-        </div>
+        <Paginacao page={page} totalPages={totalPages} onChange={setPage} />
       </section>
       ) : null}
 

@@ -39,7 +39,7 @@ class DatabaseSeeder extends Seeder
             $tenant = Tenant::query()->where('slug', 'clinica-exemplo')->first();
             $especialidade = Especialidade::query()->where('nome', 'Fisioterapia')->first();
             $profissional = Profissional::query()->where('especialidade_id', $especialidade?->id)->first();
-            $medico = Medico::query()->where('nome', 'Dr. Carlos Almeida')->first();
+            $medico = Medico::query()->where('nome', 'Carlos Almeida')->first();
             $convenio = \App\Models\Convenio::query()->where('nome', 'Unimed')->first();
 
             if ($tenant && $especialidade && $profissional && $medico && $convenio) {

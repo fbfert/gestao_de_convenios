@@ -4,9 +4,12 @@ import {
   WorkerResultError,
   abrirBeneficiario,
   atualizarCadastroSeNecessario,
+  compararNomes,
   fillIfVisible,
   hasText,
   login,
+  LIMIAR_AUTO_ACEITE_NOME,
+  LIMIAR_MINIMO_SUGESTAO_NOME,
   mapPortalStatus,
   parseNumber,
   pickValue,
@@ -197,8 +200,12 @@ async function selecionarPrestador(page, medico) {
     await fillIfVisible(popup, '[name="s_nr_crm"], #s_nr_crm', crm)
     await submeterBusca(popup)
     await waitProcessing(popup)
-    if (await escolherPrestadorAtivo(popup, medico.nome)) {
+    const resultado = await buscarPrestadorPorNome(popup, medico.nome)
+    if (resultado.status === 'match') {
       return 'crm'
+    }
+    if (resultado.status === 'ambiguous') {
+      throw ambiguidadeMedicoError(medico.nome, resultado)
     }
     await fecharSePossivel(popup)
   }
@@ -208,8 +215,12 @@ async function selecionarPrestador(page, medico) {
     await fillIfVisible(popup, '[name="s_nm_prestador"], #s_nm_prestador', String(medico.nome ?? ''))
     await submeterBusca(popup)
     await waitProcessing(popup)
-    if (await escolherPrestadorAtivo(popup, medico.nome)) {
+    const resultado = await buscarPrestadorPorNome(popup, medico.nome)
+    if (resultado.status === 'match') {
       return 'nome'
+    }
+    if (resultado.status === 'ambiguous') {
+      throw ambiguidadeMedicoError(medico.nome, resultado)
     }
     await fecharSePossivel(popup)
   }
@@ -420,6 +431,64 @@ async function escolherPrestadorAtivo(page, nomeEsperado) {
   }
 
   return false
+}
+
+/**
+ * Usado só pra escolher o MÉDICO SOLICITANTE (busca por CRM ou por nome) —
+ * `escolherPrestadorAtivo` (substring simples) continua servindo pro
+ * contratado e pro fallback "não cooperado", que não sofrem do problema de
+ * nome abreviado/siglado (ex. "Edison T. F. A. Westarb" pro cadastro
+ * completo "Edison Teodoro Ferreira de Andrade Westarb").
+ *
+ * Varre as linhas ativas, ranqueia cada uma por `compararNomes` e decide pela
+ * melhor candidata: acima do limiar de auto-aceite, clica e segue; numa zona
+ * ambígua, não clica — devolve a sugestão pra quem chamou decidir (nunca
+ * escolhe sozinho um médico que não bateu com confiança, pra não arriscar
+ * submeter a guia com o profissional errado nem mascarar isso como "não
+ * cooperado").
+ */
+async function buscarPrestadorPorNome(page, nomeEsperado) {
+  const rows = page.locator('[data-prestador-row], table tr')
+  const count = await rows.count()
+  let melhor = null
+
+  for (let index = 0; index < count; index += 1) {
+    const row = rows.nth(index)
+    const text = await row.innerText().catch(() => '')
+    const normalized = normalize(text)
+    const active = normalized.includes('OK - ATIVO') || normalized.includes('OK ATIVO')
+    if (!active) continue
+
+    const nomePortal = (await row.locator('td').first().innerText().catch(() => '')).trim()
+    const similaridade = compararNomes(nomeEsperado, nomePortal)
+
+    if (!melhor || similaridade > melhor.similaridade) {
+      melhor = { row, nomePortal, similaridade }
+    }
+  }
+
+  if (!melhor || melhor.similaridade < LIMIAR_MINIMO_SUGESTAO_NOME) {
+    return { status: 'not_found' }
+  }
+
+  if (melhor.similaridade >= LIMIAR_AUTO_ACEITE_NOME) {
+    await melhor.row.locator('button, a, input[type="button"]').first().click({ timeout: DEFAULT_TIMEOUT })
+    await waitProcessing(page)
+    return { status: 'match', nomePortal: melhor.nomePortal, similaridade: melhor.similaridade }
+  }
+
+  return { status: 'ambiguous', nomePortal: melhor.nomePortal, similaridade: melhor.similaridade }
+}
+
+function ambiguidadeMedicoError(nomeLido, resultado) {
+  return new WorkerResultError({
+    status: 'failed',
+    error_code: 'PRESTADOR_NOME_AMBIGUO',
+    message: `Não foi possível confirmar com segurança o prestador solicitante. Sugestão encontrada na Unimed: "${resultado.nomePortal}" (${resultado.similaridade}% de similaridade com "${nomeLido ?? ''}").`,
+    medico_nome_lido: nomeLido ?? null,
+    medico_sugestao_portal: resultado.nomePortal,
+    medico_similaridade: resultado.similaridade,
+  })
 }
 
 /**

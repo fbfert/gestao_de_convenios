@@ -2,6 +2,8 @@ import { useMemo, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ColunaOrdenavel } from '../../components/ui/ColunaOrdenavel'
 import { useOrdenacao } from '../../lib/useOrdenacao'
+import { useListaNaUrl } from '../../lib/useListaNaUrl'
+import { Paginacao } from '../../components/ui/Paginacao'
 import { translateStatus } from '../../lib/statusLabels'
 import { Select } from '../../components/ui/Select'
 import { useConvenios, useEspecialidades, useProfissionais } from '../../lib/queries/useReferenceData'
@@ -74,9 +76,8 @@ function joinUnique(values: Array<string | null | undefined>) {
 export function ConciliacaoPage() {
   const pode = usePode()
   const navigate = useNavigate()
-  const [filters, setFilters] = useState(defaultFilters)
-  const [draftFilters, setDraftFilters] = useState(defaultFilters)
-  const [page, setPage] = useState(1)
+  const { filters, page, setFilters, setPage } = useListaNaUrl(defaultFilters)
+  const [draftFilters, setDraftFilters] = useState(filters)
   const [actionError, setActionError] = useState<string | null>(null)
 
   const { ordenacao, ordenarPor } = useOrdenacao({
@@ -99,7 +100,6 @@ export function ConciliacaoPage() {
 
   const handleFilterSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    setPage(1)
     setFilters(draftFilters)
   }
 
@@ -444,29 +444,7 @@ export function ConciliacaoPage() {
           </div>
         )}
 
-        <div className="flex items-center justify-between gap-3">
-          <button
-            type="button"
-            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-corpo font-medium text-white transition hover:bg-white/10 disabled:opacity-50"
-            onClick={() => setPage((current) => Math.max(1, current - 1))}
-            disabled={page <= 1 || conciliacoesQuery.isFetching}
-          >
-            Anterior
-          </button>
-
-          <p className="inline-flex min-h-6 items-center text-corpo text-slate-300">
-            Página {page} de {totalPages}
-          </p>
-
-          <button
-            type="button"
-            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-corpo font-medium text-white transition hover:bg-white/10 disabled:opacity-50"
-            onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
-            disabled={page >= totalPages || conciliacoesQuery.isFetching}
-          >
-            Próxima
-          </button>
-        </div>
+        <Paginacao page={page} totalPages={totalPages} onChange={setPage} />
       </section>
     </div>
   )

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useLocation, useParams } from 'react-router-dom'
 import { GuiaDetalheResumo } from './GuiaDetalheResumo'
 import { GuiaStatusActions } from './GuiaStatusActions'
 import { getHttpErrorMessage, useBuscarSenhaValidadeGuiaUnimed, useConsultarGuiaUnimed, useGuia } from './useGuias'
@@ -16,6 +16,8 @@ import { HtmlIsolado } from '../../components/ui/HtmlIsolado'
 
 export function GuiaDetalhePage() {
   const { id } = useParams()
+  const location = useLocation()
+  const voltarPara = (location.state as { from?: string } | null)?.from ?? '/guias'
   const guiaId = id && /^\d+$/.test(id) ? Number(id) : null
   const guiaQuery = useGuia(guiaId)
   const consultarGuiaUnimed = useConsultarGuiaUnimed()
@@ -56,7 +58,7 @@ export function GuiaDetalhePage() {
         <p className="text-corpo text-rose-100/80">
           {getHttpErrorMessage(guiaQuery.error, 'Confira o número informado e tente novamente.')}
         </p>
-        <Link to="/guias" className="inline-flex rounded-2xl border border-rose-200/30 px-4 py-2 text-corpo font-semibold">
+        <Link to={voltarPara} className="inline-flex rounded-2xl border border-rose-200/30 px-4 py-2 text-corpo font-semibold">
           Voltar para guias
         </Link>
       </div>
@@ -127,7 +129,7 @@ export function GuiaDetalhePage() {
     <div className="space-y-8 print:hidden" data-testid="guia-detalhe-page">
       <section className="flex flex-col gap-4 sm:items-start lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <Link to="/guias" className="text-corpo font-semibold text-cyan-200 transition hover:text-cyan-100">
+          <Link to={voltarPara} className="text-corpo font-semibold text-cyan-200 transition hover:text-cyan-100">
             ← Voltar para guias
           </Link>
         </div>

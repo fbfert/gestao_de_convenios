@@ -12,6 +12,7 @@ use App\Models\Solicitacao;
 use App\Models\SolicitacaoImportLinha;
 use App\Models\SolicitacaoImportLote;
 use App\Support\Auditoria;
+use App\Support\NomeMedicoNormalizer;
 use Carbon\Carbon;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -494,8 +495,11 @@ class SolicitacaoImportService
 
         // --- médico ---
         $nomeMedico = trim((string) ($bruta['medico'] ?? ''));
+        // Planilha pode trazer o nome com "Dr./Dra." mesmo o cadastro
+        // (Medico::nome) já não tendo mais o prefixo — compara sem ele dos
+        // dois lados pra não depender de qual lado ainda está "sujo".
         $medico = $nomeMedico === '' ? null : $refs['medicos']->first(
-            fn ($item) => mb_strtolower($item->nome) === mb_strtolower($nomeMedico)
+            fn ($item) => mb_strtolower(NomeMedicoNormalizer::semPrefixo($item->nome)) === mb_strtolower(NomeMedicoNormalizer::semPrefixo($nomeMedico))
         );
         if ($nomeMedico === '') {
             $erros['medico'] = 'Médico é obrigatório.';

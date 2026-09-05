@@ -1,8 +1,16 @@
-import { Link, useParams } from 'react-router-dom'
-import { useState, type FormEvent } from 'react'
-import { getHttpErrorMessage, useAutomacao, useAutomacoes, useReprocessarAutomacao } from './useAutomacoes'
-import type { AutomacaoFilters } from './types'
+import { Link, useLocation, useParams } from 'react-router-dom'
+import { useEffect, useState, type FormEvent } from 'react'
+import {
+  getHttpErrorMessage,
+  useAtualizarNomeMedico,
+  useAutomacao,
+  useAutomacoes,
+  useReprocessarAutomacao,
+} from './useAutomacoes'
+import type { AutomacaoExecucao, AutomacaoFilters } from './types'
 import { Botao } from '../../components/ui/Botao'
+import { Paginacao } from '../../components/ui/Paginacao'
+import { useListaNaUrl } from '../../lib/useListaNaUrl'
 import { Badge, type BadgeProps } from '../../components/ui/Badge'
 import { useConfirm } from '../../components/ui/ConfirmDialog'
 import { AutomacaoProgressoModal } from './AutomacaoProgressoModal'
@@ -22,6 +30,32 @@ function attention(status: string) {
   return ['failed', 'uncertain', 'needs_attention'].includes(status)
 }
 
+/**
+ * O worker nunca decide sozinho um médico que não bateu com confiança — só
+ * devolve a melhor sugestão encontrada na Unimed (`buscarPrestadorPorNome`
+ * em worker-unimed/src/operations/gerarGuia.js) pro operador confirmar ou
+ * corrigir aqui.
+ */
+function medicoAmbiguoInfo(execucao: AutomacaoExecucao) {
+  if (execucao.erro_codigo !== 'PRESTADOR_NOME_AMBIGUO') {
+    return null
+  }
+
+  const resultado = execucao.resultado ?? {}
+  const medicoPayload = (execucao.payload?.medico ?? null) as { id?: number; nome?: string } | null
+
+  if (!medicoPayload?.id) {
+    return null
+  }
+
+  return {
+    medicoId: medicoPayload.id,
+    nomeLido: String(resultado.medico_nome_lido ?? medicoPayload.nome ?? ''),
+    sugestaoPortal: String(resultado.medico_sugestao_portal ?? ''),
+    similaridade: Number(resultado.medico_similaridade ?? 0),
+  }
+}
+
 function statusTone(status: string): NonNullable<BadgeProps['tone']> {
   if (attention(status)) {
     return 'perigo'
@@ -36,22 +70,37 @@ function statusTone(status: string): NonNullable<BadgeProps['tone']> {
 
 export function AutomacoesPage() {
   const { id } = useParams()
+  const location = useLocation()
+  const voltarPara = (location.state as { from?: string } | null)?.from ?? '/automacoes'
   const detalheId = id && /^\d+$/.test(id) ? Number(id) : null
-  const [filters, setFilters] = useState(defaultFilters)
-  const [draftFilters, setDraftFilters] = useState(defaultFilters)
-  const [page, setPage] = useState(1)
+  const { filters, page, setFilters, setPage, searchParams } = useListaNaUrl(defaultFilters)
+  const [draftFilters, setDraftFilters] = useState(filters)
   const automacoesQuery = useAutomacoes(filters, page)
   const detalheQuery = useAutomacao(detalheId)
   const reprocessar = useReprocessarAutomacao()
+  const atualizarNomeMedico = useAtualizarNomeMedico()
   const confirmar = useConfirm()
   const [progressoExecucaoId, setProgressoExecucaoId] = useState<number | null>(null)
+  const [nomeCorrigido, setNomeCorrigido] = useState('')
   const automacoes = automacoesQuery.data?.data ?? []
   const totalPages = automacoesQuery.data?.meta?.last_page ?? 1
   const attentionCount = automacoes.filter((item) => item.precisa_atencao).length
+  const query = searchParams.toString()
+  const fromHref = query ? `/automacoes?${query}` : '/automacoes'
+  const execucaoDetalhe = detalheId !== null ? detalheQuery.data : undefined
+  const medicoAmbiguo = execucaoDetalhe ? medicoAmbiguoInfo(execucaoDetalhe) : null
+
+  // Só assume a sugestão da Unimed como valor inicial do campo editável uma
+  // vez por execução — depois disso, o texto é do operador.
+  useEffect(() => {
+    if (medicoAmbiguo) {
+      setNomeCorrigido(medicoAmbiguo.sugestaoPortal)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [execucaoDetalhe?.id])
 
   const handleFilterSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    setPage(1)
     setFilters(draftFilters)
   }
 
@@ -75,13 +124,34 @@ export function AutomacoesPage() {
     }
   }
 
+  const handleConfirmarNomeMedico = async (execucaoId: number, medicoId: number, nome: string) => {
+    const ok = await confirmar({
+      titulo: 'Confirmar médico e tentar novamente',
+      descricao: `Atualiza o cadastro do médico para "${nome}" e reenfileira a execução #${execucaoId}. Confirma?`,
+      confirmarTexto: 'Confirmar e tentar novamente',
+      variante: 'primario',
+    })
+
+    if (!ok) {
+      return
+    }
+
+    try {
+      await atualizarNomeMedico.mutateAsync({ id: medicoId, nome })
+      const nova = await reprocessar.mutateAsync(execucaoId)
+      setProgressoExecucaoId(nova.id)
+    } catch (error) {
+      window.alert(getHttpErrorMessage(error, 'Não foi possível confirmar o médico e reprocessar.'))
+    }
+  }
+
   if (detalheId !== null) {
-    const execucao = detalheQuery.data
+    const execucao = execucaoDetalhe
 
     return (
       <>
       <div className="space-y-6" data-testid="automacao-detalhe-page">
-        <Link to="/automacoes" className="inline-flex min-h-6 items-center text-corpo font-semibold text-cyan-200 hover:text-cyan-100">
+        <Link to={voltarPara} className="inline-flex min-h-6 items-center text-corpo font-semibold text-cyan-200 hover:text-cyan-100">
           ← Voltar para automações
         </Link>
 
@@ -115,6 +185,48 @@ export function AutomacoesPage() {
                 <div className="mt-4 rounded-superficie border border-linha bg-fundo p-4 shadow-e1 text-corpo text-slate-300">
                   Esta execução falhou, mas uma execução mais recente desta guia já teve sucesso — não
                   há mais atenção pendente aqui.
+                </div>
+              ) : null}
+
+              {medicoAmbiguo ? (
+                <div
+                  className="mt-4 space-y-3 rounded-2xl border border-amber-400/30 bg-amber-500/10 p-4 text-corpo text-amber-100"
+                  data-testid="medico-ambiguo-confirmacao"
+                >
+                  <p>
+                    Não foi possível confirmar com segurança o médico solicitante na Unimed.
+                    <br />
+                    Nome lido: <strong>{medicoAmbiguo.nomeLido}</strong>
+                    <br />
+                    Sugestão encontrada no portal: <strong>{medicoAmbiguo.sugestaoPortal}</strong> (
+                    {medicoAmbiguo.similaridade}% de similaridade)
+                  </p>
+
+                  <label className="block space-y-2">
+                    <span className="text-meta uppercase tracking-[0.2em] text-amber-200/80">
+                      Nome correto do médico
+                    </span>
+                    <input
+                      value={nomeCorrigido}
+                      onChange={(event) => setNomeCorrigido(event.target.value)}
+                      className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20"
+                      data-testid="medico-ambiguo-nome-input"
+                    />
+                  </label>
+
+                  <Botao
+                    type="button"
+                    variante="primario"
+                    disabled={
+                      atualizarNomeMedico.isPending || reprocessar.isPending || nomeCorrigido.trim() === ''
+                    }
+                    onClick={() =>
+                      void handleConfirmarNomeMedico(execucao.id, medicoAmbiguo.medicoId, nomeCorrigido.trim())
+                    }
+                    data-testid="medico-ambiguo-confirmar"
+                  >
+                    Confirmar e tentar novamente
+                  </Botao>
                 </div>
               ) : null}
 
@@ -254,7 +366,7 @@ export function AutomacoesPage() {
               {automacoes.map((execucao) => (
                 <tr key={execucao.id}>
                   <td data-rotulo="ID" className="px-4 py-4">
-                    <Link to={`/automacoes/${execucao.id}`} className="inline-flex min-h-6 items-center font-semibold text-texto decoration-acento/60 underline-offset-4 transition hover:underline hover:text-acento-intenso">
+                    <Link to={`/automacoes/${execucao.id}`} state={{ from: fromHref }} className="inline-flex min-h-6 items-center font-semibold text-texto decoration-acento/60 underline-offset-4 transition hover:underline hover:text-acento-intenso">
                       #{execucao.id}
                     </Link>
                   </td>
@@ -288,15 +400,7 @@ export function AutomacoesPage() {
           </table>
         </div>
 
-        <div className="mt-5 flex items-center justify-between">
-          <button type="button" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={page <= 1} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-corpo text-white disabled:opacity-50">
-            Anterior
-          </button>
-          <p className="inline-flex min-h-6 items-center text-corpo text-slate-300">Página {page} de {totalPages}</p>
-          <button type="button" onClick={() => setPage((current) => Math.min(totalPages, current + 1))} disabled={page >= totalPages} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-corpo text-white disabled:opacity-50">
-            Próxima
-          </button>
-        </div>
+        <Paginacao page={page} totalPages={totalPages} onChange={setPage} />
       </section>
     </div>
 

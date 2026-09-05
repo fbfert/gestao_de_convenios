@@ -358,7 +358,7 @@ class GuiasApiTest extends TestCase
         $this->getJson("/api/guias/{$guia->id}")
             ->assertOk()
             ->assertJsonPath('data.medico_solicitante.id', $medico->id)
-            ->assertJsonPath('data.medico_solicitante.nome', 'Dr. Solicitante Teste')
+            ->assertJsonPath('data.medico_solicitante.nome', 'Solicitante Teste')
             ->assertJsonPath('data.medico_solicitante.crm', '11223')
             ->assertJsonPath('data.medico_solicitante.crm_uf', 'SC')
             ->assertJsonPath('data.medico_unimed_strategy', 'nao_cooperado');

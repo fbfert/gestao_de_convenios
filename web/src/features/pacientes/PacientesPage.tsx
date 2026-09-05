@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { useMatch, useNavigate } from 'react-router-dom'
 import { useConvenios } from '../../lib/queries/useReferenceData'
+import { useListaNaUrl } from '../../lib/useListaNaUrl'
+import { Paginacao } from '../../components/ui/Paginacao'
 import { Select } from '../../components/ui/Select'
 import { getHttpErrorMessage, useAtualizarPaciente, useCriarPaciente, usePacientesCrud } from './usePacientes'
 import {
@@ -95,8 +97,8 @@ export function PacientesPage() {
   const routeEditingId = editRouteMatch ? Number(editRouteMatch.params.id) : null
   const isEditRoute = routeEditingId !== null && Number.isInteger(routeEditingId)
   const isFormRoute = isCreateRoute || isEditRoute
-  const [filtros, setFiltros] = useState<PacientesConsulta>(filtrosVazios)
-  const [rascunho, setRascunho] = useState<PacientesConsulta>(filtrosVazios)
+  const { filters: filtros, page, setFilters: setFiltros, setPage, searchParams } = useListaNaUrl<PacientesConsulta>(filtrosVazios)
+  const [rascunho, setRascunho] = useState<PacientesConsulta>(filtros)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [form, setForm] = useState<PacienteForm>(emptyForm)
   // Os blocos vivem em estado próprio: derivá-los de form.carteirinha fazia os dígitos
@@ -107,12 +109,14 @@ export function PacientesPage() {
   const [duplicadosVisivel, setDuplicadosVisivel] = useState(false)
   const carregadoPacienteRef = useRef<number | null>(null)
 
-  const pacientesQuery = usePacientesCrud(filtros)
+  const pacientesQuery = usePacientesCrud(filtros, page)
   const conveniosQuery = useConvenios()
   const criarPaciente = useCriarPaciente()
   const atualizarPaciente = useAtualizarPaciente()
 
-  const pacientes = useMemo(() => pacientesQuery.data ?? [], [pacientesQuery.data])
+  const pacientes = useMemo(() => pacientesQuery.data?.data ?? [], [pacientesQuery.data])
+  const totalPages = pacientesQuery.data?.meta?.last_page ?? 1
+  const query = searchParams.toString()
   const pacienteEmEdicao = useMemo(
     () => (isEditRoute ? pacientes.find((paciente) => paciente.id === routeEditingId) ?? null : null),
     [isEditRoute, routeEditingId, pacientes],
@@ -203,7 +207,7 @@ export function PacientesPage() {
   }
 
   const handleNew = () => {
-    navigate('/pacientes/novo')
+    navigate({ pathname: '/pacientes/novo', search: query })
     setEditingId(null)
     setForm(emptyForm)
     setBlocosDigitados([])
@@ -219,7 +223,7 @@ export function PacientesPage() {
         : [],
     )
     setFormError(null)
-    navigate(`/pacientes/${paciente.id}/editar`)
+    navigate({ pathname: `/pacientes/${paciente.id}/editar`, search: query })
   }
 
   /*
@@ -289,7 +293,7 @@ export function PacientesPage() {
     setBlocosDigitados([])
     setFormError(null)
     carregadoPacienteRef.current = null
-    navigate('/pacientes')
+    navigate({ pathname: '/pacientes', search: query })
   }
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -328,7 +332,7 @@ export function PacientesPage() {
       setEditingId(null)
       setForm(emptyForm)
       carregadoPacienteRef.current = null
-      navigate('/pacientes')
+      navigate({ pathname: '/pacientes', search: query })
     } catch (error) {
       setFormError(getHttpErrorMessage(error, 'Não foi possível salvar o paciente.'))
     }
@@ -369,9 +373,9 @@ export function PacientesPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <Indicadores
             itens={[
-              { rotulo: 'Total', valor: pacientes.length },
-              { rotulo: 'Ativos', valor: totalAtivos },
-              { rotulo: 'Inativos', valor: totalInativos },
+              { rotulo: 'Total', valor: pacientesQuery.data?.meta?.total ?? pacientes.length },
+              { rotulo: 'Ativos (pág.)', valor: totalAtivos },
+              { rotulo: 'Inativos (pág.)', valor: totalInativos },
             ]}
           />
           {pode('dashboard.pacientes') ? (
@@ -688,7 +692,9 @@ export function PacientesPage() {
                 Limpar
               </button>
               <span className="self-center text-meta text-slate-400">
-                {pacientesQuery.isLoading ? 'Carregando...' : `${pacientes.length} paciente(s)`}
+                {pacientesQuery.isLoading
+                  ? 'Carregando...'
+                  : `${pacientesQuery.data?.meta?.total ?? pacientes.length} paciente(s)`}
               </span>
             </div>
           </form>
@@ -821,6 +827,8 @@ export function PacientesPage() {
             </table>
           </div>
         )}
+
+        <Paginacao page={page} totalPages={totalPages} onChange={setPage} />
       </section>
       ) : null}
 

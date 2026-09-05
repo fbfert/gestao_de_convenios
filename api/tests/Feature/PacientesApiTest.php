@@ -181,7 +181,7 @@ class PacientesApiTest extends TestCase
         $convenio = Convenio::query()->where('nome', 'Unimed')->firstOrFail();
         $especialidade = Especialidade::query()->where('nome', 'Fisioterapia')->firstOrFail();
         $profissional = Profissional::query()->where('especialidade_id', $especialidade->id)->firstOrFail();
-        $medico = Medico::query()->where('nome', 'Dr. Carlos Almeida')->firstOrFail();
+        $medico = Medico::query()->where('nome', 'Carlos Almeida')->firstOrFail();
         $paciente = Paciente::query()->where('nome', $pacienteNome)->firstOrFail();
 
         return [

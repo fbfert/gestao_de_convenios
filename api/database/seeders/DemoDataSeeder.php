@@ -189,14 +189,14 @@ class DemoDataSeeder extends Seeder
     private function criarMedicos(): void
     {
         $medicos = [
-            ['Dr. Carlos Almeida', '12345', 'Neurologia Infantil'],
-            ['Dra. Sofia Bertoldi', '23456', 'Pediatria'],
-            ['Dr. Henrique Duarte', '34567', 'Ortopedia'],
-            ['Dra. Larissa Fontes', '45678', 'Psiquiatria Infantil'],
-            ['Dr. Gustavo Peixoto', '56789', 'Neuropediatria'],
-            ['Dra. Mariana Cordeiro', '67890', 'Fisiatria'],
-            ['Dr. Leonardo Bastos', '78901', 'Clínica Geral'],
-            ['Dra. Patrícia Vieira', '89012', 'Otorrinolaringologia'],
+            ['Carlos Almeida', '12345', 'Neurologia Infantil'],
+            ['Sofia Bertoldi', '23456', 'Pediatria'],
+            ['Henrique Duarte', '34567', 'Ortopedia'],
+            ['Larissa Fontes', '45678', 'Psiquiatria Infantil'],
+            ['Gustavo Peixoto', '56789', 'Neuropediatria'],
+            ['Mariana Cordeiro', '67890', 'Fisiatria'],
+            ['Leonardo Bastos', '78901', 'Clínica Geral'],
+            ['Patrícia Vieira', '89012', 'Otorrinolaringologia'],
         ];
 
         foreach ($medicos as $i => [$nome, $crm, $especialidade]) {

@@ -608,7 +608,7 @@ export function PacientesPage() {
         </section>
       ) : null}
 
-      {!isFormRoute ? (
+      {!isFormRoute && !duplicadosVisivel ? (
       <section className="space-y-4 rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
         <div className="flex flex-col gap-4 sm:items-start lg:flex-row lg:items-end lg:justify-between">
 

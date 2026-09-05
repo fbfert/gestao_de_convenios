@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Botao } from '../../components/ui/Botao'
+import { Badge } from '../../components/ui/Badge'
 import { useConfirm } from '../../components/ui/ConfirmDialog'
 import {
   getHttpErrorMessage,
@@ -10,12 +11,81 @@ import {
   type PacienteDuplicado,
 } from './usePacientesDuplicados'
 
+type EtapaMerge = {
+  chave: string
+  rotulo: string
+  status: 'pendente' | 'processando' | 'concluido' | 'erro'
+  mensagemErro?: string
+}
+
 function chavePar(par: PacienteDuplicado): string {
   return `${par.paciente_a.id}:${par.paciente_b.id}`
 }
 
+function ladoPorId(par: PacienteDuplicado, id: number) {
+  return par.paciente_a.id === id ? par.paciente_a : par.paciente_b
+}
+
 function outroLado(par: PacienteDuplicado, vencedorId: number) {
   return par.paciente_a.id === vencedorId ? par.paciente_b : par.paciente_a
+}
+
+const STATUS_ETAPA: Record<EtapaMerge['status'], { tone: 'neutro' | 'info' | 'sucesso' | 'perigo'; rotulo: string }> = {
+  pendente: { tone: 'neutro', rotulo: 'Aguardando' },
+  processando: { tone: 'info', rotulo: 'Unificando...' },
+  concluido: { tone: 'sucesso', rotulo: 'Unificado' },
+  erro: { tone: 'perigo', rotulo: 'Falhou' },
+}
+
+function ModalProgressoMerge({ etapas, onFechar }: { etapas: EtapaMerge[]; onFechar: () => void }) {
+  const emAndamento = etapas.some((etapa) => etapa.status === 'pendente' || etapa.status === 'processando')
+  const concluidos = etapas.filter((etapa) => etapa.status === 'concluido').length
+
+  return (
+    <div
+      className="fixed inset-0 z-(--z-dialogo) flex items-center justify-center bg-texto/40 p-4"
+      role="alertdialog"
+      aria-modal="true"
+      aria-label="Progresso da unificação"
+      data-testid="paciente-duplicado-progresso"
+    >
+      <div className="w-full max-w-lg space-y-4 rounded-janela border border-linha bg-superficie-elevada p-6 shadow-e3">
+        <div>
+          <h3 className="text-subtitulo font-semibold text-texto">Unificando pacientes</h3>
+          <p className="mt-1 text-meta text-texto-suave">
+            {concluidos} de {etapas.length} par(es) concluído(s).
+          </p>
+        </div>
+
+        <ul className="max-h-80 space-y-2 overflow-y-auto">
+          {etapas.map((etapa) => (
+            <li
+              key={etapa.chave}
+              className="flex items-center justify-between gap-3 rounded-superficie border border-linha bg-fundo px-4 py-3"
+            >
+              <div>
+                <p className="text-corpo text-texto">{etapa.rotulo}</p>
+                {etapa.mensagemErro ? <p className="mt-1 text-meta text-perigo-texto">{etapa.mensagemErro}</p> : null}
+              </div>
+              <Badge tone={STATUS_ETAPA[etapa.status].tone}>{STATUS_ETAPA[etapa.status].rotulo}</Badge>
+            </li>
+          ))}
+        </ul>
+
+        <div className="flex justify-end">
+          <Botao
+            type="button"
+            variante="secundario"
+            disabled={emAndamento}
+            onClick={onFechar}
+            data-testid="paciente-duplicado-progresso-fechar"
+          >
+            {emAndamento ? 'Unificando...' : 'Fechar'}
+          </Botao>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 function CardDuplicado({
@@ -115,6 +185,7 @@ export function PacientesDuplicadosSecao({ onFechar }: { onFechar: () => void })
   const [selecionados, setSelecionados] = useState<Set<string>>(new Set())
   const [processando, setProcessando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
+  const [etapas, setEtapas] = useState<EtapaMerge[] | null>(null)
 
   const pares = query.data ?? []
 
@@ -188,8 +259,28 @@ export function PacientesDuplicadosSecao({ onFechar }: { onFechar: () => void })
 
       if (!confirmado) return
 
-      for (const input of inputs) {
-        await mesclar.mutateAsync(input)
+      const etapasIniciais: EtapaMerge[] = selecionadosPares.map((par, indice) => {
+        const vencedor = ladoPorId(par, inputs[indice].vencedor_id)
+        const perdedor = outroLado(par, vencedor.id)
+        return {
+          chave: chavePar(par),
+          rotulo: `${vencedor.nome} (#${vencedor.id}) absorve ${perdedor.nome} (#${perdedor.id})`,
+          status: 'pendente',
+        }
+      })
+      setEtapas(etapasIniciais)
+
+      for (let indice = 0; indice < selecionadosPares.length; indice++) {
+        const chave = chavePar(selecionadosPares[indice])
+        setEtapas((atual) => atual!.map((etapa) => (etapa.chave === chave ? { ...etapa, status: 'processando' } : etapa)))
+
+        try {
+          await mesclar.mutateAsync(inputs[indice])
+          setEtapas((atual) => atual!.map((etapa) => (etapa.chave === chave ? { ...etapa, status: 'concluido' } : etapa)))
+        } catch (error) {
+          const mensagemErro = getHttpErrorMessage(error, 'Não foi possível unificar este par.')
+          setEtapas((atual) => atual!.map((etapa) => (etapa.chave === chave ? { ...etapa, status: 'erro', mensagemErro } : etapa)))
+        }
       }
 
       setSelecionados(new Set())
@@ -275,6 +366,10 @@ export function PacientesDuplicadosSecao({ onFechar }: { onFechar: () => void })
             </Botao>
           </div>
         </>
+      ) : null}
+
+      {etapas ? (
+        <ModalProgressoMerge etapas={etapas} onFechar={() => setEtapas(null)} />
       ) : null}
     </section>
   )

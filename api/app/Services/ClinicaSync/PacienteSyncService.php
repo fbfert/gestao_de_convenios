@@ -3,6 +3,7 @@
 namespace App\Services\ClinicaSync;
 
 use App\Models\ClinicaPacientePendente;
+use App\Models\ClinicaPushPendencia;
 use App\Models\Convenio;
 use App\Models\Paciente;
 use Carbon\CarbonImmutable;
@@ -241,12 +242,19 @@ class PacienteSyncService
             })
             ->get();
 
+        // Só busca a lista remota (pra dedup antes de criar) se alguém no lote
+        // realmente precisa criar — evita paginar o clinica inteiro à toa numa
+        // rodada que é só de atualizações.
+        $remotos = $pendentesDePush->contains(fn (Paciente $p) => $p->clinica_id === null)
+            ? $this->listarPacientesRemotosResumo()
+            : [];
+
         foreach ($pendentesDePush as $paciente) {
             $agora = CarbonImmutable::now();
 
             try {
                 if ($paciente->clinica_id === null) {
-                    $this->criar($paciente, $agora, $resumo);
+                    $this->criar($paciente, $remotos, $agora, $resumo);
                 } else {
                     $this->atualizar($paciente, $agora, $resumo);
                 }
@@ -269,9 +277,17 @@ class PacienteSyncService
      * que o gescon simplesmente não coleta — é billing, não prontuário). Nunca
      * inventamos esse dado: marcamos pendente e quem completar o cadastro direto no
      * clinica resolve — a próxima pull enxerga e vincula pelo CPF.
+     *
+     * Antes disso, verifica se já não existe alguém parecido no clinica (evita
+     * duplicar do lado de lá) — tem prioridade sobre os avisos de campo faltando,
+     * já que a pergunta "é a mesma pessoa?" vem antes de "o que falta preencher?".
      */
-    private function criar(Paciente $paciente, CarbonImmutable $agora, array &$resumo): void
+    private function criar(Paciente $paciente, array $remotos, CarbonImmutable $agora, array &$resumo): void
     {
+        if ($this->interceptarCriacaoSemMatchExato($paciente, $remotos, $resumo)) {
+            return;
+        }
+
         if ($paciente->data_nascimento === null) {
             $this->marcarPendente($paciente, $agora, 'sem data de nascimento (obrigatória no clinica)');
             $resumo['pendentes'][] = "Paciente '{$paciente->nome}' (id={$paciente->id}): sem nascimento, não enviado.";
@@ -285,6 +301,101 @@ class PacienteSyncService
             'necessidade (classificação clínica) não existe no gescon — cadastro precisa ser completado direto no clinica',
         );
         $resumo['pendentes'][] = "Paciente '{$paciente->nome}' (id={$paciente->id}): precisa ser completado manualmente no clinica (necessidade/responsável são exclusivos de lá).";
+    }
+
+    /**
+     * Busca só id+nome de todos os pacientes do clinica (paginado, mesmo
+     * índice do pull) — usado pro dedup antes de criar, sem precisar de
+     * endpoint novo.
+     *
+     * @return array<int, array{clinica_id: int, nome: string}>
+     */
+    private function listarPacientesRemotosResumo(): array
+    {
+        $resumo = [];
+        $pagina = 1;
+        $ultimaPagina = 1;
+
+        do {
+            $resposta = $this->api->listarPacientesPagina($pagina);
+            $itens = $resposta['data'] ?? $resposta;
+            $ultimaPagina = $resposta['meta']['last_page'] ?? 1;
+
+            foreach ($itens as $item) {
+                $resumo[] = ['clinica_id' => (int) $item['id'], 'nome' => $item['nome']];
+            }
+
+            $pagina++;
+        } while ($pagina <= $ultimaPagina);
+
+        return $resumo;
+    }
+
+    /**
+     * Mesma lógica de interceptarSemMatchExato, espelhada pro sentido push:
+     * o local já existe, o candidato é remoto. Achando nome parecido entre
+     * os remotos ainda não vinculados a nenhum Paciente local, abre
+     * ClinicaPushPendencia em vez de criar — humano decide se é a mesma
+     * pessoa (aí vincula) ou gente diferente (aí segue e cria).
+     */
+    private function interceptarCriacaoSemMatchExato(Paciente $paciente, array $remotos, array &$resumo): bool
+    {
+        $pendencia = ClinicaPushPendencia::where('tenant_id', $this->tenantId)
+            ->where('tipo', 'paciente')
+            ->where('local_id', $paciente->id)
+            ->first();
+
+        if ($pendencia !== null && $pendencia->status === 'pendente') {
+            $resumo['pendentes'][] = "Paciente '{$paciente->nome}' (id={$paciente->id}): aguardando confirmação manual de vínculo em Configurações > Sincronização Clínica > Pendências de envio.";
+
+            return true;
+        }
+
+        if ($pendencia !== null) {
+            return false; // rejeitado antes — segue e cria normalmente
+        }
+
+        $jaVinculados = Paciente::where('tenant_id', $this->tenantId)->whereNotNull('clinica_id')->pluck('clinica_id')->all();
+        $candidatos = $this->buscarCandidatosRemotos($paciente->nome, $remotos, $jaVinculados);
+
+        if ($candidatos === []) {
+            return false;
+        }
+
+        ClinicaPushPendencia::create([
+            'tenant_id' => $this->tenantId,
+            'tipo' => 'paciente',
+            'local_id' => $paciente->id,
+            'candidatos_json' => $candidatos,
+            'status' => 'pendente',
+        ]);
+
+        $resumo['pendentes'][] = "Paciente '{$paciente->nome}' (id={$paciente->id}): ".count($candidatos)." candidato(s) parecido(s) já cadastrado(s) no clinica — revisar em Configurações > Sincronização Clínica > Pendências de envio.";
+
+        return true;
+    }
+
+    /**
+     * @param  array<int, array{clinica_id: int, nome: string}>  $remotos
+     * @param  array<int, int>  $jaVinculados
+     * @return array<int, array{clinica_id: int, nome: string, similaridade: float}>
+     */
+    private function buscarCandidatosRemotos(string $nome, array $remotos, array $jaVinculados): array
+    {
+        $needle = mb_strtolower($this->semAcento(trim($nome)));
+
+        return collect($remotos)
+            ->reject(fn (array $r) => in_array($r['clinica_id'], $jaVinculados, true))
+            ->map(function (array $r) use ($needle) {
+                similar_text($needle, mb_strtolower($this->semAcento($r['nome'])), $percent);
+
+                return ['clinica_id' => $r['clinica_id'], 'nome' => $r['nome'], 'similaridade' => round($percent, 1)];
+            })
+            ->filter(fn (array $item) => $item['similaridade'] >= self::CONFIANCA_MINIMA)
+            ->sortByDesc('similaridade')
+            ->take(5)
+            ->values()
+            ->all();
     }
 
     private function marcarPendente(Paciente $paciente, CarbonImmutable $agora, string $motivo): void

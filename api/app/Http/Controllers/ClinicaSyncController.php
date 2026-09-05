@@ -4,9 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\ClinicaConexaoConfig;
 use App\Models\ClinicaPacientePendente;
+use App\Models\ClinicaPushPendencia;
 use App\Models\ClinicaSyncExecucao;
 use App\Models\Paciente;
+use App\Models\Profissional;
 use App\Services\ClinicaSync\ClinicaPacientePendenteService;
+use App\Services\ClinicaSync\ClinicaPushPendenteService;
 use App\Services\ClinicaSync\ClinicaSyncService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -99,6 +102,61 @@ class ClinicaSyncController extends Controller
     }
 
     public function rejeitarPendencia(ClinicaPacientePendente $pendencia, ClinicaPacientePendenteService $service): JsonResponse
+    {
+        try {
+            $service->rejeitar($pendencia);
+        } catch (InvalidArgumentException $e) {
+            throw ValidationException::withMessages(['pendencia' => [$e->getMessage()]]);
+        }
+
+        return response()->json(['status' => 'rejeitado']);
+    }
+
+    /** Pendências de envio abertas: candidato remoto parecido, antes de criar paciente/profissional novo no clinica. */
+    public function pushPendencias(): JsonResponse
+    {
+        $tenantId = (int) request()->user()->tenant_id;
+
+        $pendencias = ClinicaPushPendencia::where('tenant_id', $tenantId)
+            ->where('status', 'pendente')
+            ->orderBy('created_at')
+            ->get();
+
+        $pacientesPorId = Paciente::where('tenant_id', $tenantId)
+            ->whereIn('id', $pendencias->where('tipo', 'paciente')->pluck('local_id'))
+            ->get(['id', 'nome'])->keyBy('id');
+
+        $profissionaisPorId = Profissional::where('tenant_id', $tenantId)
+            ->whereIn('id', $pendencias->where('tipo', 'profissional')->pluck('local_id'))
+            ->get(['id', 'nome'])->keyBy('id');
+
+        return response()->json($pendencias->map(function (ClinicaPushPendencia $p) use ($pacientesPorId, $profissionaisPorId) {
+            $local = $p->tipo === 'paciente' ? $pacientesPorId->get($p->local_id) : $profissionaisPorId->get($p->local_id);
+
+            return [
+                'id' => $p->id,
+                'tipo' => $p->tipo,
+                'local_id' => $p->local_id,
+                'nome_local' => $local?->nome,
+                'candidatos' => $p->candidatos_json,
+            ];
+        }));
+    }
+
+    public function confirmarPushPendencia(Request $request, ClinicaPushPendencia $pendencia, ClinicaPushPendenteService $service): JsonResponse
+    {
+        $dados = $request->validate(['clinica_id_escolhido' => ['required', 'integer']]);
+
+        try {
+            $service->confirmar($pendencia, (int) $dados['clinica_id_escolhido']);
+        } catch (InvalidArgumentException $e) {
+            throw ValidationException::withMessages(['clinica_id_escolhido' => [$e->getMessage()]]);
+        }
+
+        return response()->json(['status' => 'confirmado']);
+    }
+
+    public function rejeitarPushPendencia(ClinicaPushPendencia $pendencia, ClinicaPushPendenteService $service): JsonResponse
     {
         try {
             $service->rejeitar($pendencia);

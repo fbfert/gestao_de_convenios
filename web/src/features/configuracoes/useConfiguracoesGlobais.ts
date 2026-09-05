@@ -32,8 +32,18 @@ export type ConfiguracoesGlobais = {
   automacao_verificacao_incerta_ativo: boolean
   /** Liga/desliga a sincronização agendada com a clínica ("Sincronizar Agora" continua disponível). */
   automacao_sincronizacao_clinica_ativo: boolean
-  /** Minutos entre sincronizações automáticas com a clínica. */
-  automacao_sincronizacao_clinica_intervalo_minutos: number
+  /** Janela diurna (padrão 08:00-18:00) e intervalo entre sincronizações nela, em minutos. */
+  automacao_sincronizacao_clinica_diurno_horario_inicio: string
+  automacao_sincronizacao_clinica_diurno_horario_fim: string
+  automacao_sincronizacao_clinica_diurno_intervalo_minutos: number
+  /** Janela noturna (padrão 18:00-22:00). */
+  automacao_sincronizacao_clinica_noturno_horario_inicio: string
+  automacao_sincronizacao_clinica_noturno_horario_fim: string
+  automacao_sincronizacao_clinica_noturno_intervalo_minutos: number
+  /** Janela madrugada (padrão 22:00-07:59, cruza a meia-noite) — cobre o resto do dia. */
+  automacao_sincronizacao_clinica_madrugada_horario_inicio: string
+  automacao_sincronizacao_clinica_madrugada_horario_fim: string
+  automacao_sincronizacao_clinica_madrugada_intervalo_minutos: number
   /** Liga/desliga o expurgo diário da trilha de auditoria. */
   automacao_expurgo_auditoria_ativo: boolean
   /** Liga/desliga o expurgo diário de imagens de carteirinha vencidas. */
@@ -59,7 +69,15 @@ export type ConfiguracoesGlobaisForm = {
   unimed_captura_senha_validade_intervalo_horas: string
   automacao_verificacao_incerta_ativo: boolean
   automacao_sincronizacao_clinica_ativo: boolean
-  automacao_sincronizacao_clinica_intervalo_minutos: string
+  automacao_sincronizacao_clinica_diurno_horario_inicio: string
+  automacao_sincronizacao_clinica_diurno_horario_fim: string
+  automacao_sincronizacao_clinica_diurno_intervalo_minutos: string
+  automacao_sincronizacao_clinica_noturno_horario_inicio: string
+  automacao_sincronizacao_clinica_noturno_horario_fim: string
+  automacao_sincronizacao_clinica_noturno_intervalo_minutos: string
+  automacao_sincronizacao_clinica_madrugada_horario_inicio: string
+  automacao_sincronizacao_clinica_madrugada_horario_fim: string
+  automacao_sincronizacao_clinica_madrugada_intervalo_minutos: string
   automacao_expurgo_auditoria_ativo: boolean
   automacao_expurgo_carteirinhas_ativo: boolean
   automacao_verificacao_guias_diaria_ativo: boolean
@@ -85,7 +103,15 @@ export function paraFormulario(dados: ConfiguracoesGlobais): ConfiguracoesGlobai
     unimed_captura_senha_validade_intervalo_horas: String(dados.unimed_captura_senha_validade_intervalo_horas),
     automacao_verificacao_incerta_ativo: dados.automacao_verificacao_incerta_ativo,
     automacao_sincronizacao_clinica_ativo: dados.automacao_sincronizacao_clinica_ativo,
-    automacao_sincronizacao_clinica_intervalo_minutos: String(dados.automacao_sincronizacao_clinica_intervalo_minutos),
+    automacao_sincronizacao_clinica_diurno_horario_inicio: dados.automacao_sincronizacao_clinica_diurno_horario_inicio,
+    automacao_sincronizacao_clinica_diurno_horario_fim: dados.automacao_sincronizacao_clinica_diurno_horario_fim,
+    automacao_sincronizacao_clinica_diurno_intervalo_minutos: String(dados.automacao_sincronizacao_clinica_diurno_intervalo_minutos),
+    automacao_sincronizacao_clinica_noturno_horario_inicio: dados.automacao_sincronizacao_clinica_noturno_horario_inicio,
+    automacao_sincronizacao_clinica_noturno_horario_fim: dados.automacao_sincronizacao_clinica_noturno_horario_fim,
+    automacao_sincronizacao_clinica_noturno_intervalo_minutos: String(dados.automacao_sincronizacao_clinica_noturno_intervalo_minutos),
+    automacao_sincronizacao_clinica_madrugada_horario_inicio: dados.automacao_sincronizacao_clinica_madrugada_horario_inicio,
+    automacao_sincronizacao_clinica_madrugada_horario_fim: dados.automacao_sincronizacao_clinica_madrugada_horario_fim,
+    automacao_sincronizacao_clinica_madrugada_intervalo_minutos: String(dados.automacao_sincronizacao_clinica_madrugada_intervalo_minutos),
     automacao_expurgo_auditoria_ativo: dados.automacao_expurgo_auditoria_ativo,
     automacao_expurgo_carteirinhas_ativo: dados.automacao_expurgo_carteirinhas_ativo,
     automacao_verificacao_guias_diaria_ativo: dados.automacao_verificacao_guias_diaria_ativo,
@@ -140,7 +166,15 @@ export function useSalvarConfiguracoesGlobais() {
         unimed_captura_senha_validade_intervalo_horas: Number(form.unimed_captura_senha_validade_intervalo_horas),
         automacao_verificacao_incerta_ativo: form.automacao_verificacao_incerta_ativo,
         automacao_sincronizacao_clinica_ativo: form.automacao_sincronizacao_clinica_ativo,
-        automacao_sincronizacao_clinica_intervalo_minutos: Number(form.automacao_sincronizacao_clinica_intervalo_minutos),
+        automacao_sincronizacao_clinica_diurno_horario_inicio: form.automacao_sincronizacao_clinica_diurno_horario_inicio,
+        automacao_sincronizacao_clinica_diurno_horario_fim: form.automacao_sincronizacao_clinica_diurno_horario_fim,
+        automacao_sincronizacao_clinica_diurno_intervalo_minutos: Number(form.automacao_sincronizacao_clinica_diurno_intervalo_minutos),
+        automacao_sincronizacao_clinica_noturno_horario_inicio: form.automacao_sincronizacao_clinica_noturno_horario_inicio,
+        automacao_sincronizacao_clinica_noturno_horario_fim: form.automacao_sincronizacao_clinica_noturno_horario_fim,
+        automacao_sincronizacao_clinica_noturno_intervalo_minutos: Number(form.automacao_sincronizacao_clinica_noturno_intervalo_minutos),
+        automacao_sincronizacao_clinica_madrugada_horario_inicio: form.automacao_sincronizacao_clinica_madrugada_horario_inicio,
+        automacao_sincronizacao_clinica_madrugada_horario_fim: form.automacao_sincronizacao_clinica_madrugada_horario_fim,
+        automacao_sincronizacao_clinica_madrugada_intervalo_minutos: Number(form.automacao_sincronizacao_clinica_madrugada_intervalo_minutos),
         automacao_expurgo_auditoria_ativo: form.automacao_expurgo_auditoria_ativo,
         automacao_expurgo_carteirinhas_ativo: form.automacao_expurgo_carteirinhas_ativo,
         automacao_verificacao_guias_diaria_ativo: form.automacao_verificacao_guias_diaria_ativo,

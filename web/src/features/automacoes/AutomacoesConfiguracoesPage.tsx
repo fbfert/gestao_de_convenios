@@ -30,7 +30,15 @@ const formVazio: ConfiguracoesGlobaisForm = {
   unimed_captura_senha_validade_intervalo_horas: '6',
   automacao_verificacao_incerta_ativo: true,
   automacao_sincronizacao_clinica_ativo: true,
-  automacao_sincronizacao_clinica_intervalo_minutos: '5',
+  automacao_sincronizacao_clinica_diurno_horario_inicio: '08:00',
+  automacao_sincronizacao_clinica_diurno_horario_fim: '18:00',
+  automacao_sincronizacao_clinica_diurno_intervalo_minutos: '10',
+  automacao_sincronizacao_clinica_noturno_horario_inicio: '18:00',
+  automacao_sincronizacao_clinica_noturno_horario_fim: '22:00',
+  automacao_sincronizacao_clinica_noturno_intervalo_minutos: '30',
+  automacao_sincronizacao_clinica_madrugada_horario_inicio: '22:00',
+  automacao_sincronizacao_clinica_madrugada_horario_fim: '07:59',
+  automacao_sincronizacao_clinica_madrugada_intervalo_minutos: '60',
   automacao_expurgo_auditoria_ativo: true,
   automacao_expurgo_carteirinhas_ativo: true,
   automacao_verificacao_guias_diaria_ativo: true,
@@ -78,6 +86,75 @@ function SecaoAutomacao({ titulo, descricao, ativo, onAlterarAtivo, testIdAtivo,
         </div>
       ) : null}
     </section>
+  )
+}
+
+type CamposJanela = {
+  horarioInicio: keyof ConfiguracoesGlobaisForm
+  horarioFim: keyof ConfiguracoesGlobaisForm
+  intervalo: keyof ConfiguracoesGlobaisForm
+}
+
+/** Um bloco "início / fim / intervalo" — as 3 janelas da sincronização com a clínica usam o mesmo formato. */
+function BlocoJanela({
+  titulo,
+  padrao,
+  campos,
+  form,
+  alterar,
+  testIdPrefix,
+}: {
+  titulo: string
+  padrao: string
+  campos: CamposJanela
+  form: ConfiguracoesGlobaisForm
+  alterar: <C extends keyof ConfiguracoesGlobaisForm>(campo: C, valor: ConfiguracoesGlobaisForm[C]) => void
+  testIdPrefix: string
+}) {
+  return (
+    <div className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4">
+      <p className="text-corpo font-semibold text-slate-200">{titulo}</p>
+      <div className="grid gap-4 md:grid-cols-3">
+        <label className="space-y-2">
+          <span className="text-meta text-slate-400">Início da janela</span>
+          <input
+            type="time"
+            value={form[campos.horarioInicio] as string}
+            onChange={(event) => alterar(campos.horarioInicio, event.target.value)}
+            className={inputClasses()}
+            required
+            data-testid={`${testIdPrefix}-horario-inicio`}
+          />
+        </label>
+
+        <label className="space-y-2">
+          <span className="text-meta text-slate-400">Fim da janela</span>
+          <input
+            type="time"
+            value={form[campos.horarioFim] as string}
+            onChange={(event) => alterar(campos.horarioFim, event.target.value)}
+            className={inputClasses()}
+            required
+            data-testid={`${testIdPrefix}-horario-fim`}
+          />
+        </label>
+
+        <label className="space-y-2">
+          <span className="text-meta text-slate-400">Intervalo (minutos)</span>
+          <input
+            type="number"
+            min={5}
+            max={1440}
+            value={form[campos.intervalo] as string}
+            onChange={(event) => alterar(campos.intervalo, event.target.value)}
+            className={inputClasses()}
+            required
+            data-testid={`${testIdPrefix}-intervalo`}
+          />
+          <span className="block text-meta text-slate-400">Padrão: {padrao}.</span>
+        </label>
+      </div>
+    </div>
   )
 }
 
@@ -260,28 +337,52 @@ export function AutomacoesConfiguracoesPage() {
 
       <SecaoAutomacao
         titulo="Sincronização com a clínica"
-        descricao={'Sincroniza profissionais e pacientes com clinica.gestaonossa.com.br. O botão "Sincronizar Agora" continua funcionando mesmo com a automação desligada.'}
+        descricao={'Sincroniza profissionais e pacientes com clinica.gestaonossa.com.br. O botão "Sincronizar Agora" continua funcionando mesmo com a automação desligada. O ritmo varia por horário — 3 janelas, cada uma com seu próprio intervalo.'}
         ativo={form.automacao_sincronizacao_clinica_ativo}
         onAlterarAtivo={(valor) => alterar('automacao_sincronizacao_clinica_ativo', valor)}
         testIdAtivo="automacoes-config-sync-clinica-ativo"
       >
-        <div className="mt-5 grid gap-4 md:grid-cols-2">
-          <label className="space-y-2">
-            <span className="text-corpo font-medium text-slate-200">Intervalo entre sincronizações (minutos)</span>
-            <input
-              type="number"
-              min={5}
-              max={1440}
-              value={form.automacao_sincronizacao_clinica_intervalo_minutos}
-              onChange={(event) => alterar('automacao_sincronizacao_clinica_intervalo_minutos', event.target.value)}
-              className={inputClasses()}
-              required
-              data-testid="automacoes-config-sync-clinica-intervalo"
-            />
-            <span className="block text-meta text-slate-400">
-              O sistema checa a cada 5 minutos se já passou esse tempo. Padrão: 5 min.
-            </span>
-          </label>
+        <div className="mt-5 space-y-3">
+          <BlocoJanela
+            titulo="Diurno"
+            padrao="10 min"
+            campos={{
+              horarioInicio: 'automacao_sincronizacao_clinica_diurno_horario_inicio',
+              horarioFim: 'automacao_sincronizacao_clinica_diurno_horario_fim',
+              intervalo: 'automacao_sincronizacao_clinica_diurno_intervalo_minutos',
+            }}
+            form={form}
+            alterar={alterar}
+            testIdPrefix="automacoes-config-sync-clinica-diurno"
+          />
+          <BlocoJanela
+            titulo="Noturno"
+            padrao="30 min"
+            campos={{
+              horarioInicio: 'automacao_sincronizacao_clinica_noturno_horario_inicio',
+              horarioFim: 'automacao_sincronizacao_clinica_noturno_horario_fim',
+              intervalo: 'automacao_sincronizacao_clinica_noturno_intervalo_minutos',
+            }}
+            form={form}
+            alterar={alterar}
+            testIdPrefix="automacoes-config-sync-clinica-noturno"
+          />
+          <BlocoJanela
+            titulo="Madrugada (pode cruzar a meia-noite)"
+            padrao="60 min"
+            campos={{
+              horarioInicio: 'automacao_sincronizacao_clinica_madrugada_horario_inicio',
+              horarioFim: 'automacao_sincronizacao_clinica_madrugada_horario_fim',
+              intervalo: 'automacao_sincronizacao_clinica_madrugada_intervalo_minutos',
+            }}
+            form={form}
+            alterar={alterar}
+            testIdPrefix="automacoes-config-sync-clinica-madrugada"
+          />
+          <p className="text-meta text-slate-400">
+            O sistema checa a cada 5 minutos se já passou o intervalo da janela atual — qualquer
+            horário fora das 3 janelas cai na de madrugada.
+          </p>
         </div>
       </SecaoAutomacao>
 

@@ -36,12 +36,46 @@ class SincronizarClinicaJob implements ShouldQueue
                 }
 
                 if ($config->ultima_execucao_em
-                    && $config->ultima_execucao_em->addMinutes($automacao->automacao_sincronizacao_clinica_intervalo_minutos)->isFuture()) {
+                    && $config->ultima_execucao_em->addMinutes($this->intervaloAtual($automacao))->isFuture()) {
                     return;
                 }
             }
 
             $service->executar($config->tenant_id, $this->origem);
         });
+    }
+
+    /**
+     * O ritmo varia por horário — comercial, fim de tarde e madrugada têm
+     * volumes de mudança bem diferentes. As 3 janelas são configuráveis em
+     * /automacoes/configuracoes; "madrugada" é o catch-all (cobre o resto do
+     * dia mesmo que a reconfiguração manual deixe uma lacuna nas 24h).
+     */
+    private function intervaloAtual(ConfiguracaoGlobal $c): int
+    {
+        $agora = now()->format('H:i:s');
+
+        if ($this->dentroDaJanela($agora, $c->automacao_sincronizacao_clinica_diurno_horario_inicio, $c->automacao_sincronizacao_clinica_diurno_horario_fim)) {
+            return $c->automacao_sincronizacao_clinica_diurno_intervalo_minutos;
+        }
+
+        if ($this->dentroDaJanela($agora, $c->automacao_sincronizacao_clinica_noturno_horario_inicio, $c->automacao_sincronizacao_clinica_noturno_horario_fim)) {
+            return $c->automacao_sincronizacao_clinica_noturno_intervalo_minutos;
+        }
+
+        return $c->automacao_sincronizacao_clinica_madrugada_intervalo_minutos;
+    }
+
+    /** Suporta janela que cruza a meia-noite (fim < início, ex: madrugada 22h-08h). */
+    private function dentroDaJanela(string $agora, string $inicio, string $fim): bool
+    {
+        $inicio = substr($inicio, 0, 8);
+        $fim = substr($fim, 0, 8);
+
+        if ($inicio <= $fim) {
+            return $agora >= $inicio && $agora <= $fim;
+        }
+
+        return $agora >= $inicio || $agora <= $fim;
     }
 }

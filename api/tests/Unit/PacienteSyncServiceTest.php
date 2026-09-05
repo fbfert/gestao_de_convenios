@@ -3,11 +3,13 @@
 namespace Tests\Unit;
 
 use App\Models\ClinicaPacientePendente;
+use App\Models\ClinicaPushPendencia;
 use App\Models\Convenio;
 use App\Models\Paciente;
 use App\Models\Tenant;
 use App\Services\ClinicaSync\ClinicaApiClient;
 use App\Services\ClinicaSync\ClinicaPacientePendenteService;
+use App\Services\ClinicaSync\ClinicaPushPendenteService;
 use App\Services\ClinicaSync\PacienteSyncService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use InvalidArgumentException;
@@ -46,11 +48,17 @@ class PacienteSyncServiceTest extends TestCase
         ], $overrides);
     }
 
+    /**
+     * `listarPacientesPagina` pode ser chamado duas vezes por rodada: uma pelo
+     * pull, outra pelo push (dedup antes de criar, quando há alguém pra criar)
+     * — por isso sem `->once()`. Inclui `nome` no item da página, igual ao
+     * índice real do clinica (CAMPOS_LISTAGEM), pro dedup ter o que comparar.
+     */
     private function apiFake(array $remoto): ClinicaApiClient
     {
         $api = Mockery::mock(ClinicaApiClient::class);
-        $api->shouldReceive('listarPacientesPagina')->once()->with(1)
-            ->andReturn(['data' => [['id' => $remoto['id']]], 'meta' => ['last_page' => 1]]);
+        $api->shouldReceive('listarPacientesPagina')->with(1)
+            ->andReturn(['data' => [['id' => $remoto['id'], 'nome' => $remoto['nome']]], 'meta' => ['last_page' => 1]]);
         $api->shouldReceive('buscarPaciente')->with($remoto['id'])->andReturn($remoto);
 
         return $api;
@@ -269,5 +277,95 @@ class PacienteSyncServiceTest extends TestCase
 
         $this->expectException(InvalidArgumentException::class);
         $service->confirmar($pendencia->fresh(), $existente->id);
+    }
+
+    /** Isola o push do lote de pacientes seedados (senão eles também entram em pendentesDePush). */
+    private function marcarPacientesExistentesComoSincronizados(int $tenantId): void
+    {
+        Paciente::where('tenant_id', $tenantId)->update(['sincronizado_em' => now()]);
+    }
+
+    public function test_push_paciente_nome_parecido_no_clinica_gera_pendencia_sem_criar(): void
+    {
+        $tenantId = $this->tenantId();
+        $convenioId = $this->convenioParticularId();
+        $this->marcarPacientesExistentesComoSincronizados($tenantId);
+
+        $local = Paciente::query()->create([
+            'tenant_id' => $tenantId,
+            'nome' => 'Roberto Silva Neto',
+            'carteirinha' => '11122233344',
+            'convenio_id' => $convenioId,
+            'ativo' => true,
+        ]);
+
+        $api = Mockery::mock(ClinicaApiClient::class);
+        $api->shouldReceive('listarPacientesPagina')->with(1)
+            ->andReturn(['data' => [['id' => 700, 'nome' => 'Roberto Silva Netto']], 'meta' => ['last_page' => 1]]);
+        $api->shouldReceive('buscarPaciente')->with(700)->andReturn($this->remoto(700, 'Roberto Silva Netto'));
+        $api->shouldNotReceive('criarPaciente');
+
+        (new PacienteSyncService($api, $tenantId))->executar();
+
+        $this->assertSame(1, ClinicaPushPendencia::query()->count());
+        $pendencia = ClinicaPushPendencia::query()->firstOrFail();
+        $this->assertSame('paciente', $pendencia->tipo);
+        $this->assertSame($local->id, $pendencia->local_id);
+        $this->assertSame(700, $pendencia->candidatos_json[0]['clinica_id']);
+        $this->assertNull($local->fresh()->clinica_id);
+    }
+
+    public function test_push_paciente_nome_diferente_segue_fluxo_normal_de_pendente_manual(): void
+    {
+        $tenantId = $this->tenantId();
+        $convenioId = $this->convenioParticularId();
+        $this->marcarPacientesExistentesComoSincronizados($tenantId);
+
+        $local = Paciente::query()->create([
+            'tenant_id' => $tenantId,
+            'nome' => 'Zelda Completely Unrelated Name',
+            'carteirinha' => '55566677788',
+            'convenio_id' => $convenioId,
+            'ativo' => true,
+        ]);
+
+        $api = Mockery::mock(ClinicaApiClient::class);
+        $api->shouldReceive('listarPacientesPagina')->with(1)
+            ->andReturn(['data' => [['id' => 701, 'nome' => 'Someone Else Entirely']], 'meta' => ['last_page' => 1]]);
+        $api->shouldReceive('buscarPaciente')->with(701)->andReturn($this->remoto(701, 'Someone Else Entirely'));
+        $api->shouldNotReceive('criarPaciente');
+
+        (new PacienteSyncService($api, $tenantId))->executar();
+
+        $this->assertSame(0, ClinicaPushPendencia::query()->count());
+        $this->assertStringStartsWith('pendente_manual', $local->fresh()->clinica_status);
+    }
+
+    public function test_confirmar_pendencia_de_push_paciente_vincula_sem_criar(): void
+    {
+        $tenantId = $this->tenantId();
+        $convenioId = $this->convenioParticularId();
+        $this->marcarPacientesExistentesComoSincronizados($tenantId);
+
+        $local = Paciente::query()->create([
+            'tenant_id' => $tenantId,
+            'nome' => 'Roberto Silva Neto',
+            'carteirinha' => '11122233344',
+            'convenio_id' => $convenioId,
+            'ativo' => true,
+        ]);
+
+        $api = Mockery::mock(ClinicaApiClient::class);
+        $api->shouldReceive('listarPacientesPagina')->with(1)
+            ->andReturn(['data' => [['id' => 700, 'nome' => 'Roberto Silva Netto']], 'meta' => ['last_page' => 1]]);
+        $api->shouldReceive('buscarPaciente')->with(700)->andReturn($this->remoto(700, 'Roberto Silva Netto'));
+
+        (new PacienteSyncService($api, $tenantId))->executar();
+
+        $pendencia = ClinicaPushPendencia::query()->firstOrFail();
+        (new ClinicaPushPendenteService())->confirmar($pendencia, 700);
+
+        $this->assertSame(700, $local->fresh()->clinica_id);
+        $this->assertSame('confirmado', $pendencia->fresh()->status);
     }
 }

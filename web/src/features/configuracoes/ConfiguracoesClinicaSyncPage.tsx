@@ -6,9 +6,13 @@ import {
 } from './useClinicaSync'
 import {
   useClinicaSyncPendencias,
+  useClinicaSyncPushPendencias,
   useConfirmarPendencia,
+  useConfirmarPushPendencia,
   useRejeitarPendencia,
+  useRejeitarPushPendencia,
   type ClinicaPacientePendencia,
+  type ClinicaPushPendencia,
 } from './useClinicaSyncPendencias'
 import { Botao } from '../../components/ui/Botao'
 import { Badge, type BadgeProps } from '../../components/ui/Badge'
@@ -132,6 +136,95 @@ function SecaoPendencias() {
   )
 }
 
+function CardPushPendencia({ pendencia }: { pendencia: ClinicaPushPendencia }) {
+  const confirmar = useConfirmarPushPendencia()
+  const rejeitar = useRejeitarPushPendencia()
+  const carregando = confirmar.isPending || rejeitar.isPending
+
+  return (
+    <div className="rounded-superficie border border-linha bg-fundo p-4 shadow-e1" data-testid="clinica-sync-push-pendencia">
+      <p className="text-corpo font-semibold text-white">
+        {pendencia.nome_local}{' '}
+        <span className="text-meta text-slate-400">
+          ({pendencia.tipo === 'paciente' ? 'paciente' : 'profissional'} do gescon, ainda sem enviar)
+        </span>
+      </p>
+      <p className="mt-1 text-meta text-slate-400">
+        Parece já existir no clinica. Confirme qual é, ou diga que é gente diferente pra criar um cadastro novo lá.
+      </p>
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        {pendencia.candidatos.map((candidato) => (
+          <button
+            key={candidato.clinica_id}
+            type="button"
+            disabled={carregando}
+            onClick={() => confirmar.mutate({ pendenciaId: pendencia.id, clinicaIdEscolhido: candidato.clinica_id })}
+            className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1.5 text-meta font-semibold text-cyan-100 transition hover:bg-cyan-400/20 disabled:opacity-50"
+            data-testid="clinica-sync-push-pendencia-candidato"
+          >
+            Vincular a clinica_id {candidato.clinica_id} — {candidato.nome} · {candidato.similaridade}%
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-3">
+        <Botao
+          type="button"
+          variante="secundario"
+          tamanho="sm"
+          carregando={rejeitar.isPending}
+          disabled={carregando}
+          onClick={() => rejeitar.mutate(pendencia.id)}
+          data-testid="clinica-sync-push-pendencia-rejeitar"
+        >
+          Não é a mesma pessoa, criar novo no clinica
+        </Botao>
+      </div>
+
+      {confirmar.isError ? (
+        <p className="mt-2 text-meta text-rose-300">
+          {getHttpErrorMessage(confirmar.error, 'Não foi possível confirmar o vínculo.')}
+        </p>
+      ) : null}
+      {rejeitar.isError ? (
+        <p className="mt-2 text-meta text-rose-300">
+          {getHttpErrorMessage(rejeitar.error, 'Não foi possível rejeitar a pendência.')}
+        </p>
+      ) : null}
+    </div>
+  )
+}
+
+function SecaoPushPendencias() {
+  const query = useClinicaSyncPushPendencias()
+
+  if (query.isPending) return <p className="text-corpo text-slate-400">Carregando pendências de envio...</p>
+  if (query.isError) {
+    return (
+      <p className="text-corpo text-rose-300">
+        {getHttpErrorMessage(query.error, 'Não foi possível carregar as pendências de envio.')}
+      </p>
+    )
+  }
+  if (query.data.length === 0) return null
+
+  return (
+    <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
+      <h3 className="text-subtitulo font-semibold text-white">Pendências de envio</h3>
+      <p className="mt-1 text-meta text-slate-400">
+        Antes de criar um paciente ou profissional novo no clinica, achamos lá alguém com nome
+        parecido ainda não vinculado — nunca criamos sozinhos, confirme abaixo.
+      </p>
+      <div className="mt-4 space-y-3">
+        {query.data.map((pendencia) => (
+          <CardPushPendencia key={pendencia.id} pendencia={pendencia} />
+        ))}
+      </div>
+    </section>
+  )
+}
+
 export function ConfiguracoesClinicaSyncPage() {
   const query = useClinicaSyncStatus()
   const sincronizar = useSincronizarClinicaAgora()
@@ -145,8 +238,9 @@ export function ConfiguracoesClinicaSyncPage() {
         <h2 className="text-display font-semibold text-white">Sincronização com o clinica</h2>
         <p className="max-w-3xl text-corpo leading-6 text-slate-300">
           Profissionais e pacientes ficam espelhados entre o gescon e o clinica.gestaonossa.com.br
-          — via mão dupla, quem cadastrar em qualquer um dos dois reflete no outro. Roda sozinho a
-          cada 5 minutos; o botão abaixo dispara uma rodada na hora.
+          — via mão dupla, quem cadastrar em qualquer um dos dois reflete no outro. Roda sozinho no
+          ritmo configurado em Automações (varia por horário); o botão abaixo dispara uma rodada na
+          hora.
         </p>
       </section>
 
@@ -225,6 +319,7 @@ export function ConfiguracoesClinicaSyncPage() {
       </section>
 
       <SecaoPendencias />
+      <SecaoPushPendencias />
     </div>
   )
 }

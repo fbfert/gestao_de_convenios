@@ -2,6 +2,7 @@
 
 namespace App\Services\ClinicaSync;
 
+use App\Models\ClinicaPushPendencia;
 use App\Models\Especialidade;
 use App\Models\Profissional;
 use Carbon\CarbonImmutable;
@@ -18,6 +19,9 @@ use Illuminate\Support\Str;
  */
 class ProfissionalSyncService
 {
+    /** Mesmo corte de PedidoMedicoAiService/CarteirinhaAiService/PacienteSyncService: abaixo disso não propomos vínculo. */
+    private const CONFIANCA_MINIMA = 90;
+
     private array $cboPorCodigo = [];
 
     public function __construct(
@@ -31,7 +35,7 @@ class ProfissionalSyncService
 
         $remotos = $this->api->listarProfissionais();
         $pull = $this->pull($remotos);
-        $push = $this->push();
+        $push = $this->push($remotos);
 
         return ['pull' => $pull, 'push' => $push];
     }
@@ -158,7 +162,8 @@ class ProfissionalSyncService
         ];
     }
 
-    private function push(): array
+    /** @param  list<array<string, mixed>>  $remotos */
+    private function push(array $remotos): array
     {
         $resumo = ['criados' => 0, 'atualizados' => 0, 'pendentes' => []];
 
@@ -168,8 +173,16 @@ class ProfissionalSyncService
             })
             ->get();
 
+        $jaVinculados = Profissional::where('tenant_id', $this->tenantId)->whereNotNull('clinica_id')->pluck('clinica_id')->all();
+
         foreach ($pendentesDePush as $profissional) {
             $agora = CarbonImmutable::now();
+
+            if ($profissional->clinica_id === null
+                && $this->interceptarCriacaoSemMatchExato($profissional, $remotos, $jaVinculados, $resumo)) {
+                continue;
+            }
+
             $payload = $this->paraClinica($profissional, $resumo['pendentes']);
 
             try {
@@ -201,6 +214,64 @@ class ProfissionalSyncService
         }
 
         return $resumo;
+    }
+
+    /**
+     * Antes de criar um profissional novo no clinica, verifica se não existe
+     * lá alguém com nome parecido ainda não vinculado a nenhum profissional
+     * local — evita duplicar do lado de lá. Achando candidato, abre
+     * ClinicaPushPendencia em vez de criar; humano confirma (vincula) ou
+     * rejeita (segue e cria normalmente na próxima rodada).
+     *
+     * @param  list<array<string, mixed>>  $remotos
+     * @param  array<int, int>  $jaVinculados
+     */
+    private function interceptarCriacaoSemMatchExato(Profissional $profissional, array $remotos, array $jaVinculados, array &$resumo): bool
+    {
+        $pendencia = ClinicaPushPendencia::where('tenant_id', $this->tenantId)
+            ->where('tipo', 'profissional')
+            ->where('local_id', $profissional->id)
+            ->first();
+
+        if ($pendencia !== null && $pendencia->status === 'pendente') {
+            $resumo['pendentes'][] = "Profissional '{$profissional->nome}' (id={$profissional->id}): aguardando confirmação manual de vínculo em Configurações > Sincronização Clínica > Pendências de envio.";
+
+            return true;
+        }
+
+        if ($pendencia !== null) {
+            return false; // rejeitado antes — segue e cria normalmente
+        }
+
+        $needle = mb_strtolower(trim($profissional->nome));
+        $candidatos = collect($remotos)
+            ->reject(fn (array $r) => in_array((int) $r['id'], $jaVinculados, true))
+            ->map(function (array $r) use ($needle) {
+                similar_text($needle, mb_strtolower($r['nome']), $percent);
+
+                return ['clinica_id' => (int) $r['id'], 'nome' => $r['nome'], 'similaridade' => round($percent, 1)];
+            })
+            ->filter(fn (array $item) => $item['similaridade'] >= self::CONFIANCA_MINIMA)
+            ->sortByDesc('similaridade')
+            ->take(5)
+            ->values()
+            ->all();
+
+        if ($candidatos === []) {
+            return false;
+        }
+
+        ClinicaPushPendencia::create([
+            'tenant_id' => $this->tenantId,
+            'tipo' => 'profissional',
+            'local_id' => $profissional->id,
+            'candidatos_json' => $candidatos,
+            'status' => 'pendente',
+        ]);
+
+        $resumo['pendentes'][] = "Profissional '{$profissional->nome}' (id={$profissional->id}): ".count($candidatos)." candidato(s) parecido(s) já cadastrado(s) no clinica — revisar em Configurações > Sincronização Clínica > Pendências de envio.";
+
+        return true;
     }
 
     private function paraClinica(Profissional $profissional, array &$pendentes): array

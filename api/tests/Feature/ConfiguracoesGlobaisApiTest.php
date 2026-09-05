@@ -36,7 +36,15 @@ class ConfiguracoesGlobaisApiTest extends TestCase
             ->assertJsonPath('data.unimed_captura_senha_validade_intervalo_horas', 6)
             ->assertJsonPath('data.automacao_verificacao_incerta_ativo', true)
             ->assertJsonPath('data.automacao_sincronizacao_clinica_ativo', true)
-            ->assertJsonPath('data.automacao_sincronizacao_clinica_intervalo_minutos', 5)
+            ->assertJsonPath('data.automacao_sincronizacao_clinica_diurno_horario_inicio', '08:00')
+            ->assertJsonPath('data.automacao_sincronizacao_clinica_diurno_horario_fim', '18:00')
+            ->assertJsonPath('data.automacao_sincronizacao_clinica_diurno_intervalo_minutos', 10)
+            ->assertJsonPath('data.automacao_sincronizacao_clinica_noturno_horario_inicio', '18:00')
+            ->assertJsonPath('data.automacao_sincronizacao_clinica_noturno_horario_fim', '22:00')
+            ->assertJsonPath('data.automacao_sincronizacao_clinica_noturno_intervalo_minutos', 30)
+            ->assertJsonPath('data.automacao_sincronizacao_clinica_madrugada_horario_inicio', '22:00')
+            ->assertJsonPath('data.automacao_sincronizacao_clinica_madrugada_horario_fim', '07:59')
+            ->assertJsonPath('data.automacao_sincronizacao_clinica_madrugada_intervalo_minutos', 60)
             ->assertJsonPath('data.automacao_expurgo_auditoria_ativo', true)
             ->assertJsonPath('data.automacao_expurgo_carteirinhas_ativo', true)
             ->assertJsonPath('data.automacao_verificacao_guias_diaria_ativo', true);
@@ -86,6 +94,19 @@ class ConfiguracoesGlobaisApiTest extends TestCase
         ]))->assertJsonValidationErrors('unimed_captura_senha_validade_intervalo_horas');
     }
 
+    /** A janela "madrugada" cruza a meia-noite de propósito (fim < início) — não pode exigir `after`. */
+    public function test_janela_madrugada_da_sincronizacao_clinica_aceita_fim_antes_do_inicio(): void
+    {
+        $this->autenticarComToken();
+
+        $this->putJson('/api/configuracoes/globais', $this->payloadValido([
+            'automacao_sincronizacao_clinica_madrugada_horario_inicio' => '22:00',
+            'automacao_sincronizacao_clinica_madrugada_horario_fim' => '07:59',
+        ]))->assertOk()
+            ->assertJsonPath('data.automacao_sincronizacao_clinica_madrugada_horario_inicio', '22:00')
+            ->assertJsonPath('data.automacao_sincronizacao_clinica_madrugada_horario_fim', '07:59');
+    }
+
     public function test_liga_e_desliga_automacoes_individualmente(): void
     {
         $this->autenticarComToken();
@@ -96,7 +117,7 @@ class ConfiguracoesGlobaisApiTest extends TestCase
             'unimed_captura_senha_validade_intervalo_horas' => 24,
             'automacao_verificacao_incerta_ativo' => false,
             'automacao_sincronizacao_clinica_ativo' => false,
-            'automacao_sincronizacao_clinica_intervalo_minutos' => 15,
+            'automacao_sincronizacao_clinica_diurno_intervalo_minutos' => 15,
             'automacao_expurgo_auditoria_ativo' => false,
             'automacao_expurgo_carteirinhas_ativo' => false,
             'automacao_verificacao_guias_diaria_ativo' => false,
@@ -106,7 +127,7 @@ class ConfiguracoesGlobaisApiTest extends TestCase
             ->assertJsonPath('data.unimed_captura_senha_validade_intervalo_horas', 24)
             ->assertJsonPath('data.automacao_verificacao_incerta_ativo', false)
             ->assertJsonPath('data.automacao_sincronizacao_clinica_ativo', false)
-            ->assertJsonPath('data.automacao_sincronizacao_clinica_intervalo_minutos', 15)
+            ->assertJsonPath('data.automacao_sincronizacao_clinica_diurno_intervalo_minutos', 15)
             ->assertJsonPath('data.automacao_expurgo_auditoria_ativo', false)
             ->assertJsonPath('data.automacao_expurgo_carteirinhas_ativo', false)
             ->assertJsonPath('data.automacao_verificacao_guias_diaria_ativo', false);
@@ -131,7 +152,15 @@ class ConfiguracoesGlobaisApiTest extends TestCase
             'unimed_captura_senha_validade_intervalo_horas' => 6,
             'automacao_verificacao_incerta_ativo' => true,
             'automacao_sincronizacao_clinica_ativo' => true,
-            'automacao_sincronizacao_clinica_intervalo_minutos' => 5,
+            'automacao_sincronizacao_clinica_diurno_horario_inicio' => '08:00',
+            'automacao_sincronizacao_clinica_diurno_horario_fim' => '18:00',
+            'automacao_sincronizacao_clinica_diurno_intervalo_minutos' => 10,
+            'automacao_sincronizacao_clinica_noturno_horario_inicio' => '18:00',
+            'automacao_sincronizacao_clinica_noturno_horario_fim' => '22:00',
+            'automacao_sincronizacao_clinica_noturno_intervalo_minutos' => 30,
+            'automacao_sincronizacao_clinica_madrugada_horario_inicio' => '22:00',
+            'automacao_sincronizacao_clinica_madrugada_horario_fim' => '07:59',
+            'automacao_sincronizacao_clinica_madrugada_intervalo_minutos' => 60,
             'automacao_expurgo_auditoria_ativo' => true,
             'automacao_expurgo_carteirinhas_ativo' => true,
             'automacao_verificacao_guias_diaria_ativo' => true,

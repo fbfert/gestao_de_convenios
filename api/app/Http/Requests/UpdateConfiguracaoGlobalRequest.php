@@ -58,7 +58,18 @@ class UpdateConfiguracaoGlobalRequest extends FormRequest
             'unimed_captura_senha_validade_intervalo_horas' => ['required', 'integer', 'in:1,6,12,24'],
             'automacao_verificacao_incerta_ativo' => ['required', 'boolean'],
             'automacao_sincronizacao_clinica_ativo' => ['required', 'boolean'],
-            'automacao_sincronizacao_clinica_intervalo_minutos' => ['required', 'integer', 'min:5', 'max:1440'],
+
+            // 3 janelas de horário, cada uma com seu próprio intervalo (SincronizarClinicaJob).
+            // Sem `after:` de propósito: a janela "madrugada" cruza a meia-noite (fim < início).
+            'automacao_sincronizacao_clinica_diurno_horario_inicio' => ['required', 'date_format:H:i'],
+            'automacao_sincronizacao_clinica_diurno_horario_fim' => ['required', 'date_format:H:i'],
+            'automacao_sincronizacao_clinica_diurno_intervalo_minutos' => ['required', 'integer', 'min:5', 'max:1440'],
+            'automacao_sincronizacao_clinica_noturno_horario_inicio' => ['required', 'date_format:H:i'],
+            'automacao_sincronizacao_clinica_noturno_horario_fim' => ['required', 'date_format:H:i'],
+            'automacao_sincronizacao_clinica_noturno_intervalo_minutos' => ['required', 'integer', 'min:5', 'max:1440'],
+            'automacao_sincronizacao_clinica_madrugada_horario_inicio' => ['required', 'date_format:H:i'],
+            'automacao_sincronizacao_clinica_madrugada_horario_fim' => ['required', 'date_format:H:i'],
+            'automacao_sincronizacao_clinica_madrugada_intervalo_minutos' => ['required', 'integer', 'min:5', 'max:1440'],
             'automacao_expurgo_auditoria_ativo' => ['required', 'boolean'],
             'automacao_expurgo_carteirinhas_ativo' => ['required', 'boolean'],
             'automacao_verificacao_guias_diaria_ativo' => ['required', 'boolean'],

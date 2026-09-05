@@ -3,8 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\ClinicaPacientePendente;
+use App\Models\ClinicaPushPendencia;
 use App\Models\Convenio;
 use App\Models\Paciente;
+use App\Models\Profissional;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -129,6 +131,117 @@ class ClinicaSyncPendenciasApiTest extends TestCase
         $pendencia = $this->criarPendencia($candidato);
 
         $this->postJson("/api/configuracoes/clinica-sync/pendencias/{$pendencia->id}/rejeitar")
+            ->assertOk()
+            ->assertJsonPath('status', 'rejeitado');
+
+        $this->assertSame('rejeitado', $pendencia->fresh()->status);
+    }
+
+    private function especialidadeId(): int
+    {
+        return \App\Models\Especialidade::query()->where('tenant_id', $this->tenantId())->firstOrFail()->id;
+    }
+
+    public function test_lista_push_pendencias_com_nome_local_resolvido(): void
+    {
+        $this->autenticar();
+
+        $paciente = Paciente::query()->create([
+            'tenant_id' => $this->tenantId(),
+            'nome' => 'Roberto Silva Neto Junior',
+            'carteirinha' => '11122233344',
+            'convenio_id' => $this->convenioId(),
+            'ativo' => true,
+        ]);
+
+        ClinicaPushPendencia::query()->create([
+            'tenant_id' => $this->tenantId(),
+            'tipo' => 'paciente',
+            'local_id' => $paciente->id,
+            'candidatos_json' => [['clinica_id' => 700, 'nome' => 'Roberto Silva Neto', 'similaridade' => 95.0]],
+            'status' => 'pendente',
+        ]);
+
+        $this->getJson('/api/configuracoes/clinica-sync/push-pendencias')
+            ->assertOk()
+            ->assertJsonCount(1)
+            ->assertJsonPath('0.tipo', 'paciente')
+            ->assertJsonPath('0.nome_local', 'Roberto Silva Neto Junior')
+            ->assertJsonPath('0.candidatos.0.clinica_id', 700);
+    }
+
+    public function test_confirmar_push_pendencia_vincula_clinica_id_no_profissional(): void
+    {
+        $this->autenticar();
+
+        $profissional = Profissional::query()->create([
+            'tenant_id' => $this->tenantId(),
+            'nome' => 'Marina Tavares',
+            'especialidade_id' => $this->especialidadeId(),
+            'ativo' => true,
+        ]);
+
+        $pendencia = ClinicaPushPendencia::query()->create([
+            'tenant_id' => $this->tenantId(),
+            'tipo' => 'profissional',
+            'local_id' => $profissional->id,
+            'candidatos_json' => [['clinica_id' => 900, 'nome' => 'Marina Tavares Almeida', 'similaridade' => 92.0]],
+            'status' => 'pendente',
+        ]);
+
+        $this->postJson("/api/configuracoes/clinica-sync/push-pendencias/{$pendencia->id}/confirmar", ['clinica_id_escolhido' => 900])
+            ->assertOk()
+            ->assertJsonPath('status', 'confirmado');
+
+        $this->assertSame(900, $profissional->fresh()->clinica_id);
+        $this->assertSame('confirmado', $pendencia->fresh()->status);
+    }
+
+    public function test_confirmar_push_pendencia_com_id_fora_dos_candidatos_falha(): void
+    {
+        $this->autenticar();
+
+        $paciente = Paciente::query()->create([
+            'tenant_id' => $this->tenantId(),
+            'nome' => 'Roberto Silva Neto Junior',
+            'carteirinha' => '11122233344',
+            'convenio_id' => $this->convenioId(),
+            'ativo' => true,
+        ]);
+
+        $pendencia = ClinicaPushPendencia::query()->create([
+            'tenant_id' => $this->tenantId(),
+            'tipo' => 'paciente',
+            'local_id' => $paciente->id,
+            'candidatos_json' => [['clinica_id' => 700, 'nome' => 'Roberto Silva Neto', 'similaridade' => 95.0]],
+            'status' => 'pendente',
+        ]);
+
+        $this->postJson("/api/configuracoes/clinica-sync/push-pendencias/{$pendencia->id}/confirmar", ['clinica_id_escolhido' => 123456])
+            ->assertStatus(422);
+    }
+
+    public function test_rejeitar_push_pendencia(): void
+    {
+        $this->autenticar();
+
+        $paciente = Paciente::query()->create([
+            'tenant_id' => $this->tenantId(),
+            'nome' => 'Roberto Silva Neto Junior',
+            'carteirinha' => '11122233344',
+            'convenio_id' => $this->convenioId(),
+            'ativo' => true,
+        ]);
+
+        $pendencia = ClinicaPushPendencia::query()->create([
+            'tenant_id' => $this->tenantId(),
+            'tipo' => 'paciente',
+            'local_id' => $paciente->id,
+            'candidatos_json' => [['clinica_id' => 700, 'nome' => 'Roberto Silva Neto', 'similaridade' => 95.0]],
+            'status' => 'pendente',
+        ]);
+
+        $this->postJson("/api/configuracoes/clinica-sync/push-pendencias/{$pendencia->id}/rejeitar")
             ->assertOk()
             ->assertJsonPath('status', 'rejeitado');
 

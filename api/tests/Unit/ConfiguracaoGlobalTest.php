@@ -35,7 +35,9 @@ class ConfiguracaoGlobalTest extends TestCase
         $this->assertTrue($configuracao->automacao_captura_senha_validade_ativo);
         $this->assertTrue($configuracao->automacao_verificacao_incerta_ativo);
         $this->assertTrue($configuracao->automacao_sincronizacao_clinica_ativo);
-        $this->assertSame(5, $configuracao->automacao_sincronizacao_clinica_intervalo_minutos);
+        $this->assertSame(10, $configuracao->automacao_sincronizacao_clinica_diurno_intervalo_minutos);
+        $this->assertSame(30, $configuracao->automacao_sincronizacao_clinica_noturno_intervalo_minutos);
+        $this->assertSame(60, $configuracao->automacao_sincronizacao_clinica_madrugada_intervalo_minutos);
         $this->assertTrue($configuracao->automacao_expurgo_auditoria_ativo);
         $this->assertTrue($configuracao->automacao_expurgo_carteirinhas_ativo);
         $this->assertTrue($configuracao->automacao_verificacao_guias_diaria_ativo);

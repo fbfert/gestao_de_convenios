@@ -2,6 +2,7 @@
 
 namespace App\Services\ClinicaSync;
 
+use App\Models\ClinicaPacientePendente;
 use App\Models\Convenio;
 use App\Models\Paciente;
 use Carbon\CarbonImmutable;
@@ -22,6 +23,9 @@ use Illuminate\Support\Str;
 class PacienteSyncService
 {
     private const TIPOS_TELEFONE = ['telefone', 'celular', 'whatsapp'];
+
+    /** Mesmo corte de PedidoMedicoAiService/CarteirinhaAiService: abaixo disso não propomos vínculo. */
+    private const CONFIANCA_MINIMA = 90;
 
     public function __construct(
         private readonly ClinicaApiClient $api,
@@ -88,6 +92,10 @@ class PacienteSyncService
 
         }
 
+        if ($local === null && $this->interceptarSemMatchExato($clinicaId, $remoto, $remotoAtualizadoEm, $resumo)) {
+            return;
+        }
+
         $particular = Convenio::where('tenant_id', $this->tenantId)->where('nome', 'Particular')->first();
 
         if ($local === null && $particular === null) {
@@ -135,6 +143,91 @@ class PacienteSyncService
         $novo->save();
 
         $resumo['criados']++;
+    }
+
+    /**
+     * Sem clinica_id nem CPF batendo, não decide sozinho: se já existe uma
+     * pendência aberta pra esse clinica_id, só atualiza o snapshot (evita
+     * duplicar a pendência a cada rodada de 5 min). Se não existe, procura
+     * candidato por nome parecido entre pacientes locais sem vínculo — se
+     * achar, abre pendência pra humano confirmar em vez de criar Paciente
+     * novo (foi assim que Abner virou dois cadastros: nome bateu ~90% mas
+     * criamos sozinho). Só devolve false (segue criação normal) quando não
+     * há pendência pendente nem candidato plausível.
+     */
+    private function interceptarSemMatchExato(int $clinicaId, array $remoto, CarbonImmutable $remotoAtualizadoEm, array &$resumo): bool
+    {
+        $pendencia = ClinicaPacientePendente::where('tenant_id', $this->tenantId)
+            ->where('clinica_id', $clinicaId)
+            ->first();
+
+        if ($pendencia !== null && $pendencia->status === 'pendente') {
+            $pendencia->forceFill([
+                'dados_remoto' => $remoto,
+                'remoto_atualizado_em' => $remotoAtualizadoEm,
+            ])->save();
+
+            $resumo['pendentes'][] = "Paciente '{$remoto['nome']}' (clinica_id={$clinicaId}): aguardando confirmação manual de vínculo em Configurações > Sincronização Clínica.";
+
+            return true;
+        }
+
+        if ($pendencia !== null) {
+            // já resolvida (confirmado deveria ter clinica_id setado no local,
+            // então não devia cair aqui; rejeitado = "é gente diferente mesmo") — segue criação normal.
+            return false;
+        }
+
+        $candidatos = $this->buscarCandidatos($remoto['nome']);
+
+        if ($candidatos === []) {
+            return false;
+        }
+
+        ClinicaPacientePendente::create([
+            'tenant_id' => $this->tenantId,
+            'clinica_id' => $clinicaId,
+            'dados_remoto' => $remoto,
+            'remoto_atualizado_em' => $remotoAtualizadoEm,
+            'status' => 'pendente',
+            'candidato_paciente_id' => $candidatos[0]['id'],
+            'similaridade' => (int) round($candidatos[0]['similaridade']),
+            'candidatos_json' => $candidatos,
+        ]);
+
+        $resumo['pendentes'][] = "Paciente '{$remoto['nome']}' (clinica_id={$clinicaId}): ".count($candidatos)." candidato(s) parecido(s) já cadastrado(s) no gescon — revisar em Configurações > Sincronização Clínica.";
+
+        return true;
+    }
+
+    /**
+     * Pacientes locais sem vínculo (clinica_id nulo) com nome ≥90% parecido,
+     * mesmo idioma de PedidoMedicoAiService::rankByNome / CarteirinhaAiService.
+     *
+     * @return array<int, array{id: int, similaridade: float}>
+     */
+    private function buscarCandidatos(string $nome): array
+    {
+        $needle = mb_strtolower($this->semAcento(trim($nome)));
+
+        return Paciente::where('tenant_id', $this->tenantId)
+            ->whereNull('clinica_id')
+            ->get(['id', 'nome'])
+            ->map(function (Paciente $paciente) use ($needle) {
+                similar_text($needle, mb_strtolower($this->semAcento($paciente->nome)), $percent);
+
+                return ['id' => $paciente->id, 'similaridade' => round($percent, 1)];
+            })
+            ->filter(fn (array $item) => $item['similaridade'] >= self::CONFIANCA_MINIMA)
+            ->sortByDesc('similaridade')
+            ->take(5)
+            ->values()
+            ->all();
+    }
+
+    private function semAcento(string $valor): string
+    {
+        return iconv('UTF-8', 'ASCII//TRANSLIT', $valor) ?: $valor;
     }
 
     private function push(): array

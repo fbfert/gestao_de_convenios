@@ -4,6 +4,13 @@ import {
   useSincronizarClinicaAgora,
   type ClinicaSyncResumoEntidade,
 } from './useClinicaSync'
+import {
+  useBuscarPacientesDuplicados,
+  useClinicaSyncPendencias,
+  useConfirmarPendencia,
+  useRejeitarPendencia,
+  type ClinicaPacientePendencia,
+} from './useClinicaSyncPendencias'
 import { Botao } from '../../components/ui/Botao'
 import { Badge, type BadgeProps } from '../../components/ui/Badge'
 
@@ -36,6 +43,158 @@ function BlocoEntidade({ titulo, resumo }: { titulo: string; resumo: ClinicaSync
         </ul>
       ) : null}
     </div>
+  )
+}
+
+function CardPendencia({ pendencia }: { pendencia: ClinicaPacientePendencia }) {
+  const confirmar = useConfirmarPendencia()
+  const rejeitar = useRejeitarPendencia()
+  const carregando = confirmar.isPending || rejeitar.isPending
+
+  return (
+    <div className="rounded-superficie border border-linha bg-fundo p-4 shadow-e1" data-testid="clinica-sync-pendencia">
+      <p className="text-corpo font-semibold text-white">
+        {pendencia.nome_remoto} <span className="text-meta text-slate-400">(vindo do clinica)</span>
+      </p>
+      <p className="mt-1 text-meta text-slate-400">
+        Parece já estar cadastrado no gescon. Confirme quem é, ou diga que é gente diferente.
+      </p>
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        {pendencia.candidatos.map((candidato) => (
+          <button
+            key={candidato.id}
+            type="button"
+            disabled={carregando}
+            onClick={() => confirmar.mutate({ pendenciaId: pendencia.id, pacienteId: candidato.id })}
+            className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1.5 text-meta font-semibold text-cyan-100 transition hover:bg-cyan-400/20 disabled:opacity-50"
+            data-testid="clinica-sync-pendencia-candidato"
+          >
+            Vincular a #{candidato.id} {candidato.nome}
+            {candidato.carteirinha ? ` · ${candidato.carteirinha}` : ''} · {candidato.similaridade}%
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-3">
+        <Botao
+          type="button"
+          variante="secundario"
+          tamanho="sm"
+          carregando={rejeitar.isPending}
+          disabled={carregando}
+          onClick={() => rejeitar.mutate(pendencia.id)}
+          data-testid="clinica-sync-pendencia-rejeitar"
+        >
+          Não é a mesma pessoa, cadastrar novo
+        </Botao>
+      </div>
+
+      {confirmar.isError ? (
+        <p className="mt-2 text-meta text-rose-300">
+          {getHttpErrorMessage(confirmar.error, 'Não foi possível confirmar o vínculo.')}
+        </p>
+      ) : null}
+      {rejeitar.isError ? (
+        <p className="mt-2 text-meta text-rose-300">
+          {getHttpErrorMessage(rejeitar.error, 'Não foi possível rejeitar a pendência.')}
+        </p>
+      ) : null}
+    </div>
+  )
+}
+
+function SecaoPendencias() {
+  const query = useClinicaSyncPendencias()
+
+  if (query.isPending) return <p className="text-corpo text-slate-400">Carregando pendências...</p>
+  if (query.isError) {
+    return (
+      <p className="text-corpo text-rose-300">
+        {getHttpErrorMessage(query.error, 'Não foi possível carregar as pendências.')}
+      </p>
+    )
+  }
+  if (query.data.length === 0) return null
+
+  return (
+    <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
+      <h3 className="text-subtitulo font-semibold text-white">Pendências de vinculação</h3>
+      <p className="mt-1 text-meta text-slate-400">
+        Pacientes que chegaram do clinica com nome parecido a alguém já cadastrado no gescon —
+        nunca vinculamos sozinhos, confirme abaixo.
+      </p>
+      <div className="mt-4 space-y-3">
+        {query.data.map((pendencia) => (
+          <CardPendencia key={pendencia.id} pendencia={pendencia} />
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function SecaoDuplicados() {
+  const buscar = useBuscarPacientesDuplicados()
+
+  return (
+    <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h3 className="text-subtitulo font-semibold text-white">Pacientes possivelmente duplicados</h3>
+          <p className="mt-1 text-meta text-slate-400">
+            Compara nomes já cadastrados no gescon (não só os vindos do clinica) — decisão de unir é manual.
+          </p>
+        </div>
+        <Botao
+          type="button"
+          variante="secundario"
+          carregando={buscar.isPending}
+          onClick={() => buscar.mutate()}
+          data-testid="clinica-sync-buscar-duplicados"
+        >
+          Buscar duplicados
+        </Botao>
+      </div>
+
+      {buscar.isError ? (
+        <p className="mt-4 text-corpo text-rose-300">
+          {getHttpErrorMessage(buscar.error, 'Não foi possível buscar duplicados.')}
+        </p>
+      ) : null}
+
+      {buscar.isSuccess ? (
+        buscar.data.length === 0 ? (
+          <p className="mt-4 text-corpo text-slate-400">Nenhum par parecido encontrado.</p>
+        ) : (
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full text-left text-meta">
+              <thead className="text-texto-suave">
+                <tr>
+                  <th className="pb-2 pr-4">Paciente A</th>
+                  <th className="pb-2 pr-4">Paciente B</th>
+                  <th className="pb-2">Similaridade</th>
+                </tr>
+              </thead>
+              <tbody className="text-slate-300">
+                {buscar.data.map((par, indice) => (
+                  <tr key={indice} className="border-t border-linha">
+                    <td className="py-2 pr-4">
+                      #{par.paciente_a.id} {par.paciente_a.nome}
+                      {par.paciente_a.carteirinha ? ` · ${par.paciente_a.carteirinha}` : ''}
+                    </td>
+                    <td className="py-2 pr-4">
+                      #{par.paciente_b.id} {par.paciente_b.nome}
+                      {par.paciente_b.carteirinha ? ` · ${par.paciente_b.carteirinha}` : ''}
+                    </td>
+                    <td className="py-2">{par.similaridade}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )
+      ) : null}
+    </section>
   )
 }
 
@@ -130,6 +289,9 @@ export function ConfiguracoesClinicaSyncPage() {
           <p className="mt-4 text-corpo text-slate-400">Nenhuma execução ainda.</p>
         )}
       </section>
+
+      <SecaoPendencias />
+      <SecaoDuplicados />
     </div>
   )
 }

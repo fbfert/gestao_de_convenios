@@ -316,6 +316,13 @@ class PacienteSyncService
                 ?? CarbonImmutable::parse($atual['nascimento'])->toDateString(),
             'sexo' => $atual['sexo'],
             'cpf' => $paciente->cpf !== null ? $this->somenteDigitos($paciente->cpf) : null,
+            // convenio_id/plano/carteirinha* são conceito de billing do CLINICA (não o
+            // convênio/carteirinha do gescon) — reenvia o que já estava lá, senão o
+            // clinica devolve 422 quando o tenant exige esses campos (régua do cadastro).
+            'convenio_id' => $atual['convenio_id'] ?? null,
+            'plano' => $atual['plano'] ?? null,
+            'carteirinha' => $atual['carteirinha'] ?? null,
+            'carteirinha_validade' => $atual['carteirinha_validade'] ?? null,
             'indicacao' => $atual['indicacao'] ?? null,
             'necessidade' => $atual['necessidade'],
             'estado_civil' => $atual['estado_civil'] ?? null,

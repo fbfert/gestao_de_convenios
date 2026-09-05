@@ -54,6 +54,11 @@ test('fluxo completo de negocio', async ({ page }, testInfo: TestInfo) => {
     `POST /solicitacoes retornou ${solicitacaoResponse.status()} com corpo: ${solicitacaoResponseText}`,
   ).toBe(201)
 
+  // Criar não navega mais direto pra lista: a etapa de anexos aparece na
+  // mesma tela primeiro, e só "Concluir" leva de volta.
+  await expect(page.getByTestId('solicitacao-anexos-step')).toBeVisible()
+  await page.getByTestId('solicitacao-anexos-concluir').click()
+
   const solicitacaoRow = page.locator('[data-testid^="solicitacao-row-"]').first()
   await expect(solicitacaoRow).toBeVisible()
   await expect(solicitacaoRow).toContainText('Análise Interna')
@@ -366,8 +371,8 @@ test('pedido com duas especialidades recebe anexos por especialidade', async ({ 
   const itens = body.data.itens as Array<{ id: number }>
   expect(itens).toHaveLength(2)
 
-  await page.getByTestId(`solicitacao-acoes-${solicitacaoId}`).click()
-  await page.getByTestId(`solicitacao-anexos-${solicitacaoId}`).click()
+  // A etapa de anexos já aparece na mesma tela, sem precisar abrir o menu de
+  // ações na lista.
   await expect(page.getByTestId('solicitacao-anexos')).toBeVisible()
 
   // Pedido Médico vale para o pedido inteiro; Plano é por especialidade.

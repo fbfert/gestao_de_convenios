@@ -32,6 +32,8 @@ import { AutomacaoUnimedDesativadaModal } from '../configuracoes/AutomacaoUnimed
 import { useAutomacaoUnimedGate } from '../configuracoes/useAutomacaoUnimedGate'
 import { CidsCampo } from '../cids/CidsCampo'
 import { SolicitacaoItensFields } from './SolicitacaoItensFields'
+import { ResumoPastaPaciente } from './ResumoPastaPaciente'
+import { SolicitacaoAnexosStep } from './SolicitacaoAnexosStep'
 import { emptyItem, itensEstaoCompletos } from './solicitacaoItens'
 import { Indicadores } from '../../components/ui/Indicadores'
 import { Tooltip } from '../../components/ui/Tooltip'
@@ -127,6 +129,8 @@ export function SolicitacoesPage() {
   const [formError, setFormError] = useState<string | null>(null)
   const [pacienteSelecionado, setPacienteSelecionado] = useState<PacienteRef | null>(null)
   const [medicoSelecionado, setMedicoSelecionado] = useState<MedicoRef | null>(null)
+  /** Criada com sucesso: troca o formulário pela etapa de anexos, sem navegar pra outro lugar. */
+  const [solicitacaoCriada, setSolicitacaoCriada] = useState<Solicitacao | null>(null)
   const [pacienteModalAberto, setPacienteModalAberto] = useState(false)
   const [medicoModalAberto, setMedicoModalAberto] = useState(false)
 
@@ -281,11 +285,13 @@ export function SolicitacoesPage() {
       cid_ids: current.cid_ids,
       itens: [{ ...emptyItem }],
     }))
+    setSolicitacaoCriada(null)
     setFormError(null)
   }
 
   const handleCancel = () => {
     setFormError(null)
+    setSolicitacaoCriada(null)
     if (isCreateRoute) {
       navigate('/solicitacoes')
       return
@@ -299,22 +305,29 @@ export function SolicitacoesPage() {
     setFormError(null)
 
     try {
-      await criarSolicitacao.mutateAsync(form)
-      setForm((current) => ({
-        ...emptyForm,
-        convenio_id: current.convenio_id,
-        paciente_id: current.paciente_id,
-        medico_id: current.medico_id,
-        cid_ids: current.cid_ids,
-        itens: [{ ...emptyItem }],
-      }))
-      if (isCreateRoute) {
-        navigate('/solicitacoes')
-      } else {
-        setIsFormOpen(false)
-      }
+      const criada = await criarSolicitacao.mutateAsync(form)
+      // Não reseta nem navega ainda: a próxima etapa (anexos) usa esta
+      // solicitação recém-criada, com id real.
+      setSolicitacaoCriada(criada)
     } catch (error) {
       setFormError(getHttpErrorMessage(error, 'Não foi possível criar a solicitação.'))
+    }
+  }
+
+  const handleConcluirAnexos = () => {
+    setForm((current) => ({
+      ...emptyForm,
+      convenio_id: current.convenio_id,
+      paciente_id: current.paciente_id,
+      medico_id: current.medico_id,
+      cid_ids: current.cid_ids,
+      itens: [{ ...emptyItem }],
+    }))
+    setSolicitacaoCriada(null)
+    if (isCreateRoute) {
+      navigate('/solicitacoes')
+    } else {
+      setIsFormOpen(false)
     }
   }
 
@@ -438,7 +451,11 @@ export function SolicitacoesPage() {
       </section>
       ) : null}
 
-      {isFormOpen || isCreateRoute ? (
+      {(isFormOpen || isCreateRoute) && solicitacaoCriada ? (
+        <SolicitacaoAnexosStep solicitacao={solicitacaoCriada} onConcluir={handleConcluirAnexos} />
+      ) : null}
+
+      {(isFormOpen || isCreateRoute) && !solicitacaoCriada ? (
         <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
           <form onSubmit={handleFormSubmit} className="space-y-4" data-testid="solicitacao-form">
             <div className="flex items-start justify-between gap-4">
@@ -522,6 +539,8 @@ export function SolicitacoesPage() {
               convenioId={form.convenio_id}
               carteirinhaBlocos={convenioSelecionado?.carteirinha_blocos}
             />
+
+            <ResumoPastaPaciente pacienteId={pacienteSelecionado ? pacienteSelecionado.id : null} />
 
             <SolicitacaoItensFields
               itens={form.itens}

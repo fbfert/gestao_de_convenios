@@ -25,9 +25,12 @@ import { formatCarteirinha, isCarteirinhaCompleta } from '../../lib/carteirinha'
 import { CarteirinhaBlocosInput } from '../../components/ui/CarteirinhaBlocosInput'
 import { SolicitacaoItensFields } from './SolicitacaoItensFields'
 import { emptyItem, itensEstaoCompletos } from './solicitacaoItens'
+import { ResumoPastaPaciente } from './ResumoPastaPaciente'
+import { SolicitacaoAnexosStep } from './SolicitacaoAnexosStep'
 import type {
   PedidoMedicoAiResult,
   PedidoMedicoSuggestion,
+  Solicitacao,
   SolicitacaoForm,
   SolicitacaoFormItem,
 } from './types'
@@ -287,6 +290,8 @@ export function LerPedidoMedicoPage() {
   const [createdEspecialidades, setCreatedEspecialidades] = useState<EspecialidadeRef[]>([])
   const [createdMedicos, setCreatedMedicos] = useState<MedicoRef[]>([])
   const [formError, setFormError] = useState<string | null>(null)
+  /** Criada com sucesso: troca a revisão pela etapa de anexos. */
+  const [solicitacaoCriada, setSolicitacaoCriada] = useState<Solicitacao | null>(null)
 
   const [pacienteModo, setPacienteModo] = useState<'existente' | 'novo'>('existente')
   const [novoPacienteNome, setNovoPacienteNome] = useState('')
@@ -569,8 +574,10 @@ export function LerPedidoMedicoPage() {
     setFormError(null)
 
     try {
-      await criarSolicitacao.mutateAsync(form)
-      navigate('/solicitacoes')
+      const criada = await criarSolicitacao.mutateAsync(form)
+      // Não navega ainda: a próxima etapa (anexos) usa esta solicitação
+      // recém-criada, com id real — o Pedido Médico lido já vem anexado.
+      setSolicitacaoCriada(criada)
     } catch (error) {
       setFormError(getHttpErrorMessage(error, 'Não foi possível criar a solicitação.'))
     }
@@ -589,8 +596,17 @@ export function LerPedidoMedicoPage() {
           </Botao>
         </div>
 
-        {resultado ? <Etapas passoAtual={passo} maxAlcancavel={maxAlcancavel} onIr={irParaEtapa} /> : null}
+        {resultado && !solicitacaoCriada ? (
+          <Etapas passoAtual={passo} maxAlcancavel={maxAlcancavel} onIr={irParaEtapa} />
+        ) : null}
       </section>
+
+      {solicitacaoCriada ? (
+        <SolicitacaoAnexosStep
+          solicitacao={solicitacaoCriada}
+          onConcluir={() => navigate('/solicitacoes')}
+        />
+      ) : null}
 
       {/* Etapa 0 — Upload */}
       {passo === 0 ? (
@@ -702,6 +718,8 @@ export function LerPedidoMedicoPage() {
             rotuloNovo="Cadastrar novo paciente"
             testIdPrefix="pedido-medico-paciente-modo"
           />
+
+          <ResumoPastaPaciente pacienteId={form.paciente_id ? Number(form.paciente_id) : null} />
 
           {pacienteModo === 'existente' ? (
             <div className="space-y-3">
@@ -1084,7 +1102,7 @@ export function LerPedidoMedicoPage() {
       ) : null}
 
       {/* Etapa 5 — CID, Data, Observações e Revisão final */}
-      {passo === 5 && resultado ? (
+      {!solicitacaoCriada && passo === 5 && resultado ? (
         <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
           <form onSubmit={handleSubmit} className="space-y-5" data-testid="pedido-medico-form">
             <div>

@@ -15,6 +15,7 @@ class Paciente extends Model
         'tenant_id', 'nome', 'cpf', 'data_nascimento', 'carteirinha', 'validade_carteirinha',
         'convenio_id', 'telefone', 'clinica_agil_id', 'ativo',
         'clinica_id', 'sincronizado_em', 'clinica_status',
+        'mesclado_em_id', 'mesclado_em',
     ];
 
     protected $casts = [
@@ -22,11 +23,23 @@ class Paciente extends Model
         'data_nascimento' => 'date',
         'validade_carteirinha' => 'date',
         'sincronizado_em' => 'datetime',
+        'mesclado_em' => 'datetime',
     ];
 
     public function carteirinhaVencida(): bool
     {
         return $this->validade_carteirinha !== null && $this->validade_carteirinha->isPast();
+    }
+
+    /** Perdedor de uma unificação (ver PacienteMergeService) — nunca é apagado, só desativado e apontado pro vencedor. */
+    public function mesclado(): bool
+    {
+        return $this->mesclado_em_id !== null;
+    }
+
+    public function mescladoEm()
+    {
+        return $this->belongsTo(Paciente::class, 'mesclado_em_id');
     }
 
     public function convenio()

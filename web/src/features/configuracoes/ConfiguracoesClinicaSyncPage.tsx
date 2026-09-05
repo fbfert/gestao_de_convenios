@@ -5,7 +5,6 @@ import {
   type ClinicaSyncResumoEntidade,
 } from './useClinicaSync'
 import {
-  useBuscarPacientesDuplicados,
   useClinicaSyncPendencias,
   useConfirmarPendencia,
   useRejeitarPendencia,
@@ -133,73 +132,6 @@ function SecaoPendencias() {
   )
 }
 
-function SecaoDuplicados() {
-  const buscar = useBuscarPacientesDuplicados()
-
-  return (
-    <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h3 className="text-subtitulo font-semibold text-white">Pacientes possivelmente duplicados</h3>
-          <p className="mt-1 text-meta text-slate-400">
-            Compara nomes já cadastrados no gescon (não só os vindos do clinica) — decisão de unir é manual.
-          </p>
-        </div>
-        <Botao
-          type="button"
-          variante="secundario"
-          carregando={buscar.isPending}
-          onClick={() => buscar.mutate()}
-          data-testid="clinica-sync-buscar-duplicados"
-        >
-          Buscar duplicados
-        </Botao>
-      </div>
-
-      {buscar.isError ? (
-        <p className="mt-4 text-corpo text-rose-300">
-          {getHttpErrorMessage(buscar.error, 'Não foi possível buscar duplicados.')}
-        </p>
-      ) : null}
-
-      {buscar.isSuccess ? (
-        buscar.data.length === 0 ? (
-          <p className="mt-4 text-corpo text-slate-400">Nenhum par parecido encontrado.</p>
-        ) : (
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full text-left text-meta">
-              <thead className="text-texto-suave">
-                <tr>
-                  <th className="pb-2 pr-4">Paciente A</th>
-                  <th className="pb-2 pr-4">Paciente B</th>
-                  <th className="pb-2">Similaridade</th>
-                </tr>
-              </thead>
-              <tbody className="text-slate-300">
-                {buscar.data.map((par, indice) => (
-                  <tr key={indice} className="border-t border-linha">
-                    <td className="py-2 pr-4">
-                      #{par.paciente_a.id} {par.paciente_a.nome}
-                      {par.paciente_a.carteirinha ? ` · ${par.paciente_a.carteirinha}` : ''}
-                      {!par.paciente_a.ativo ? ' · inativo' : ''}
-                    </td>
-                    <td className="py-2 pr-4">
-                      #{par.paciente_b.id} {par.paciente_b.nome}
-                      {par.paciente_b.carteirinha ? ` · ${par.paciente_b.carteirinha}` : ''}
-                      {!par.paciente_b.ativo ? ' · inativo' : ''}
-                    </td>
-                    <td className="py-2">{par.similaridade}%</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )
-      ) : null}
-    </section>
-  )
-}
-
 export function ConfiguracoesClinicaSyncPage() {
   const query = useClinicaSyncStatus()
   const sincronizar = useSincronizarClinicaAgora()
@@ -293,7 +225,6 @@ export function ConfiguracoesClinicaSyncPage() {
       </section>
 
       <SecaoPendencias />
-      <SecaoDuplicados />
     </div>
   )
 }

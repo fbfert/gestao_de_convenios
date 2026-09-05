@@ -32,6 +32,7 @@ use App\Http\Controllers\ConfiguracaoGlobalController;
 use App\Http\Controllers\ManualController;
 use App\Http\Controllers\PacienteArquivoController;
 use App\Http\Controllers\PacienteController;
+use App\Http\Controllers\PacienteMergeController;
 use App\Http\Controllers\PacienteImportController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\SolicitacaoController;
@@ -87,7 +88,6 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EncerrarSessaoExpirada::
     Route::get('/configuracoes/clinica-sync/pendencias', [ClinicaSyncController::class, 'pendencias'])->middleware('permission:configuracoes.clinica.manage');
     Route::post('/configuracoes/clinica-sync/pendencias/{pendencia}/confirmar', [ClinicaSyncController::class, 'confirmarPendencia'])->middleware('permission:configuracoes.clinica.manage');
     Route::post('/configuracoes/clinica-sync/pendencias/{pendencia}/rejeitar', [ClinicaSyncController::class, 'rejeitarPendencia'])->middleware('permission:configuracoes.clinica.manage');
-    Route::get('/configuracoes/clinica-sync/duplicados', [ClinicaSyncController::class, 'duplicados'])->middleware('permission:configuracoes.clinica.manage');
     Route::get('/configuracoes/unimed', [UnimedSettingsController::class, 'show'])->middleware('permission:configuracoes.unimed.manage');
     Route::put('/configuracoes/unimed', [UnimedSettingsController::class, 'update'])->middleware('permission:configuracoes.unimed.manage');
     Route::get('/configuracoes/unimed/worker-health', [UnimedSettingsController::class, 'health'])->middleware('permission:configuracoes.unimed.manage');
@@ -109,6 +109,12 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EncerrarSessaoExpirada::
     Route::post('/pacientes/importar', [PacienteImportController::class, 'previsualizar'])
         ->middleware('permission:dashboard.pacientes');
     Route::post('/pacientes/importar/{paciente_import_lote}/confirmar', [PacienteImportController::class, 'confirmar'])
+        ->middleware('permission:dashboard.pacientes');
+    Route::get('/pacientes/duplicados', [PacienteMergeController::class, 'duplicados'])
+        ->middleware('permission:dashboard.pacientes');
+    Route::post('/pacientes/duplicados/preview', [PacienteMergeController::class, 'preview'])
+        ->middleware('permission:dashboard.pacientes');
+    Route::post('/pacientes/duplicados/mesclar', [PacienteMergeController::class, 'mesclar'])
         ->middleware('permission:dashboard.pacientes');
     Route::get('/pacientes/{paciente}', [PacienteController::class, 'show']);
     Route::post('/pacientes', [PacienteController::class, 'store']);

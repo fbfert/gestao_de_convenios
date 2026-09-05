@@ -19,24 +19,7 @@ export type ClinicaPacientePendencia = {
   candidatos: ClinicaPacienteCandidato[]
 }
 
-type PacienteDuplicadoResumo = {
-  id: number
-  nome: string
-  cpf: string | null
-  carteirinha: string | null
-  convenio: string | null
-  vinculado_clinica: boolean
-  ativo: boolean
-}
-
-export type PacienteDuplicado = {
-  paciente_a: PacienteDuplicadoResumo
-  paciente_b: PacienteDuplicadoResumo
-  similaridade: number
-}
-
 const chavePendencias = ['configuracoes', 'clinica-sync', 'pendencias']
-const chaveDuplicados = ['configuracoes', 'clinica-sync', 'duplicados']
 
 export function useClinicaSyncPendencias() {
   return useQuery({
@@ -74,16 +57,6 @@ export function useRejeitarPendencia() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: chavePendencias })
-    },
-  })
-}
-
-export function useBuscarPacientesDuplicados() {
-  return useMutation({
-    mutationKey: chaveDuplicados,
-    mutationFn: async () => {
-      const { data } = await apiClient.get<PacienteDuplicado[]>('/configuracoes/clinica-sync/duplicados')
-      return data
     },
   })
 }

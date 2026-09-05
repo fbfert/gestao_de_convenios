@@ -8,7 +8,6 @@ use App\Models\ClinicaSyncExecucao;
 use App\Models\Paciente;
 use App\Services\ClinicaSync\ClinicaPacientePendenteService;
 use App\Services\ClinicaSync\ClinicaSyncService;
-use App\Services\PacienteDuplicadoService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -108,14 +107,6 @@ class ClinicaSyncController extends Controller
         }
 
         return response()->json(['status' => 'rejeitado']);
-    }
-
-    /** Relatório sob demanda de prováveis duplicados já cadastrados — só leitura. */
-    public function duplicados(PacienteDuplicadoService $service): JsonResponse
-    {
-        $tenantId = (int) request()->user()->tenant_id;
-
-        return response()->json($service->buscar($tenantId));
     }
 
     private function serializar(ClinicaSyncExecucao $execucao): array

@@ -212,6 +212,7 @@ class PacienteSyncService
 
         return Paciente::where('tenant_id', $this->tenantId)
             ->whereNull('clinica_id')
+            ->whereNull('mesclado_em_id')
             ->get(['id', 'nome'])
             ->map(function (Paciente $paciente) use ($needle) {
                 similar_text($needle, mb_strtolower($this->semAcento($paciente->nome)), $percent);

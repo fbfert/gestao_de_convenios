@@ -21,6 +21,7 @@ import { Botao } from '../../components/ui/Botao'
 import { Badge } from '../../components/ui/Badge'
 import { usePode } from '../../lib/permissoes'
 import { PastaDoPacienteDrawer } from './PastaDoPacienteDrawer'
+import { PacientesDuplicadosSecao } from './PacientesDuplicadosSecao'
 
 const emptyForm: PacienteForm = {
   nome: '',
@@ -103,6 +104,7 @@ export function PacientesPage() {
   const [blocosDigitados, setBlocosDigitados] = useState<string[]>([])
   const [formError, setFormError] = useState<string | null>(null)
   const [pastaAberta, setPastaAberta] = useState<Paciente | null>(null)
+  const [duplicadosVisivel, setDuplicadosVisivel] = useState(false)
   const carregadoPacienteRef = useRef<number | null>(null)
 
   const pacientesQuery = usePacientesCrud(filtros)
@@ -364,13 +366,29 @@ export function PacientesPage() {
           </div>
         </div>
 
-        <Indicadores
-          itens={[
-            { rotulo: 'Total', valor: pacientes.length },
-            { rotulo: 'Ativos', valor: totalAtivos },
-            { rotulo: 'Inativos', valor: totalInativos },
-          ]}
-        />
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Indicadores
+            itens={[
+              { rotulo: 'Total', valor: pacientes.length },
+              { rotulo: 'Ativos', valor: totalAtivos },
+              { rotulo: 'Inativos', valor: totalInativos },
+            ]}
+          />
+          {pode('dashboard.pacientes') ? (
+            <Botao
+              type="button"
+              variante="secundario"
+              onClick={() => setDuplicadosVisivel(true)}
+              data-testid="paciente-buscar-duplicados"
+            >
+              Buscar Duplicados
+            </Botao>
+          ) : null}
+        </div>
+
+        {duplicadosVisivel ? (
+          <PacientesDuplicadosSecao onFechar={() => setDuplicadosVisivel(false)} />
+        ) : null}
       </section>
       ) : null}
 

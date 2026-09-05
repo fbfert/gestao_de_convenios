@@ -5,9 +5,9 @@ namespace App\Services;
 use App\Models\Paciente;
 
 /**
- * Relatório avulso de prováveis pacientes duplicados já cadastrados no
- * gescon (ex: "Abner dos Santos Beiger" em #518 e #30) — só leitura, quem
- * decide unir os cadastros é um humano fora do gescon-app por enquanto.
+ * Detecta prováveis pacientes duplicados já cadastrados no gescon (ex:
+ * "Abner dos Santos Beiger" em #518 e #30), por similaridade de nome — quem
+ * decide qual vira o vencedor é um humano, via PacienteMergeService.
  */
 class PacienteDuplicadoService
 {
@@ -23,8 +23,12 @@ class PacienteDuplicadoService
         // "resolvida" desativando um dos dois lados sem migrar o histórico
         // (foi exatamente o que aconteceu com Abner #518/#30) — se filtrasse
         // por ativo=true o caso que motivou este relatório nunca apareceria.
+        // whereNull(mesclado_em_id): par já resolvido por PacienteMergeService
+        // não deve voltar a aparecer — o perdedor continua na base (ativo=false)
+        // mas o caso já está encerrado.
         $pacientes = Paciente::with('convenio')
             ->where('tenant_id', $tenantId)
+            ->whereNull('mesclado_em_id')
             ->get(['id', 'nome', 'cpf', 'carteirinha', 'convenio_id', 'clinica_id', 'ativo']);
 
         $pares = [];
@@ -64,6 +68,7 @@ class PacienteDuplicadoService
             'cpf' => $paciente->cpf,
             'carteirinha' => $paciente->carteirinha,
             'convenio' => $paciente->convenio?->nome,
+            'clinica_id' => $paciente->clinica_id,
             'vinculado_clinica' => $paciente->clinica_id !== null,
             'ativo' => $paciente->ativo,
         ];

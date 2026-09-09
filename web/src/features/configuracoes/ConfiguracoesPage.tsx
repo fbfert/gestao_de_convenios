@@ -108,7 +108,7 @@ function inputClasses() {
 
 export function ConfiguracoesPage() {
   const user = useAuthStore((state) => state.user)
-  const canManageUnimed = user?.permissions?.includes('configuracoes.unimed.manage') ?? user?.role === 'admin'
+  const canManageUnimed = user?.permissions?.includes('configuracoes.unimed.manage') || user?.role === 'admin'
   const emailSettingsQuery = useEmailSettings()
   const salvarEmailSettings = useSalvarEmailSettings()
   const aiSettingsQuery = useAiSettings()

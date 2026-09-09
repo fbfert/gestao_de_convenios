@@ -76,7 +76,16 @@ export async function preencherCarteirinha(page, card) {
   await page.locator('#CD_BENEF, [name="CD_BENEF"]').fill(card.beneficiario, { timeout: DEFAULT_TIMEOUT })
   await page.locator('#CD_DEPEN, [name="CD_DEPEN"]').fill(card.dependente, { timeout: DEFAULT_TIMEOUT })
   await page.locator('#NR_DV, [name="NR_DV"]').fill(card.dv, { timeout: DEFAULT_TIMEOUT })
-  await page.locator('[name="Button_Insert"]').click({ timeout: DEFAULT_TIMEOUT })
+
+  // Mesmo padrao do FINALIZAR_TIMEOUT (gerarGuia.js) e do LOGIN_HOME_TIMEOUT
+  // acima: este clique ("Verificar") dispara uma navegacao real de validacao
+  // da carteirinha no portal, e o Playwright espera essa navegacao terminar
+  // como parte do proprio .click(). Sob carga real o portal pode nao responder
+  // dentro do DEFAULT_TIMEOUT de 5s, e isso vira WORKER_INTERNAL_FATAL mesmo
+  // com o clique tendo "acontecido" de verdade (achado ao vivo em 09/09/2026,
+  // solicitacao 2319 / item 2354).
+  const VERIFICAR_CARTEIRINHA_TIMEOUT = Math.max(DEFAULT_TIMEOUT, 30000)
+  await page.locator('[name="Button_Insert"]').click({ timeout: VERIFICAR_CARTEIRINHA_TIMEOUT })
   await waitProcessing(page)
 }
 

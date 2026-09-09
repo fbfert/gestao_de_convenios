@@ -342,6 +342,7 @@ async function finalizar(page, request, estrategiaMedico) {
       execution_id: request.executionId ?? null,
       error_code: 'UNCERTAIN_AFTER_SUBMIT',
       message: 'Resultado ambíguo após finalizar guia. Não houve retry automático.',
+      debug: await capturarDiagnosticoResultado(page),
     }
   }
 
@@ -409,6 +410,26 @@ async function parseResultado(page) {
   }
 
   return null
+}
+
+// Instrumentacao pro caso UNCERTAIN_AFTER_SUBMIT: sem isto, um 'uncertain'
+// so diz que a tabela de confirmacao nao foi achada, sem pista de qual das
+// causas possiveis (espera pos-load curta demais, tela de erro do portal,
+// formato de tabela diferente do esperado) foi a real. Vai dentro do proprio
+// `resultado` da automacao (ja persistido em automacao_execucoes), sem
+// depender de volume/disco compartilhado — o worker so tem acesso de leitura
+// ao storage do gescon-app (deploy/docker-compose.prod.yml), nada gravavel
+// pra salvar screenshot como arquivo.
+async function capturarDiagnosticoResultado(page) {
+  const bodyText = await page.locator('body').innerText().catch(() => '')
+  const tableCount = await page.locator('table').count().catch(() => null)
+
+  return {
+    url: page.url(),
+    title: await page.title().catch(() => null),
+    table_count: tableCount,
+    body_text_excerpt: bodyText.slice(0, 2000),
+  }
 }
 
 async function escolherPrestadorAtivo(page, nomeEsperado) {

@@ -24,6 +24,8 @@ import { MedicosPage } from '../features/medicos'
 import { EspecialidadesPage } from '../features/especialidades'
 import { CidsPage } from '../features/cids'
 import { PermissoesPage } from '../features/permissoes'
+import { AlertasPage, AlertasConfiguracoesPage } from '../features/alertas'
+import { NovidadesPage } from '../features/novidades'
 import { UsuariosPage } from '../features/usuarios'
 import { ProfissionaisPage } from '../features/profissionais'
 import { DashboardPage } from '../features/dashboard'
@@ -105,6 +107,9 @@ export function AppRoutes() {
           <Route path="/permissoes" element={<PermissoesPage />} />
           <Route path="/permissoes/novo" element={<PermissoesPage />} />
           <Route path="/permissoes/:name/editar" element={<PermissoesPage />} />
+          <Route path="/novidades" element={<NovidadesPage />} />
+          <Route path="/alertas" element={<AlertasPage />} />
+          <Route path="/alertas/configuracoes" element={<AlertasConfiguracoesPage />} />
           <Route path="/usuarios" element={<UsuariosPage />} />
           <Route path="/usuarios/novo" element={<UsuariosPage />} />
           <Route path="/usuarios/:id/editar" element={<UsuariosPage />} />

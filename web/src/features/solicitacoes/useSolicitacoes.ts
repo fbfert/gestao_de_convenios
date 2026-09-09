@@ -2,6 +2,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '../../api/client'
 import { getHttpErrorMessage } from '../../lib/httpError'
 import type {
+  AdicionarItemForm,
+  ContextoAdicao,
   PaginatedResponse,
   PedidoMedicoAiResult,
   Solicitacao,
@@ -53,6 +55,71 @@ export function useCriarSolicitacao() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['solicitacoes'] })
     },
+  })
+}
+
+/** `POST /solicitacoes/{id}/itens` — acrescentar sessões a um pedido existente. */
+export function useAdicionarItem() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      solicitacaoId,
+      dados,
+    }: {
+      solicitacaoId: number
+      dados: AdicionarItemForm
+    }) => {
+      const { data } = await apiClient.post<{ data: Solicitacao }>(
+        `/solicitacoes/${solicitacaoId}/itens`,
+        {
+          especialidade_id: Number(dados.especialidade_id),
+          profissional_id: Number(dados.profissional_id),
+          quantidade: dados.quantidade === '' ? undefined : Number(dados.quantidade),
+          observacoes: dados.observacoes || undefined,
+          renovacao_de_item_id: dados.renovacao_de_item_id ?? undefined,
+        },
+      )
+
+      return data.data
+    },
+    onSuccess: async () => {
+      // 'guias' junto: em convênio manual o item novo já nasce com guia.
+      await queryClient.invalidateQueries({ queryKey: ['solicitacoes'] })
+      await queryClient.invalidateQueries({ queryKey: ['guias'] })
+    },
+  })
+}
+
+/**
+ * Dados dos quatro avisos do modal. Refaz a consulta a cada mudança de
+ * especialidade/profissional/vínculo porque dois dos avisos dependem deles.
+ */
+export function useContextoAdicao(
+  solicitacaoId: number | null,
+  filtros: {
+    especialidade_id?: string
+    profissional_id?: string
+    renovacao_de_item_id?: number | null
+  } = {},
+) {
+  return useQuery({
+    queryKey: ['solicitacoes', solicitacaoId, 'contexto-adicao', filtros],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ data: ContextoAdicao }>(
+        `/solicitacoes/${solicitacaoId}/contexto-adicao`,
+        {
+          params: {
+            especialidade_id: filtros.especialidade_id || undefined,
+            profissional_id: filtros.profissional_id || undefined,
+            renovacao_de_item_id: filtros.renovacao_de_item_id ?? undefined,
+          },
+        },
+      )
+
+      return data.data
+    },
+    enabled: solicitacaoId !== null,
   })
 }
 

@@ -2,126 +2,94 @@
 
 namespace Tests\Feature;
 
-use App\Models\Manual;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
+/**
+ * O manual virou conteúdo do PRODUTO: servido de arquivo versionado, igual para
+ * todos os tenants e sem edição pela interface.
+ *
+ * Os testes de edição e de isolamento por tenant que existiam aqui foram
+ * removidos porque testavam comportamento que deixou de existir — não porque
+ * passaram a falhar.
+ */
 class ManualApiTest extends TestCase
 {
     use RefreshDatabase;
 
     protected bool $seed = true;
 
+    private function autenticar(string $email = 'admin@clinica-exemplo.test'): User
+    {
+        $user = User::query()->where('email', $email)->firstOrFail();
+        Sanctum::actingAs($user);
+
+        return $user;
+    }
+
     public function test_qualquer_usuario_logado_pode_ler_o_manual(): void
     {
-        $user = User::query()->where('email', 'profissional@clinica-exemplo.test')->firstOrFail();
-        Sanctum::actingAs($user);
+        $this->autenticar('profissional@clinica-exemplo.test');
 
         $this->getJson('/api/manual')
             ->assertOk()
-            ->assertJsonStructure(['data' => ['conteudo_html', 'atualizado_em', 'atualizado_por']]);
+            ->assertJsonStructure(['data' => ['tipo', 'conteudo_html', 'atualizado_em']]);
     }
 
-    public function test_primeira_leitura_cria_o_manual_com_conteudo_padrao(): void
+    public function test_manual_vem_do_arquivo_versionado(): void
     {
-        $user = User::query()->where('email', 'admin@clinica-exemplo.test')->firstOrFail();
-        Sanctum::actingAs($user);
+        $this->autenticar();
 
-        $this->assertDatabaseCount('manuais', 0);
+        $doArquivo = file_get_contents(resource_path('manual/manual.html'));
 
-        $response = $this->getJson('/api/manual')->assertOk();
-
-        $this->assertDatabaseCount('manuais', 1);
-        $this->assertNotEmpty($response->json('data.conteudo_html'));
-    }
-
-    public function test_admin_pode_editar_o_manual(): void
-    {
-        $user = User::query()->where('email', 'admin@clinica-exemplo.test')->firstOrFail();
-        Sanctum::actingAs($user);
-
-        $this->putJson('/api/manual', [
-            'conteudo_html' => '<html><body>Novo conteudo</body></html>',
-        ])
+        $this->getJson('/api/manual')
             ->assertOk()
-            ->assertJsonPath('data.conteudo_html', '<html><body>Novo conteudo</body></html>')
-            ->assertJsonPath('data.atualizado_por', $user->name);
-
-        $this->assertDatabaseHas('manuais', [
-            'conteudo_html' => '<html><body>Novo conteudo</body></html>',
-            'atualizado_por' => $user->id,
-        ]);
+            ->assertJsonPath('data.conteudo_html', $doArquivo);
     }
 
-    public function test_usuario_sem_permissao_nao_pode_editar_o_manual(): void
+    public function test_mapa_mental_e_um_documento_separado(): void
     {
-        $user = User::query()->where('email', 'profissional@clinica-exemplo.test')->firstOrFail();
-        Sanctum::actingAs($user);
+        $this->autenticar();
 
-        $this->putJson('/api/manual', [
-            'conteudo_html' => '<html><body>Tentativa bloqueada</body></html>',
-        ])->assertForbidden();
-    }
-
-    public function test_manual_e_isolado_por_tenant(): void
-    {
-        $tenant = \App\Models\Tenant::query()->create([
-            'nome' => 'Clínica Externa Manual',
-            'slug' => 'clinica-externa-manual',
-            'cnpj' => '20.020.020/0001-20',
-            'ativo' => true,
-        ]);
-
-        Manual::query()->create([
-            'tenant_id' => $tenant->id,
-            'conteudo_html' => '<html><body>Manual de outro tenant</body></html>',
-        ]);
-
-        $user = User::query()->where('email', 'admin@clinica-exemplo.test')->firstOrFail();
-        Sanctum::actingAs($user);
-
-        $response = $this->getJson('/api/manual')->assertOk();
-
-        $this->assertNotEquals('<html><body>Manual de outro tenant</body></html>', $response->json('data.conteudo_html'));
-    }
-
-    public function test_le_e_edita_o_mapa_mental_separadamente_do_manual(): void
-    {
-        $user = User::query()->where('email', 'admin@clinica-exemplo.test')->firstOrFail();
-        Sanctum::actingAs($user);
-
-        $mapaMental = $this->getJson('/api/manual/mapa-mental')
+        $mapa = $this->getJson('/api/manual/mapa-mental')
             ->assertOk()
             ->assertJsonPath('data.tipo', 'mapa-mental');
 
         $manual = $this->getJson('/api/manual')->assertOk()->assertJsonPath('data.tipo', 'manual');
 
-        $this->assertNotEquals($manual->json('data.conteudo_html'), $mapaMental->json('data.conteudo_html'));
+        $this->assertNotEquals(
+            $manual->json('data.conteudo_html'),
+            $mapa->json('data.conteudo_html'),
+        );
+    }
 
-        $this->putJson('/api/manual/mapa-mental', [
-            'conteudo_html' => '<html><body>Novo mapa mental</body></html>',
-        ])
-            ->assertOk()
-            ->assertJsonPath('data.tipo', 'mapa-mental')
-            ->assertJsonPath('data.conteudo_html', '<html><body>Novo mapa mental</body></html>');
+    public function test_nao_existe_endpoint_de_edicao(): void
+    {
+        $this->autenticar();
 
-        $this->getJson('/api/manual')
-            ->assertOk()
-            ->assertJsonPath('data.conteudo_html', $manual->json('data.conteudo_html'));
-
-        $this->assertDatabaseHas('manuais', [
-            'tipo' => 'mapa-mental',
-            'conteudo_html' => '<html><body>Novo mapa mental</body></html>',
-        ]);
+        // 405: a rota existe para GET, e o método não é aceito. É a resposta
+        // correta para "isto não se edita mais".
+        $this->putJson('/api/manual', ['conteudo_html' => '<p>x</p>'])
+            ->assertStatus(405);
     }
 
     public function test_tipo_invalido_retorna_404(): void
     {
-        $user = User::query()->where('email', 'admin@clinica-exemplo.test')->firstOrFail();
-        Sanctum::actingAs($user);
+        $this->autenticar();
 
         $this->getJson('/api/manual/inexistente')->assertNotFound();
+    }
+
+    public function test_a_permissao_de_editar_manual_nao_existe_mais(): void
+    {
+        $this->autenticar();
+
+        $permissoes = $this->getJson('/api/permissions')->assertOk()->json('data');
+
+        $nomes = collect($permissoes)->pluck('name')->all();
+
+        $this->assertNotContains('manual.manage', $nomes);
     }
 }

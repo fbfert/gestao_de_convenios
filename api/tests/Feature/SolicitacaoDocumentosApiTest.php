@@ -226,6 +226,48 @@ class SolicitacaoDocumentosApiTest extends TestCase
             ->assertOk();
     }
 
+    /**
+     * Guia anterior à multi-especialidade: presa à solicitação, sem vínculo com
+     * item nenhum. É o único caso que ainda justifica a relação `guias()` no
+     * modelo — se a trava passasse a olhar só `itens.guia`, o anexo do pedido
+     * de uma solicitação antiga voltaria a ser removível, e ele é a evidência
+     * do que sustentou aquela autorização.
+     */
+    public function test_guia_antiga_sem_item_vinculado_ainda_trava_o_anexo_do_pedido(): void
+    {
+        Storage::fake('local');
+        $this->autenticar();
+        $solicitacao = $this->criarSolicitacaoComDoisItens();
+
+        $pedido = $this->postJson("/api/solicitacoes/{$solicitacao->id}/documentos", [
+            'tipo' => 'pedido_medico',
+            'arquivo' => UploadedFile::fake()->create('pedido.pdf', 32, 'application/pdf'),
+        ])->assertCreated();
+
+        $itens = $solicitacao->itens()->orderBy('id')->get();
+
+        Guia::query()->create([
+            'tenant_id' => $solicitacao->tenant_id,
+            'solicitacao_id' => $solicitacao->id,
+            'solicitacao_item_id' => null,
+            'convenio_id' => $solicitacao->convenio_id,
+            'paciente_id' => $solicitacao->paciente_id,
+            'profissional_id' => $itens[0]->profissional_id,
+            'especialidade_id' => $itens[0]->especialidade_id,
+            'numero_guia' => 'GUIA-LEGADA-1',
+            'tipo_terapia' => 'especializada',
+            'status' => 'under_review',
+            'data_solicitacao' => today(),
+        ]);
+
+        $documentoId = collect($pedido->json('data.documentos'))
+            ->firstWhere('nome_original', 'pedido.pdf')['id'];
+
+        $this->deleteJson("/api/solicitacoes/{$solicitacao->id}/documentos/{$documentoId}")
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('documento');
+    }
+
     public function test_cadastro_rapido_exige_carteirinha_valida_para_convenio_unimed(): void
     {
         $this->autenticar();

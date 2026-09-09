@@ -34,6 +34,12 @@ class GuiaController extends Controller
                 'alerta_negacao_pendente',
                 'mostrar_a_definir',
                 'mostrar_historico',
+                // Nomes usados pelas linhas do card do dashboard. São contrato
+                // com quem cola o link no chat, então dizem o que a pessoa quer
+                // ("pendente", "senha vencendo") e não como o filtro funciona por
+                // dentro; a tradução para os filtros internos é logo abaixo.
+                'pendente',
+                'senha_vencendo',
             ]), (int) $request->integer('per_page', 15))
         );
     }

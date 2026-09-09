@@ -19,7 +19,10 @@ return new class extends Migration
             $table->json('erros_json')->nullable();
             $table->timestamps();
 
-            $table->index(['tenant_id', 'conciliacao_import_lote_id']);
+            // Nome explicito e curto: o gerado pelo Laravel passaria de 64
+            // caracteres e MySQL/MariaDB reprovam. Invisivel em SQLite, que e
+            // onde a suite roda.
+            $table->index(['tenant_id', 'conciliacao_import_lote_id'], 'cil_tenant_lote_index');
             $table->index(['tenant_id', 'matched_conciliacao_id']);
         });
     }

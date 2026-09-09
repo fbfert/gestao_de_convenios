@@ -1,4 +1,5 @@
 import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/react'
+import { useFechamentoExplicito } from '../../lib/useFechamentoExplicito'
 import { useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
@@ -184,7 +185,7 @@ export function AutomacaoProgressoModal({
   const passos = execucao ? PASSOS_POR_OPERACAO[execucao.operacao] : undefined
 
   return (
-    <Dialog open={open} onClose={onClose} className="relative z-(--z-dialogo)">
+    <Dialog {...useFechamentoExplicito(open, onClose)} className="relative z-(--z-dialogo)">
       <DialogBackdrop className="fixed inset-0 bg-slate-950/75 backdrop-blur-sm" />
       <div className="fixed inset-0 overflow-y-auto p-4 sm:p-6">
         <div className="flex min-h-full items-center justify-center">

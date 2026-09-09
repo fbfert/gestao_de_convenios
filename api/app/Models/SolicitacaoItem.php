@@ -18,6 +18,7 @@ class SolicitacaoItem extends Model
         'solicitacao_id',
         'especialidade_id',
         'profissional_id',
+        'renovacao_de_item_id',
         'quantidade',
         'status_operacional',
         'observacoes',
@@ -57,5 +58,36 @@ class SolicitacaoItem extends Model
     public function automacaoExecucoes()
     {
         return $this->hasMany(AutomacaoExecucao::class);
+    }
+
+    /**
+     * O item de ORIGEM da cadeia de renovação — nulo quando este é a origem.
+     *
+     * Nunca aponta para o item anterior: com todos apontando para o primeiro,
+     * somar as sessões já pedidas no ciclo é uma query; em árvore, seria
+     * recursão. Quem normaliza isso é o servidor, em
+     * `SolicitacaoService::adicionarItem()`.
+     */
+    public function renovacaoDe()
+    {
+        return $this->belongsTo(self::class, 'renovacao_de_item_id');
+    }
+
+    /** As renovações que apontam para este item como origem. */
+    public function renovacoes()
+    {
+        return $this->hasMany(self::class, 'renovacao_de_item_id');
+    }
+
+    /**
+     * O primeiro item da cadeia: ele mesmo, quando não é renovação.
+     *
+     * O `?? $this` cobre a origem apagada — a FK é `nullOnDelete`, então o
+     * vínculo pode existir apontando para o vazio, e nesse caso este item
+     * voltou a ser o começo do que sobrou.
+     */
+    public function origemDaCadeia(): self
+    {
+        return $this->renovacao_de_item_id ? ($this->renovacaoDe ?? $this) : $this;
     }
 }

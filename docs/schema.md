@@ -34,7 +34,8 @@ convenio_regras
   id, convenio_id (FK),
   tipo_terapia (especializada|convencional|outro),
   frequencia_lancamento (diaria|semanal|mensal),
-  qtd_autorizada_por_ciclo (int),
+  qtd_autorizada_por_ciclo (int),   -- TAXA de lançamento, com frequencia_lancamento ("1 por dia")
+  sessoes_por_guia (int, nullable), -- total autorizado POR GUIA; nulo = não sabemos, e a pessoa digita
   validade_senha_dias (int, nullable),
   observacoes (text, nullable),
   vigente_desde, vigente_ate (nullable)
@@ -46,8 +47,15 @@ pacientes
 solicitacoes
   id, tenant_id, paciente_id (FK), profissional_id (FK), especialidade_id (FK),
   convenio_id (FK), medico_id (FK, nullable),
-  status (under_review|approved|denied),
+  status (under_review|ready_for_automation|guia_gerada|approved|denied|historico),
   solicitado_em (date), observacoes (text, nullable)
+
+solicitacao_itens                     -- uma especialidade por linha (multi-especialidade)
+  id, tenant_id, solicitacao_id (FK), especialidade_id (FK), profissional_id (FK),
+  renovacao_de_item_id (FK self, nullable), -- aponta para a ORIGEM da cadeia, nunca
+    -- para o item anterior: com a cadeia plana, somar o ciclo é uma query e não recursão
+  quantidade (int), status_operacional, observacoes (text, nullable),
+  unimed_verificacao_next_check_at (timestamp, nullable)
 
 guias
   id, tenant_id, solicitacao_id (FK, nullable), convenio_id (FK),

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Alerta;
 use App\Models\AnaliticoUnimedLote;
 use App\Models\Antecipacao;
 use App\Models\AuditLog;
@@ -15,6 +16,7 @@ use App\Models\Paciente;
 use App\Models\Profissional;
 use App\Models\Solicitacao;
 use App\Models\User;
+use App\Services\DashboardGuiasCardService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -140,6 +142,32 @@ class DashboardController extends Controller
         return response()->json([
             'data' => [
                 'blocks' => $blocks,
+                // Card denso de Guias, em duas consultas agregadas. Fica fora de
+                // `blocks` porque não é um número solto: tem três linhas, cada
+                // uma com seu próprio destino filtrado.
+                'guias_card' => $user?->can('dashboard.guias')
+                    ? app(DashboardGuiasCardService::class)->montar((int) $user->tenant_id)
+                    : null,
+                // Só amarelo e vermelho: se verde significasse "tudo certo", o
+                // card encheria de linhas irrelevantes e as vermelhas sumiriam
+                // no meio. A ausência de alerta é o próprio estado verde.
+                'alertas_card' => $user?->can('alertas.view')
+                    ? Alerta::query()
+                        ->pendente()
+                        ->whereIn('nivel', Alerta::NIVEIS_DO_CARD)
+                        ->orderByDesc('aberto_em')
+                        ->limit(5)
+                        ->get()
+                        ->map(fn (Alerta $a) => [
+                            'id' => $a->id,
+                            'chave' => $a->chave,
+                            'nivel' => $a->nivel,
+                            'titulo' => $a->titulo,
+                            'descricao' => $a->descricao,
+                            'aberto_em' => $a->aberto_em?->toIso8601String(),
+                        ])
+                        ->all()
+                    : null,
                 'recent_audits' => $this->recentAudits($user),
             ],
         ]);

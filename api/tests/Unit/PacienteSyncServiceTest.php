@@ -11,6 +11,7 @@ use App\Services\ClinicaSync\ClinicaApiClient;
 use App\Services\ClinicaSync\ClinicaPacientePendenteService;
 use App\Services\ClinicaSync\ClinicaPushPendenteService;
 use App\Services\ClinicaSync\PacienteSyncService;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use InvalidArgumentException;
 use Mockery;
@@ -21,6 +22,33 @@ class PacienteSyncServiceTest extends TestCase
     use RefreshDatabase;
 
     protected bool $seed = true;
+
+    /**
+     * Data anterior à de todos os fixtures remotos (05/09/2026), para que o
+     * lado do clinica seja sempre o mais recente quando o cenário pede isso.
+     */
+    private const AGORA = '2026-09-01 09:00:00-03:00';
+
+    /**
+     * Congela o relógio ANTES de migrar e semear.
+     *
+     * O serviço compara o `updated_at` local com o do clinica para decidir quem
+     * vence (`PacienteSyncService::pullUm`), e os fixtures remotos usam datas
+     * fixas. Com o relógio real, o paciente que o teste cria nasce mais novo
+     * que o remoto assim que o calendário passa daquelas datas: o pull passa a
+     * IGNORAR em vez de atualizar, e o teste de match por CPF quebra sozinho,
+     * sem ninguém ter tocado no código. Foi o que aconteceu.
+     *
+     * Semear dentro do congelamento é parte do conserto: os pacientes do
+     * seeder ficam com `updated_at` igual ao `sincronizado_em` que os testes de
+     * push carimbam, e continuam fora do lote de envio.
+     */
+    protected function setUp(): void
+    {
+        $this->travelTo(CarbonImmutable::parse(self::AGORA));
+
+        parent::setUp();
+    }
 
     private function tenantId(): int
     {

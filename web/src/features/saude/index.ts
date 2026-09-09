@@ -1,0 +1,1 @@
+export { SaudeCard } from './SaudeCard'

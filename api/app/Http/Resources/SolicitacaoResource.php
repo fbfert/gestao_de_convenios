@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Support\GuiaStatus;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -39,9 +40,6 @@ class SolicitacaoResource extends JsonResource
                 'connector_type' => $this->convenio->connector_type,
                 'connector_driver' => $this->convenio->connector_driver,
             ]),
-            'guia' => $this->relationLoaded('guia') && $this->guia
-                ? GuiaResource::make($this->guia)
-                : null,
             'itens' => $this->whenLoaded('itens', fn () => $this->itens->map(fn ($item) => [
                 'id' => $item->id,
                 'especialidade_id' => $item->especialidade_id,
@@ -49,7 +47,35 @@ class SolicitacaoResource extends JsonResource
                 'quantidade' => $item->quantidade,
                 'status_operacional' => $item->status_operacional,
                 'observacoes' => $item->observacoes,
-                'guia_id' => $item->relationLoaded('guia') && $item->guia ? $item->guia->id : null,
+                'renovacao_de_item_id' => $item->renovacao_de_item_id,
+                /*
+                 * Posicao na cadeia de renovacao: 1 para a origem, 2 para a
+                 * primeira renovacao, e assim por diante. Sem isto a tela
+                 * mostraria duas linhas identicas (mesma especialidade, mesmo
+                 * profissional) e ninguem entenderia por que sao duas.
+                 *
+                 * Calculada sobre a colecao ja carregada, e nao por consulta:
+                 * os itens da solicitacao estao todos aqui.
+                 */
+                'posicao_na_cadeia' => $this->posicaoNaCadeia($item),
+                'total_na_cadeia' => $this->cadeiaDe($item)->count(),
+                /*
+                 * A guia DO ITEM — e nao a relacao legada Solicitacao::guia(),
+                 * que e um hasOne sem ordenacao e devolve uma guia qualquer da
+                 * solicitacao. Desde a multi-especialidade cada item tem a sua.
+                 *
+                 * `numero_operadora` vem separado de `numero_guia` de proposito:
+                 * o segundo pode conter o valor de preenchimento do convenio
+                 * manual, e a tela nao deve exibi-lo como se fosse o numero que
+                 * a operadora conhece. Quem decide isso e o backend, uma vez, em
+                 * vez de cada tela repetir a regra.
+                 */
+                'guia' => $item->relationLoaded('guia') && $item->guia ? [
+                    'id' => $item->guia->id,
+                    'numero_guia' => $item->guia->numero_guia,
+                    'numero_operadora' => GuiaStatus::numeroDaOperadora($item->guia->numero_guia),
+                    'status' => $item->guia->status,
+                ] : null,
                 'automacao_execucao_ativa' => $item->relationLoaded('automacaoExecucoes')
                     ? $item->automacaoExecucoes
                         ->whereIn('status', ['queued', 'running', 'uncertain'])
@@ -85,6 +111,30 @@ class SolicitacaoResource extends JsonResource
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];
+    }
+
+    /**
+     * Os itens da mesma cadeia de renovação, da origem para a última.
+     *
+     * A cadeia é PLANA: todo item de renovação aponta para a origem, nunca para
+     * o anterior (ver SolicitacaoService::origemDaCadeia). Por isso agrupar por
+     * "id da origem, ou o próprio id" basta, e não há recursão.
+     */
+    private function cadeiaDe($item)
+    {
+        $origemId = $item->renovacao_de_item_id ?? $item->id;
+
+        return $this->itens
+            ->filter(fn ($outro) => ($outro->renovacao_de_item_id ?? $outro->id) === $origemId)
+            ->sortBy('id')
+            ->values();
+    }
+
+    private function posicaoNaCadeia($item): int
+    {
+        $posicao = $this->cadeiaDe($item)->search(fn ($outro) => $outro->id === $item->id);
+
+        return $posicao === false ? 1 : $posicao + 1;
     }
 
     /**

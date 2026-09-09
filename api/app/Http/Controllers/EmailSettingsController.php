@@ -7,6 +7,8 @@ use App\Http\Requests\UpdateEmailSettingsRequest;
 use App\Http\Resources\EmailSettingsResource;
 use App\Models\EmailSmtpSetting;
 use App\Models\EmailTemplate;
+use App\Services\SaudeService;
+use App\Models\SaudeComponente;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Mail;
@@ -117,6 +119,13 @@ class EmailSettingsController extends Controller
                 'email' => 'Falha ao enviar: '.$erro->getMessage(),
             ]);
         }
+
+        // Unico ponto do app que envia e-mail hoje, portanto a unica fonte de
+        // heartbeat do componente de SMTP — e ela e manual, o que e a razao de o
+        // componente nascer inativo no seeder. Registrar mesmo assim faz com que
+        // ativa-lo, quando a fase de notificacoes der uma fonte periodica, nao
+        // exija mexer aqui de novo.
+        app(SaudeService::class)->registrarHeartbeat(SaudeComponente::CHAVE_SMTP);
 
         return response()->json([
             'data' => ['mensagem' => "E-mail de teste enviado para {$destino}."],

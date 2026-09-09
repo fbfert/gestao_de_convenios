@@ -1,0 +1,39 @@
+# Banco de desenvolvimento. So o MariaDB: Laravel e Vite rodam nativos na
+# maquina, como descrito no README ("Infra dev: Docker Compose (banco),
+# Laravel/Vite nativos").
+#
+# Project name proprio, separado do `name: gescon` de deploy/docker-compose.prod.yml,
+# pelo mesmo motivo documentado la: dois projetos no mesmo namespace colidem, e um
+# `--remove-orphans` de um lado apaga containers do outro.
+name: gescon-dev
+
+services:
+  gescon-db:
+    # Fixado em 11.8 para bater com a producao de onde vem o dump
+    # (Server version 11.8.8-MariaDB-ubu2404).
+    image: mariadb:11.8
+    container_name: gescon-dev-db
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: gestao_convenios
+      MARIADB_USER: gestao_convenios
+      MARIADB_PASSWORD: secret
+      MARIADB_ROOT_PASSWORD: secret
+    # Preso a 127.0.0.1: sem o prefixo o Docker abre a porta em todas as
+    # interfaces e o banco com dados reais fica exposto na rede local.
+    ports:
+      - "127.0.0.1:3306:3306"
+    volumes:
+      - gescon_dev_db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    networks: [gescon-dev]
+
+volumes:
+  gescon_dev_db_data:
+
+networks:
+  gescon-dev:

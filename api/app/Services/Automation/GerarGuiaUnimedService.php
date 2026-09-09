@@ -8,9 +8,12 @@ use App\Models\AutomacaoExecucao;
 use App\Models\ConvenioEspecialidadeMapeamento;
 use App\Models\ConvenioProfissionalMapeamento;
 use App\Models\Guia;
+use App\Services\GuiaService;
+use App\Models\GuiaStatusHistorico;
 use App\Models\SolicitacaoItem;
 use App\Models\UnimedRdaCredential;
 use App\Services\SolicitacaoService;
+use App\Support\SolicitacaoStatus;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -44,8 +47,14 @@ class GerarGuiaUnimedService
             ->where('ativo', true)
             ->first();
 
-        if ($solicitacao?->status !== 'ready_for_automation') {
-            $motivos[] = 'A Solicitação precisa estar pronta para automatização.';
+        // O gate é do ITEM, não da solicitação inteira: uma solicitação já
+        // aprovada pode receber um item novo (caso de uso de "Adicionar
+        // sessões"), e exigir `ready_for_automation` aqui faria o item novo
+        // nunca poder ser enviado. O que continua barrado é o que a lista de
+        // SolicitacaoStatus::BLOQUEIAM_ENVIO diz — a MESMA lista que a tela usa
+        // para decidir se mostra o botão.
+        if (SolicitacaoStatus::bloqueiaEnvio($solicitacao?->status)) {
+            $motivos[] = 'A Solicitação precisa estar liberada para automatização.';
         }
 
         if ($solicitacao?->convenio?->connector_driver !== 'unimed_rda') {
@@ -161,6 +170,8 @@ class GerarGuiaUnimedService
             'solicitacao_item_id' => $item->id,
         ]);
 
+        $status = $resultado['guia_status'] ?? $resultado['status_guia'] ?? 'under_review';
+
         $guia->fill([
             'tenant_id' => $execucao->tenant_id,
             'solicitacao_id' => $solicitacao->id,
@@ -172,7 +183,6 @@ class GerarGuiaUnimedService
             'especialidade_id' => $item->especialidade_id,
             'numero_guia' => $resultado['numero_guia'] ?? null,
             'tipo_terapia' => 'especializada',
-            'status' => $resultado['guia_status'] ?? $resultado['status_guia'] ?? 'under_review',
             'unimed_status' => $resultado['unimed_status'] ?? $resultado['status_operadora'] ?? null,
             'sessoes_solicitadas' => $resultado['sessoes_solicitadas'] ?? null,
             'sessoes_autorizadas' => $resultado['sessoes_autorizadas'] ?? null,
@@ -180,7 +190,13 @@ class GerarGuiaUnimedService
             'senha' => $resultado['senha'] ?? null,
             'data_solicitacao' => today(),
             'observacoes' => $solicitacao->observacoes,
-        ])->save();
+        ]);
+
+        // Status por registrarTransicao — ponto único de escrita. Origem
+        // `automacao`, e por isso a linha do histórico nasce sem usuário.
+        app(GuiaService::class)->registrarTransicao($guia, $status, [
+            'origem' => GuiaStatusHistorico::ORIGEM_AUTOMACAO,
+        ]);
 
         $item->update(['status_operacional' => 'guia_generated']);
 

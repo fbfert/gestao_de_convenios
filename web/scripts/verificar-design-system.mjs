@@ -11,7 +11,7 @@
  */
 
 import { readFileSync, readdirSync, statSync } from 'node:fs'
-import { join, relative } from 'node:path'
+import { join, relative, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const RAIZ = join(fileURLToPath(new URL('.', import.meta.url)), '..')
@@ -35,6 +35,17 @@ function arquivosFonte() {
   andar(join(RAIZ, 'src'))
   return saida
 }
+
+/**
+ * Caminho relativo com barra normal, em qualquer sistema.
+ *
+ * `relative()` devolve `src\features\...` no Windows, e a lista de isentos é
+ * escrita com `/`. Sem normalizar, a isenção nunca casava lá e o `npm run lint`
+ * reprovava por um arquivo que já tem o motivo registrado — ou seja, o contrato
+ * ficava impossível de rodar verde em máquina Windows. Isto não afrouxa guarda
+ * nenhuma: só faz a isenção existente valer nos dois sistemas.
+ */
+const caminhoRelativo = (caminho) => relative(RAIZ, caminho).split(sep).join('/')
 
 /** Resolve `var(--x)` encadeado até chegar num literal de cor. */
 function resolver(token, mapa, visitados = new Set()) {
@@ -164,7 +175,7 @@ const ISENTOS = new Map([
 ])
 
 for (const caminho of arquivosFonte()) {
-  const rel = relative(RAIZ, caminho)
+  const rel = caminhoRelativo(caminho)
   if (ISENTOS.has(rel)) continue // motivo registrado na lista acima
   const texto = readFileSync(caminho, 'utf8')
   for (const { re, motivo } of PROIBIDOS) {
@@ -195,7 +206,7 @@ const ESTRUTURAL = {
 }
 
 for (const caminho of arquivosFonte()) {
-  const rel = relative(RAIZ, caminho)
+  const rel = caminhoRelativo(caminho)
   const texto = readFileSync(caminho, 'utf8')
   const suspeitas = new Set()
   for (const m of texto.matchAll(/\b(bg|text|border)-([a-z][\w-]*(?:\/\d{1,3})?)\b/g)) {

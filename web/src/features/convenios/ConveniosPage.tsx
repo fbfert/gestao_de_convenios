@@ -121,7 +121,10 @@ type Regra = {
   id: number
   tipo_terapia: string
   frequencia_lancamento: string
+  /** Taxa de lançamento, emparelhada com `frequencia_lancamento` ("1 por dia"). */
   qtd_autorizada_por_ciclo: number
+  /** Teto que a operadora autoriza por guia. Nulo = não cadastrado, e não zero. */
+  sessoes_por_guia: number | null
   validade_senha_dias: number | null
   vigente_desde: string
   vigente_ate: string | null
@@ -413,6 +416,9 @@ export function ConvenioDetalhePage() {
         tipo_terapia: tipo,
         frequencia_lancamento: freq,
         qtd_autorizada_por_ciclo: Number(formData.get('qtd')),
+        sessoes_por_guia: formData.get('sessoes_por_guia')
+          ? Number(formData.get('sessoes_por_guia'))
+          : null,
         validade_senha_dias: formData.get('senha') ? Number(formData.get('senha')) : null,
         vigente_desde: formData.get('desde'),
       },
@@ -466,16 +472,45 @@ export function ConvenioDetalhePage() {
             <option value="semanal">Semanal</option>
             <option value="mensal">Mensal</option>
           </Select>
-          <input name="qtd" required type="number" min="1" placeholder="Quantidade" className={field} />
-          <input name="senha" type="number" min="1" placeholder="Validade senha (dias)" className={field} />
-          <input name="desde" required type="date" className={field} />
+          {/* Os dois campos de número são parecidos o bastante para alguém
+              preencher o errado, e o estrago é silencioso: trocar um pelo
+              outro põe "1 por dia" onde deveria estar o teto de 10 por guia.
+              Por isso rótulo e frase de ajuda em cada um, em vez de só
+              placeholder. */}
+          <label className="space-y-1">
+            <span className="block text-meta font-semibold text-texto-suave">Sessões por ciclo</span>
+            <input name="qtd" required type="number" min="1" className={field} />
+            <span className="block text-meta text-texto-suave">
+              Ritmo de liberação, junto da frequência acima — ex.: 1 por dia.
+            </span>
+          </label>
+          <label className="space-y-1">
+            <span className="block text-meta font-semibold text-texto-suave">Sessões por guia</span>
+            <input name="sessoes_por_guia" type="number" min="1" className={field} />
+            <span className="block text-meta text-texto-suave">
+              Teto que a operadora autoriza em cada guia — a Unimed libera 10. Vira a quantidade
+              sugerida ao abrir uma solicitação. Em branco, a pessoa digita a cada pedido.
+            </span>
+          </label>
+          <label className="space-y-1">
+            <span className="block text-meta font-semibold text-texto-suave">Validade da senha</span>
+            <input name="senha" type="number" min="1" placeholder="dias" className={field} />
+          </label>
+          <label className="space-y-1">
+            <span className="block text-meta font-semibold text-texto-suave">Vigente desde</span>
+            <input name="desde" required type="date" className={field} />
+          </label>
           <button className="rounded-xl bg-cyan-400 p-2 font-semibold text-slate-950">
             Salvar regra
           </button>
         </form>
         <Historico
           items={regras.data ?? []}
-          render={(r) => `${r.tipo_terapia} · ${r.frequencia_lancamento} · ${r.qtd_autorizada_por_ciclo}`}
+          render={(r) =>
+            `${r.tipo_terapia} · ${r.frequencia_lancamento} · ${r.qtd_autorizada_por_ciclo}/ciclo · ${
+              r.sessoes_por_guia ? `${r.sessoes_por_guia}/guia` : 'sem sessões por guia'
+            }`
+          }
           encerrar={(r) => enc(`/convenios/${id}/regras/${r.id}/encerrar`, [...k, 'regras'])}
         />
       </section>

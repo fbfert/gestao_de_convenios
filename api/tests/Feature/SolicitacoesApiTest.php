@@ -40,9 +40,14 @@ class SolicitacoesApiTest extends TestCase
         $id = $create->json('data.id');
         $tenantId = Tenant::query()->where('slug', 'clinica-exemplo')->value('id');
 
+        $itemId = $create->json('data.itens.0.id');
+
         $guia = Guia::query()->create([
             'tenant_id' => $tenantId,
             'solicitacao_id' => $id,
+            // Vinculada ao ITEM: é assim que guia nasce desde a
+            // multi-especialidade, e é por `itens[].guia` que o payload a expõe.
+            'solicitacao_item_id' => $itemId,
             'convenio_id' => $payload['convenio_id'],
             'paciente_id' => $payload['paciente_id'],
             'profissional_id' => $payload['profissional_id'],
@@ -62,8 +67,10 @@ class SolicitacoesApiTest extends TestCase
             ->assertJsonPath('data.0.id', $id)
             ->assertJsonPath('data.0.status', 'under_review')
             ->assertJsonPath('data.0.itens.0.profissional_id', $payload['profissional_id'])
-            ->assertJsonPath('data.0.guia.id', $guia->id)
-            ->assertJsonPath('data.0.guia.numero_guia', $guia->numero_guia);
+            ->assertJsonPath('data.0.itens.0.guia.id', $guia->id)
+            ->assertJsonPath('data.0.itens.0.guia.numero_guia', $guia->numero_guia)
+            // A relação legada saiu do payload: quem quer a guia lê o item.
+            ->assertJsonMissingPath('data.0.guia');
 
         $this->getJson("/api/solicitacoes/{$id}")
             ->assertOk()
@@ -71,7 +78,8 @@ class SolicitacoesApiTest extends TestCase
             ->assertJsonPath('data.status', 'under_review')
             ->assertJsonPath('data.medico.nome', 'Carlos Almeida')
             ->assertJsonPath('data.itens.0.especialidade_id', $payload['especialidade_id'])
-            ->assertJsonPath('data.guia.id', $guia->id);
+            ->assertJsonPath('data.itens.0.guia.id', $guia->id)
+            ->assertJsonMissingPath('data.guia');
     }
 
     public function test_filtra_solicitacoes_por_nome_de_paciente_profissional_e_medico(): void
@@ -221,7 +229,12 @@ class SolicitacoesApiTest extends TestCase
             ->assertJsonPath('data.status', 'ready_for_automation');
 
         $guia = Guia::query()->where('solicitacao_id', $aprovada)->firstOrFail();
-        $this->assertSame("GUIA-SOLICITACAO-{$aprovada}", $guia->numero_guia);
+        // Valor de preenchimento por ITEM: com uma guia por item, um número por
+        // solicitação faria as N guias nascerem com o mesmo valor.
+        $this->assertSame(
+            "GUIA-SOLICITACAO-{$aprovada}-{$guia->solicitacao_item_id}",
+            $guia->numero_guia,
+        );
         $this->assertSame('under_review', $guia->status);
         $this->assertNotNull($guia->solicitacao_item_id);
 
@@ -238,9 +251,10 @@ class SolicitacoesApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.status', 'ready_for_automation');
 
+        $itemNegada = Guia::query()->where('solicitacao_id', $negada)->value('solicitacao_item_id');
         $this->assertDatabaseHas('guias', [
             'solicitacao_id' => $negada,
-            'numero_guia' => "GUIA-SOLICITACAO-{$negada}",
+            'numero_guia' => "GUIA-SOLICITACAO-{$negada}-{$itemNegada}",
             'status' => 'under_review',
         ]);
 
@@ -280,24 +294,13 @@ class SolicitacoesApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.status', 'ready_for_automation');
 
-        // Fluxo legado só cria guia pro primeiro item — reproduz manualmente
-        // a guia do segundo item, que na prática viria de outro cadastro.
+        // Convênio sem automação gera uma guia por item desde o change
+        // solicitacao-adicionar-sessoes. Antes só o primeiro item ganhava guia,
+        // e este teste precisava forjar a do segundo à mão.
         $solicitacao = Solicitacao::query()->with('itens')->findOrFail($id);
         $itens = $solicitacao->itens;
         $guiaItem1 = Guia::query()->where('solicitacao_item_id', $itens[0]->id)->firstOrFail();
-        $guiaItem2 = Guia::query()->create([
-            'tenant_id' => $solicitacao->tenant_id,
-            'solicitacao_id' => $solicitacao->id,
-            'solicitacao_item_id' => $itens[1]->id,
-            'convenio_id' => $solicitacao->convenio_id,
-            'paciente_id' => $solicitacao->paciente_id,
-            'profissional_id' => $itens[1]->profissional_id,
-            'especialidade_id' => $itens[1]->especialidade_id,
-            'numero_guia' => 'GUIA-ITEM-2-'.$id,
-            'tipo_terapia' => 'especializada',
-            'status' => 'under_review',
-            'data_solicitacao' => today(),
-        ]);
+        $guiaItem2 = Guia::query()->where('solicitacao_item_id', $itens[1]->id)->firstOrFail();
 
         app(\App\Services\GuiaService::class)->finalizar($guiaItem1, ['senha' => 'SENHA-1']);
 
@@ -315,7 +318,16 @@ class SolicitacoesApiTest extends TestCase
     public function test_solicitacao_vira_guia_gerada_so_quando_todos_os_itens_tem_guia(): void
     {
         $this->autenticar();
-        $payload = $this->payloadSolicitacao('SC Saúde');
+
+        // Convênio COM automação, e a semente de teste não traz nenhum: o
+        // `ConvenioSeeder` cria os três como `manual`, sem `connector_driver`.
+        // Item sem guia só existe onde quem gera a guia é o robô — em convênio
+        // manual todo item ganha a sua assim que a solicitação fica pronta
+        // (change solicitacao-adicionar-sessoes), e o estado que este teste
+        // exercita deixou de ser alcançável lá.
+        Convenio::query()->where('nome', 'Unimed')->update(['connector_driver' => 'unimed_rda']);
+
+        $payload = $this->payloadSolicitacao('Unimed');
         $primeiraEspecialidade = $payload['especialidade_id'];
         $primeiroProfissional = $payload['profissional_id'];
         $outraEspecialidade = Especialidade::query()->where('nome', '!=', 'Fisioterapia')->firstOrFail();
@@ -332,7 +344,21 @@ class SolicitacoesApiTest extends TestCase
 
         $solicitacao = Solicitacao::query()->with('itens')->findOrFail($id);
         $itens = $solicitacao->itens;
-        $guiaItem1 = Guia::query()->where('solicitacao_item_id', $itens[0]->id)->firstOrFail();
+
+        // Só o item 1 teve guia gerada — é o que a automação faz um item por vez.
+        $guiaItem1 = Guia::query()->create([
+            'tenant_id' => $solicitacao->tenant_id,
+            'solicitacao_id' => $solicitacao->id,
+            'solicitacao_item_id' => $itens[0]->id,
+            'convenio_id' => $solicitacao->convenio_id,
+            'paciente_id' => $solicitacao->paciente_id,
+            'profissional_id' => $itens[0]->profissional_id,
+            'especialidade_id' => $itens[0]->especialidade_id,
+            'numero_guia' => 'GUIA-ITEM-1-'.$id,
+            'tipo_terapia' => 'especializada',
+            'status' => 'under_review',
+            'data_solicitacao' => today(),
+        ]);
 
         app(\App\Services\GuiaService::class)->finalizar($guiaItem1, ['senha' => 'SENHA-1']);
 
@@ -462,6 +488,15 @@ class SolicitacoesApiTest extends TestCase
             'medico_id' => $medico->id,
             'cid_ids' => [Cid::query()->where('codigo', 'F84.0')->firstOrFail()->id],
             'solicitado_em' => today()->toDateString(),
+            // Quantidade explícita: desde o R6 a quantidade padrão vem de
+            // `convenio_regras.sessoes_por_guia`, e convênio sem esse valor faz
+            // a API recusar em vez de arbitrar um número. Só a Unimed tem o
+            // valor semeado, e este helper serve também a SC Saúde.
+            'itens' => [[
+                'especialidade_id' => $especialidade->id,
+                'profissional_id' => $profissional->id,
+                'quantidade' => 10,
+            ]],
         ];
     }
 

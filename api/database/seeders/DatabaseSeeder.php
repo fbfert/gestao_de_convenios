@@ -33,6 +33,11 @@ class DatabaseSeeder extends Seeder
             PacienteSeeder::class,
             TabelaValorSeeder::class,
             EmailTemplateSeeder::class,
+            // Depois do ConvenioSeeder: o componente da automação Unimed
+            // referencia o convênio, e antes dele não haveria o que referenciar.
+            SaudeComponenteSeeder::class,
+            AlertaRegraSeeder::class,
+            AlertaEmailTemplateSeeder::class,
         ]);
 
         if (app()->environment('testing')) {

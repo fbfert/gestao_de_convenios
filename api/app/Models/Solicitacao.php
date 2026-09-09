@@ -62,9 +62,21 @@ class Solicitacao extends Model
         return $this->belongsToMany(Cid::class, 'cid_solicitacao');
     }
 
-    public function guia()
+    /**
+     * TODAS as guias da solicitação — uma por item, desde a multi-especialidade.
+     *
+     * Era um `hasOne` chamado `guia()`, e sem ordenação: devolvia uma guia
+     * qualquer, variando com a ordem física das linhas. Não existe "a guia da
+     * solicitação" para eleger, então a relação passou a dizer a verdade. O que
+     * sobrou de uso legítimo é a pergunta "esta solicitação já tem guia?", que
+     * um `hasMany` responde sem inventar uma principal.
+     *
+     * Para exibir, use `itens[].guia`: a guia pertence ao item, e é o item que
+     * dá sentido a ela (especialidade e profissional).
+     */
+    public function guias()
     {
-        return $this->hasOne(Guia::class);
+        return $this->hasMany(Guia::class);
     }
 
     public function itens()

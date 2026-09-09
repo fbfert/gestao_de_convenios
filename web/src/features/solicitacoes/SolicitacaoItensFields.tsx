@@ -3,7 +3,7 @@ import { useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { Select } from '../../components/ui/Select'
 import type { EspecialidadeRef, ProfissionalRef } from '../../lib/queries/useReferenceData'
-import { especialidadesRepetidas, rotuloEspecialidade } from './solicitacaoItens'
+import { especialidadesRepetidas, itemComPadraoDoConvenio, rotuloEspecialidade } from './solicitacaoItens'
 import type { SolicitacaoFormItem } from './types'
 import { Tooltip } from '../../components/ui/Tooltip'
 
@@ -17,6 +17,13 @@ type SolicitacaoItensFieldsProps = {
   especialidades: EspecialidadeRef[]
   profissionais: ProfissionalRef[]
   disabled?: boolean
+  /**
+   * Sessões por guia da regra vigente do convênio, para a linha nova já nascer
+   * preenchida. Nulo quando o convênio não tem a regra cadastrada — aí a linha
+   * nasce vazia e quem preenche é a pessoa, que é o comportamento certo: a API
+   * recusa em vez de arbitrar um número.
+   */
+  sessoesPorGuia?: number | null
 }
 
 /**
@@ -29,6 +36,7 @@ export function SolicitacaoItensFields({
   especialidades,
   profissionais,
   disabled = false,
+  sessoesPorGuia = null,
 }: SolicitacaoItensFieldsProps) {
   const profissionaisPorEspecialidade = useMemo(() => {
     const mapa = new Map<number, ProfissionalRef[]>()
@@ -212,7 +220,7 @@ export function SolicitacaoItensFields({
         <button
           type="button"
           onClick={() =>
-            onChange([...itens, { especialidade_id: '', profissional_id: '', quantidade: '10' }])
+            onChange([...itens, itemComPadraoDoConvenio(sessoesPorGuia)])
           }
           disabled={disabled}
           className="rounded-2xl border border-cyan-300/30 bg-cyan-400/10 px-4 py-2 text-corpo font-semibold text-cyan-100 transition hover:bg-cyan-400/20 disabled:opacity-50"

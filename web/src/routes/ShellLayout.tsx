@@ -38,6 +38,9 @@ const LARGURA_AMPLA_PREFIXOS = [
   '/convenios',
   '/usuarios',
   '/auditoria',
+  // Listagem densa como as outras: cada alerta traz título, descrição e até
+  // quatro ações na mesma linha.
+  '/alertas',
 ]
 
 function usaLarguraAmpla(pathname: string): boolean {

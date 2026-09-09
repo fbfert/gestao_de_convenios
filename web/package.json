@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint && node scripts/verificar-design-system.mjs",
     "preview": "vite preview",
-    "test:e2e": "php ../api/artisan migrate:fresh --seed --env=testing --force && playwright test",
+    "test:e2e": "php ../api/artisan db:conferir-alvo-de-teste --env=testing && php ../api/artisan migrate:fresh --seed --env=testing --force && playwright test",
     "ds:check": "node scripts/verificar-design-system.mjs",
     "ds:daltonismo": "node scripts/simulacao-daltonismo/verificar-paleta.mjs"
   },

@@ -1,7 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { apiClient } from '../../api/client'
-import { GuiaAlertaNegacoes } from '../guias/GuiaAlertaNegacoes'
+import { AlertasCard, type AlertaDoCard } from '../alertas/AlertasCard'
+import { NovidadesCard } from '../novidades'
+import { SaudeCard } from '../saude'
+import { GuiasCard, type GuiasCardLinha } from './GuiasCard'
 import { usePode } from '../../lib/permissoes'
 
 type DashboardBlock = {
@@ -24,6 +27,8 @@ type AuditItem = {
 
 type DashboardResponse = {
   blocks: DashboardBlock[]
+  guias_card: GuiasCardLinha[] | null
+  alertas_card: AlertaDoCard[] | null
   recent_audits: AuditItem[]
 }
 
@@ -62,7 +67,17 @@ export function DashboardPage() {
     aqui em vez de remover do DashboardController evita derrubá-la de lá junto.
     A tela de Usuários segue acessível pelo menu Cadastros.
   */
-  const blocks = (dashboardQuery.data?.blocks ?? []).filter((block) => block.key !== 'usuarios')
+  /*
+    Guias também sai da grade: virou card próprio, com três linhas clicáveis
+    que levam à listagem já filtrada. Diferente de Usuários, o bloco de Guias
+    continua vindo da API porque `navigation.ts` o consome por `metricKey` nas
+    telas de grupo — o mesmo motivo pelo qual o bloco de usuários segue lá.
+  */
+  const blocks = (dashboardQuery.data?.blocks ?? []).filter(
+    (block) => block.key !== 'usuarios' && block.key !== 'guias',
+  )
+  const guiasCard = dashboardQuery.data?.guias_card ?? []
+  const alertasCard = dashboardQuery.data?.alertas_card ?? []
   const recentAudits = dashboardQuery.data?.recent_audits ?? []
 
   return (
@@ -90,7 +105,32 @@ export function DashboardPage() {
         </div>
       </section>
 
-      {pode('dashboard.guias') ? <GuiaAlertaNegacoes /> : null}
+      {/* Saúde antes do alerta de guias de propósito: se o sistema está fora do
+          ar, é isso que explica por que os números abaixo podem estar parados.
+          Sem `pode(...)`: saber se o sistema está funcionando não é privilégio
+          de papel — quem lança sessão precisa disso tanto quanto o admin.
+
+          Novidades vem ao lado, e não abaixo: os dois são cards curtos e de
+          leitura, não de ação, e empilhados empurravam a lista de guias para
+          fora da primeira tela.
+
+          Flex, e não grade de duas colunas, porque os dois cards somem sozinhos
+          — Saúde sem componentes, Novidades sem publicação. Numa grade o que
+          restasse ficaria preso a meia tela com um vazio ao lado; aqui o
+          `empty:hidden` tira o invólucro do fluxo e o sobrevivente volta a
+          ocupar a largura inteira. O `basis` só entra a partir de `lg`: em
+          coluna ele valeria como altura, e zeraria os cards. */}
+      <div className="flex flex-col gap-6 lg:flex-row">
+        <div className="min-w-0 empty:hidden lg:grow lg:basis-0"><SaudeCard /></div>
+        <div className="min-w-0 empty:hidden lg:grow lg:basis-0"><NovidadesCard /></div>
+      </div>
+
+      {/* O antigo GuiaAlertaNegacoes saiu daqui: foi absorvido pela regra
+          `guia.negada` da central de alertas, que carrega as duas ações que ele
+          oferecia — ocultar e abrir nova solicitação a partir da guia. */}
+      {pode('alertas.view') ? <AlertasCard alertas={alertasCard} /> : null}
+
+      {pode('dashboard.guias') ? <GuiasCard linhas={guiasCard} /> : null}
 
       {dashboardQuery.isLoading ? (
         <div className="rounded-janela border border-linha bg-superficie p-6 text-corpo text-texto-suave">
@@ -101,42 +141,6 @@ export function DashboardPage() {
           Não foi possível carregar o Dashboard.
         </div>
       ) : null}
-
-      <section className="space-y-4">
-        <div>
-          <p className="text-meta font-semibold uppercase tracking-[0.2em] text-acento">Relatórios</p>
-          <h3 className="mt-2 text-titulo font-semibold text-white">Resumo por área</h3>
-        </div>
-
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {blocks.map((block) =>
-            block.href ? (
-              <Link
-                key={block.key}
-                to={block.href}
-                className="rounded-janela border border-linha bg-superficie px-4 py-3 shadow-e1 transition hover:border-acento/40 hover:shadow-e2"
-              >
-                <p className="text-meta font-semibold uppercase tracking-[0.14em] text-texto-suave">{block.label}</p>
-                <div className="mt-1 flex items-baseline justify-between gap-2">
-                  <span className="text-display font-semibold text-white">{block.value}</span>
-                  <span className="text-meta font-semibold text-acento">Abrir →</span>
-                </div>
-                <p className="mt-1 truncate text-meta text-slate-400" title={block.detail}>
-                  {block.detail}
-                </p>
-              </Link>
-            ) : (
-              <article key={block.key} className="rounded-janela border border-linha bg-superficie px-4 py-3 shadow-e1">
-                <p className="text-meta font-semibold uppercase tracking-[0.14em] text-texto-suave">{block.label}</p>
-                <p className="mt-1 text-display font-semibold text-white">{block.value}</p>
-                <p className="mt-1 truncate text-meta text-slate-400" title={block.detail}>
-                  {block.detail}
-                </p>
-              </article>
-            ),
-          )}
-        </div>
-      </section>
 
       <section className="grid items-start gap-6 xl:grid-cols-[1.2fr_0.8fr]">
         <article className={card}>
@@ -211,6 +215,45 @@ export function DashboardPage() {
             )}
           </div>
         </article>
+      </section>
+
+      {/* Depois do Acesso rápido, e não antes: são contagens de referência, não
+          o caminho para a tarefa. Quem abre o Dashboard para trabalhar quer o
+          atalho da tela; quem abre para conferir números tem tempo de rolar. */}
+      <section className="space-y-4">
+        <div>
+          <p className="text-meta font-semibold uppercase tracking-[0.2em] text-acento">Relatórios</p>
+          <h3 className="mt-2 text-titulo font-semibold text-white">Resumo por área</h3>
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {blocks.map((block) =>
+            block.href ? (
+              <Link
+                key={block.key}
+                to={block.href}
+                className="rounded-janela border border-linha bg-superficie px-4 py-3 shadow-e1 transition hover:border-acento/40 hover:shadow-e2"
+              >
+                <p className="text-meta font-semibold uppercase tracking-[0.14em] text-texto-suave">{block.label}</p>
+                <div className="mt-1 flex items-baseline justify-between gap-2">
+                  <span className="text-display font-semibold text-white">{block.value}</span>
+                  <span className="text-meta font-semibold text-acento">Abrir →</span>
+                </div>
+                <p className="mt-1 truncate text-meta text-slate-400" title={block.detail}>
+                  {block.detail}
+                </p>
+              </Link>
+            ) : (
+              <article key={block.key} className="rounded-janela border border-linha bg-superficie px-4 py-3 shadow-e1">
+                <p className="text-meta font-semibold uppercase tracking-[0.14em] text-texto-suave">{block.label}</p>
+                <p className="mt-1 text-display font-semibold text-white">{block.value}</p>
+                <p className="mt-1 truncate text-meta text-slate-400" title={block.detail}>
+                  {block.detail}
+                </p>
+              </article>
+            ),
+          )}
+        </div>
       </section>
     </div>
   )

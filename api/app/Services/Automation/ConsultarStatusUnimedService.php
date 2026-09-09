@@ -7,6 +7,7 @@ use App\Jobs\ExecutarAutomacaoUnimedJob;
 use App\Models\AutomacaoExecucao;
 use App\Models\ConfiguracaoGlobal;
 use App\Models\Guia;
+use App\Models\GuiaStatusHistorico;
 use App\Models\UnimedRdaCredential;
 use App\Services\GuiaService;
 use App\Services\SolicitacaoService;
@@ -139,14 +140,24 @@ class ConsultarStatusUnimedService
 
         if ($conclusivo && filled($guiaStatus)) {
             $guia->forceFill([
-                'status' => $guiaStatus,
                 'unimed_status' => $portalStatus,
                 'unimed_last_checked_at' => now(),
                 'unimed_next_check_at' => now()->addHours($this->horasSucesso($guia->tenant_id)),
                 // A operadora pode revisar a quantidade autorizada depois da geração;
                 // só sobrescrevemos quando o portal realmente informou o número.
                 ...$this->quantidadesInformadas($resultado),
-            ])->save();
+            ]);
+
+            // Status por registrarTransicao — ponto único de escrita. O portal
+            // pode repetir o mesmo status a cada consulta; sem este `if`, cada
+            // reconsulta viraria uma linha de histórico sem mudança nenhuma.
+            if ($guia->status === $guiaStatus) {
+                $guia->save();
+            } else {
+                app(GuiaService::class)->registrarTransicao($guia, $guiaStatus, [
+                    'origem' => GuiaStatusHistorico::ORIGEM_AUTOMACAO,
+                ]);
+            }
 
             if ($guia->solicitacao_id) {
                 $this->solicitacoes->sincronizarStatusComGuias($guia->solicitacao);

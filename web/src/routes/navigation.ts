@@ -203,6 +203,13 @@ export const configuracoesItems: NavLeaf[] = [
     permissao: 'configuracoes.clinica.manage',
   },
   {
+    to: '/alertas/configuracoes',
+    label: 'Regras de Alerta',
+    descricao:
+      'O que dispara alerta e com que limiar. Ligar, desligar e ajustar o corte de cada regra sem precisar de deploy.',
+    permissao: 'alertas.manage',
+  },
+  {
     to: '/permissoes',
     label: 'Perfis e Permissões',
     descricao:
@@ -271,9 +278,26 @@ export const navEntries: NavEntry[] = [
   },
   cadastrosGroup,
   operacaoGroup,
+  // Entrada própria, e não dentro de Automações: senha vencendo e guia negada
+  // são operação, não automação. A CONFIGURAÇÃO das regras é que fica também
+  // alcançável por Automações → Configurações.
+  {
+    to: '/alertas',
+    label: 'Alertas',
+    descricao:
+      'O que precisa de você agora: senha vencendo, guia negada, automação falhando e componente fora do ar.',
+    permissao: 'alertas.view',
+  },
   automacoesGroup,
   configuracoesGroup,
   { to: '/manual', label: 'Manual', descricao: 'Documentação de uso do sistema.' },
+  // Sem `permissao`: novidade é do produto e vale para todo mundo, como o
+  // Manual e o Dashboard.
+  {
+    to: '/novidades',
+    label: 'Novidades',
+    descricao: 'O que mudou no sistema, da mais recente para a mais antiga.',
+  },
 ]
 
 /** Item visível apenas para quem administra clínicas. */

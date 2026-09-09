@@ -28,7 +28,6 @@ class SolicitacaoDocumentoController extends Controller
         'itens.guia',
         'itens.automacaoExecucoes',
         'documentos.arquivo',
-        'guia',
     ];
 
     public function store(
@@ -167,10 +166,9 @@ class SolicitacaoDocumentoController extends Controller
                 : null;
         }
 
-        $temGuia = $solicitacao->itens()->whereHas('guia')->exists()
-            || $solicitacao->guia()->exists();
-
-        return $temGuia
+        // Uma consulta só: `guias` cobre a guia de qualquer item e a guia antiga
+        // presa à solicitação sem vínculo com item.
+        return $solicitacao->guias()->exists()
             ? 'A solicitação já tem Guia gerada. Os anexos do pedido não podem mais ser removidos.'
             : null;
     }

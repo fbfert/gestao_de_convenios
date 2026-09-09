@@ -52,7 +52,8 @@ class RoleCatalog
             'usuarios.manage',
             'convenios.manage',
             'permissoes.manage',
-            'manual.manage',
+            'alertas.view',
+            'alertas.manage',
             'configuracoes.manage',
             'configuracoes.unimed.manage',
             'configuracoes.clinica.manage',
@@ -88,6 +89,7 @@ class RoleCatalog
             'profissionais.manage',
             'medicos.view',
             'medicos.manage',
+            'alertas.view',
         ],
         'profissional' => [
             'dashboard.guias',

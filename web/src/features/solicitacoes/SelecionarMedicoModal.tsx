@@ -1,4 +1,5 @@
 import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/react'
+import { useFechamentoExplicito } from '../../lib/useFechamentoExplicito'
 import { Search, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Botao } from '../../components/ui/Botao'
@@ -88,7 +89,7 @@ export function SelecionarMedicoModal({ open, onClose, onSelecionar }: Seleciona
   }
 
   return (
-    <Dialog open={open} onClose={onClose} className="relative z-(--z-dialogo)">
+    <Dialog {...useFechamentoExplicito(open, onClose)} className="relative z-(--z-dialogo)">
       <DialogBackdrop className="fixed inset-0 bg-slate-950/75 backdrop-blur-sm" />
       <div className="fixed inset-0 overflow-y-auto p-4 sm:p-6">
         <div className="flex min-h-full items-center justify-center">

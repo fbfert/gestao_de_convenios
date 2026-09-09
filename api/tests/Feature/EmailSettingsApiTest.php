@@ -23,12 +23,18 @@ class EmailSettingsApiTest extends TestCase
     {
         $this->autenticar();
 
-        $this->putJson('/api/configuracoes/emails', $this->payload('senha-inicial'))
+        $resposta = $this->putJson('/api/configuracoes/emails', $this->payload('senha-inicial'))
             ->assertOk()
             ->assertJsonPath('data.smtp.host', 'smtp.clinica.test')
             ->assertJsonPath('data.smtp.senha_configurada', true)
-            ->assertJsonMissingPath('data.smtp.password')
-            ->assertJsonPath('data.templates.0.chave', 'guia_aprovada');
+            ->assertJsonMissingPath('data.smtp.password');
+
+        // Por conteúdo, e não por posição: a lista é ordenada por nome, e os
+        // modelos das notificações de alerta agora ordenam antes deste.
+        $this->assertContains(
+            'guia_aprovada',
+            collect($resposta->json('data.templates'))->pluck('chave')->all(),
+        );
 
         $smtp = EmailSmtpSetting::query()->firstOrFail();
         $this->assertSame('senha-inicial', $smtp->password);

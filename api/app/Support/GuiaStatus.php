@@ -4,6 +4,32 @@ namespace App\Support;
 
 class GuiaStatus
 {
+    /**
+     * Prefixo do numero de guia gerado internamente para convenio manual, em
+     * SolicitacaoService::numeroGuiaDoItem(). O valor completo e por item
+     * (`{prefixo}{solicitacao_id}-{item_id}`), e nao por solicitacao: uma guia
+     * por item com um numero por solicitacao faria as N nascerem iguais.
+     *
+     * NAO E numero de operadora: e um valor de preenchimento, e a tela precisa
+     * trata-lo como ausencia de numero. Vive aqui, e nao solto em cada arquivo,
+     * porque a regra e a mesma no backend e no front — e string duplicada e como
+     * essa distincao se perde na terceira tela que precisar dela. O front recebe
+     * o valor pela API (SolicitacaoResource) em vez de repetir o literal.
+     */
+    public const PREFIXO_NUMERO_PLACEHOLDER = 'GUIA-SOLICITACAO-';
+
+    /** O numero e um valor de preenchimento, e nao um numero da operadora? */
+    public static function numeroEhPlaceholder(?string $numero): bool
+    {
+        return $numero !== null && str_starts_with($numero, self::PREFIXO_NUMERO_PLACEHOLDER);
+    }
+
+    /** O que a tela deve tratar como numero de verdade — nulo quando nao ha. */
+    public static function numeroDaOperadora(?string $numero): ?string
+    {
+        return self::numeroEhPlaceholder($numero) ? null : ($numero ?: null);
+    }
+
     public const UNDER_REVIEW = 'under_review';
     public const FINALIZED = 'finalized';
     public const APPROVED = 'approved';

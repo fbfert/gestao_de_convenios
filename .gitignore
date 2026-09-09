@@ -33,11 +33,34 @@ coverage/
 .env
 .env.*
 
+# EXCECAO, e a razao dela importa. `.env.*` acima casa em qualquer diretorio,
+# entao `api/.env.testing` nunca chegava num clone. Sem esse arquivo, o
+# `--env=testing` do `npm run test:e2e` cai no `.env` normal e o `migrate:fresh`
+# apaga o banco de DESENVOLVIMENTO — e, num servidor, o de producao.
+#
+# O arquivo nao tem segredo: aponta para um banco local descartavel
+# (`gestao_convenios_e2e`), com senha de container local, e a APP_KEY dele so
+# cifra sessao de teste com dado semeado. Versiona-lo e o que faz a suite
+# funcionar a partir de um clone limpo.
+!api/.env.testing
+
 # Segredos do deploy (o .example fica versionado)
 deploy/.secrets.env
 
 # Backups de banco de dados: dados reais de pacientes (PHI), nunca versionar.
 deploy/backups/
+
+# Dumps de producao restaurados na maquina de dev — mesma razao que a regra
+# acima: sao dados reais de pacientes (PHI). A regra `deploy/backups/` so cobre
+# aquela pasta, e um dump baixado na raiz do projeto passava direto.
+*.sql
+*.sql.gz
+*.dump
+
+# Banco de desenvolvimento. Vazio ele seria inofensivo, mas e nele que o dump de
+# producao e restaurado — a partir dai carrega PHI e nao pode ser versionado.
+api/database/database.sqlite
+api/database/*.sqlite
 
 
 # Bytecode do Python — gerado ao rodar os scripts das skills, e especifico da

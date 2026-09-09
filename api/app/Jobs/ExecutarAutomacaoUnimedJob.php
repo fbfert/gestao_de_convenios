@@ -10,6 +10,8 @@ use App\Services\Automation\ConsultarStatusUnimedService;
 use App\Services\Automation\GerarGuiaUnimedService;
 use App\Services\Automation\UnimedCircuitBreakerService;
 use App\Services\Automation\UnimedWorkerClient;
+use App\Services\SaudeService;
+use App\Models\SaudeComponente;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -60,6 +62,19 @@ class ExecutarAutomacaoUnimedJob implements ShouldQueue
             };
             $resultado = $worker->executar($execucao, $payload);
             $circuitBreaker->handleResult((int) $execucao->tenant_id, $resultado);
+
+            // Heartbeat aqui, e nao no fim do handle: o que prova que o worker
+            // esta vivo e ele ter respondido, nao o resultado de negocio ter
+            // sido "aprovado". Guia negada e resposta legitima de um worker
+            // saudavel. Se `executar` lancar, caimos no catch e nenhum heartbeat
+            // e registrado — que e exatamente o sinal desejado.
+            //
+            // O tenant vem explicito porque este job roda no queue:work, fora de
+            // requisicao HTTP, entao nao ha TenantContext para resolver.
+            app(SaudeService::class)->registrarHeartbeat(
+                SaudeComponente::CHAVE_WORKER_UNIMED,
+                tenantId: (int) $execucao->tenant_id,
+            );
 
             if ($execucao->operacao === 'gerar_guia') {
                 $gerarGuiaUnimed->aplicarResultado($execucao, $resultado);

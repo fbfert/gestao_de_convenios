@@ -52,7 +52,9 @@ class SolicitacaoDocumento extends Model
             return (bool) $this->item?->guia()->exists();
         }
 
-        return $this->solicitacao->itens()->whereHas('guia')->exists()
-            || $this->solicitacao->guia()->exists();
+        // Uma consulta só, e cobre os dois casos: a guia de qualquer item e a
+        // guia antiga presa à solicitação sem vínculo com item — ambas são
+        // `guias` desta solicitação.
+        return $this->solicitacao->guias()->exists();
     }
 }

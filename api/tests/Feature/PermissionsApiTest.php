@@ -27,10 +27,15 @@ class PermissionsApiTest extends TestCase
             ->assertJsonCount(3, 'data')
             ->assertJsonPath('data.0.name', 'admin');
 
-        $this->getJson('/api/permissions')
+        // Por conteúdo, e não por posição: a listagem é ordenada por nome, então
+        // prender a asserção ao índice 0 faz o teste quebrar toda vez que entra
+        // uma permissão que ordena antes — sem que nada de fato tenha quebrado.
+        $permissoes = $this->getJson('/api/permissions')
             ->assertOk()
             ->assertJsonCount(count(PermissionCatalog::all()), 'data')
-            ->assertJsonPath('data.0.name', 'antecipacoes.manage');
+            ->json('data');
+
+        $this->assertContains('antecipacoes.manage', collect($permissoes)->pluck('name')->all());
     }
 
     public function test_carrega_e_atualiza_permissoes_do_role(): void
@@ -67,10 +72,13 @@ class PermissionsApiTest extends TestCase
     {
         $this->autenticar();
 
-        $this->getJson('/api/permissions')
-            ->assertOk()
-            ->assertJsonPath('data.0.name', 'antecipacoes.manage')
-            ->assertJsonPath('data.0.label', 'Editar dados de antecipações');
+        $permissoes = collect($this->getJson('/api/permissions')->assertOk()->json('data'));
+
+        // O que importa é o rótulo legível existir, não em que posição ele está.
+        $this->assertSame(
+            'Editar dados de antecipações',
+            $permissoes->firstWhere('name', 'antecipacoes.manage')['label'],
+        );
     }
 
     public function test_recusa_remover_administracao_do_proprio_papel(): void

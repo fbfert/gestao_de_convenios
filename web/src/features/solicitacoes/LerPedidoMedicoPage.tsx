@@ -1,4 +1,5 @@
 import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/react'
+import { useFechamentoExplicito } from '../../lib/useFechamentoExplicito'
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Select } from '../../components/ui/Select'
@@ -131,7 +132,7 @@ function NovaEspecialidadeModal({
   }, [nomeInicial, aberto])
 
   return (
-    <Dialog open={aberto} onClose={onClose} className="relative z-(--z-dialogo)">
+    <Dialog {...useFechamentoExplicito(aberto, onClose)} className="relative z-(--z-dialogo)">
       <DialogBackdrop className="fixed inset-0 bg-slate-950/75 backdrop-blur-sm" />
       <div className="fixed inset-0 overflow-y-auto p-4 sm:p-6">
         <div className="flex min-h-full items-center justify-center">
@@ -351,6 +352,30 @@ export function LerPedidoMedicoPage() {
     [convenios, form.convenio_id],
   )
   const blocosCarteirinha = convenioSelecionado?.carteirinha_blocos ?? null
+
+  /*
+    Mesma sugestão do cadastro manual: as especialidades lidas do pedido médico
+    entram sem quantidade, e ela vem da regra do convênio. Só preenche o que
+    está vazio — o que a pessoa digitou fica.
+  */
+  useEffect(() => {
+    const padrao = convenioSelecionado?.sessoes_por_guia
+
+    if (!padrao) {
+      return
+    }
+
+    setForm((current) =>
+      current.itens.some((item) => item.quantidade === '')
+        ? {
+            ...current,
+            itens: current.itens.map((item) =>
+              item.quantidade === '' ? { ...item, quantidade: String(padrao) } : item,
+            ),
+          }
+        : current,
+    )
+  }, [convenioSelecionado])
   const pacientesBase = useMemo(() => pacientesQuery.data ?? emptyArray, [pacientesQuery.data])
   const especialidadesBase = useMemo(
     () => especialidadesQuery.data ?? emptyArray,
@@ -1085,6 +1110,7 @@ export function LerPedidoMedicoPage() {
             especialidades={especialidades}
             profissionais={profissionais}
             disabled={especialidadesQuery.isLoading || profissionaisQuery.isLoading}
+            sessoesPorGuia={convenioSelecionado?.sessoes_por_guia ?? null}
           />
 
           <div className="flex justify-end">
@@ -1284,7 +1310,16 @@ export function LerPedidoMedicoPage() {
                             <td data-rotulo="Profissional" className="px-3 py-2 text-slate-200">
                               {profissionais.find((prof) => String(prof.id) === item.profissional_id)?.nome ?? '—'}
                             </td>
-                            <td data-rotulo="Sessões" className="px-3 py-2 text-slate-200">{item.quantidade || 10}</td>
+                            {/* Sem `|| 10`: esta tabela é de CONFERÊNCIA, e o
+                                payload sai de `form.itens`. Mostrar dez com o
+                                campo vazio fazia a pessoa ler um número e
+                                receber, ao salvar, um erro dizendo que faltou
+                                preencher. */}
+                            <td data-rotulo="Sessões" className="px-3 py-2 text-slate-200">
+                              {item.quantidade || (
+                                <span className="text-alerta-texto">a preencher</span>
+                              )}
+                            </td>
                           </tr>
                         ))}
                       </tbody>

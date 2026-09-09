@@ -73,11 +73,13 @@ class GuiaServiceTest extends TestCase
 
         $service = app(GuiaService::class);
         $guia = $this->novaGuia('Unimed', 'Fisioterapia', 'especializada');
+        // Arranjo do estado passa pelo ponto único de escrita como qualquer
+        // outro código: a trava do model não abre exceção para teste.
         $guia->forceFill([
-            'status' => 'approved',
             'senha' => 'AUTO-999',
             'validade_senha' => today()->copy()->addDays(10),
-        ])->save();
+        ]);
+        $service->registrarTransicao($guia, 'approved', ['origem' => 'automacao']);
 
         $finalizada = $service->finalizar($guia, []);
 
@@ -90,7 +92,7 @@ class GuiaServiceTest extends TestCase
     {
         $service = app(GuiaService::class);
         $guia = $this->novaGuia('Unimed', 'Fisioterapia', 'especializada');
-        $guia->forceFill(['status' => 'denied'])->save();
+        $service->registrarTransicao($guia, 'denied');
 
         $this->expectException(GuiaStatusInvalidoException::class);
 
@@ -111,7 +113,7 @@ class GuiaServiceTest extends TestCase
     {
         $service = app(GuiaService::class);
         $guia = $this->novaGuia('Unimed', 'Fisioterapia', 'especializada');
-        $guia->forceFill(['status' => 'denied'])->save();
+        $service->registrarTransicao($guia, 'denied');
 
         $this->assertNull($guia->alerta_negacao_ocultado_em);
 

@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Models\Convenio;
 use App\Models\Especialidade;
 use App\Models\Guia;
+use App\Services\GuiaService;
+use App\Models\GuiaStatusHistorico;
 use App\Models\GuiaImportLinha;
 use App\Models\GuiaImportLote;
 use App\Models\Paciente;
@@ -637,7 +639,6 @@ class GuiaImportService
             'especialidade_id' => $dados['especialidade_id'],
             'numero_guia' => $dados['numero_guia'],
             'tipo_terapia' => $dados['tipo_terapia'],
-            'status' => $dados['status'],
             'sessoes_solicitadas' => $dados['sessoes_solicitadas'],
             'sessoes_autorizadas' => $dados['sessoes_autorizadas'],
             'protocolo_operadora' => $dados['protocolo_operadora'],
@@ -648,13 +649,24 @@ class GuiaImportService
             'observacoes' => $dados['observacoes'],
         ];
 
-        if ($existente) {
-            $existente->fill($atributos);
-            $existente->save();
+        // Status por registrarTransicao — ponto único de escrita. Origem
+        // `importacao`, e por isso a linha do histórico nasce sem usuário mesmo
+        // tendo sido uma pessoa que subiu a planilha: quem transicionou foi o
+        // importador, e é isso que a série precisa distinguir depois.
+        $guias = app(GuiaService::class);
+        $alvo = $existente ?? new Guia();
+        $alvo->fill($atributos);
 
-            return $existente;
+        // Reimportar a mesma planilha não deve inventar transição: só há
+        // mudança quando o status da linha difere do que a guia já tem.
+        if ($existente && $existente->status === $dados['status']) {
+            $alvo->save();
+
+            return $alvo;
         }
 
-        return Guia::query()->create($atributos);
+        return $guias->registrarTransicao($alvo, $dados['status'], [
+            'origem' => GuiaStatusHistorico::ORIGEM_IMPORTACAO,
+        ]);
     }
 }

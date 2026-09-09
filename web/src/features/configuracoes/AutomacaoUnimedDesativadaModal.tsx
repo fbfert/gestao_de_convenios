@@ -1,4 +1,5 @@
 import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/react'
+import { useFechamentoExplicito } from '../../lib/useFechamentoExplicito'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { LoaderCircle } from 'lucide-react'
@@ -47,7 +48,7 @@ export function AutomacaoUnimedDesativadaModal({
   }
 
   return (
-    <Dialog open={aberto} onClose={handleClose} className="relative z-(--z-dialogo)">
+    <Dialog {...useFechamentoExplicito(aberto, handleClose)} className="relative z-(--z-dialogo)">
       <DialogBackdrop className="fixed inset-0 bg-slate-950/75 backdrop-blur-sm" />
       <div className="fixed inset-0 overflow-y-auto p-4 sm:p-6">
         <div className="flex min-h-full items-center justify-center">

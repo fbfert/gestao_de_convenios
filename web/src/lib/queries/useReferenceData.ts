@@ -7,6 +7,12 @@ export type ConvenioRef = {
   connector_type: string
   connector_driver?: 'unimed_rda' | null
   carteirinha_blocos?: number[] | null
+  /**
+   * Sessões por guia da regra vigente — nulo quando o convênio não tem a regra
+   * cadastrada. É daqui que o formulário tira a quantidade sugerida; o número
+   * não pode voltar a ser um literal no front (regra de convênio é dado).
+   */
+  sessoes_por_guia?: number | null
 }
 
 export type EspecialidadeRef = {

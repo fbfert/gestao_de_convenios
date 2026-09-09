@@ -6,8 +6,11 @@ use App\Exceptions\GuiaStatusInvalidoException;
 use App\Support\GuiaStatus;
 use Illuminate\Validation\ValidationException;
 use App\Models\Guia;
+use App\Models\GuiaStatusHistorico;
 use App\Support\TenantContext;
+use App\Models\ConfiguracaoGlobal;
 use App\Models\ConvenioRegra;
+use Illuminate\Support\Facades\DB;
 use App\Services\Concerns\AppliesOwnScope;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -27,6 +30,8 @@ class GuiaService
 
     public function listar(array $filtros = [], int $perPage = 15): LengthAwarePaginator
     {
+        $filtros = $this->traduzirFiltrosDoCard($filtros);
+
         $query = $this->aplicarEscopoOwn(
             Guia::query()->with([
                 'solicitacao.medico',
@@ -112,6 +117,63 @@ class GuiaService
             ->paginate($perPage);
     }
 
+    /**
+     * PONTO UNICO de escrita de `guias.status`. Nenhum outro lugar do codigo
+     * pode alterar esse campo — a trava esta no observer `saving` do model Guia,
+     * e reprova pelo efeito, nao pelo formato do codigo.
+     *
+     * Aceita modelo ainda nao salvo de proposito: e a unica forma que serve
+     * igualmente para os tres pontos que criam a guia inteira num `fill()` so
+     * (automacao, confirmacao de incerta, importacao) e para os que apenas mudam
+     * o status. O chamador preenche todo o resto e chama isto por ultimo.
+     *
+     * `de` sai de `getOriginal('status')`, que e nulo na guia nascendo — que ja
+     * e a semantica desejada para a primeira linha do historico.
+     *
+     * @param array{origem?: string, motivo?: string|null, user_id?: int|null, ocorrido_em?: \Carbon\CarbonInterface} $contexto
+     */
+    public function registrarTransicao(Guia $guia, string $para, array $contexto = []): Guia
+    {
+        $origem = $contexto['origem'] ?? GuiaStatusHistorico::ORIGEM_MANUAL;
+        $ocorridoEm = $contexto['ocorrido_em'] ?? now();
+        $de = $guia->exists ? $guia->getOriginal('status') : null;
+
+        // `user_id` so quando e gente. Inferir por auth() daria "manual" para um
+        // job que rodasse com usuario resolvido — quem chama sabe a origem.
+        $userId = array_key_exists('user_id', $contexto)
+            ? $contexto['user_id']
+            : ($origem === GuiaStatusHistorico::ORIGEM_MANUAL ? auth()->id() : null);
+
+        return DB::transaction(function () use ($guia, $para, $de, $origem, $ocorridoEm, $userId, $contexto) {
+            $guia->status = $para;
+
+            // Carimbos e historico na mesma transacao: e o que impede o cache de
+            // divergir da verdade.
+            if ($para === GuiaStatus::DENIED) {
+                $guia->negada_em = $ocorridoEm;
+            }
+
+            if ($para === GuiaStatus::APPROVED) {
+                $guia->aprovada_em = $ocorridoEm;
+            }
+
+            Guia::permitindoTransicao(fn () => $guia->save());
+
+            GuiaStatusHistorico::query()->create([
+                'tenant_id' => $guia->tenant_id,
+                'guia_id' => $guia->id,
+                'de' => $de,
+                'para' => $para,
+                'ocorrido_em' => $ocorridoEm,
+                'user_id' => $userId,
+                'origem' => $origem,
+                'motivo' => $contexto['motivo'] ?? null,
+            ]);
+
+            return $guia;
+        });
+    }
+
     public function criar(array $dados): Guia
     {
         $convenio = \App\Models\Convenio::query()
@@ -125,7 +187,8 @@ class GuiaService
             ]);
         }
 
-        return Guia::query()->create([
+        // Tudo menos o status; o status entra por registrarTransicao, que salva.
+        $guia = new Guia([
             'tenant_id' => $this->tenantId(),
             'solicitacao_id' => $dados['solicitacao_id'] ?? null,
             'solicitacao_item_id' => $dados['solicitacao_item_id'] ?? null,
@@ -135,7 +198,6 @@ class GuiaService
             'especialidade_id' => $dados['especialidade_id'],
             'numero_guia' => $dados['numero_guia'],
             'tipo_terapia' => $dados['tipo_terapia'],
-            'status' => GuiaStatus::UNDER_REVIEW,
             'sessoes_solicitadas' => $dados['sessoes_solicitadas'] ?? null,
             'sessoes_autorizadas' => $dados['sessoes_autorizadas'] ?? null,
             'protocolo_operadora' => $dados['protocolo_operadora'] ?? null,
@@ -144,6 +206,10 @@ class GuiaService
             'senha' => null,
             'validade_senha' => null,
             'observacoes' => $dados['observacoes'] ?? null,
+        ]);
+
+        return $this->registrarTransicao($guia, GuiaStatus::UNDER_REVIEW, [
+            'origem' => GuiaStatusHistorico::ORIGEM_MANUAL,
         ]);
     }
 
@@ -239,12 +305,14 @@ class GuiaService
         }
 
         $guia->fill([
-            'status' => GuiaStatus::FINALIZED,
             'senha' => $senha,
             'data_finalizacao' => $dataFinalizacao,
             'validade_senha' => $validadeSenha,
         ]);
-        $guia->save();
+
+        $this->registrarTransicao($guia, GuiaStatus::FINALIZED, [
+            'origem' => GuiaStatusHistorico::ORIGEM_MANUAL,
+        ]);
 
         $this->antecipacaoService->abrirCiclo($guia);
 
@@ -275,13 +343,42 @@ class GuiaService
             throw GuiaStatusInvalidoException::transicaoInvalida($guia->status, GuiaStatus::DENIED);
         }
 
-        $guia->fill([
-            'status' => GuiaStatus::DENIED,
-            'observacoes' => $observacoes ?? $guia->observacoes,
+        $guia->fill(['observacoes' => $observacoes ?? $guia->observacoes]);
+
+        $this->registrarTransicao($guia, GuiaStatus::DENIED, [
+            'origem' => GuiaStatusHistorico::ORIGEM_MANUAL,
+            'motivo' => $observacoes,
         ]);
-        $guia->save();
 
         return $guia->refresh();
+    }
+
+    /**
+     * Traduz os filtros que as linhas do card do dashboard usam na URL para os
+     * filtros internos da listagem.
+     *
+     * `pendente=1` so faz sentido junto de `status=denied`: e "negada e ainda
+     * nao tratada". Sozinho ele nao significa nada, e por isso e ignorado.
+     *
+     * `senha_vencendo=1` resolve a janela pelo `senha_alerta_dias` do tenant —
+     * regra e dado, nunca codigo (ADR-03). Este e o primeiro consumidor dessa
+     * configuracao, que existia sem ninguem ler.
+     */
+    private function traduzirFiltrosDoCard(array $filtros): array
+    {
+        $pendente = Arr::pull($filtros, 'pendente');
+        $senhaVencendo = Arr::pull($filtros, 'senha_vencendo');
+
+        if ($pendente && ($filtros['status'] ?? null) === GuiaStatus::DENIED) {
+            $filtros['alerta_negacao_pendente'] = 1;
+        }
+
+        if ($senhaVencendo && ! isset($filtros['validade_senha_vencendo_em_dias'])) {
+            $filtros['validade_senha_vencendo_em_dias'] = (int) ConfiguracaoGlobal::doTenant($this->tenantId())
+                ->senha_alerta_dias;
+        }
+
+        return $filtros;
     }
 
     private function tenantId(): int

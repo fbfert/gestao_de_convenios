@@ -250,8 +250,7 @@ export function SolicitacaoAnexos({ solicitacao }: { solicitacao: Solicitacao })
   const documentosDaSolicitacao = (solicitacao.documentos ?? []).filter(
     (documento) => !documento.solicitacao_item_id,
   )
-  const algumItemComGuia =
-    Boolean(solicitacao.guia) || (solicitacao.itens ?? []).some((item) => Boolean(item.guia_id))
+  const algumItemComGuia = (solicitacao.itens ?? []).some((item) => Boolean(item.guia))
 
   return (
     <section className="space-y-4 rounded-superficie border border-linha bg-fundo p-5 shadow-e1" data-testid="solicitacao-anexos">
@@ -305,7 +304,7 @@ export function SolicitacaoAnexos({ solicitacao }: { solicitacao: Solicitacao })
                 tipo={tipo}
                 itemId={item.id}
                 documentos={item.documentos ?? []}
-                travado={Boolean(item.guia_id)}
+                travado={Boolean(item.guia)}
                 onError={setErro}
               />
             ))}

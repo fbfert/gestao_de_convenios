@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\AlertaController;
+use App\Http\Controllers\AlertaDestinatarioController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AutomacaoController;
 use App\Http\Controllers\AntecipacaoController;
@@ -20,6 +22,7 @@ use App\Http\Controllers\ConciliacaoController;
 use App\Http\Controllers\ConciliacaoImportController;
 use App\Http\Controllers\GuiaController;
 use App\Http\Controllers\GuiaImportController;
+use App\Http\Controllers\HealthController;
 use App\Http\Controllers\MedicoController;
 use App\Http\Controllers\LancamentoController;
 use App\Http\Controllers\LancamentoImportController;
@@ -30,6 +33,7 @@ use App\Http\Controllers\AiSettingsController;
 use App\Http\Controllers\ClinicaSyncController;
 use App\Http\Controllers\ConfiguracaoGlobalController;
 use App\Http\Controllers\ManualController;
+use App\Http\Controllers\NovidadeController;
 use App\Http\Controllers\PacienteArquivoController;
 use App\Http\Controllers\PacienteController;
 use App\Http\Controllers\PacienteMergeController;
@@ -39,13 +43,23 @@ use App\Http\Controllers\SolicitacaoController;
 use App\Http\Controllers\SolicitacaoImportController;
 use App\Http\Controllers\TenantController;
 use App\Http\Controllers\ProfissionalController;
+use App\Http\Controllers\SaudeController;
 use App\Http\Controllers\SolicitacaoDocumentoController;
 use App\Http\Controllers\UnimedSettingsController;
 use App\Support\AuthPayload;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
+// Publico de proposito: e lido por um monitor externo, que precisa alcancar a
+// API sem credencial nenhuma. Fica fora do grupo `auth:sanctum` e nao devolve
+// nada que identifique tenant, usuario ou volume de dados.
+//
+// O ResolveTenant do grupo `api` continua na frente desta rota, e tudo bem: sem
+// usuario autenticado ele apenas limpa o contexto de tenant, sem tocar no banco.
+// Sem throttle: o monitor bate a cada 2 minutos e um 429 seria lido como queda.
+Route::get('/health', HealthController::class);
+
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
 
 // EncerrarSessaoExpirada vem logo apos o auth: precisa do usuario resolvido
 // para saber o prazo do tenant, e tem que barrar antes de qualquer rota.
@@ -58,6 +72,22 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EncerrarSessaoExpirada::
     });
 
     Route::get('/dashboard', [DashboardController::class, 'index']);
+    // Sem `permission:`: saber se o sistema esta funcionando nao e privilegio de
+    // papel — o profissional que lanca sessao precisa disso tanto quanto o admin.
+    Route::get('/saude', SaudeController::class);
+
+    // Central de alertas. Ver e configurar são permissões separadas de
+    // propósito: quem opera precisa ver o que exige ação, mas mexer em limiar
+    // é decisão de administração.
+    Route::get('/alertas', [AlertaController::class, 'index'])->middleware('permission:alertas.view');
+    Route::post('/alertas/{alerta}/reconhecer', [AlertaController::class, 'reconhecer'])->middleware('permission:alertas.view');
+    Route::post('/alertas/{alerta}/silenciar', [AlertaController::class, 'silenciar'])->middleware('permission:alertas.view');
+    Route::get('/alertas/regras', [AlertaController::class, 'regras'])->middleware('permission:alertas.manage');
+    Route::put('/alertas/regras/{alertaRegra}', [AlertaController::class, 'atualizarRegra'])->middleware('permission:alertas.manage');
+    Route::get('/alertas/destinatarios', [AlertaDestinatarioController::class, 'index'])->middleware('permission:alertas.manage');
+    Route::post('/alertas/destinatarios', [AlertaDestinatarioController::class, 'store'])->middleware('permission:alertas.manage');
+    Route::put('/alertas/destinatarios/{alertaDestinatario}', [AlertaDestinatarioController::class, 'update'])->middleware('permission:alertas.manage');
+    Route::delete('/alertas/destinatarios/{alertaDestinatario}', [AlertaDestinatarioController::class, 'destroy'])->middleware('permission:alertas.manage');
     Route::get('/auditoria', [AuditController::class, 'index'])->middleware('permission:dashboard.auditoria');
     Route::get('/auditoria/opcoes', [AuditController::class, 'opcoes'])->middleware('permission:dashboard.auditoria');
     Route::get('/auditoria/exportar', [AuditController::class, 'exportar'])->middleware('permission:dashboard.auditoria');
@@ -65,8 +95,12 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EncerrarSessaoExpirada::
     Route::get('/automacoes/{automacaoExecucao}', [AutomacaoController::class, 'show']);
     Route::post('/automacoes/{automacaoExecucao}/reprocessar', [AutomacaoController::class, 'reprocessar']);
 
+    // Somente leitura: o manual virou conteúdo do produto, servido do
+    // repositório. O PUT saiu junto com a permissão `manual.manage`.
     Route::get('/manual/{tipo?}', [ManualController::class, 'show'])->where('tipo', 'manual|mapa-mental');
-    Route::put('/manual/{tipo?}', [ManualController::class, 'update'])->middleware('permission:manual.manage')->where('tipo', 'manual|mapa-mental');
+
+    Route::get('/novidades', [NovidadeController::class, 'index']);
+    Route::post('/novidades/{slug}/lida', [NovidadeController::class, 'marcarLida']);
     Route::get('/configuracoes/emails', [EmailSettingsController::class, 'show'])->middleware('permission:configuracoes.manage');
     Route::put('/configuracoes/emails', [EmailSettingsController::class, 'update'])->middleware('permission:configuracoes.manage');
     Route::post('/configuracoes/emails/teste', [EmailSettingsController::class, 'enviarTeste'])->middleware('permission:configuracoes.manage');
@@ -188,6 +222,12 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EncerrarSessaoExpirada::
     Route::post('/solicitacoes/{solicitacao}/documentos/vincular', [SolicitacaoDocumentoController::class, 'vincular']);
     Route::get('/solicitacoes/{solicitacao}/documentos/{documento}', [SolicitacaoDocumentoController::class, 'download']);
     Route::delete('/solicitacoes/{solicitacao}/documentos/{documento}', [SolicitacaoDocumentoController::class, 'destroy']);
+    // Antes das rotas de {solicitacao}/status por clareza de leitura, não por
+    // precedência: os segmentos são literais distintos e não competem.
+    Route::get('/solicitacoes/{solicitacao}/contexto-adicao', [SolicitacaoController::class, 'contextoAdicao'])
+        ->middleware('permission:solicitacoes.manage');
+    Route::post('/solicitacoes/{solicitacao}/itens', [SolicitacaoController::class, 'storeItem'])
+        ->middleware('permission:solicitacoes.manage');
     Route::patch('/solicitacoes/{solicitacao}/status', [SolicitacaoController::class, 'updateStatus']);
     Route::patch('/solicitacoes/{solicitacao}/aprovar', [SolicitacaoController::class, 'aprovar']);
     Route::patch('/solicitacoes/{solicitacao}/negar', [SolicitacaoController::class, 'negar']);

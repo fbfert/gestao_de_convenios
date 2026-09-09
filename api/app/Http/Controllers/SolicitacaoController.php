@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\AnalyzePedidoMedicoRequest;
 use App\Http\Requests\MutateSolicitacaoStatusRequest;
+use App\Http\Requests\StoreSolicitacaoItemRequest;
 use App\Http\Requests\StoreSolicitacaoRequest;
 use App\Http\Requests\UpdateSolicitacaoRequest;
 use App\Http\Requests\UpdateSolicitacaoStatusRequest;
@@ -41,29 +42,58 @@ class SolicitacaoController extends Controller
 
     public function store(StoreSolicitacaoRequest $request): JsonResponse
     {
-        return (new SolicitacaoResource($this->service->criar($request->validated())->load(['paciente', 'profissional', 'especialidade', 'convenio', 'medico', 'cidCadastros', 'itens.especialidade.convenioMapeamentos', 'itens.profissional', 'itens.documentos.arquivo', 'itens.guia', 'itens.automacaoExecucoes', 'documentos.arquivo', 'guia'])))
+        return (new SolicitacaoResource($this->service->criar($request->validated())->load(['paciente', 'profissional', 'especialidade', 'convenio', 'medico', 'cidCadastros', 'itens.especialidade.convenioMapeamentos', 'itens.profissional', 'itens.documentos.arquivo', 'itens.guia', 'itens.automacaoExecucoes', 'documentos.arquivo'])))
             ->response()
             ->setStatusCode(201);
     }
 
+    /**
+     * Acrescenta um item a uma solicitação existente.
+     *
+     * Devolve a solicitação inteira, e não só o item: a tela precisa da lista
+     * atualizada e da situação nova — que pode ter regredido para "pronta para
+     * automatização" justamente por causa deste item.
+     */
+    public function storeItem(StoreSolicitacaoItemRequest $request, Solicitacao $solicitacao): JsonResponse
+    {
+        $this->service->adicionarItem($solicitacao, $request->validated());
+
+        return (new SolicitacaoResource($solicitacao->fresh()->load(['paciente', 'profissional', 'especialidade', 'convenio', 'medico', 'cidCadastros', 'itens.especialidade.convenioMapeamentos', 'itens.profissional', 'itens.documentos.arquivo', 'itens.guia', 'itens.automacaoExecucoes', 'documentos.arquivo'])))
+            ->response()
+            ->setStatusCode(201);
+    }
+
+    /** Dados dos avisos da tela de "Adicionar sessões" — ver SolicitacaoService::contextoDeAdicao(). */
+    public function contextoAdicao(Request $request, Solicitacao $solicitacao): JsonResponse
+    {
+        return response()->json([
+            'data' => $this->service->contextoDeAdicao(
+                $solicitacao,
+                $request->filled('especialidade_id') ? (int) $request->integer('especialidade_id') : null,
+                $request->filled('profissional_id') ? (int) $request->integer('profissional_id') : null,
+                $request->filled('renovacao_de_item_id') ? (int) $request->integer('renovacao_de_item_id') : null,
+            ),
+        ]);
+    }
+
     public function show(Solicitacao $solicitacao): SolicitacaoResource
     {
-        return new SolicitacaoResource($solicitacao->load(['paciente', 'profissional', 'especialidade', 'convenio', 'medico', 'cidCadastros', 'itens.especialidade.convenioMapeamentos', 'itens.profissional', 'itens.documentos.arquivo', 'itens.guia', 'itens.automacaoExecucoes', 'documentos.arquivo', 'guia.paciente', 'guia.convenio', 'guia.profissional', 'guia.especialidade', 'guia.solicitacaoItem.especialidade', 'guia.solicitacaoItem.profissional', 'guia.antecipacoes', 'guia.conciliacoes']));
+        return new SolicitacaoResource($solicitacao->load(['paciente', 'profissional', 'especialidade', 'convenio', 'medico', 'cidCadastros', 'itens.especialidade.convenioMapeamentos', 'itens.profissional', 'itens.documentos.arquivo', 'itens.guia', 'itens.automacaoExecucoes', 'documentos.arquivo']));
     }
 
     public function update(UpdateSolicitacaoRequest $request, Solicitacao $solicitacao): SolicitacaoResource
     {
-        return new SolicitacaoResource($this->service->atualizar($solicitacao, $request->validated())->load(['paciente', 'profissional', 'especialidade', 'convenio', 'medico', 'cidCadastros', 'itens.especialidade.convenioMapeamentos', 'itens.profissional', 'itens.documentos.arquivo', 'itens.guia', 'itens.automacaoExecucoes', 'documentos.arquivo', 'guia']));
+        return new SolicitacaoResource($this->service->atualizar($solicitacao, $request->validated())->load(['paciente', 'profissional', 'especialidade', 'convenio', 'medico', 'cidCadastros', 'itens.especialidade.convenioMapeamentos', 'itens.profissional', 'itens.documentos.arquivo', 'itens.guia', 'itens.automacaoExecucoes', 'documentos.arquivo']));
     }
 
     public function aprovar(MutateSolicitacaoStatusRequest $request, Solicitacao $solicitacao): SolicitacaoResource
     {
-        return new SolicitacaoResource($this->service->aprovar($solicitacao)->load(['paciente', 'profissional', 'especialidade', 'convenio', 'medico', 'cidCadastros', 'itens.especialidade.convenioMapeamentos', 'itens.profissional', 'itens.documentos.arquivo', 'itens.guia', 'itens.automacaoExecucoes', 'documentos.arquivo', 'guia']));
+        return new SolicitacaoResource($this->service->aprovar($solicitacao)->load(['paciente', 'profissional', 'especialidade', 'convenio', 'medico', 'cidCadastros', 'itens.especialidade.convenioMapeamentos', 'itens.profissional', 'itens.documentos.arquivo', 'itens.guia', 'itens.automacaoExecucoes', 'documentos.arquivo']));
     }
 
     public function negar(MutateSolicitacaoStatusRequest $request, Solicitacao $solicitacao): SolicitacaoResource
     {
-        return new SolicitacaoResource($this->service->negar($solicitacao)->load(['paciente', 'profissional', 'especialidade', 'convenio', 'medico', 'cidCadastros', 'itens.especialidade.convenioMapeamentos', 'itens.profissional', 'itens.documentos.arquivo', 'itens.guia', 'itens.automacaoExecucoes', 'documentos.arquivo', 'guia']));
+        return new SolicitacaoResource($this->service->negar($solicitacao)->load(['paciente', 'profissional', 'especialidade', 'convenio', 'medico', 'cidCadastros', 'itens.especialidade.convenioMapeamentos', 'itens.profissional', 'itens.documentos.arquivo', 'itens.guia', 'itens.automacaoExecucoes', 'documentos.arquivo']));
     }
 
     public function enviarItemUnimed(
@@ -104,7 +134,7 @@ class SolicitacaoController extends Controller
 
     public function updateStatus(UpdateSolicitacaoStatusRequest $request, Solicitacao $solicitacao): SolicitacaoResource
     {
-        return new SolicitacaoResource($this->service->alterarStatus($solicitacao, $request->validated('status'))->load(['paciente', 'profissional', 'especialidade', 'convenio', 'medico', 'cidCadastros', 'itens.especialidade.convenioMapeamentos', 'itens.profissional', 'itens.documentos.arquivo', 'itens.guia', 'itens.automacaoExecucoes', 'documentos.arquivo', 'guia']));
+        return new SolicitacaoResource($this->service->alterarStatus($solicitacao, $request->validated('status'))->load(['paciente', 'profissional', 'especialidade', 'convenio', 'medico', 'cidCadastros', 'itens.especialidade.convenioMapeamentos', 'itens.profissional', 'itens.documentos.arquivo', 'itens.guia', 'itens.automacaoExecucoes', 'documentos.arquivo']));
     }
 
     public function analisarPedidoMedico(AnalyzePedidoMedicoRequest $request, PedidoMedicoAiService $pedidoMedicoAi): JsonResponse

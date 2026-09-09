@@ -1,15 +1,21 @@
 <?php
 
+use App\Http\Controllers\HealthController;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schedule;
+use App\Jobs\AvaliarAlertasJob;
 use App\Jobs\EnfileirarConsultasUnimedDueJob;
+use App\Jobs\EnviarDigestAlertasJob;
 use App\Jobs\ExpurgarAuditoriaJob;
 use App\Jobs\ExpurgarCarteirinhasJob;
 use App\Jobs\SincronizarClinicaJob;
 use App\Jobs\VerificarGuiasDiarioJob;
 use App\Models\AutomacaoEvento;
 use App\Models\Medico;
+use App\Services\SaudeService;
+use App\Models\SaudeComponente;
 use Illuminate\Support\Facades\Storage;
 
 Artisan::command('inspire', function () {
@@ -67,6 +73,31 @@ Artisan::command('medicos:normalizar-nomes', function () {
 
     $this->info("Nomes normalizados: {$atualizados}");
 })->purpose('Remove prefixos "Dr./Dra." (e variacoes) do nome de medicos ja cadastrados.');
+
+// Prova de vida do cron do sistema, lida pelo GET /api/health. Sem este carimbo
+// nao ha como distinguir "a API responde" de "a API responde mas nada agendado
+// roda ha horas" — que e o caso em que o worker cai de madrugada e ninguem sabe.
+// O cache serve de armazenamento porque persiste entre processos nos drivers em
+// uso aqui (`database` e `file`); a justificativa completa esta no
+// HealthController::schedulerUltimaRodada().
+Schedule::call(function () {
+    Cache::forever(HealthController::CHAVE_SCHEDULER, now());
+
+    // Mesmo sinal, dois consumidores: o carimbo no cache responde ao monitor
+    // externo, e o heartbeat alimenta o card de saude dentro do produto. Sem
+    // tenant explicito de proposito — o agendador e um processo so servindo
+    // todos, entao o heartbeat vale para a linha de cada tenant.
+    app(SaudeService::class)->registrarHeartbeat(SaudeComponente::CHAVE_SCHEDULER);
+})->everyMinute()->name('carimbo-scheduler')->withoutOverlapping();
+
+// A central de alertas so vale se for reavaliada sozinha: 15 minutos e curto o
+// bastante para o operador nao trabalhar sobre alerta velho, e longo o bastante
+// para nao concorrer com o pico de uso.
+Schedule::job(new AvaliarAlertasJob)->everyFifteenMinutes()->withoutOverlapping();
+
+// De hora em hora, e nao 24 agendamentos fixos: o job olha quem tem
+// `horario_digest` naquela hora.
+Schedule::job(new EnviarDigestAlertasJob)->hourly()->withoutOverlapping();
 
 Schedule::job(new VerificarGuiasDiarioJob)->dailyAt('02:00');
 Schedule::job(new EnfileirarConsultasUnimedDueJob)->everyThirtyMinutes()->withoutOverlapping();

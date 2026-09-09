@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import { MoreVertical } from 'lucide-react'
+import { MoreVertical, Plus } from 'lucide-react'
 import { DropdownMenu } from 'radix-ui'
 import { ColunaOrdenavel } from '../../components/ui/ColunaOrdenavel'
 import { useOrdenacao } from '../../lib/useOrdenacao'
@@ -14,6 +14,7 @@ import {
   useSolicitacoes,
   useVerificarAndamentoItem,
 } from './useSolicitacoes'
+import { STATUS_QUE_BLOQUEIAM_ADICAO, STATUS_QUE_BLOQUEIAM_ENVIO } from './types'
 import type { Solicitacao, SolicitacaoFilters, SolicitacaoForm, SolicitacaoStatus } from './types'
 import {
   useConvenios,
@@ -25,6 +26,9 @@ import {
 } from '../../lib/queries/useReferenceData'
 import { formatCarteirinha } from '../../lib/carteirinha'
 import { SolicitacaoGuiaModal } from './SolicitacaoGuiaModal'
+import { AdicionarSessoesModal } from './AdicionarSessoesModal'
+import { SolicitacaoInfoCelula } from './SolicitacaoInfoCelula'
+import { formatarData } from './datas'
 import { SelecionarPacienteModal } from './SelecionarPacienteModal'
 import { SelecionarMedicoModal } from './SelecionarMedicoModal'
 import { AutomacaoProgressoModal } from '../automacoes/AutomacaoProgressoModal'
@@ -34,7 +38,7 @@ import { CidsCampo } from '../cids/CidsCampo'
 import { SolicitacaoItensFields } from './SolicitacaoItensFields'
 import { ResumoPastaPaciente } from './ResumoPastaPaciente'
 import { SolicitacaoAnexosStep } from './SolicitacaoAnexosStep'
-import { emptyItem, itensEstaoCompletos } from './solicitacaoItens'
+import { emptyItem, itensEstaoCompletos, rotuloDaRemessa } from './solicitacaoItens'
 import { Indicadores } from '../../components/ui/Indicadores'
 import { Tooltip } from '../../components/ui/Tooltip'
 import { usePode } from '../../lib/permissoes'
@@ -42,6 +46,10 @@ import { Botao } from '../../components/ui/Botao'
 import { Paginacao } from '../../components/ui/Paginacao'
 import { useListaNaUrl } from '../../lib/useListaNaUrl'
 import { Badge, type BadgeProps } from '../../components/ui/Badge'
+// O tom do badge da guia vem do mapa das guias — que já cobre os status
+// `historico_*` com tom neutro. Renomeado no import porque este arquivo já tem
+// um `statusTone` próprio, o das solicitações.
+import { statusTone as guiaStatusTone } from '../guias/statusTone'
 
 const emptyArray: never[] = []
 
@@ -133,6 +141,7 @@ export function SolicitacoesPage() {
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [selectedSolicitacaoId, setSelectedSolicitacaoId] = useState<number | null>(null)
   const [progressoExecucaoId, setProgressoExecucaoId] = useState<number | null>(null)
+  const [adicionarSessoesId, setAdicionarSessoesId] = useState<number | null>(null)
   const [form, setForm] = useState<SolicitacaoForm>(emptyForm)
   const [formError, setFormError] = useState<string | null>(null)
   const [pacienteSelecionado, setPacienteSelecionado] = useState<PacienteRef | null>(null)
@@ -197,6 +206,33 @@ export function SolicitacoesPage() {
     )
   }, [convenios, formReady])
 
+  /*
+    Quantidade sugerida pela regra do convênio.
+
+    Preenche só o que está VAZIO: quem já digitou um número tem a palavra final,
+    e trocar de convênio não pode apagar o que a pessoa escreveu. Convênio sem
+    `sessoes_por_guia` deixa vazio mesmo — a API recusa em vez de arbitrar, e
+    mostrar um número que o salvamento rejeita é o pior dos dois mundos.
+  */
+  useEffect(() => {
+    const padrao = convenioSelecionado?.sessoes_por_guia
+
+    if (!padrao) {
+      return
+    }
+
+    setForm((current) =>
+      current.itens.some((item) => item.quantidade === '')
+        ? {
+            ...current,
+            itens: current.itens.map((item) =>
+              item.quantidade === '' ? { ...item, quantidade: String(padrao) } : item,
+            ),
+          }
+        : current,
+    )
+  }, [convenioSelecionado])
+
   // Se o convênio mudar depois de um paciente escolhido, a seleção pode não
   // pertencer mais a esse convênio (o cadastro de paciente é por convênio) —
   // limpa para o usuário escolher de novo, em vez de mandar um id incoerente.
@@ -256,6 +292,21 @@ export function SolicitacoesPage() {
     () => solicitacoes.find((item) => item.id === selectedSolicitacaoId) ?? null,
     [solicitacoes, selectedSolicitacaoId],
   )
+  // Mesmo motivo do de cima: guardar o id, não o objeto — depois de acrescentar
+  // o item, a lista refaz a consulta e o modal precisa ver a versão nova.
+  const solicitacaoParaAdicionar = useMemo(
+    () => solicitacoes.find((item) => item.id === adicionarSessoesId) ?? null,
+    [solicitacoes, adicionarSessoesId],
+  )
+
+  /**
+   * A mesma regra do backend (`SolicitacaoStatus::BLOQUEIAM_ADICAO`), mais a
+   * permissão. Note que NÃO é a lista de bloqueio de envio: `under_review`
+   * barra o envio e permite acrescentar.
+   */
+  const podeAdicionarSessoes = (solicitacao: Solicitacao) =>
+    pode('solicitacoes.manage') &&
+    !STATUS_QUE_BLOQUEIAM_ADICAO.includes(solicitacao.status as SolicitacaoStatus)
 
   // Convênio do FILTRO da lista, não o do formulário de Nova Solicitação —
   // achado 03/09/2026: usava form.convenio_id por engano, e como o
@@ -555,6 +606,7 @@ export function SolicitacoesPage() {
               especialidades={especialidades}
               profissionais={profissionais}
               disabled={especialidadesQuery.isLoading || profissionaisQuery.isLoading}
+              sessoesPorGuia={convenioSelecionado?.sessoes_por_guia ?? null}
             />
 
             <label className="block space-y-2">
@@ -682,7 +734,7 @@ export function SolicitacoesPage() {
 
             <label className="min-w-40 flex-1 space-y-2">
               <span className="text-meta uppercase tracking-[0.25em] text-slate-400">
-                Médico solicitante
+                Médico
               </span>
               <input
                 type="text"
@@ -786,7 +838,7 @@ export function SolicitacoesPage() {
                     onOrdenar={ordenarPor}
                     className="w-[10%] px-4 py-3"
                   />
-                  <ColunaOrdenavel titulo="Itens" className="w-[35%] px-4 py-3" />
+                  <ColunaOrdenavel titulo="Itens" className="w-[30%] px-4 py-3" />
                   <ColunaOrdenavel
                     titulo="Status"
                     coluna="status"
@@ -795,12 +847,16 @@ export function SolicitacoesPage() {
                     className="w-[11%] px-4 py-3"
                   />
                   <ColunaOrdenavel
-                    titulo="Médico solicitante"
+                    titulo="Médico"
                     coluna="medico"
                     ordenacao={ordenacao}
                     onOrdenar={ordenarPor}
-                    className="w-[15%] px-4 py-3"
+                    className="w-[13%] px-4 py-3"
                   />
+                  {/* Antes de Ações, com os 7% que sobraram ao encolher Itens e
+                      Médico — a tabela é `table-fixed` e as larguras precisam
+                      somar 100%. */}
+                  <ColunaOrdenavel titulo="Info" className="w-[7%] px-4 py-3" />
                   <ColunaOrdenavel titulo="Ações" className="w-[8%] px-4 py-3 text-center" />
                 </tr>
               </thead>
@@ -817,6 +873,17 @@ export function SolicitacoesPage() {
                       >
                         {solicitacao.paciente?.nome ?? solicitacao.paciente_id}
                       </button>
+                      {/* A data do pedido é o dado mais consultado da linha, e
+                          exigir hover para o mais consultado é caro. As outras
+                          duas datas ficam no tooltip da coluna Info. */}
+                      {solicitacao.solicitado_em ? (
+                        <p
+                          className="mt-1 text-meta text-texto-suave"
+                          data-testid={`solicitacao-solicitado-em-${solicitacao.id}`}
+                        >
+                          {formatarData(solicitacao.solicitado_em)}
+                        </p>
+                      ) : null}
                     </td>
                     <td data-rotulo="Convênio" className="px-4 py-4 text-slate-200">
                       {convenios.find((item) => item.id === solicitacao.convenio_id)?.nome ??
@@ -829,17 +896,26 @@ export function SolicitacoesPage() {
                             const isUnimedRda =
                               solicitacao.convenio?.connector_driver === 'unimed_rda'
                             const hasActiveExecution = item.automacao_execucao_ativa !== null
+                            // Gate por ITEM, e não pela solicitação inteira:
+                            // exigir `ready_for_automation` fazia o item novo de
+                            // uma solicitação já aprovada nunca poder ser
+                            // enviado — que é justamente o caso de "Adicionar
+                            // sessões". A lista de status barrados espelha
+                            // App\Support\SolicitacaoStatus::BLOQUEIAM_ENVIO, e
+                            // a API a aplica de novo do lado de lá.
                             const canSend =
                               isUnimedRda &&
-                              solicitacao.status === 'ready_for_automation' &&
-                              !item.guia_id &&
-                              !hasActiveExecution
+                              !item.guia &&
+                              !hasActiveExecution &&
+                              !STATUS_QUE_BLOQUEIAM_ENVIO.includes(
+                                solicitacao.status as SolicitacaoStatus,
+                              )
                             // Guia incerta pos-submit (Finalizar rodou no portal mas o worker
                             // nao leu a confirmacao de volta): sem numero de guia conhecido,
                             // so da pra confirmar buscando por paciente, nao reenviando.
                             const precisaVerificarAndamento =
                               isUnimedRda &&
-                              !item.guia_id &&
+                              !item.guia &&
                               item.automacao_execucao_ativa?.operacao === 'gerar_guia' &&
                               item.automacao_execucao_ativa?.status === 'uncertain'
 
@@ -856,20 +932,50 @@ export function SolicitacoesPage() {
                                   ·{' '}
                                   {item.profissional?.nome ?? item.profissional_id} ·{' '}
                                   {item.quantidade}
-                                </p>
-                                <div className="flex flex-wrap items-center gap-2">
-                                  {item.guia_id ? (
-                                    <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1 text-meta font-semibold text-emerald-100">
-                                      Guia #{item.guia_id}
+                                  {/* Sem isto, duas remessas da mesma
+                                      especialidade com o mesmo profissional
+                                      viram duas linhas idênticas e ninguém
+                                      entende por que são duas. */}
+                                  {rotuloDaRemessa(item) ? (
+                                    <span
+                                      className="ml-2 rounded-pilula border border-acento/40 bg-acento-suave px-2 py-0.5 text-meta font-semibold text-acento-intenso"
+                                      data-testid={`solicitacao-item-remessa-${item.id}`}
+                                    >
+                                      {rotuloDaRemessa(item)}
                                     </span>
                                   ) : null}
-                                  {isUnimedRda && item.guia_id ? (
+                                </p>
+                                <div className="flex flex-wrap items-center gap-2">
+                                  {/* O NÚMERO DA OPERADORA, nunca o id interno.
+                                      `numero_operadora` já vem nulo quando o
+                                      valor guardado é o de preenchimento do
+                                      convênio manual — trocar o id por aquele
+                                      texto seria substituir um número errado
+                                      por outro, igualmente inútil num telefonema
+                                      com o convênio. */}
+                                  {item.guia ? (
                                     <span
-                                      className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1.5 text-meta font-semibold text-emerald-100"
-                                      data-testid={`solicitacao-item-guia-gerada-${item.id}`}
+                                      className="rounded-pilula border border-linha bg-fundo px-2.5 py-1 text-meta font-semibold text-texto"
+                                      data-testid={`solicitacao-item-guia-numero-${item.id}`}
                                     >
-                                      Guia gerada
+                                      {item.guia.numero_operadora
+                                        ? `Guia ${item.guia.numero_operadora}`
+                                        : item.guia.numero_guia
+                                          ? 'Guia gerada · sem nº da operadora'
+                                          : 'Guia gerada · nº pendente'}
                                     </span>
+                                  ) : null}
+                                  {/* A SITUAÇÃO REAL da guia, para qualquer
+                                      convênio. O "Guia gerada" fixo era
+                                      redundante ao lado do número (se tem guia,
+                                      foi gerada) e sumia no convênio manual. */}
+                                  {item.guia ? (
+                                    <Badge
+                                      tone={guiaStatusTone(item.guia.status)}
+                                      data-testid={`solicitacao-item-guia-status-${item.id}`}
+                                    >
+                                      {translateStatus('guias', item.guia.status)}
+                                    </Badge>
                                   ) : null}
                                   {item.automacao_execucao_ativa ? (
                                     <button
@@ -901,7 +1007,7 @@ export function SolicitacoesPage() {
                                         aberto — sem reenviar a solicitação.
                                       </Tooltip>
                                     </>
-                                  ) : isUnimedRda && !item.guia_id ? (
+                                  ) : isUnimedRda && !item.guia ? (
                                     <>
                                       <button
                                         type="button"
@@ -934,8 +1040,13 @@ export function SolicitacoesPage() {
                         {translateStatus('solicitacoes', solicitacao.status)}
                       </Badge>
                     </td>
-                    <td data-rotulo="Médico solicitante" className="px-4 py-4 text-slate-200">
+                    <td data-rotulo="Médico" className="px-4 py-4 text-slate-200">
                       {solicitacao.medico?.nome ?? solicitacao.medico_id}
+                    </td>
+                    {/* `data-rotulo` é o que nomeia a célula no modo cartão
+                        (`data-cartoes="lg"`), como todas as outras. */}
+                    <td data-rotulo="Info" className="px-4 py-4">
+                      <SolicitacaoInfoCelula solicitacao={solicitacao} />
                     </td>
                     <td data-rotulo="Ações" data-rotulo-bloco className="px-4 py-4 text-center">
                       <DropdownMenu.Root>
@@ -976,6 +1087,22 @@ export function SolicitacoesPage() {
                             ))}
 
                             <DropdownMenu.Separator className="my-1.5 h-px bg-white/10" />
+
+                            {/* Dentro do menu, e não ao lado dele: a tabela é
+                                `table-fixed` com as larguras somando 100%, e um
+                                segundo botão na célula de Ações transborda para
+                                debaixo da coluna Info — o ícone de lá passa a
+                                interceptar o clique. A suíte E2E pegou isso. */}
+                            {podeAdicionarSessoes(solicitacao) ? (
+                              <DropdownMenu.Item
+                                onSelect={() => setAdicionarSessoesId(solicitacao.id)}
+                                className="flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-slate-100 outline-none transition data-[highlighted]:bg-white/10"
+                                data-testid={`solicitacao-adicionar-sessoes-${solicitacao.id}`}
+                              >
+                                <Plus className="size-4 shrink-0" aria-hidden="true" />
+                                Adicionar sessões
+                              </DropdownMenu.Item>
+                            ) : null}
 
                             <DropdownMenu.Item
                               onSelect={() => setSelectedSolicitacaoId(solicitacao.id)}
@@ -1027,6 +1154,18 @@ export function SolicitacoesPage() {
       <SolicitacaoGuiaModal
         solicitacao={selectedSolicitacao}
         onClose={() => setSelectedSolicitacaoId(null)}
+        onAdicionarSessoes={
+          selectedSolicitacao && podeAdicionarSessoes(selectedSolicitacao)
+            ? () => setAdicionarSessoesId(selectedSolicitacao.id)
+            : undefined
+        }
+      />
+
+      <AdicionarSessoesModal
+        solicitacao={solicitacaoParaAdicionar}
+        especialidades={especialidades}
+        profissionais={profissionais}
+        onClose={() => setAdicionarSessoesId(null)}
       />
 
       <AutomacaoProgressoModal

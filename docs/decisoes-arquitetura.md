@@ -110,3 +110,58 @@ Os modelos de impressão são HTML editável pela clínica e trazem `<style>` pr
 
 ADR-22 — Contrato de design reprova o build
 Quatro guardas em `web/scripts/verificar-design-system.mjs`, ligadas ao `npm run lint`: contraste calculado a partir do próprio CSS, ausência de valor mágico, classe com cara de token que não existe, e configuração do compositor de classes. A terceira é a menos óbvia e a mais valiosa — `border-borda` (o token é `borda-campo`) não gera CSS nenhum, o componente renderiza sem erro e simplesmente fica sem a pele da casa. Isenção é permitida, mas só com o motivo registrado na lista: guarda que vira ruído é guarda que alguém desliga.
+
+ADR-24 — Saúde é endpoint público, e quem decide é o status HTTP
+O problema que motivou: a automação já roda em produção e a falha era descoberta por reclamação do cliente. Worker caído às 2h da manhã só aparecia de manhã. Observabilidade externa é a primeira camada porque é a única que sobrevive à queda da VPS inteira — monitor hospedado na mesma máquina morre junto com o que ele monitora.
+
+`GET /api/health` é público de propósito. O monitor externo não tem credencial nem deve ter: guardar um token de longa duração num serviço de terceiros para poder perguntar "você está vivo?" troca um risco por outro. A contrapartida é dura e vale como regra: nada no corpo pode identificar tenant, usuário ou volume de dados. O `HealthApiTest` trava o formato inteiro do JSON com `assertSame` nas chaves, e não a ausência de um campo específico — assim, chave nova exige decisão consciente de que ela pode ser lida por qualquer um.
+
+Quem decide se há problema é o **status HTTP**, nunca o corpo: 200 com tudo são, 503 caso contrário. Corpo serve para o humano que abre o alerta; monitor bom entende `200` contra qualquer outra coisa, e regra de monitor que precisa interpretar JSON é regra que quebra calada.
+
+Isto não substitui o `/up` do Laravel (configurado em `bootstrap/app.php`). Aquele responde se o framework sobe; este responde se banco, fila e agendador estão de fato funcionando.
+
+Carimbo ausente conta como atraso, e não como "ainda não sabemos": um agendador que nunca rodou é exatamente a falha que o endpoint existe para pegar. Logo após um deploy isso devolve 503 até o cron provar que está vivo — que é a resposta honesta naquele momento, não um falso positivo.
+
+O carimbo vive no cache porque aqui o cache persiste entre processos: `config/cache.php` usa `env('CACHE_STORE', 'database')`, e os dois drivers em uso — `database` em produção, `file` no ambiente local — gravam fora da memória do processo. Isso importa porque quem escreve é o processo do agendador e quem lê é o do PHP-FPM. O único driver que não serviria é `array`, restrito ao `phpunit.xml`.
+
+ADR-25 — Reiniciar o worker é do supervisor de container, nunca de um botão na tela
+Um botão "Reiniciar Worker" na interface falha justamente na hora em que seria necessário: quando o worker está morto. Pior, ele empurra execução remota de comando para a mão de usuário de clínica, o que é risco sem contrapartida. A recuperação é responsabilidade da camada que continua de pé quando o processo cai — o supervisor de container. Quando um componente está fora, a interface informa que o suporte foi notificado automaticamente; ela não oferece o botão.
+
+O que já está em `deploy/docker-compose.prod.yml`: `restart: unless-stopped` nos três serviços, e um healthcheck no `gescon-worker` que faz requisição HTTP real ao `/health` do próprio worker, mandando o Bearer — não apenas confere se o container está de pé. Dentro do container do app, o `supervisord` roda `php-fpm`, `nginx`, `schedule:work` e `queue:work` com `autorestart=true`; o container do worker não tem supervisor interno, e é o `CMD ["node", "src/server.js"]` direto, então quem o levanta é a política de restart do Docker.
+
+**Limitação conhecida, registrada de propósito:** a política `restart` do Docker reage a processo que *sai*, e o `HEALTHCHECK` apenas marca o status — o Compose puro não reinicia container `unhealthy`. Então processo que trava sem morrer (loop de evento preso, navegador do Playwright travado) fica `running (unhealthy)` indefinidamente e nada o recolhe. Cobrimos a queda, não o travamento.
+
+Fechar esse buraco tem três caminhos, e nenhum foi adotado ainda: sidecar de autoheal escutando os eventos do Docker (exige montar `docker.sock`, que é acesso de root à máquina); mover para Swarm, que reinicia tarefa `unhealthy` (peso desproporcional para um serviço); ou um watchdog dentro do próprio worker, que encerra o processo ao reprovar a própria verificação e deixa a política de restart fazer o resto (não expõe `docker.sock`, e é o que melhor combina com este ADR). Até isso existir, quem pega o worker travado é o monitor externo, pela ausência de heartbeat.
+
+ADR-26 — Manual é conteúdo do produto, e correção de texto passa a exigir deploy
+O manual e o mapa mental eram editáveis por tenant, e a partir da primeira edição cada clínica passava a ter um documento diferente sem que ninguém soubesse qual era o certo. Isso inviabilizava a ideia que justifica a tela de Novidades: "atualizou o manual, virou novidade" só faz sentido se a novidade for release note do **produto**, e não a edição de texto de uma clínica.
+
+A tabela `manuais` foi removida e os dois documentos passaram a ser servidos de `api/resources/manual/*.html`, versionados no git.
+
+A conferência exigida antes do drop encontrou o que se temia: a única clínica em produção **tinha editado os dois**. O manual foi alterado em 01/09/2026 (90.872 bytes, ~5,7 KB de diferença em relação à semente do repositório) e o mapa mental em 31/08/2026 (10.408 bytes, ~208 bytes de diferença). Por isso o conteúdo foi exportado para os arquivos antes da migration, e é o texto da clínica — não a semente original — que o produto passou a servir; a versão do cliente era a mais atual que existia, e descartá-la seria jogar trabalho de gente fora. As sementes anteriores continuam versionadas ao lado, como `default.html` e `mapa-mental-default.html`.
+
+O trade-off aceito: toda correção de texto passa a exigir deploy. Em troca, some a divergência entre clínicas e passa a existir uma única fonte de verdade. Com uma clínica o custo é baixo; se a edição por tenant voltar a ser requisito de cliente, a decisão se reabre com dado real — e não por preferência, que é o mesmo critério do ADR-17 para temas.
+
+A permissão `manual.manage` saiu do `PermissionCatalog` e dos papéis padrão: permissão que não protege nada é ruído na tela de Perfis e Permissões, e cria a expectativa de que existe algo a permitir. Papéis que já a tinham ficam com uma linha órfã em `role_has_permissions`, inofensiva porque o catálogo é fixo no código (ADR-14).
+
+ADR-27 — A guia pertence ao item, e não à solicitação
+`Solicitacao::guia()` era um `hasOne` **sem ordenação**: devolvia uma guia qualquer da solicitação, variando com a ordem física das linhas. Desde a multi-especialidade cada `SolicitacaoItem` tem a sua guia, então "a guia da solicitação" deixou de ter significado — mas a relação continuava decidindo comportamento em duas superfícies: o que a API expunha e se um anexo podia ser removido.
+
+A relação virou `guias()` (`hasMany`), e **não** foi apagada. O que sobrou de uso legítimo é a pergunta "esta solicitação já tem guia?", e um `hasMany` responde isso sem eleger uma principal. Existe um caso que só ele cobre: guia anterior à multi-especialidade fica presa à solicitação com `solicitacao_item_id` nulo, e uma checagem que olhasse só `itens.guia` deixaria o anexo do pedido dessas solicitações antigas voltar a ser removível — sendo que esse anexo é a evidência do que sustentou a autorização.
+
+Para **exibir**, a fonte passa a ser `itens[].guia`, sempre: é o item que dá sentido à guia (especialidade e profissional). A chave `guia` saiu do payload de `/api/solicitacoes` — mudança quebradora, aceita porque a alternativa era manter no contrato um campo cujo valor era indeterminado.
+
+O custo do campo era medido, não estimado: para exibir uma guia arbitrária, a listagem carregava oito relações por página, entre elas `guia.antecipacoes` e `guia.conciliacoes` — nenhuma das duas exibida em lugar nenhum da lista.
+
+O mesmo `hasOne` já tinha causado estrago silencioso: `SolicitacaoService::sincronizarGuiaDaSolicitacao()` lia a guia arbitrária e logo abaixo reescrevia o `solicitacao_item_id` dela para o do primeiro item, podendo realocar para o primeiro item a guia que era do terceiro.
+
+ADR-28 — Modal fecha só por ação explícita: botão ou Esc, nunca clique fora
+Todo `Dialog` do Headless UI fechava ao clique fora do painel. Nossos modais não são visualizadores: `SolicitacaoGuiaModal` edita dados da solicitação, `AdicionarSessoesModal` monta um item novo, `LerPedidoMedicoPage` conduz seis etapas, `SelecionarPacienteModal` tem busca digitada. Um clique fora enquanto se preenche descarta tudo — sem pergunta, sem desfazer e sem rastro. E é fácil de dar sem querer: mira-se um campo e erra-se a borda do painel.
+
+Esc continua fechando, e é diferente de propósito: ninguém aperta Esc por acidente.
+
+O Headless UI (v2.2) chama `onClose` nos dois casos e **não** distingue um do outro nem oferece prop para desligar só um. A saída foi `web/src/lib/useFechamentoExplicito.ts`: neutraliza o `onClose` do componente e reimplementa o Esc. Os oito diálogos passaram a espalhar o retorno do hook (`<Dialog {...useFechamentoExplicito(aberto, onClose)}>`), o que deixa a decisão visível em cada ponto de uso em vez de escondida numa configuração global.
+
+O hook mantém uma **pilha de modais abertos** porque há aninhamento — `SelecionarMedicoModal` abre dentro do `SolicitacaoGuiaModal`. Sem ela, os dois ouviriam o mesmo `keydown` no documento e um Esc fecharia os dois de uma vez; só o diálogo do topo responde.
+
+`ConfirmDialog` e `ConfirmarExclusao` ficaram de fora: são feitos à mão, o fundo deles nunca teve `onClick` de fechar, e o segundo já tratava Esc por conta própria. O trade-off aceito é que o fechamento deixou de ser descoberto por tentativa — quem clica fora esperando fechar não fecha; em troca, ninguém mais perde formulário preenchido.

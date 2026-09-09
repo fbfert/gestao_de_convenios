@@ -55,10 +55,18 @@ class SolicitacaoImportService
         'observacoes' => 'Observações',
         'especialidade' => 'Especialidade',
         'profissional' => 'Profissional',
-        'quantidade' => 'Quantidade',
+        'quantidade' => 'Quantidade (vazio = sessões por guia do convênio)',
         'item_observacoes' => 'Observações do item',
     ];
 
+    /**
+     * Linha de exemplo do modelo baixável.
+     *
+     * `quantidade` fica VAZIA de propósito: célula em branco é o caminho normal
+     * — a quantidade vem de `convenio_regras.sessoes_por_guia` do convênio da
+     * linha. Um literal ali ensinaria um número específico a quem preenche a
+     * planilha, e ensinaria o da Unimed para todo mundo.
+     */
     private const LINHA_EXEMPLO = [
         'protocolo' => 'PROT-0001',
         'paciente_cpf' => '123.456.789-09',
@@ -71,7 +79,7 @@ class SolicitacaoImportService
         'observacoes' => '',
         'especialidade' => 'Fonoaudiologia',
         'profissional' => 'João Terapeuta',
-        'quantidade' => '10',
+        'quantidade' => '',
         'item_observacoes' => '',
     ];
 
@@ -568,7 +576,26 @@ class SolicitacaoImportService
             $erros['profissional'] = "Profissional \"{$nomeProfissional}\" não encontrado.";
         }
 
-        $quantidade = (int) preg_replace('/\D+/', '', (string) ($bruta['quantidade'] ?? '')) ?: 10;
+        /*
+         * Célula em branco NÃO vira 10.
+         *
+         * O `?: 10` que estava aqui era a mesma regra de convênio hardcoded que
+         * saiu do SolicitacaoService (R6), e num lugar pior: a planilha entrava
+         * calada com dez sessões enquanto a API já recusava o mesmo pedido. A
+         * importação passa a seguir a regra do convênio, e sem ela a linha é
+         * INVÁLIDA — o preview já sabe mostrar isso, e é lá que a pessoa vê e
+         * corrige antes de confirmar.
+         */
+        $quantidadeDigitada = (int) preg_replace('/\D+/', '', (string) ($bruta['quantidade'] ?? ''));
+        $quantidade = $quantidadeDigitada ?: ($convenio
+            ? app(SolicitacaoService::class)->quantidadePadrao((int) $convenio->id)
+            : null);
+
+        if ($quantidade === null) {
+            $erros['quantidade'] = $convenio
+                ? SolicitacaoService::mensagemSemSessoesPorGuia((int) $convenio->id)
+                : 'Informe a quantidade de sessões.';
+        }
 
         return [
             'dados' => [

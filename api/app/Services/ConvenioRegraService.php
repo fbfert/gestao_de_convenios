@@ -33,4 +33,29 @@ class ConvenioRegraService
         $regra->update(['vigente_ate' => Carbon::parse($data ?? today())->toDateString()]);
         return $regra;
     }
+
+    /**
+     * A regra do convênio em vigor hoje para um tipo de terapia — nula quando
+     * não há nenhuma cadastrada, o que é resposta legítima e não erro.
+     *
+     * Mesma leitura que `AntecipacaoService` já fazia inline: `vigente_desde`
+     * no passado e `vigente_ate` nulo ou no futuro, a mais recente primeiro.
+     * Aqui ela vira método porque passou a ter um segundo consumidor — a
+     * quantidade padrão de sessões —, e regra de convênio lida em dois lugares
+     * por conta própria é regra que diverge.
+     */
+    public function vigente(int $convenioId, string $tipoTerapia): ?ConvenioRegra
+    {
+        $hoje = today()->toDateString();
+
+        return ConvenioRegra::query()
+            ->where('convenio_id', $convenioId)
+            ->where('tipo_terapia', $tipoTerapia)
+            ->whereDate('vigente_desde', '<=', $hoje)
+            ->where(fn ($query) => $query
+                ->whereNull('vigente_ate')
+                ->orWhereDate('vigente_ate', '>=', $hoje))
+            ->orderByDesc('vigente_desde')
+            ->first();
+    }
 }

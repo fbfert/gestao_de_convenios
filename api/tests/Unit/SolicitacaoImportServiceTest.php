@@ -116,6 +116,50 @@ class SolicitacaoImportServiceTest extends TestCase
         $this->assertSame([], $resultado['linhas'][0]['erros']);
     }
 
+    /**
+     * Célula em branco NÃO vira 10.
+     *
+     * O `?: 10` que havia aqui era regra de convênio hardcoded, e num lugar
+     * pior que o Service: a planilha entrava calada com dez sessões enquanto a
+     * API já recusava o mesmo pedido. Sem `sessoes_por_guia` na regra vigente,
+     * a linha é inválida — e a mensagem diz onde resolver.
+     */
+    public function test_quantidade_em_branco_sem_sessoes_por_guia_invalida_a_linha(): void
+    {
+        // SC Saúde tem regra vigente, mas sem `sessoes_por_guia`.
+        $convenio = Convenio::query()->where('tenant_id', $this->tenantId())->where('nome', 'SC Saúde')->firstOrFail();
+        $paciente = Paciente::query()->where('tenant_id', $this->tenantId())->firstOrFail();
+        $paciente->update(['convenio_id' => $convenio->id]);
+
+        $service = app(SolicitacaoImportService::class);
+        $arquivo = $this->arquivoXlsx([
+            $this->linhaBasica(['convenio' => 'SC Saúde', 'quantidade' => '']),
+        ]);
+
+        $resultado = $service->previsualizar($arquivo, $this->tenantId());
+
+        $this->assertSame('erro', $resultado['linhas'][0]['status']);
+        $this->assertArrayHasKey('quantidade', $resultado['linhas'][0]['erros']);
+
+        // O texto tem que dizer o próximo passo, e não só que faltou algo.
+        $mensagem = $resultado['linhas'][0]['erros']['quantidade'];
+        $this->assertStringContainsString('SC Saúde', $mensagem);
+        $this->assertStringContainsString('Sessões por guia', $mensagem);
+    }
+
+    public function test_quantidade_em_branco_usa_as_sessoes_por_guia_da_regra_vigente(): void
+    {
+        // A Unimed tem `sessoes_por_guia = 10` na semente.
+        $service = app(SolicitacaoImportService::class);
+        $arquivo = $this->arquivoXlsx([$this->linhaBasica(['quantidade' => ''])]);
+
+        $resultado = $service->previsualizar($arquivo, $this->tenantId());
+
+        $this->assertSame('valida', $resultado['linhas'][0]['status']);
+        $this->assertSame([], $resultado['linhas'][0]['erros']);
+        $this->assertSame(10, $resultado['linhas'][0]['dados']['quantidade']);
+    }
+
     public function test_previsualizar_marca_erro_quando_medico_nao_existe(): void
     {
         $service = app(SolicitacaoImportService::class);

@@ -15,6 +15,83 @@ class Guia extends Model
     /** Nome placeholder gravado em especialidade/profissional quando o dado real ainda não foi definido. */
     public const NOME_A_DEFINIR = 'A DEFINIR';
 
+    /**
+     * Contador de permissão para escrever `status`.
+     *
+     * Contador e não booleano: `registrarTransicao` roda dentro de transação e
+     * pode ser chamado de um fluxo que já está com a permissão aberta — um
+     * booleano seria fechado pelo `finally` do interno e deixaria o externo sem
+     * permissão pelo resto da operação.
+     */
+    private static int $transicoesPermitidas = 0;
+
+    /**
+     * Abre a permissão de escrita de status durante o callback.
+     *
+     * Uso exclusivo de GuiaService::registrarTransicao. Está aqui, e não lá, só
+     * porque o contador precisa viver junto do observer que o consulta.
+     */
+    public static function permitindoTransicao(callable $callback): mixed
+    {
+        self::$transicoesPermitidas++;
+
+        try {
+            return $callback();
+        } finally {
+            self::$transicoesPermitidas--;
+        }
+    }
+
+    /**
+     * A trava, e o registro automático da criação.
+     *
+     * A trava vale para MUDANÇA de status de guia já existente, que é onde mora
+     * o risco: uma transição feita por fora não deixa rastro nenhum e o buraco
+     * na série só aparece meses depois. Reprova pelo EFEITO (`isDirty`), e não
+     * pelo formato do código — uma varredura estática pegaria o padrão conhecido
+     * e deixaria passar um jeito novo de escrever.
+     *
+     * Criação NÃO é recusada, é registrada. O motivo é que na criação não há
+     * status anterior a perder: a primeira linha do histórico é derivável do
+     * próprio registro que está nascendo, então recusar só obrigaria todo
+     * seeder, fábrica e teste a passar pelo serviço sem ganhar fidelidade
+     * nenhuma. Quando a criação vem de `registrarTransicao`, o contador está
+     * aberto e este observer se cala — é lá que a linha nasce, com origem e
+     * usuário de verdade.
+     *
+     * Furo conhecido e registrado no design.md: `Guia::query()->update([...])`
+     * não dispara eventos de model e escapa daqui. Hoje não existe nenhuma
+     * ocorrência dessas no repositório.
+     */
+    protected static function booted(): void
+    {
+        static::updating(function (Guia $guia) {
+            if ($guia->isDirty('status') && self::$transicoesPermitidas === 0) {
+                throw new \RuntimeException(
+                    'Status de guia só pode ser alterado por GuiaService::registrarTransicao(). '
+                    .'Ver openspec/changes/guia-status-historico/design.md.'
+                );
+            }
+        });
+
+        static::created(function (Guia $guia) {
+            if (self::$transicoesPermitidas > 0 || blank($guia->status)) {
+                return; // registrarTransicao grava a linha rica logo em seguida
+            }
+
+            GuiaStatusHistorico::query()->create([
+                'tenant_id' => $guia->tenant_id,
+                'guia_id' => $guia->id,
+                'de' => null,
+                'para' => $guia->status,
+                'ocorrido_em' => $guia->created_at ?? now(),
+                'user_id' => null,
+                'origem' => GuiaStatusHistorico::ORIGEM_MANUAL,
+                'motivo' => null,
+            ]);
+        });
+    }
+
     protected $fillable = [
         'tenant_id', 'solicitacao_id', 'solicitacao_item_id', 'convenio_id', 'paciente_id',
         'automacao_execucao_id', 'profissional_id', 'especialidade_id', 'numero_guia', 'tipo_terapia',
@@ -23,6 +100,9 @@ class Guia extends Model
         'sessoes_solicitadas', 'sessoes_autorizadas', 'protocolo_operadora',
         'data_solicitacao', 'data_finalizacao', 'senha', 'validade_senha', 'observacoes',
         'alerta_negacao_ocultado_em',
+        // Carimbos escritos so por GuiaService::registrarTransicao, junto com o
+        // historico. Preenchiveis para o backfill conseguir gravar.
+        'negada_em', 'aprovada_em',
     ];
 
     protected $casts = [
@@ -35,7 +115,14 @@ class Guia extends Model
         'sessoes_solicitadas' => 'integer',
         'sessoes_autorizadas' => 'integer',
         'alerta_negacao_ocultado_em' => 'datetime',
+        'negada_em' => 'datetime',
+        'aprovada_em' => 'datetime',
     ];
+
+    public function statusHistorico()
+    {
+        return $this->hasMany(GuiaStatusHistorico::class)->orderBy('ocorrido_em');
+    }
 
     public function solicitacao()
     {

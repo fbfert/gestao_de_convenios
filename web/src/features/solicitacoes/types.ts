@@ -1,5 +1,3 @@
-import type { Guia } from '../guias/types'
-
 export type SolicitacaoStatus =
   | 'under_review'
   | 'ready_for_automation'
@@ -7,6 +5,32 @@ export type SolicitacaoStatus =
   | 'approved'
   | 'denied'
   | 'historico'
+
+/**
+ * Situações em que nenhum item vai para a operadora.
+ *
+ * Espelha `App\Support\SolicitacaoStatus::BLOQUEIAM_ENVIO`, que é a fonte de
+ * verdade: a API recusa mesmo que esta lista deixe passar. Aqui só decide se o
+ * botão nasce habilitado — interface não é controle de acesso.
+ *
+ * `approved` e `guia_gerada` ficam de fora de propósito. O gate é do ITEM, e
+ * uma solicitação já aprovada pode receber item novo.
+ */
+export const STATUS_QUE_BLOQUEIAM_ENVIO: readonly SolicitacaoStatus[] = [
+  'under_review',
+  'denied',
+  'historico',
+]
+
+/**
+ * Situações em que não se acrescenta item.
+ *
+ * Espelha `App\Support\SolicitacaoStatus::BLOQUEIAM_ADICAO`. Deliberadamente
+ * DIFERENTE da lista acima: `under_review` barra o envio mas permite
+ * acrescentar — acrescentar antes da análise é o fluxo normal de quem está
+ * montando o pedido. O que não se mexe é no que já foi encerrado.
+ */
+export const STATUS_QUE_BLOQUEIAM_ADICAO: readonly SolicitacaoStatus[] = ['denied', 'historico']
 
 export type Solicitacao = {
   id: number
@@ -49,7 +73,13 @@ export type Solicitacao = {
   } | null
   itens?: SolicitacaoItem[]
   documentos?: SolicitacaoDocumento[]
-  guia?: Guia | null
+  /**
+   * Quando o registro foi CADASTRADO no sistema — diferente de `solicitado_em`,
+   * que é a data do pedido médico. A diferença entre as duas é o que diz há
+   * quanto tempo o pedido está parado dentro do sistema.
+   */
+  created_at?: string | null
+  updated_at?: string | null
 }
 
 export type SolicitacaoItem = {
@@ -59,7 +89,32 @@ export type SolicitacaoItem = {
   quantidade: number
   status_operacional: string
   observacoes: string | null
-  guia_id?: number | null
+  /**
+   * A guia DESTE item.
+   *
+   * Única fonte de guia no payload. Havia um `Solicitacao.guia`, vindo de um
+   * `hasOne` sem ordenação que devolvia uma guia arbitrária da solicitação;
+   * saiu, porque desde a multi-especialidade cada item tem a sua.
+   *
+   * `numero_operadora` vem separado de `numero_guia` de propósito: o segundo
+   * pode conter o valor de preenchimento do convênio manual, e a tela não deve
+   * exibi-lo como se fosse o número que a operadora conhece. Quem decide isso é
+   * o backend, uma vez — o front consome `numero_operadora` e pronto.
+   */
+  guia?: {
+    id: number
+    numero_guia: string | null
+    numero_operadora: string | null
+    status: string
+  } | null
+  /**
+   * O item de ORIGEM da cadeia de renovação — nulo quando este é a origem.
+   * A cadeia é plana: todo item aponta para o primeiro, nunca para o anterior.
+   */
+  renovacao_de_item_id?: number | null
+  /** 1 para a origem, 2 para a primeira renovação, e assim por diante. */
+  posicao_na_cadeia?: number
+  total_na_cadeia?: number
   automacao_execucao_ativa?: {
     id: number
     operacao: string
@@ -141,6 +196,33 @@ export type SolicitacaoFormItem = {
   profissional_id: string
   quantidade: string
   observacoes?: string
+}
+
+/** Corpo de `POST /solicitacoes/{id}/itens`. */
+export type AdicionarItemForm = {
+  especialidade_id: string
+  profissional_id: string
+  quantidade: string
+  observacoes?: string
+  renovacao_de_item_id?: number | null
+}
+
+/**
+ * Dados dos avisos, vindos de `GET /solicitacoes/{id}/contexto-adicao`.
+ *
+ * Calculados no servidor de propósito: `sessoes_por_guia` é regra de convênio,
+ * e regra de convênio reimplementada em TypeScript diverge do backend em seis
+ * meses (`openspec/config.yaml`). Nenhum destes valores bloqueia o confirmar.
+ */
+export type ContextoAdicao = {
+  /** Idade do pedido médico em dias; nulo quando não há data. */
+  pedido_medico_dias: number | null
+  /** Teto por guia da regra vigente; nulo = convênio sem a regra cadastrada. */
+  sessoes_por_guia: number | null
+  quantidade_padrao: number | null
+  ja_existe_item_igual: boolean
+  /** Soma da CADEIA de renovação, não do par especialidade+profissional. */
+  sessoes_na_cadeia: number | null
 }
 
 export type PedidoMedicoSuggestion = {

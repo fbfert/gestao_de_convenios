@@ -25,8 +25,9 @@ class ConvenioRegraSeeder extends Seeder
                 'tipo_terapia' => 'especializada',
                 'frequencia_lancamento' => 'diaria',
                 'qtd_autorizada_por_ciclo' => 1,
+                'sessoes_por_guia' => 10,
                 'validade_senha_dias' => 30,
-                'observacoes' => 'Regra especializada da Unimed com liberação diária e 1 sessão por dia.',
+                'observacoes' => 'Regra especializada da Unimed com liberação diária e 1 sessão por dia; 10 sessões por guia.',
             ],
             [
                 'convenio' => 'Unimed',
@@ -80,6 +81,11 @@ class ConvenioRegraSeeder extends Seeder
                 [
                     'frequencia_lancamento' => $regra['frequencia_lancamento'],
                     'qtd_autorizada_por_ciclo' => $regra['qtd_autorizada_por_ciclo'],
+                    // Só a Unimed: 10 por guia é o número que a operadora
+                    // pratica. Os demais convênios ficam nulos de propósito —
+                    // nulo é "não sabemos", e a tela pede que a pessoa digite,
+                    // em vez de sugerir um número que ninguém conferiu.
+                    'sessoes_por_guia' => $regra['sessoes_por_guia'] ?? null,
                     'validade_senha_dias' => $regra['validade_senha_dias'],
                     'observacoes' => $regra['observacoes'],
                     'vigente_desde' => $hoje,

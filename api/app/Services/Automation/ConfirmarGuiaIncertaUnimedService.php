@@ -5,6 +5,8 @@ namespace App\Services\Automation;
 use App\Jobs\ExecutarAutomacaoUnimedJob;
 use App\Models\AutomacaoExecucao;
 use App\Models\Guia;
+use App\Services\GuiaService;
+use App\Models\GuiaStatusHistorico;
 use App\Models\SolicitacaoItem;
 use App\Models\UnimedRdaCredential;
 use App\Services\SolicitacaoService;
@@ -138,6 +140,8 @@ class ConfirmarGuiaIncertaUnimedService
             'solicitacao_item_id' => $item->id,
         ]);
 
+        $status = $resultado['guia_status'] ?? 'under_review';
+
         $guia->fill([
             'tenant_id' => $execucaoConfirmacao->tenant_id,
             'solicitacao_id' => $solicitacao->id,
@@ -149,7 +153,6 @@ class ConfirmarGuiaIncertaUnimedService
             'especialidade_id' => $item->especialidade_id,
             'numero_guia' => $resultado['numero_guia'] ?? null,
             'tipo_terapia' => 'especializada',
-            'status' => $resultado['guia_status'] ?? 'under_review',
             'unimed_status' => $resultado['unimed_status'] ?? $resultado['situacao_portal'] ?? null,
             'sessoes_solicitadas' => $resultado['sessoes_solicitadas'] ?? null,
             'sessoes_autorizadas' => $resultado['sessoes_autorizadas'] ?? null,
@@ -157,7 +160,11 @@ class ConfirmarGuiaIncertaUnimedService
             'validade_senha' => $resultado['validade_senha'] ?? null,
             'data_solicitacao' => today(),
             'observacoes' => $solicitacao->observacoes,
-        ])->save();
+        ]);
+
+        app(GuiaService::class)->registrarTransicao($guia, $status, [
+            'origem' => GuiaStatusHistorico::ORIGEM_AUTOMACAO,
+        ]);
 
         $item->update(['status_operacional' => 'guia_generated', 'unimed_verificacao_next_check_at' => null]);
 

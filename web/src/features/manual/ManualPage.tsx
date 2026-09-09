@@ -1,46 +1,29 @@
 import { useEffect, useRef, useState } from 'react'
-import { useAuthStore } from '../../stores/authStore'
-import { useManual, useUpdateManual, type ManualTipo } from './useManual'
+import { useManual, type ManualTipo } from './useManual'
 
 const abas: { tipo: ManualTipo; label: string }[] = [
   { tipo: 'manual', label: 'Manual' },
   { tipo: 'mapa-mental', label: 'Mapa Mental' },
 ]
 
+/**
+ * Manual e mapa mental, somente leitura.
+ *
+ * A edição saiu: o conteúdo virou do PRODUTO, versionado no repositório e igual
+ * para todas as clínicas. Enquanto era editável por tenant, cada uma tinha um
+ * manual diferente e não havia como anunciar uma atualização — que é o que a
+ * tela de Novidades passa a fazer.
+ */
 export function ManualPage() {
-  const user = useAuthStore((state) => state.user)
-  const podeEditar = user?.role === 'admin'
-
   const [aba, setAba] = useState<ManualTipo>('manual')
   const { data: manual, isLoading, isError } = useManual(aba)
-  const updateManual = useUpdateManual(aba)
 
-  const [editando, setEditando] = useState(false)
-  const [rascunho, setRascunho] = useState('')
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const [altura, setAltura] = useState(600)
 
   const trocarAba = (tipo: ManualTipo) => {
     setAba(tipo)
-    setEditando(false)
     setAltura(600)
-    updateManual.reset()
-  }
-
-  const iniciarEdicao = () => {
-    setRascunho(manual?.conteudo_html ?? '')
-    setEditando(true)
-  }
-
-  const cancelarEdicao = () => {
-    setEditando(false)
-    updateManual.reset()
-  }
-
-  const salvar = () => {
-    updateManual.mutate(rascunho, {
-      onSuccess: () => setEditando(false),
-    })
   }
 
   const prepararIframe = () => {
@@ -81,11 +64,9 @@ export function ManualPage() {
   }
 
   useEffect(() => {
-    if (!editando) {
-      prepararIframe()
-    }
+    prepararIframe()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [manual?.conteudo_html, editando])
+  }, [manual?.conteudo_html])
 
   const tituloAba = aba === 'mapa-mental' ? 'Mapa Mental do Sistema' : 'Manual do Sistema'
 
@@ -117,67 +98,15 @@ export function ManualPage() {
           {manual?.atualizado_em && (
             <p className="mt-2 text-corpo text-slate-400">
               Última atualização em {new Date(manual.atualizado_em).toLocaleString('pt-BR')}
-              {manual.atualizado_por ? ` por ${manual.atualizado_por}` : ''}
             </p>
           )}
         </div>
-
-        {podeEditar && !editando && (
-          <button
-            type="button"
-            onClick={iniciarEdicao}
-            className="rounded-full border border-cyan-300/40 bg-cyan-400/15 px-5 py-2 text-corpo font-medium text-cyan-50 transition hover:bg-cyan-400/25"
-            data-testid="manual-editar"
-          >
-            Editar {aba === 'mapa-mental' ? 'mapa mental' : 'manual'}
-          </button>
-        )}
-
-        {podeEditar && editando && (
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={cancelarEdicao}
-              className="rounded-full border border-white/15 bg-white/5 px-5 py-2 text-corpo font-medium text-white transition hover:bg-white/10"
-              disabled={updateManual.isPending}
-            >
-              Cancelar
-            </button>
-            <button
-              type="button"
-              onClick={salvar}
-              className="rounded-full border border-emerald-300/40 bg-emerald-400/15 px-5 py-2 text-corpo font-medium text-emerald-50 transition hover:bg-emerald-400/25 disabled:opacity-60"
-              disabled={updateManual.isPending}
-              data-testid="manual-salvar"
-            >
-              {updateManual.isPending ? 'Salvando...' : 'Salvar alterações'}
-            </button>
-          </div>
-        )}
       </div>
-
-      {updateManual.isError && (
-        <p className="rounded-2xl border border-rose-400/30 bg-rose-500/10 p-4 text-corpo text-rose-100">
-          Não foi possível salvar. Tente novamente.
-        </p>
-      )}
 
       {isLoading && <p className="text-slate-300">Carregando...</p>}
       {isError && <p className="text-rose-200">Não foi possível carregar o conteúdo.</p>}
 
-      {!isLoading && !isError && editando && (
-        <div className="space-y-2">
-          <textarea
-            value={rascunho}
-            onChange={(event) => setRascunho(event.target.value)}
-            spellCheck={false}
-            className="h-[65vh] w-full rounded-2xl border border-white/10 bg-slate-950/80 p-4 font-mono text-meta text-slate-100 outline-none focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20"
-            data-testid="manual-textarea"
-          />
-        </div>
-      )}
-
-      {!isLoading && !isError && !editando && manual && (
+      {!isLoading && !isError && manual && (
         <iframe
           key={aba}
           ref={iframeRef}

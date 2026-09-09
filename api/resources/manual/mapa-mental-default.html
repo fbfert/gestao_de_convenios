@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<title>Mapa Mental — Gestão de Convênios</title>
+<style>
+  :root {
+    --azul: #1d4ed8;
+    --azul-claro: #eff6ff;
+    --verde: #047857;
+    --verde-fundo: #ecfdf5;
+    --ambar: #b45309;
+    --ambar-fundo: #fffbeb;
+    --roxo: #6d28d9;
+    --roxo-fundo: #f5f3ff;
+    --rosa: #be185d;
+    --rosa-fundo: #fdf2f8;
+    --cinza-texto: #1f2937;
+    --cinza-borda: #e2e8f0;
+    --cinza-fundo: #f8fafc;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--cinza-texto);
+    background: #ffffff;
+    line-height: 1.5;
+  }
+  .capa {
+    background: linear-gradient(135deg, #0f172a, #1d4ed8);
+    color: #fff;
+    padding: 40px 40px 32px;
+  }
+  .capa .kicker { text-transform: uppercase; letter-spacing: .2em; font-size: 12px; color: #bfdbfe; margin: 0 0 8px; }
+  .capa h1 { margin: 0 0 10px; font-size: 28px; }
+  .capa p { margin: 0; max-width: 760px; color: #e0e7ff; font-size: 14.5px; }
+
+  .legenda {
+    display: flex; flex-wrap: wrap; gap: 16px;
+    max-width: 1080px; margin: 24px auto 0; padding: 0 24px;
+    font-size: 13px; color: #475569;
+  }
+  .legenda span { display: inline-flex; align-items: center; gap: 6px; }
+  .legenda i { width: 12px; height: 12px; border-radius: 4px; display: inline-block; }
+
+  .mapa {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 24px 24px 56px;
+  }
+  .raiz {
+    background: var(--azul); color: #fff; font-weight: 700; font-size: 17px;
+    padding: 14px 30px; border-radius: 999px;
+    box-shadow: 0 10px 28px rgba(29, 78, 216, .28);
+    text-align: center;
+  }
+  .raiz small { display: block; font-weight: 400; font-size: 11.5px; color: #dbeafe; margin-top: 2px; }
+  .tronco { width: 2px; height: 26px; background: var(--cinza-borda); }
+  .barra { width: 100%; max-width: 1080px; height: 2px; background: var(--cinza-borda); }
+
+  .ramos {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 18px;
+    width: 100%; max-width: 1080px;
+  }
+  .ramo { display: flex; flex-direction: column; align-items: stretch; }
+  .stub { width: 2px; height: 18px; background: var(--cinza-borda); margin: 0 auto; }
+  .ramo-titulo {
+    font-weight: 700; font-size: 13.5px; text-align: center;
+    padding: 9px 10px; border-radius: 10px; margin-bottom: 14px;
+  }
+  .ramo-azul .ramo-titulo { background: var(--azul-claro); color: var(--azul); }
+  .ramo-verde .ramo-titulo { background: var(--verde-fundo); color: var(--verde); }
+  .ramo-ambar .ramo-titulo { background: var(--ambar-fundo); color: var(--ambar); }
+  .ramo-roxo .ramo-titulo { background: var(--roxo-fundo); color: var(--roxo); }
+  .ramo-rosa .ramo-titulo { background: var(--rosa-fundo); color: var(--rosa); }
+
+  .folhas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .folhas li {
+    position: relative;
+    background: #fff; border: 1.5px solid var(--cinza-borda); border-radius: 10px;
+    padding: 9px 10px; font-size: 12.5px; text-align: center; color: var(--cinza-texto);
+  }
+  .folhas li b { display: block; font-size: 12.5px; }
+  .folhas li small { display: block; color: #64748b; font-size: 11px; margin-top: 2px; }
+  .folhas li:not(:last-child)::after {
+    content: ''; position: absolute; left: 50%; bottom: -9px; width: 2px; height: 8px;
+    background: var(--cinza-borda); transform: translateX(-1px);
+  }
+  .ramo-azul .folhas li { border-color: #bfdbfe; }
+  .ramo-verde .folhas li { border-color: #a7f3d0; }
+  .ramo-ambar .folhas li { border-color: #fde68a; }
+  .ramo-roxo .folhas li { border-color: #ddd6fe; }
+  .ramo-rosa .folhas li { border-color: #fbcfe8; }
+
+  .rodape-nota {
+    max-width: 1080px; margin: 8px auto 0; padding: 14px 20px;
+    background: var(--cinza-fundo); border: 1px solid var(--cinza-borda); border-radius: 12px;
+    font-size: 13px; color: #475569;
+  }
+
+  @media (max-width: 1100px) {
+    .ramos { grid-template-columns: repeat(3, 1fr); row-gap: 32px; }
+  }
+  @media (max-width: 860px) {
+    .ramos { grid-template-columns: repeat(2, 1fr); row-gap: 32px; }
+  }
+  @media (max-width: 480px) {
+    .ramos { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="capa">
+  <p class="kicker">Documentação interna</p>
+  <h1>Mapa Mental — Gestão de Convênios</h1>
+  <p>
+    Visão de topo do sistema, organizada do mesmo jeito que o menu superior: a tela inicial e os grupos
+    Cadastros, Operação, Configurações e Administração, mais os papéis de acesso. Use para localizar
+    rapidamente onde cada tela se encaixa antes de ler o manual completo.
+  </p>
+</div>
+
+<div class="legenda">
+  <span><i style="background:var(--verde)"></i> Cadastros (bases que mudam pouco)</span>
+  <span><i style="background:var(--azul)"></i> Operação (o caminho de um atendimento)</span>
+  <span><i style="background:var(--ambar)"></i> Configurações</span>
+  <span><i style="background:var(--roxo)"></i> Administração &amp; sistema</span>
+  <span><i style="background:var(--rosa)"></i> Papéis de acesso</span>
+</div>
+
+<div class="mapa">
+  <div class="raiz">
+    GESTÃO DE CONVÊNIOS
+    <small>tela inicial · sistema multi-clínica (tenant)</small>
+  </div>
+  <div class="tronco"></div>
+  <div class="barra"></div>
+
+  <div class="ramos">
+    <div class="ramo ramo-verde">
+      <div class="stub"></div>
+      <div class="ramo-titulo">Cadastros</div>
+      <ul class="folhas">
+        <li><b>Pacientes</b><small>quem é atendido · carteirinha lida por IA · vários telefones · Buscar Duplicados une cadastros repetidos</small></li>
+        <li><b>Profissionais</b><small>quem executa · atua em uma ou mais especialidades</small></li>
+        <li><b>Especialidades</b><small>ex.: fisioterapia, fono · código por convênio</small></li>
+        <li><b>Médicos</b><small>quem solicita a terapia</small></li>
+        <li><b>Convênios</b><small>conector, regras, valores e formato da carteirinha</small></li>
+        <li><b>Usuários</b><small>quem entra no sistema</small></li>
+      </ul>
+    </div>
+
+    <div class="ramo ramo-azul">
+      <div class="stub"></div>
+      <div class="ramo-titulo">Operação</div>
+      <ul class="folhas">
+        <li><b>1. Pacientes</b><small>confira antes de abrir o pedido</small></li>
+        <li><b>2. Solicitações</b><small>pedido médico · várias especialidades · leitura por IA · admin edita</small></li>
+        <li><b>3. Guias</b><small>senha + validade, uma por especialidade · Unimed autoriza/nega sozinha · Finalizar abre a Antecipação · alerta quando negada, com atalho pra nova solicitação · admin edita mesmo depois</small></li>
+        <li><b>4. Sessões</b><small>atendimento realizado · registro lido por IA · admin edita</small></li>
+        <li><b>5. Antecipações</b><small>cota de sessões autorizadas por ciclo · admin edita a quantidade</small></li>
+        <li><b>6. Analíticos</b><small>extrato de pagamento do convênio</small></li>
+        <li><b>7. Conciliações</b><small>pendente → conferida → paga</small></li>
+      </ul>
+    </div>
+
+    <div class="ramo ramo-ambar">
+      <div class="stub"></div>
+      <div class="ramo-titulo">Configurações</div>
+      <ul class="folhas">
+        <li><b>Aparência</b><small>tema claro (padrão) ou escuro, por navegador</small></li>
+        <li><b>Globais</b><small>tempo de sessão, padrões e prazos de retenção</small></li>
+        <li><b>Envio de E-mails</b><small>SMTP + envio de teste</small></li>
+        <li><b>Configurações de IA</b><small>chave OpenAI e modelo padrão</small></li>
+        <li><b>Prompts Operacionais</b><small>instruções da leitura automática</small></li>
+        <li><b>Templates de E-mails</b><small>texto das mensagens</small></li>
+        <li><b>Unimed RDA</b><small>credencial e de-para da automação</small></li>
+        <li><b>Sincronização com o clinica</b><small>profissionais e pacientes espelhados, mão dupla · ritmo por horário (config. em Automações) · pendências de vinculação/envio por nome parecido</small></li>
+        <li><b>Perfis e Permissões</b><small>papéis próprios da clínica</small></li>
+        <li><b>Logs de Auditoria</b><small>quem alterou o quê e quando</small></li>
+      </ul>
+    </div>
+
+    <div class="ramo ramo-roxo">
+      <div class="stub"></div>
+      <div class="ramo-titulo">Administração</div>
+      <ul class="folhas">
+        <li><b>Clínicas</b><small>tenants · só administrador do sistema</small></li>
+        <li><b>Automações</b><small>robô da Unimed: gera guia e consulta status/senha · confere requisitos antes de enviar · tela Configurações liga/desliga e ajusta o ritmo de cada automação</small></li>
+        <li><b>Manual</b><small>esta documentação</small></li>
+      </ul>
+    </div>
+
+    <div class="ramo ramo-rosa">
+      <div class="stub"></div>
+      <div class="ramo-titulo">Papéis de Acesso</div>
+      <ul class="folhas">
+        <li><b>admin</b><small>administração completa · papel do sistema</small></li>
+        <li><b>funcionario</b><small>operação do dia a dia · papel do sistema</small></li>
+        <li><b>profissional</b><small>só enxerga o que é seu · papel do sistema</small></li>
+        <li><b>papéis próprios</b><small>criados pela clínica · menu segue a permissão</small></li>
+        <li><b>administrador do sistema</b><small>marca fora do catálogo · abre Clínicas</small></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="rodape-nota">
+    <strong>Como ler:</strong> a coluna azul é a sequência de um atendimento, de cima para baixo — os números são a
+    ordem de uso. A verde reúne as bases que essa sequência consulta; nada pode ser aberto sem que o cadastro exista
+    antes. Âmbar e roxo são telas de apoio, sem ordem entre si. A coluna rosa mostra quem enxerga o quê: os três
+    primeiros são papéis, editáveis na tela de <em>Permissões</em>; o último é uma marca separada, concedida fora do
+    sistema. <strong>Pacientes aparece em duas colunas</strong> — é a mesma tela, listada em Operação por ser o
+    primeiro passo do fluxo. <strong>Perfis e Permissões e Logs de Auditoria</strong> migraram de Administração
+    para dentro de Configurações. <strong>"admin edita"</strong>, na coluna azul, marca as telas em que o papel
+    admin pode corrigir um registro já criado (permissões <code>*.manage</code> próprias, cedíveis ao
+    <em>funcionario</em> em Permissões) — não é a criação normal, que continua liberada pra quem acessa a tela.
+  </div>
+</div>
+
+</body>
+</html>

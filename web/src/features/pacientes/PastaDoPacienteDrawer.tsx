@@ -1,4 +1,5 @@
 import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/react'
+import { useFechamentoExplicito } from '../../lib/useFechamentoExplicito'
 import { useRef, useState, type ChangeEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Badge } from '../../components/ui/Badge'
@@ -190,7 +191,7 @@ export function PastaDoPacienteDrawer({
   }
 
   return (
-    <Dialog open={paciente !== null} onClose={onClose} className="relative z-(--z-dialogo)">
+    <Dialog {...useFechamentoExplicito(paciente !== null, onClose)} className="relative z-(--z-dialogo)">
       <DialogBackdrop className="fixed inset-0 bg-slate-950/75 backdrop-blur-sm" />
       <div className="fixed inset-0 overflow-hidden">
         <div className="flex h-full justify-end">

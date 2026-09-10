@@ -51,6 +51,7 @@ export function MedicosPage() {
   const isFormRoute = isCreateRoute || isEditRoute
   const { filters, page, setFilters, setPage, searchParams } = useListaNaUrl({ busca: '' })
   const [draftBusca, setDraftBusca] = useState(filters.busca)
+  const [mostrarInativos, setMostrarInativos] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [form, setForm] = useState<MedicoForm>(emptyForm)
   const [formError, setFormError] = useState<string | null>(null)
@@ -61,7 +62,9 @@ export function MedicosPage() {
     direcao: 'asc',
   })
 
-  const medicosQuery = useMedicos(filters.busca, ordenacao, page)
+  // Editando um médico específico por link direto, ele tem que aparecer
+  // mesmo inativo e com a caixa desmarcada — senão o formulário não carrega.
+  const medicosQuery = useMedicos(filters.busca, ordenacao, page, mostrarInativos || isEditRoute)
   const criarMedico = useCriarMedico()
   const atualizarMedico = useAtualizarMedico()
 
@@ -351,6 +354,15 @@ export function MedicosPage() {
             <Botao type="submit" variante="secundario" data-testid="medico-busca-submit">
               Filtrar
             </Botao>
+            <label className="flex items-center gap-2 self-end pb-2.5 text-corpo text-slate-200">
+              <input
+                type="checkbox"
+                checked={mostrarInativos}
+                onChange={(event) => setMostrarInativos(event.target.checked)}
+                data-testid="medico-mostrar-inativos"
+              />
+              Mostrar inativos
+            </label>
           </form>
         </div>
 

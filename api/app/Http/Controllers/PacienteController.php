@@ -105,6 +105,7 @@ class PacienteController extends Controller
         $pacientes = Paciente::query()
             ->with(['convenio', 'telefones'])
             ->whereIn('id', $ids)
+            ->where('ativo', true)
             ->when($convenioId, fn ($query) => $query->where('convenio_id', $convenioId))
             ->get()
             ->sortBy(fn ($paciente) => $ordem[$paciente->id])

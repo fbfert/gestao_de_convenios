@@ -146,6 +146,37 @@ class MedicosApiTest extends TestCase
         ]);
     }
 
+    public function test_lista_esconde_inativos_por_padrao_e_incluir_inativos_traz_de_volta(): void
+    {
+        $this->autenticar();
+        $medico = Medico::query()->where('nome', 'Carlos Almeida')->firstOrFail();
+        $medico->update(['ativo' => false]);
+
+        $this->getJson('/api/medicos')
+            ->assertOk()
+            ->assertJsonCount(2, 'data')
+            ->assertJsonMissing(['nome' => 'Carlos Almeida']);
+
+        $this->getJson('/api/medicos?incluir_inativos=1')
+            ->assertOk()
+            ->assertJsonCount(3, 'data')
+            ->assertJsonFragment(['nome' => 'Carlos Almeida']);
+    }
+
+    public function test_recentes_nao_traz_medico_inativo(): void
+    {
+        $this->autenticar();
+
+        $this->postJson('/api/solicitacoes', $this->payloadSolicitacao('Carlos Almeida'))
+            ->assertCreated();
+
+        Medico::query()->where('nome', 'Carlos Almeida')->update(['ativo' => false]);
+
+        $this->getJson('/api/medicos/recentes')
+            ->assertOk()
+            ->assertJsonMissing(['nome' => 'Carlos Almeida']);
+    }
+
     public function test_lista_medicos_ignora_tenant_externo(): void
     {
         $this->criarMedicoExterno();

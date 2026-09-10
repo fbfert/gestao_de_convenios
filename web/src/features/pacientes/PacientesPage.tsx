@@ -40,7 +40,7 @@ const emptyForm: PacienteForm = {
 const filtrosVazios: PacientesConsulta = {
   busca: '',
   convenio_id: '',
-  status: '',
+  status: 'ativos',
   carteirinha: '',
   ordenar_por: 'nome',
   direcao: 'asc',
@@ -109,7 +109,10 @@ export function PacientesPage() {
   const [duplicadosVisivel, setDuplicadosVisivel] = useState(false)
   const carregadoPacienteRef = useRef<number | null>(null)
 
-  const pacientesQuery = usePacientesCrud(filtros, page)
+  // Editando um paciente específico por link direto, ele tem que aparecer
+  // mesmo inativo e com "mostrar inativos" desmarcado — senão o formulário
+  // não carrega.
+  const pacientesQuery = usePacientesCrud(isEditRoute ? { ...filtros, status: '' } : filtros, page)
   const conveniosQuery = useConvenios()
   const criarPaciente = useCriarPaciente()
   const atualizarPaciente = useAtualizarPaciente()
@@ -647,18 +650,22 @@ export function PacientesPage() {
               </Select>
             </label>
 
-            <label className="space-y-2">
-              <span className="text-meta uppercase tracking-[0.25em] text-slate-400">Status</span>
-              <Select
-                value={rascunho.status}
-                onChange={(event) => setRascunho((atual) => ({ ...atual, status: event.target.value }))}
-                className={selectClasses()}
-                data-testid="paciente-filtro-status"
-              >
-                <option value="">Todos</option>
-                <option value="ativos">Ativos</option>
-                <option value="inativos">Inativos</option>
-              </Select>
+            <label className="flex items-center gap-2 self-end pb-3 text-corpo text-slate-200">
+              <input
+                type="checkbox"
+                checked={rascunho.status !== 'ativos'}
+                onChange={(event) => {
+                  // Aplica na hora, sem esperar o "Filtrar" — mesmo
+                  // comportamento das caixas equivalentes em Médicos e
+                  // Profissionais, e diferente dos outros filtros desta
+                  // tela (que só valem depois do submit).
+                  const status = event.target.checked ? '' : 'ativos'
+                  setRascunho((atual) => ({ ...atual, status }))
+                  setFiltros({ ...filtros, status })
+                }}
+                data-testid="paciente-filtro-mostrar-inativos"
+              />
+              Mostrar inativos
             </label>
 
             <label className="space-y-2">

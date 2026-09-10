@@ -202,6 +202,7 @@ export function usePacientesBusca(params: {
       const { data } = await apiClient.get<PaginatedListResponse<PacienteRef>>('/pacientes', {
         params: {
           busca: params.busca,
+          status: 'ativos',
           convenio_id: params.convenioId || undefined,
           page: params.page,
         },

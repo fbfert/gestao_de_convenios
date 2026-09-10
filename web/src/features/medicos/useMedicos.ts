@@ -10,9 +10,14 @@ type PaginatedListResponse<T> = {
   meta?: ListMeta
 }
 
-export function useMedicos(busca: string, ordenacao?: Ordenacao, page?: number) {
+export function useMedicos(
+  busca: string,
+  ordenacao?: Ordenacao,
+  page?: number,
+  incluirInativos?: boolean,
+) {
   return useQuery({
-    queryKey: ['medicos', busca, ordenacao, page],
+    queryKey: ['medicos', busca, ordenacao, page, incluirInativos ?? false],
     queryFn: async () => {
       const { data } = await apiClient.get<PaginatedListResponse<Medico>>('/medicos', {
         params: {
@@ -20,6 +25,7 @@ export function useMedicos(busca: string, ordenacao?: Ordenacao, page?: number) 
           ordenar_por: ordenacao?.ordenar_por,
           direcao: ordenacao?.direcao,
           page,
+          incluir_inativos: incluirInativos || undefined,
         },
       })
 

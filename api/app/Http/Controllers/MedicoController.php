@@ -18,8 +18,10 @@ class MedicoController extends Controller
     public function index(Request $request): AnonymousResourceCollection
     {
         $busca = trim((string) $request->string('busca'));
+        $incluirInativos = $request->boolean('incluir_inativos');
 
         $query = Medico::query()
+            ->when(! $incluirInativos, fn ($query) => $query->where('ativo', true))
             ->when($busca !== '', function ($query) use ($busca) {
                 $query->where(function ($nested) use ($busca) {
                     $nested->where('nome', 'like', "%{$busca}%")
@@ -66,6 +68,7 @@ class MedicoController extends Controller
 
         $medicos = Medico::query()
             ->whereIn('id', $ids)
+            ->where('ativo', true)
             ->get()
             ->sortBy(fn ($medico) => $ordem[$medico->id])
             ->values();

@@ -55,6 +55,7 @@ export function ProfissionaisPage() {
   const [draftBusca, setDraftBusca] = useState('')
   const [especialidadeFiltro, setEspecialidadeFiltro] = useState('')
   const [draftEspecialidadeFiltro, setDraftEspecialidadeFiltro] = useState('')
+  const [mostrarInativos, setMostrarInativos] = useState(false)
   const [form, setForm] = useState<ProfissionalForm>(emptyForm)
   const [formError, setFormError] = useState<string | null>(null)
   const carregadoRef = useRef<number | null>(null)
@@ -86,7 +87,10 @@ export function ProfissionaisPage() {
   const profissionaisQuery = useProfissionaisCrud({
     busca,
     especialidade_id: especialidadeFiltro,
-    incluir_inativos: true,
+    // Editando um profissional específico por link direto, o registro tem
+    // que aparecer mesmo que esteja inativo e a caixa esteja desmarcada —
+    // senão o formulário simplesmente não carrega nada.
+    incluir_inativos: mostrarInativos || isEditRoute,
     ...ordenacao,
   })
   const criarProfissional = useCriarProfissional()
@@ -443,6 +447,15 @@ export function ProfissionaisPage() {
             <Botao type="submit" variante="secundario" data-testid="profissional-busca-submit">
               Filtrar
             </Botao>
+            <label className="flex items-center gap-2 self-end pb-2.5 text-corpo text-slate-200">
+              <input
+                type="checkbox"
+                checked={mostrarInativos}
+                onChange={(event) => setMostrarInativos(event.target.checked)}
+                data-testid="profissional-mostrar-inativos"
+              />
+              Mostrar inativos
+            </label>
           </form>
         </div>
 

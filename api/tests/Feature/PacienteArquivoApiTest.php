@@ -136,6 +136,79 @@ class PacienteArquivoApiTest extends TestCase
             ->assertStatus(422);
     }
 
+    public function test_contexto_de_arquivo_nunca_usado_vem_vazio(): void
+    {
+        Storage::fake('local');
+        $this->autenticar();
+        $paciente = $this->paciente();
+        $arquivo = PacienteArquivo::query()->create([
+            'tenant_id' => $paciente->tenant_id,
+            'paciente_id' => $paciente->id,
+            'tipo' => 'pedido_medico',
+            'nome_original' => 'pedido.pdf',
+            'mime' => 'application/pdf',
+            'path' => 'pacientes/pedido.pdf',
+        ]);
+
+        $resposta = $this->getJson("/api/pacientes/{$paciente->id}/arquivos/{$arquivo->id}/contexto")
+            ->assertOk()
+            ->json('data');
+
+        $this->assertNull($resposta['solicitacao_id']);
+        $this->assertNull($resposta['medico']);
+        $this->assertSame([], $resposta['cid_ids']);
+        $this->assertSame([], $resposta['itens']);
+    }
+
+    public function test_contexto_traz_medico_cid_e_itens_da_solicitacao_mais_recente(): void
+    {
+        Storage::fake('local');
+        $this->autenticar();
+        $paciente = $this->paciente();
+        $arquivo = PacienteArquivo::query()->create([
+            'tenant_id' => $paciente->tenant_id,
+            'paciente_id' => $paciente->id,
+            'tipo' => 'pedido_medico',
+            'nome_original' => 'pedido.pdf',
+            'mime' => 'application/pdf',
+            'path' => 'pacientes/pedido.pdf',
+        ]);
+
+        $antiga = $this->solicitacaoDoPaciente($paciente);
+        $antiga->documentos()->create([
+            'tenant_id' => $paciente->tenant_id,
+            'solicitacao_item_id' => null,
+            'paciente_arquivo_id' => $arquivo->id,
+        ]);
+        $antiga->cidCadastros()->sync([\App\Models\Cid::query()->firstOrFail()->id]);
+
+        // Segunda solicitação, médico diferente: o contexto tem que trazer
+        // ESTA, não a mais antiga.
+        $recente = $this->solicitacaoDoPaciente($paciente);
+        $outroMedico = \App\Models\Medico::query()->where('id', '!=', $recente->medico_id)->first()
+            ?? \App\Models\Medico::factory()->create(['tenant_id' => $paciente->tenant_id]);
+        $recente->update(['medico_id' => $outroMedico->id]);
+        $recente->documentos()->create([
+            'tenant_id' => $paciente->tenant_id,
+            'solicitacao_item_id' => null,
+            'paciente_arquivo_id' => $arquivo->id,
+        ]);
+        $cidRecente = \App\Models\Cid::query()->where('id', '!=', \App\Models\Cid::query()->firstOrFail()->id)->first()
+            ?? \App\Models\Cid::factory()->create(['tenant_id' => $paciente->tenant_id]);
+        $recente->cidCadastros()->sync([$cidRecente->id]);
+
+        $resposta = $this->getJson("/api/pacientes/{$paciente->id}/arquivos/{$arquivo->id}/contexto")
+            ->assertOk()
+            ->json('data');
+
+        $this->assertSame($recente->id, $resposta['solicitacao_id']);
+        $this->assertSame($outroMedico->id, $resposta['medico']['id']);
+        $this->assertSame([$cidRecente->id], $resposta['cid_ids']);
+        $this->assertCount(1, $resposta['itens']);
+        $this->assertSame($recente->especialidade_id, $resposta['itens'][0]['especialidade_id']);
+        $this->assertSame($recente->profissional_id, $resposta['itens'][0]['profissional_id']);
+    }
+
     private function autenticar(): User
     {
         $user = User::query()->where('email', 'admin@clinica-exemplo.test')->firstOrFail();

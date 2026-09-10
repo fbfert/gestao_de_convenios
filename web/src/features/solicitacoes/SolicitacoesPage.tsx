@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import { MoreVertical, Plus } from 'lucide-react'
+import { MoreVertical, Plus, X } from 'lucide-react'
 import { DropdownMenu } from 'radix-ui'
 import { ColunaOrdenavel } from '../../components/ui/ColunaOrdenavel'
 import { useOrdenacao } from '../../lib/useOrdenacao'
@@ -14,6 +14,7 @@ import {
   useRemoverItem,
   useSolicitacoes,
   useVerificarAndamentoItem,
+  useVincularDocumento,
 } from './useSolicitacoes'
 import { ConfirmarExclusao } from '../../components/ui/ConfirmarExclusao'
 import { STATUS_QUE_BLOQUEIAM_ADICAO, STATUS_QUE_BLOQUEIAM_ENVIO } from './types'
@@ -46,7 +47,11 @@ import { CidsCampo } from '../cids/CidsCampo'
 import { SolicitacaoItensFields } from './SolicitacaoItensFields'
 import { ResumoPastaPaciente } from './ResumoPastaPaciente'
 import { SolicitacaoAnexosStep } from './SolicitacaoAnexosStep'
-import { emptyItem, itensEstaoCompletos, rotuloDaRemessa } from './solicitacaoItens'
+import { emptyItem, itemComPadraoDoConvenio, itensEstaoCompletos, rotuloDaRemessa } from './solicitacaoItens'
+import {
+  PedidoMedicoExistentePrompt,
+  type PedidoExistenteEscolhido,
+} from './PedidoMedicoExistentePrompt'
 import { Indicadores } from '../../components/ui/Indicadores'
 import { Tooltip } from '../../components/ui/Tooltip'
 import { usePode } from '../../lib/permissoes'
@@ -162,6 +167,11 @@ export function SolicitacoesPage() {
     solicitacaoId: number
     item: SolicitacaoItem
   } | null>(null)
+  // Enquanto null, o prompt de "já tem pedido" fica visível (se houver
+  // pedido na pasta); qualquer uma das 3 escolhas o resolve. Reseta junto
+  // com o paciente — a pergunta é por paciente, não pela sessão inteira.
+  const [pedidoExistenteResolvido, setPedidoExistenteResolvido] = useState(false)
+  const [pedidoExistenteArquivoId, setPedidoExistenteArquivoId] = useState<number | null>(null)
 
   const { ordenacao, ordenarPor } = useOrdenacao({
     ordenar_por: 'id',
@@ -182,6 +192,7 @@ export function SolicitacoesPage() {
   const atualizarStatusSolicitacao = useAtualizarStatusSolicitacao()
   const enviarItemUnimed = useEnviarItemUnimed()
   const removerItem = useRemoverItem()
+  const vincularDocumento = useVincularDocumento()
   const verificarAndamentoItem = useVerificarAndamentoItem()
   const { tratarErroUnimed, modalProps: automacaoUnimedModalProps } = useAutomacaoUnimedGate()
 
@@ -377,12 +388,78 @@ export function SolicitacoesPage() {
 
     try {
       const criada = await criarSolicitacao.mutateAsync(form)
+
+      // "Usar pedido existente": o arquivo já está na pasta, só falta
+      // vincular como Pedido Médico desta solicitação nova — mesma rota que
+      // a etapa de anexos usa pra reaproveitar arquivo, só que acionada aqui
+      // em vez de a pessoa repetir a escolha manualmente daqui a pouco.
+      if (pedidoExistenteArquivoId) {
+        try {
+          await vincularDocumento.mutateAsync({
+            solicitacaoId: criada.id,
+            pacienteArquivoId: pedidoExistenteArquivoId,
+          })
+        } catch (error) {
+          setFormError(
+            getHttpErrorMessage(
+              error,
+              'Solicitação criada, mas não foi possível vincular o pedido médico existente — anexe manualmente na próxima etapa.',
+            ),
+          )
+        }
+      }
+
       // Não reseta nem navega ainda: a próxima etapa (anexos) usa esta
       // solicitação recém-criada, com id real.
       setSolicitacaoCriada(criada)
     } catch (error) {
       setFormError(getHttpErrorMessage(error, 'Não foi possível criar a solicitação.'))
     }
+  }
+
+  const handleUsarPedidoExistente = (escolha: PedidoExistenteEscolhido) => {
+    setPedidoExistenteArquivoId(escolha.arquivoId)
+    setPedidoExistenteResolvido(true)
+
+    if (escolha.medico) {
+      const medico = escolha.medico
+      setMedicoSelecionado({
+        id: medico.id,
+        nome: medico.nome,
+        crm: medico.crm,
+        crm_uf: medico.crm_uf,
+        especialidade_medica: '',
+        telefone: '',
+        email: null,
+        ativo: true,
+      })
+    }
+
+    setForm((current) => ({
+      ...current,
+      medico_id: escolha.medico ? String(escolha.medico.id) : current.medico_id,
+      cid_ids: escolha.cidIds.length > 0 ? escolha.cidIds.map(String) : current.cid_ids,
+      itens:
+        escolha.itens.length > 0
+          ? escolha.itens.map((item) => ({
+              ...itemComPadraoDoConvenio(convenioSelecionado?.sessoes_por_guia),
+              especialidade_id: String(item.especialidade_id),
+              profissional_id: String(item.profissional_id),
+            }))
+          : current.itens,
+    }))
+  }
+
+  const handleLerNovoPedido = () => {
+    setPedidoExistenteResolvido(true)
+    const params = new URLSearchParams()
+    if (pacienteSelecionado) params.set('paciente_id', String(pacienteSelecionado.id))
+    if (form.convenio_id) params.set('convenio_id', form.convenio_id)
+    navigate(`/solicitacoes/ler-pedido-medico?${params.toString()}`)
+  }
+
+  const handleAnexarNovoPedido = () => {
+    setPedidoExistenteResolvido(true)
   }
 
   const handleConcluirAnexos = () => {
@@ -622,10 +699,21 @@ export function SolicitacoesPage() {
               onSelecionar={(paciente) => {
                 setPacienteSelecionado(paciente)
                 setForm((current) => ({ ...current, paciente_id: String(paciente.id) }))
+                setPedidoExistenteResolvido(false)
+                setPedidoExistenteArquivoId(null)
               }}
               convenioId={form.convenio_id}
               carteirinhaBlocos={convenioSelecionado?.carteirinha_blocos}
             />
+
+            {isCreateRoute && pacienteSelecionado && !pedidoExistenteResolvido ? (
+              <PedidoMedicoExistentePrompt
+                pacienteId={pacienteSelecionado.id}
+                onUsarPedido={handleUsarPedidoExistente}
+                onLerNovo={handleLerNovoPedido}
+                onAnexarNovo={handleAnexarNovoPedido}
+              />
+            ) : null}
 
             <ResumoPastaPaciente pacienteId={pacienteSelecionado ? pacienteSelecionado.id : null} />
 
@@ -961,19 +1049,23 @@ export function SolicitacoesPage() {
                                   ·{' '}
                                   {item.profissional?.nome ?? item.profissional_id} ·{' '}
                                   {item.quantidade}
-                                  {/* Sem isto, duas remessas da mesma
-                                      especialidade com o mesmo profissional
-                                      viram duas linhas idênticas e ninguém
-                                      entende por que são duas. */}
-                                  {rotuloDaRemessa(item) ? (
+                                </p>
+                                {/* Sem isto, duas remessas da mesma
+                                    especialidade com o mesmo profissional
+                                    viram duas linhas idênticas e ninguém
+                                    entende por que são duas. Linha própria,
+                                    embaixo da especialização — não mais
+                                    encostada no texto da linha de cima. */}
+                                {rotuloDaRemessa(item) ? (
+                                  <p>
                                     <span
-                                      className="ml-2 rounded-pilula border border-acento/40 bg-acento-suave px-2 py-0.5 text-meta font-semibold text-acento-intenso"
+                                      className="rounded-pilula border border-acento/40 bg-acento-suave px-2 py-0.5 text-meta font-semibold text-acento-intenso"
                                       data-testid={`solicitacao-item-remessa-${item.id}`}
                                     >
                                       {rotuloDaRemessa(item)}
                                     </span>
-                                  ) : null}
-                                </p>
+                                  </p>
+                                ) : null}
                                 <div className="flex flex-wrap items-center gap-2">
                                   {/* O NÚMERO DA OPERADORA, nunca o id interno.
                                       `numero_operadora` já vem nulo quando o
@@ -1063,10 +1155,12 @@ export function SolicitacoesPage() {
                                     <button
                                       type="button"
                                       onClick={() => setItemAExcluir({ solicitacaoId: solicitacao.id, item })}
-                                      className="rounded-full border border-rose-400/30 bg-rose-400/10 px-3 py-1.5 text-meta font-semibold text-rose-100 transition hover:bg-rose-400/20"
+                                      className="inline-flex items-center justify-center rounded-full border border-rose-400/30 bg-rose-400/10 p-1.5 text-rose-300 transition hover:bg-rose-400/20"
+                                      aria-label="Excluir item"
+                                      title="Excluir item"
                                       data-testid={`solicitacao-item-excluir-${item.id}`}
                                     >
-                                      Excluir item
+                                      <X className="size-4" aria-hidden="true" />
                                     </button>
                                   ) : null}
                                 </div>

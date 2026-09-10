@@ -6,6 +6,7 @@ use App\Http\Requests\StorePacienteArquivoRequest;
 use App\Http\Resources\PacienteArquivoResource;
 use App\Models\Paciente;
 use App\Models\PacienteArquivo;
+use App\Models\SolicitacaoDocumento;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Storage;
@@ -50,6 +51,63 @@ class PacienteArquivoController extends Controller
         return response()->file(Storage::disk('local')->path($arquivo->path), [
             'Content-Type' => $arquivo->mime ?? 'application/octet-stream',
         ]);
+    }
+
+    /**
+     * O que dá pra reaproveitar de um pedido médico já na pasta: médico, CIDs
+     * e especialidades da solicitação MAIS RECENTE que usou este arquivo —
+     * não existe esse dado no PacienteArquivo em si (ele é só o arquivo),
+     * então a única fonte é olhar pra trás no que já foi feito com ele. Se o
+     * arquivo nunca foi usado em nenhuma solicitação, devolve tudo nulo/vazio
+     * — quem chama decide o que fazer (deixar a pessoa preencher à mão).
+     */
+    public function contexto(Paciente $paciente, PacienteArquivo $arquivo): JsonResponse
+    {
+        $this->garantirVinculo($paciente, $arquivo);
+
+        $ultimoVinculo = SolicitacaoDocumento::query()
+            ->where('paciente_arquivo_id', $arquivo->id)
+            ->whereNull('solicitacao_item_id')
+            ->with([
+                'solicitacao.medico',
+                'solicitacao.cidCadastros',
+                'solicitacao.itens.especialidade',
+                'solicitacao.itens.profissional',
+            ])
+            ->orderByDesc('solicitacao_id')
+            ->first();
+
+        $solicitacao = $ultimoVinculo?->solicitacao;
+
+        return response()->json(['data' => [
+            'solicitacao_id' => $solicitacao?->id,
+            'medico' => $solicitacao?->medico ? [
+                'id' => $solicitacao->medico->id,
+                'nome' => $solicitacao->medico->nome,
+                'crm' => $solicitacao->medico->crm,
+                'crm_uf' => $solicitacao->medico->crm_uf,
+            ] : null,
+            'cid_ids' => $solicitacao?->cidCadastros->pluck('id')->all() ?? [],
+            'cids' => $solicitacao?->cidCadastros->map(fn ($cid) => [
+                'id' => $cid->id,
+                'codigo' => $cid->codigo,
+                'descricao' => $cid->descricao,
+            ])->all() ?? [],
+            // Par especialidade+profissional de cada item da solicitação de
+            // origem — não só o nome da especialidade — pra tela poder
+            // pré-preencher os itens de verdade, não só sugerir o texto.
+            'itens' => $solicitacao?->itens
+                ->filter(fn ($item) => $item->especialidade && $item->profissional)
+                ->unique(fn ($item) => "{$item->especialidade_id}-{$item->profissional_id}")
+                ->values()
+                ->map(fn ($item) => [
+                    'especialidade_id' => $item->especialidade->id,
+                    'especialidade_nome' => $item->especialidade->nome,
+                    'profissional_id' => $item->profissional->id,
+                    'profissional_nome' => $item->profissional->nome,
+                ])
+                ->all() ?? [],
+        ]]);
     }
 
     public function destroy(Paciente $paciente, PacienteArquivo $arquivo): JsonResponse

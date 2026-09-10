@@ -159,6 +159,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EncerrarSessaoExpirada::
     Route::get('/pacientes/{paciente}/arquivos', [PacienteArquivoController::class, 'index']);
     Route::post('/pacientes/{paciente}/arquivos', [PacienteArquivoController::class, 'store']);
     Route::get('/pacientes/{paciente}/arquivos/{arquivo}', [PacienteArquivoController::class, 'download']);
+    Route::get('/pacientes/{paciente}/arquivos/{arquivo}/contexto', [PacienteArquivoController::class, 'contexto']);
     Route::delete('/pacientes/{paciente}/arquivos/{arquivo}', [PacienteArquivoController::class, 'destroy']);
     Route::get('/profissionais', [ProfissionalController::class, 'index']);
     Route::post('/profissionais', [ProfissionalController::class, 'store'])->middleware('permission:profissionais.manage');

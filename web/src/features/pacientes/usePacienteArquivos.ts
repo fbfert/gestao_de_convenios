@@ -34,6 +34,33 @@ export function usePacienteArquivos(pacienteId: number | null) {
   })
 }
 
+export type ContextoPacienteArquivo = {
+  solicitacao_id: number | null
+  medico: { id: number; nome: string; crm: string; crm_uf: string | null } | null
+  cid_ids: number[]
+  cids: { id: number; codigo: string; descricao: string }[]
+  itens: {
+    especialidade_id: number
+    especialidade_nome: string
+    profissional_id: number
+    profissional_nome: string
+  }[]
+}
+
+/**
+ * O que dá pra reaproveitar de um pedido médico já na pasta — médico, CIDs e
+ * pares especialidade/profissional da solicitação mais recente que usou esse
+ * arquivo. Busca sob demanda (não é um `useQuery` porque só é chamada depois
+ * que a pessoa escolhe, na tela, qual arquivo quer reaproveitar).
+ */
+export async function buscarContextoPacienteArquivo(pacienteId: number, arquivoId: number) {
+  const { data } = await apiClient.get<{ data: ContextoPacienteArquivo }>(
+    `/pacientes/${pacienteId}/arquivos/${arquivoId}/contexto`,
+  )
+
+  return data.data
+}
+
 export function useUploadPacienteArquivo() {
   const queryClient = useQueryClient()
 

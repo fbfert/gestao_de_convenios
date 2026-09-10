@@ -11,11 +11,19 @@ import {
   useAtualizarStatusSolicitacao,
   useCriarSolicitacao,
   useEnviarItemUnimed,
+  useRemoverItem,
   useSolicitacoes,
   useVerificarAndamentoItem,
 } from './useSolicitacoes'
+import { ConfirmarExclusao } from '../../components/ui/ConfirmarExclusao'
 import { STATUS_QUE_BLOQUEIAM_ADICAO, STATUS_QUE_BLOQUEIAM_ENVIO } from './types'
-import type { Solicitacao, SolicitacaoFilters, SolicitacaoForm, SolicitacaoStatus } from './types'
+import type {
+  Solicitacao,
+  SolicitacaoFilters,
+  SolicitacaoForm,
+  SolicitacaoItem,
+  SolicitacaoStatus,
+} from './types'
 import {
   useConvenios,
   useEspecialidades,
@@ -150,6 +158,10 @@ export function SolicitacoesPage() {
   const [solicitacaoCriada, setSolicitacaoCriada] = useState<Solicitacao | null>(null)
   const [pacienteModalAberto, setPacienteModalAberto] = useState(false)
   const [medicoModalAberto, setMedicoModalAberto] = useState(false)
+  const [itemAExcluir, setItemAExcluir] = useState<{
+    solicitacaoId: number
+    item: SolicitacaoItem
+  } | null>(null)
 
   const { ordenacao, ordenarPor } = useOrdenacao({
     ordenar_por: 'id',
@@ -169,6 +181,7 @@ export function SolicitacoesPage() {
   const criarSolicitacao = useCriarSolicitacao()
   const atualizarStatusSolicitacao = useAtualizarStatusSolicitacao()
   const enviarItemUnimed = useEnviarItemUnimed()
+  const removerItem = useRemoverItem()
   const verificarAndamentoItem = useVerificarAndamentoItem()
   const { tratarErroUnimed, modalProps: automacaoUnimedModalProps } = useAutomacaoUnimedGate()
 
@@ -429,6 +442,22 @@ export function SolicitacoesPage() {
         'Não foi possível verificar o andamento no portal da Unimed.',
         () => handleVerificarAndamentoItem(itemId),
       )
+    }
+  }
+
+  const handleRemoverItem = async () => {
+    if (!itemAExcluir) {
+      return
+    }
+
+    try {
+      await removerItem.mutateAsync({
+        solicitacaoId: itemAExcluir.solicitacaoId,
+        itemId: itemAExcluir.item.id,
+      })
+      setItemAExcluir(null)
+    } catch (error) {
+      window.alert(getHttpErrorMessage(error, 'Não foi possível excluir o item.'))
     }
   }
 
@@ -1026,6 +1055,20 @@ export function SolicitacoesPage() {
                                       </Tooltip>
                                     </>
                                   ) : null}
+                                  {!item.guia &&
+                                  (solicitacao.itens?.length ?? 0) > 1 &&
+                                  !STATUS_QUE_BLOQUEIAM_ADICAO.includes(
+                                    solicitacao.status as SolicitacaoStatus,
+                                  ) ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => setItemAExcluir({ solicitacaoId: solicitacao.id, item })}
+                                      className="rounded-full border border-rose-400/30 bg-rose-400/10 px-3 py-1.5 text-meta font-semibold text-rose-100 transition hover:bg-rose-400/20"
+                                      data-testid={`solicitacao-item-excluir-${item.id}`}
+                                    >
+                                      Excluir item
+                                    </button>
+                                  ) : null}
                                 </div>
                               </div>
                             )
@@ -1175,6 +1218,17 @@ export function SolicitacoesPage() {
       />
 
       <AutomacaoUnimedDesativadaModal {...automacaoUnimedModalProps} />
+
+      {itemAExcluir ? (
+        <ConfirmarExclusao
+          titulo="Excluir item da solicitação"
+          descricao="O item será apagado da solicitação. Use para corrigir um cadastro errado — itens com Guia já gerada não podem ser excluídos por aqui."
+          alvo={`${itemAExcluir.item.especialidade?.nome ?? itemAExcluir.item.especialidade_id} · ${itemAExcluir.item.profissional?.nome ?? itemAExcluir.item.profissional_id} · ${itemAExcluir.item.quantidade}`}
+          confirmando={removerItem.isPending}
+          onConfirmar={() => void handleRemoverItem()}
+          onCancelar={() => setItemAExcluir(null)}
+        />
+      ) : null}
     </div>
   )
 }

@@ -92,6 +92,28 @@ export function useAdicionarItem() {
 }
 
 /**
+ * `DELETE /solicitacoes/{id}/itens/{item}` — só item sem Guia gerada
+ * (cadastro errado). O backend recusa o resto (item com Guia, último item da
+ * solicitação, solicitação negada/histórico) — aqui só repassa o erro.
+ */
+export function useRemoverItem() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ solicitacaoId, itemId }: { solicitacaoId: number; itemId: number }) => {
+      const { data } = await apiClient.delete<{ data: Solicitacao }>(
+        `/solicitacoes/${solicitacaoId}/itens/${itemId}`,
+      )
+
+      return data.data
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['solicitacoes'] })
+    },
+  })
+}
+
+/**
  * Dados dos quatro avisos do modal. Refaz a consulta a cada mudança de
  * especialidade/profissional/vínculo porque dois dos avisos dependem deles.
  */

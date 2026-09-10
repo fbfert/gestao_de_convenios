@@ -374,6 +374,48 @@ class SolicitacaoService
     }
 
     /**
+     * Remove um item que ainda não gerou Guia — caso de uso de cadastro
+     * errado, não de "desistir de uma sessão já autorizada". Item com Guia
+     * (mesmo negada) nunca é removível por aqui: a Guia é o registro do que
+     * de fato aconteceu na operadora, apagar o item apagaria esse rastro.
+     * Tentativas de automação sem sucesso não bloqueiam — são exatamente o
+     * cenário "cadastrei errado, a Unimed rejeitou, quero tirar daqui".
+     */
+    public function removerItem(Solicitacao $solicitacao, SolicitacaoItem $item): void
+    {
+        if ((int) $item->solicitacao_id !== (int) $solicitacao->id) {
+            throw new SolicitacaoStatusInvalidoException('Este item não pertence a esta solicitação.');
+        }
+
+        if (SolicitacaoStatus::bloqueiaAdicao($solicitacao->status)) {
+            throw new SolicitacaoStatusInvalidoException(
+                'Não é possível remover itens de uma solicitação negada ou em histórico.'
+            );
+        }
+
+        $item->loadMissing('guia');
+        if ($item->guia) {
+            throw new SolicitacaoStatusInvalidoException(
+                'Este item já tem Guia gerada e não pode ser excluído.'
+            );
+        }
+
+        if ($solicitacao->itens()->count() <= 1) {
+            throw new SolicitacaoStatusInvalidoException(
+                'A solicitação precisa manter pelo menos um item — negue ou cancele a solicitação inteira em vez de excluir o último.'
+            );
+        }
+
+        DB::transaction(function () use ($solicitacao, $item) {
+            $item->delete();
+
+            if (SolicitacaoStatus::derivaDosItens($solicitacao->status)) {
+                $this->sincronizarStatusComGuias($solicitacao->fresh());
+            }
+        });
+    }
+
+    /**
      * Os dados que a tela usa para avisar antes de confirmar — calculados aqui,
      * e não no front.
      *

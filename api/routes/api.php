@@ -228,6 +228,8 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EncerrarSessaoExpirada::
         ->middleware('permission:solicitacoes.manage');
     Route::post('/solicitacoes/{solicitacao}/itens', [SolicitacaoController::class, 'storeItem'])
         ->middleware('permission:solicitacoes.manage');
+    Route::delete('/solicitacoes/{solicitacao}/itens/{item}', [SolicitacaoController::class, 'destroyItem'])
+        ->middleware('permission:solicitacoes.manage');
     Route::patch('/solicitacoes/{solicitacao}/status', [SolicitacaoController::class, 'updateStatus']);
     Route::patch('/solicitacoes/{solicitacao}/aprovar', [SolicitacaoController::class, 'aprovar']);
     Route::patch('/solicitacoes/{solicitacao}/negar', [SolicitacaoController::class, 'negar']);

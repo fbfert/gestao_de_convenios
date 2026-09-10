@@ -63,6 +63,15 @@ class SolicitacaoController extends Controller
             ->setStatusCode(201);
     }
 
+    /** Ver SolicitacaoService::removerItem() — só item ainda sem Guia. */
+    public function destroyItem(Solicitacao $solicitacao, SolicitacaoItem $item): JsonResponse
+    {
+        $this->service->removerItem($solicitacao, $item);
+
+        return (new SolicitacaoResource($solicitacao->fresh()->load(['paciente', 'profissional', 'especialidade', 'convenio', 'medico', 'cidCadastros', 'itens.especialidade.convenioMapeamentos', 'itens.profissional', 'itens.documentos.arquivo', 'itens.guia', 'itens.automacaoExecucoes', 'documentos.arquivo'])))
+            ->response();
+    }
+
     /** Dados dos avisos da tela de "Adicionar sessões" — ver SolicitacaoService::contextoDeAdicao(). */
     public function contextoAdicao(Request $request, Solicitacao $solicitacao): JsonResponse
     {

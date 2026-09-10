@@ -126,7 +126,7 @@ export async function abrirSpSadt(page, mainPage) {
 }
 
 export async function preencherFormularioPrincipal(page, payload) {
-  await fillIfVisible(page, '[name="DT_EMISSAO_GUIA"], #DT_EMISSAO_GUIA', formatPortalDate(new Date()))
+  await fillIfVisible(page, '[name="DT_EMISSAO_GUIA"], #DT_EMISSAO_GUIA', dataEmissaoHojeBrasil())
   await selectIfVisible(page, '[name="FG_ATENDIMENTO_RN"], #FG_ATENDIMENTO_RN', 'N')
   await selectIfVisible(page, '[name="DM_CARATER_SOLIC"], #DM_CARATER_SOLIC', '1')
   await selectIfVisible(page, '[name="DM_TP_ATEND_SADT"], #DM_TP_ATEND_SADT', '03')
@@ -668,8 +668,20 @@ function validarAnexo(anexo) {
   }
 }
 
-function formatPortalDate(date) {
-  const day = String(date.getDate()).padStart(2, '0')
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  return `${day}/${month}/${date.getFullYear()}`
+// O worker roda em UTC, mas o portal valida DT_EMISSAO_GUIA contra o horario
+// de Brasilia. Usar `new Date()` local (UTC) vira "amanha" pro portal entre
+// 21h e 23h59 BRT, e o Finalizar e rejeitado com "Data de emissao nao pode
+// ser maior que a data atual" — sem nenhum sinal de erro pro worker, so a
+// mesma tela de digitacao de volta, o que faz o gerarGuia voltar 'uncertain'
+// (achado ao vivo em 10/09/2026, ~21:27 BRT, solicitacao 2319 / execucao 349).
+function dataEmissaoHojeBrasil() {
+  const partes = new Intl.DateTimeFormat('pt-BR', {
+    timeZone: 'America/Sao_Paulo',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).formatToParts(new Date())
+
+  const valor = (tipo) => partes.find((p) => p.type === tipo)?.value
+  return `${valor('day')}/${valor('month')}/${valor('year')}`
 }

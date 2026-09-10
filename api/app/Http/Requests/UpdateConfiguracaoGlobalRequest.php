@@ -18,6 +18,13 @@ class UpdateConfiguracaoGlobalRequest extends FormRequest
             // a configuração deixa de ser prazo e vira "nunca" mal escrito.
             'sessao_minutos' => ['required', 'integer', 'min:0', 'max:43200'],
             'senha_alerta_dias' => ['required', 'integer', 'min:1', 'max:180'],
+
+            // Padrão do "hora de gerar o próximo ciclo" — convênio pode
+            // sobrescrever (ver UpsertConvenioRequest) e a guia pode
+            // sobrescrever de novo com data manual.
+            'antecipacao_dias' => ['required', 'integer', 'min:1', 'max:180'],
+            'antecipacao_referencia' => ['required', 'in:validade_senha,data_finalizacao'],
+
             'sessoes_padrao' => ['required', 'integer', 'min:1', 'max:999'],
             'itens_por_pagina' => ['required', 'integer', 'min:5', 'max:200'],
 

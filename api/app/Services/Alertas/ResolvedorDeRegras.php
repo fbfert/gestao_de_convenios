@@ -3,6 +3,7 @@
 namespace App\Services\Alertas;
 
 use App\Models\AlertaRegra;
+use App\Services\Alertas\Regras\AntecipacaoDevida;
 use App\Services\Alertas\Regras\AutomacaoFalhasEmSerie;
 use App\Services\Alertas\Regras\ComponenteFora;
 use App\Services\Alertas\Regras\GuiaNegada;
@@ -25,6 +26,7 @@ class ResolvedorDeRegras
         AlertaRegra::CHAVE_GUIA_NEGADA => GuiaNegada::class,
         AlertaRegra::CHAVE_AUTOMACAO_FALHAS => AutomacaoFalhasEmSerie::class,
         AlertaRegra::CHAVE_COMPONENTE_FORA => ComponenteFora::class,
+        AlertaRegra::CHAVE_ANTECIPACAO_DEVIDA => AntecipacaoDevida::class,
     ];
 
     public function para(string $chave): ?AvaliadorDeAlerta

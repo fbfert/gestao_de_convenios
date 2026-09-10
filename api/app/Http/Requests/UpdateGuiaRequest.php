@@ -44,6 +44,7 @@ class UpdateGuiaRequest extends FormRequest
             'protocolo_operadora' => ['sometimes', 'nullable', 'string', 'max:255'],
             'senha' => ['sometimes', 'nullable', 'string', 'max:255'],
             'validade_senha' => ['sometimes', 'nullable', 'date'],
+            'antecipacao_data_alvo' => ['sometimes', 'nullable', 'date'],
             'observacoes' => ['sometimes', 'nullable', 'string'],
         ];
     }

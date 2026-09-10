@@ -16,6 +16,8 @@ function inputClasses() {
 const formVazio: ConfiguracoesGlobaisForm = {
   sessao_minutos: '480',
   senha_alerta_dias: '7',
+  antecipacao_dias: '20',
+  antecipacao_referencia: 'validade_senha',
   sessoes_padrao: '10',
   itens_por_pagina: '15',
   auditoria_retencao_meses: '12',

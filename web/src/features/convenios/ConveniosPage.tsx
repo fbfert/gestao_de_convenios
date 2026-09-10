@@ -15,6 +15,9 @@ type Convenio = {
   connector_type: string
   /** Tamanhos dos blocos da carteirinha. null = texto livre. */
   carteirinha_blocos?: number[] | null
+  /** Override do padrão global de antecipação. null = usa configuracoes_globais. */
+  antecipacao_dias: number | null
+  antecipacao_referencia: 'validade_senha' | 'data_finalizacao' | null
   ativo: boolean
 }
 
@@ -24,6 +27,9 @@ type ConvenioForm = {
   connector_type: string
   /** Blocos como o operador digita: "4-4-6-2-1". Vazio = texto livre. */
   carteirinha: string
+  /** Vazio = usa o padrão global (ver Configurações → Globais). */
+  antecipacao_dias: string
+  antecipacao_referencia: '' | 'validade_senha' | 'data_finalizacao'
   ativo: boolean
 }
 
@@ -32,6 +38,8 @@ const emptyForm: ConvenioForm = {
   descricao: '',
   connector_type: 'manual',
   carteirinha: '',
+  antecipacao_dias: '',
+  antecipacao_referencia: '',
   ativo: true,
 }
 
@@ -41,6 +49,8 @@ function toForm(convenio: Convenio): ConvenioForm {
     descricao: convenio.descricao ?? '',
     connector_type: convenio.connector_type,
     carteirinha: formatBlocos(convenio.carteirinha_blocos),
+    antecipacao_dias: convenio.antecipacao_dias != null ? String(convenio.antecipacao_dias) : '',
+    antecipacao_referencia: convenio.antecipacao_referencia ?? '',
     ativo: convenio.ativo,
   }
 }
@@ -212,6 +222,9 @@ export function ConveniosPage() {
       // Lista vazia e o mesmo que "sem formato": o backend normaliza, mas
       // mandar null deixa a intencao explicita no payload.
       carteirinha_blocos: blocos.length > 0 ? blocos : null,
+      // Vazio = sem override, volta a usar o padrão global.
+      antecipacao_dias: form.antecipacao_dias ? Number(form.antecipacao_dias) : null,
+      antecipacao_referencia: form.antecipacao_referencia || null,
       ativo: form.ativo,
     }
 
@@ -311,6 +324,40 @@ export function ConveniosPage() {
                 valor={form.carteirinha}
                 onChange={(carteirinha) => setForm((atual) => ({ ...atual, carteirinha }))}
               />
+              <div className="space-y-1 md:col-span-2">
+                <span className="text-meta text-slate-300">
+                  Antecipação — dias de antecedência (em branco = usa o padrão global)
+                </span>
+                <input
+                  type="number"
+                  min={1}
+                  max={180}
+                  value={form.antecipacao_dias}
+                  onChange={(event) =>
+                    setForm((atual) => ({ ...atual, antecipacao_dias: event.target.value }))
+                  }
+                  placeholder="Padrão global"
+                  className={field}
+                  data-testid="convenio-antecipacao-dias"
+                />
+              </div>
+              <div className="space-y-1">
+                <span className="text-meta text-slate-300">Antecipação — data de referência</span>
+                <Select
+                  value={form.antecipacao_referencia}
+                  onChange={(event) =>
+                    setForm((atual) => ({
+                      ...atual,
+                      antecipacao_referencia: event.target.value as ConvenioForm['antecipacao_referencia'],
+                    }))
+                  }
+                  data-testid="convenio-antecipacao-referencia"
+                >
+                  <option value="">Padrão global</option>
+                  <option value="validade_senha">Validade da senha</option>
+                  <option value="data_finalizacao">Data de finalização</option>
+                </Select>
+              </div>
               <label className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <input
                   type="checkbox"

@@ -52,6 +52,16 @@ class AlertaRegraSeeder extends Seeder
                 'limiar_vermelho' => null,
                 'critica' => true,
             ],
+            [
+                'chave' => AlertaRegra::CHAVE_ANTECIPACAO_DEVIDA,
+                'nivel_base' => Alerta::NIVEL_AMARELO,
+                'limiar_amarelo' => null,
+                // Dias de atraso sobre a data-alvo a partir dos quais vira vermelho.
+                'limiar_vermelho' => 5,
+                // Não é crítica: é um convite a revisar, não uma falha — cabe no
+                // resumo diário, mesmo espírito de senha vencendo.
+                'critica' => false,
+            ],
         ];
 
         Tenant::query()->orderBy('id')->each(function (Tenant $tenant) use ($padroes) {

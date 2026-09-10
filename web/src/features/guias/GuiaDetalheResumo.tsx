@@ -82,6 +82,7 @@ const formVazio: GuiaEditForm = {
   protocolo_operadora: '',
   senha: '',
   validade_senha: '',
+  antecipacao_data_alvo: '',
   observacoes: '',
 }
 
@@ -115,6 +116,7 @@ export function GuiaDetalheResumo({ guia }: { guia: Guia }) {
       protocolo_operadora: guia.protocolo_operadora ?? '',
       senha: guia.senha ?? '',
       validade_senha: guia.validade_senha?.slice(0, 10) ?? '',
+      antecipacao_data_alvo: guia.antecipacao_data_alvo?.slice(0, 10) ?? '',
       observacoes: guia.observacoes ?? '',
     })
     setErro(null)
@@ -209,6 +211,12 @@ export function GuiaDetalheResumo({ guia }: { guia: Guia }) {
           </DetailItem>
           <DetailItem label="Sessões solicitadas">{guia.sessoes_solicitadas ?? '-'}</DetailItem>
           <DetailItem label="Sessões autorizadas">{guia.sessoes_autorizadas ?? '-'}</DetailItem>
+          <DetailItem label="Próxima antecipação">
+            {guia.antecipacao_proxima_em ?? '-'}
+            {guia.antecipacao_data_alvo ? (
+              <p className="mt-1 text-meta font-normal text-slate-300">Data manual — sobrescreve a regra automática</p>
+            ) : null}
+          </DetailItem>
           <DetailItem label="Protocolo operadora" span="duplo">{guia.protocolo_operadora ?? '-'}</DetailItem>
           <DetailItem label="Observações" span="duplo">{guia.observacoes ?? '-'}</DetailItem>
         </section>
@@ -320,6 +328,26 @@ export function GuiaDetalheResumo({ guia }: { guia: Guia }) {
                 className={fieldClasses()}
                 data-testid="guia-resumo-validade-senha"
               />
+            </label>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <label className="block space-y-2">
+              <span className="text-corpo font-medium text-slate-200">
+                Data manual de antecipação (opcional)
+              </span>
+              <input
+                type="date"
+                value={form.antecipacao_data_alvo}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, antecipacao_data_alvo: event.target.value }))
+                }
+                className={fieldClasses()}
+                data-testid="guia-resumo-antecipacao-data-alvo"
+              />
+              <span className="block text-meta text-slate-400">
+                Sobrescreve a regra automática (convênio ou padrão global) só para esta guia.
+              </span>
             </label>
           </div>
 

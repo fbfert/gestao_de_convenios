@@ -19,12 +19,16 @@ class Convenio extends Model
         'connector_driver',
         'connector_config',
         'carteirinha_blocos',
+        'antecipacao_dias',
+        'antecipacao_referencia',
         'ativo',
     ];
 
     protected $casts = [
         'connector_config' => 'array',
         'carteirinha_blocos' => 'array',
+        // Nulo = usa configuracoes_globais (ver Guia::antecipacaoDataAlvo()).
+        'antecipacao_dias' => 'integer',
         'ativo' => 'boolean',
     ];
 

@@ -16,6 +16,8 @@ class ConfiguracaoGlobal extends Model
         'tenant_id',
         'sessao_minutos',
         'senha_alerta_dias',
+        'antecipacao_dias',
+        'antecipacao_referencia',
         'sessoes_padrao',
         'itens_por_pagina',
         'auditoria_retencao_meses',
@@ -47,6 +49,7 @@ class ConfiguracaoGlobal extends Model
     protected $casts = [
         'sessao_minutos' => 'integer',
         'senha_alerta_dias' => 'integer',
+        'antecipacao_dias' => 'integer',
         'sessoes_padrao' => 'integer',
         'itens_por_pagina' => 'integer',
         'auditoria_retencao_meses' => 'integer',

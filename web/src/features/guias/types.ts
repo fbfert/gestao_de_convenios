@@ -22,6 +22,11 @@ export type Guia = {
   validade_senha: string | null
   observacoes: string | null
   alerta_negacao_ocultado_em: string | null
+  /** Override manual (edição na guia) da data-alvo de antecipação. */
+  antecipacao_data_alvo: string | null
+  /** Data calculada com a regra vigente (override > convênio > padrão global). */
+  antecipacao_proxima_em: string | null
+  alerta_antecipacao_ocultado_em: string | null
   paciente?: GuiaPaciente
   convenio?: GuiaReferencia
   profissional?: GuiaReferencia

@@ -28,6 +28,9 @@ class ConvenioResource extends JsonResource
              * dizendo que faltou preencher.
              */
             'sessoes_por_guia' => app(SolicitacaoService::class)->quantidadePadrao((int) $this->id),
+            // Nulo = usa o padrão de configuracoes_globais (ver Guia::antecipacaoDataAlvo()).
+            'antecipacao_dias' => $this->antecipacao_dias,
+            'antecipacao_referencia' => $this->antecipacao_referencia,
             'ativo' => $this->ativo,
         ];
     }

@@ -17,7 +17,7 @@ class AlertaRegra extends Model
 {
     use Auditable, BelongsToTenant, HasFactory;
 
-    /** Chaves das quatro regras desta entrega. */
+    /** Chaves das quatro regras da entrega original, mais a de antecipação (Fase 2). */
     public const CHAVE_SENHA_VENCENDO = 'senha.vencendo';
 
     public const CHAVE_GUIA_NEGADA = 'guia.negada';
@@ -25,6 +25,8 @@ class AlertaRegra extends Model
     public const CHAVE_AUTOMACAO_FALHAS = 'automacao.falhas_em_serie';
 
     public const CHAVE_COMPONENTE_FORA = 'componente.fora';
+
+    public const CHAVE_ANTECIPACAO_DEVIDA = 'antecipacao.devida';
 
     protected $table = 'alerta_regras';
 

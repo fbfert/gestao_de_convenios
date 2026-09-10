@@ -77,6 +77,11 @@ class GuiaController extends Controller
         return new GuiaResource($this->service->ocultarAlertaNegacao($guia));
     }
 
+    public function ocultarAlertaAntecipacao(Guia $guia): GuiaResource
+    {
+        return new GuiaResource($this->service->ocultarAlertaAntecipacao($guia));
+    }
+
     public function consultarUnimed(Guia $guia, ConsultarStatusUnimedService $consultarStatus): JsonResponse
     {
         $execucao = $consultarStatus->enviar($guia);

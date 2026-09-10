@@ -1,10 +1,25 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Botao } from '../../components/ui/Botao'
-import { useOcultarAlertaNegacaoGuia } from '../guias/useGuias'
+import { useOcultarAlertaAntecipacaoGuia, useOcultarAlertaNegacaoGuia } from '../guias/useGuias'
 import { NIVEIS, rotuloDaChave } from './nivel'
 import { useAlertas, useReconhecerAlerta, useSilenciarAlerta, type FiltrosAlertas } from './useAlertas'
 import type { Alerta, NivelAlerta, SituacaoAlerta } from './types'
+
+type AntecipacaoItem = {
+  especialidade_id: number
+  especialidade_nome: string
+  profissional_id: number
+  profissional_nome: string
+}
+
+type AntecipacaoDados = {
+  paciente_id?: number | null
+  convenio_id?: number | null
+  medico?: { id: number; nome: string; crm: string | null; crm_uf: string | null } | null
+  cid_ids?: number[]
+  itens?: AntecipacaoItem[]
+}
 
 const campo =
   'h-10 rounded-campo border border-borda-campo bg-superficie px-3 text-corpo text-texto'
@@ -42,15 +57,50 @@ export function AlertasPage() {
   const alertasQuery = useAlertas(filtros)
   const reconhecer = useReconhecerAlerta()
   const silenciar = useSilenciarAlerta()
-  const ocultarGuia = useOcultarAlertaNegacaoGuia()
+  const ocultarGuiaNegada = useOcultarAlertaNegacaoGuia()
+  const ocultarAntecipacao = useOcultarAlertaAntecipacaoGuia()
   const navigate = useNavigate()
 
   const alertas = alertasQuery.data?.data ?? []
 
-  const acoesDaGuia = (alerta: Alerta) =>
-    alerta.chave === 'guia.negada' && alerta.entidade === 'guias' && alerta.entidade_id !== null
+  const chavesComAcoesDeGuia = ['guia.negada', 'antecipacao.devida']
 
+  const acoesDaGuia = (alerta: Alerta) =>
+    chavesComAcoesDeGuia.includes(alerta.chave) && alerta.entidade === 'guias' && alerta.entidade_id !== null
+
+  const ocultarAlertaDaGuia = (alerta: Alerta) => {
+    if (alerta.entidade_id === null) return
+    if (alerta.chave === 'antecipacao.devida') {
+      ocultarAntecipacao.mutate(alerta.entidade_id)
+    } else {
+      ocultarGuiaNegada.mutate(alerta.entidade_id)
+    }
+  }
+
+  /**
+   * "Guia negada" só repete um item (especialidade+profissional) via query
+   * params. "Antecipação devida" precisa repetir o ciclo inteiro — médico,
+   * CIDs e todos os itens da solicitação de origem — então viaja em
+   * `location.state`, consumido pelo mesmo pré-preenchimento que
+   * PedidoMedicoExistentePrompt usa em SolicitacoesPage.
+   */
   const novaSolicitacao = (alerta: Alerta) => {
+    if (alerta.chave === 'antecipacao.devida') {
+      const dados = (alerta.dados ?? {}) as AntecipacaoDados
+      navigate('/solicitacoes/nova', {
+        state: {
+          antecipacao: {
+            pacienteId: dados.paciente_id ?? null,
+            convenioId: dados.convenio_id ?? null,
+            medico: dados.medico ?? null,
+            cidIds: dados.cid_ids ?? [],
+            itens: dados.itens ?? [],
+          },
+        },
+      })
+      return
+    }
+
     const dados = (alerta.dados ?? {}) as Record<string, number | null>
     const params = new URLSearchParams()
     if (dados.paciente_id) params.set('paciente_id', String(dados.paciente_id))
@@ -115,6 +165,7 @@ export function AlertasPage() {
           <option value="guia.negada">Guia negada</option>
           <option value="automacao.falhas_em_serie">Automação falhando em série</option>
           <option value="componente.fora">Componente fora do ar</option>
+          <option value="antecipacao.devida">Antecipação devida</option>
         </select>
       </div>
 
@@ -156,7 +207,7 @@ export function AlertasPage() {
                       <Botao
                         variante="secundario"
                         tamanho="sm"
-                        onClick={() => ocultarGuia.mutate(alerta.entidade_id as number)}
+                        onClick={() => ocultarAlertaDaGuia(alerta)}
                         data-testid={`alerta-ocultar-${alerta.id}`}
                       >
                         Ocultar

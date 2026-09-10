@@ -99,7 +99,8 @@ class Guia extends Model
         'unimed_senha_validade_next_check_at',
         'sessoes_solicitadas', 'sessoes_autorizadas', 'protocolo_operadora',
         'data_solicitacao', 'data_finalizacao', 'senha', 'validade_senha', 'observacoes',
-        'alerta_negacao_ocultado_em',
+        'alerta_negacao_ocultado_em', 'alerta_antecipacao_ocultado_em',
+        'antecipacao_data_alvo',
         // Carimbos escritos so por GuiaService::registrarTransicao, junto com o
         // historico. Preenchiveis para o backfill conseguir gravar.
         'negada_em', 'aprovada_em',
@@ -109,12 +110,14 @@ class Guia extends Model
         'data_solicitacao' => 'date',
         'data_finalizacao' => 'date',
         'validade_senha' => 'date',
+        'antecipacao_data_alvo' => 'date',
         'unimed_last_checked_at' => 'datetime',
         'unimed_next_check_at' => 'datetime',
         'unimed_senha_validade_next_check_at' => 'datetime',
         'sessoes_solicitadas' => 'integer',
         'sessoes_autorizadas' => 'integer',
         'alerta_negacao_ocultado_em' => 'datetime',
+        'alerta_antecipacao_ocultado_em' => 'datetime',
         'negada_em' => 'datetime',
         'aprovada_em' => 'datetime',
     ];
@@ -187,6 +190,41 @@ class Guia extends Model
     public function aceitaLancamento(): bool
     {
         return in_array($this->status, [GuiaStatus::APPROVED, GuiaStatus::FINALIZED], true);
+    }
+
+    /**
+     * Data a partir da qual vale a pena avisar que é hora de gerar o próximo
+     * ciclo (ver App\Services\Alertas\Regras\AntecipacaoDevida). Três níveis
+     * de override, do mais para o menos específico:
+     *
+     *   1. `antecipacao_data_alvo` — data manual desta guia, sobrescreve tudo.
+     *   2. `convenio.antecipacao_dias`/`antecipacao_referencia` — override do convênio.
+     *   3. `configuracoes_globais.antecipacao_dias`/`antecipacao_referencia` — padrão do tenant.
+     *
+     * Nulo quando a data de referência escolhida (validade da senha ou data de
+     * finalização) ainda não está preenchida nesta guia — nesse caso não dá
+     * pra calcular, e o avaliador simplesmente pula a guia.
+     */
+    public function antecipacaoDataAlvo(): ?\Illuminate\Support\Carbon
+    {
+        if ($this->antecipacao_data_alvo) {
+            return $this->antecipacao_data_alvo;
+        }
+
+        $convenio = $this->relationLoaded('convenio') ? $this->convenio : $this->convenio()->first();
+
+        $dias = $convenio?->antecipacao_dias
+            ?? ConfiguracaoGlobal::doTenant($this->tenant_id)->antecipacao_dias;
+        $referencia = $convenio?->antecipacao_referencia
+            ?? ConfiguracaoGlobal::doTenant($this->tenant_id)->antecipacao_referencia;
+
+        $dataBase = $referencia === 'data_finalizacao' ? $this->data_finalizacao : $this->validade_senha;
+
+        if (! $dataBase) {
+            return null;
+        }
+
+        return $dataBase->copy()->subDays($dias);
     }
 
     public function conciliacoes()

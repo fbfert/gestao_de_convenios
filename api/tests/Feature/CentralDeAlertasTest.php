@@ -4,12 +4,15 @@ namespace Tests\Feature;
 
 use App\Models\Alerta;
 use App\Models\AlertaRegra;
+use App\Models\Cid;
 use App\Models\Convenio;
 use App\Models\Especialidade;
 use App\Models\Guia;
+use App\Models\Medico;
 use App\Models\Paciente;
 use App\Models\Profissional;
 use App\Models\SaudeComponente;
+use App\Models\Solicitacao;
 use App\Models\User;
 use App\Services\Alertas\AvaliadorDeAlertas;
 use App\Services\GuiaService;
@@ -68,6 +71,57 @@ class CentralDeAlertasTest extends TestCase
     private function avaliar(): array
     {
         return app(AvaliadorDeAlertas::class)->avaliarTenant($this->tenantId);
+    }
+
+    /**
+     * Guia aprovada com senha vencendo em `diasParaVencer` dias, com
+     * solicitação de origem completa (médico, CID, 1 item) — o suficiente pra
+     * AntecipacaoDevida calcular a data-alvo e montar o payload de pré-preenchimento.
+     */
+    private function guiaAprovadaComSenha(int $diasParaVencer): Guia
+    {
+        $convenio = Convenio::query()->where('nome', 'Unimed')->firstOrFail();
+        $especialidade = Especialidade::query()->where('nome', 'Fisioterapia')->firstOrFail();
+        $profissional = Profissional::query()->where('especialidade_id', $especialidade->id)->firstOrFail();
+        $paciente = Paciente::query()->firstOrFail();
+        $medico = Medico::query()->firstOrFail();
+
+        $solicitacao = Solicitacao::query()->create([
+            'tenant_id' => $this->tenantId,
+            'paciente_id' => $paciente->id,
+            'profissional_id' => $profissional->id,
+            'especialidade_id' => $especialidade->id,
+            'convenio_id' => $convenio->id,
+            'medico_id' => $medico->id,
+            'status' => 'guia_gerada',
+            'solicitado_em' => today()->subDays(30)->toDateString(),
+        ]);
+        $solicitacao->cidCadastros()->attach(Cid::query()->firstOrFail()->id);
+        $solicitacao->itens()->create([
+            'tenant_id' => $this->tenantId,
+            'especialidade_id' => $especialidade->id,
+            'profissional_id' => $profissional->id,
+            'quantidade' => 10,
+            'status_operacional' => 'pending',
+        ]);
+
+        $guia = Guia::query()->create([
+            'tenant_id' => $this->tenantId,
+            'solicitacao_id' => $solicitacao->id,
+            'convenio_id' => $convenio->id,
+            'paciente_id' => $paciente->id,
+            'profissional_id' => $profissional->id,
+            'especialidade_id' => $especialidade->id,
+            'numero_guia' => 'ANTEC-'.uniqid(),
+            'tipo_terapia' => 'especializada',
+            'status' => GuiaStatus::UNDER_REVIEW,
+            'data_solicitacao' => today()->subDays(30)->toDateString(),
+            'validade_senha' => today()->copy()->addDays($diasParaVencer)->toDateString(),
+        ]);
+
+        app(GuiaService::class)->registrarTransicao($guia, GuiaStatus::APPROVED);
+
+        return $guia->refresh();
     }
 
     public function test_avaliar_duas_vezes_nao_duplica(): void
@@ -215,6 +269,122 @@ class CentralDeAlertasTest extends TestCase
         $this->assertSame(Alerta::NIVEL_VERMELHO, $alerta->fresh()->nivel);
     }
 
+    public function test_antecipacao_nao_alerta_antes_da_data_alvo(): void
+    {
+        $this->autenticar();
+        // Padrão global: antecipacao_dias=20. Senha vencendo em 25 dias =>
+        // data-alvo em +5 dias, ainda não chegou.
+        $guia = $this->guiaAprovadaComSenha(25);
+
+        $this->avaliar();
+
+        $this->assertSame(
+            0,
+            Alerta::query()->where('chave', AlertaRegra::CHAVE_ANTECIPACAO_DEVIDA)
+                ->where('entidade_id', $guia->id)->aberto()->count(),
+        );
+    }
+
+    public function test_antecipacao_alerta_com_payload_de_pre_preenchimento(): void
+    {
+        $this->autenticar();
+        // Senha vencendo em 18 dias => data-alvo há 2 dias (atraso 2, abaixo
+        // do limiar_vermelho padrão de 5) — amarelo.
+        $guia = $this->guiaAprovadaComSenha(18);
+
+        $this->avaliar();
+
+        $alerta = Alerta::query()
+            ->where('chave', AlertaRegra::CHAVE_ANTECIPACAO_DEVIDA)
+            ->where('entidade_id', $guia->id)
+            ->aberto()
+            ->firstOrFail();
+
+        $this->assertSame(Alerta::NIVEL_AMARELO, $alerta->nivel);
+        $this->assertSame(['ocultar', 'nova_solicitacao'], $alerta->dados['acoes']);
+        $this->assertSame($guia->paciente_id, $alerta->dados['paciente_id']);
+        $this->assertSame($guia->convenio_id, $alerta->dados['convenio_id']);
+        $this->assertNotNull($alerta->dados['medico']);
+        $this->assertNotEmpty($alerta->dados['cid_ids']);
+        $this->assertCount(1, $alerta->dados['itens']);
+        $this->assertSame($guia->especialidade_id, $alerta->dados['itens'][0]['especialidade_id']);
+        $this->assertSame($guia->profissional_id, $alerta->dados['itens'][0]['profissional_id']);
+    }
+
+    public function test_antecipacao_vira_vermelho_apos_limiar_de_atraso(): void
+    {
+        $this->autenticar();
+        // Senha vencendo em 10 dias => data-alvo há 10 dias (atraso 10 >= limiar padrão 5).
+        $guia = $this->guiaAprovadaComSenha(10);
+
+        $this->avaliar();
+
+        $alerta = Alerta::query()
+            ->where('chave', AlertaRegra::CHAVE_ANTECIPACAO_DEVIDA)
+            ->where('entidade_id', $guia->id)
+            ->aberto()
+            ->firstOrFail();
+
+        $this->assertSame(Alerta::NIVEL_VERMELHO, $alerta->nivel);
+    }
+
+    public function test_antecipacao_ocultar_resolve_o_alerta(): void
+    {
+        $this->autenticar();
+        $guia = $this->guiaAprovadaComSenha(10);
+
+        $this->avaliar();
+        $this->assertSame(
+            1,
+            Alerta::query()->where('chave', AlertaRegra::CHAVE_ANTECIPACAO_DEVIDA)
+                ->where('entidade_id', $guia->id)->aberto()->count(),
+        );
+
+        app(GuiaService::class)->ocultarAlertaAntecipacao($guia);
+        $this->avaliar();
+
+        $this->assertSame(
+            0,
+            Alerta::query()->where('chave', AlertaRegra::CHAVE_ANTECIPACAO_DEVIDA)
+                ->where('entidade_id', $guia->id)->aberto()->count(),
+        );
+    }
+
+    public function test_antecipacao_convenio_sobrescreve_o_padrao_global(): void
+    {
+        $this->autenticar();
+        // Senha vencendo em 25 dias: com o padrão global (20 dias) ainda não
+        // é devida. Um override de convênio com 30 dias antecipa a data-alvo
+        // o suficiente pra já estar devida hoje.
+        $guia = $this->guiaAprovadaComSenha(25);
+        $guia->convenio()->update(['antecipacao_dias' => 30]);
+
+        $this->avaliar();
+
+        $this->assertSame(
+            1,
+            Alerta::query()->where('chave', AlertaRegra::CHAVE_ANTECIPACAO_DEVIDA)
+                ->where('entidade_id', $guia->id)->aberto()->count(),
+        );
+    }
+
+    public function test_antecipacao_data_manual_na_guia_sobrescreve_tudo(): void
+    {
+        $this->autenticar();
+        // Sem senha (referência ausente), a regra automática não calcularia
+        // nada — a data manual sobrescreve isso completamente.
+        $guia = $this->guiaAprovadaComSenha(200);
+        $guia->forceFill(['antecipacao_data_alvo' => today()->subDay()->toDateString()])->save();
+
+        $this->avaliar();
+
+        $this->assertSame(
+            1,
+            Alerta::query()->where('chave', AlertaRegra::CHAVE_ANTECIPACAO_DEVIDA)
+                ->where('entidade_id', $guia->id)->aberto()->count(),
+        );
+    }
+
     public function test_componente_fora_vira_alerta(): void
     {
         $this->autenticar();
@@ -304,6 +474,7 @@ class CentralDeAlertasTest extends TestCase
         $chaves = AlertaRegra::query()->pluck('chave')->sort()->values()->all();
 
         $this->assertSame([
+            AlertaRegra::CHAVE_ANTECIPACAO_DEVIDA,
             AlertaRegra::CHAVE_AUTOMACAO_FALHAS,
             AlertaRegra::CHAVE_COMPONENTE_FORA,
             AlertaRegra::CHAVE_GUIA_NEGADA,

@@ -34,6 +34,7 @@ export const ROTULO_DA_CHAVE: Record<string, string> = {
   'guia.negada': 'Guia negada',
   'automacao.falhas_em_serie': 'Automação falhando em série',
   'componente.fora': 'Componente fora do ar',
+  'antecipacao.devida': 'Antecipação devida',
 }
 
 export function rotuloDaChave(chave: string) {

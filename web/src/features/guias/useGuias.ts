@@ -76,6 +76,8 @@ export type GuiaEditForm = {
   protocolo_operadora: string
   senha: string
   validade_senha: string
+  /** Vazio = segue a regra automática (convênio ou padrão global). */
+  antecipacao_data_alvo: string
   observacoes: string
 }
 
@@ -96,6 +98,7 @@ export function useAtualizarGuia() {
         protocolo_operadora: payload.protocolo_operadora.trim() || null,
         senha: payload.senha.trim() || null,
         validade_senha: payload.validade_senha || null,
+        antecipacao_data_alvo: payload.antecipacao_data_alvo || null,
         observacoes: payload.observacoes || null,
       })
       return data.data
@@ -141,6 +144,20 @@ export function useOcultarAlertaNegacaoGuia() {
   return useMutation({
     mutationFn: async (id: number) => {
       const { data } = await apiClient.patch<{ data: Guia }>(`/guias/${id}/ocultar-alerta-negacao`)
+      return data.data
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['guias'] })
+    },
+  })
+}
+
+export function useOcultarAlertaAntecipacaoGuia() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const { data } = await apiClient.patch<{ data: Guia }>(`/guias/${id}/ocultar-alerta-antecipacao`)
       return data.data
     },
     onSuccess: async () => {

@@ -22,6 +22,8 @@ class ConfiguracoesGlobaisApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.sessao_minutos', 480)
             ->assertJsonPath('data.senha_alerta_dias', 7)
+            ->assertJsonPath('data.antecipacao_dias', 20)
+            ->assertJsonPath('data.antecipacao_referencia', 'validade_senha')
             ->assertJsonPath('data.sessoes_padrao', 10)
             ->assertJsonPath('data.itens_por_pagina', 15)
             ->assertJsonPath('data.auditoria_retencao_meses', 12)
@@ -138,6 +140,8 @@ class ConfiguracoesGlobaisApiTest extends TestCase
         return array_merge([
             'sessao_minutos' => 120,
             'senha_alerta_dias' => 15,
+            'antecipacao_dias' => 20,
+            'antecipacao_referencia' => 'validade_senha',
             'sessoes_padrao' => 20,
             'itens_por_pagina' => 50,
             'auditoria_retencao_meses' => 12,

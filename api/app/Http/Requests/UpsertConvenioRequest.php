@@ -26,6 +26,11 @@ class UpsertConvenioRequest extends FormRequest
             'carteirinha_blocos' => ['nullable', 'array', 'max:8'],
             'carteirinha_blocos.*' => ['integer', 'min:1', 'max:12'],
 
+            // Override do padrão global de antecipação — nulo (ausente ou
+            // enviado vazio) volta a usar configuracoes_globais.
+            'antecipacao_dias' => ['nullable', 'integer', 'min:1', 'max:180'],
+            'antecipacao_referencia' => ['nullable', 'in:validade_senha,data_finalizacao'],
+
             'ativo' => ['required', 'boolean'],
         ];
     }
@@ -37,6 +42,15 @@ class UpsertConvenioRequest extends FormRequest
         // toda leitura.
         if ($this->input('carteirinha_blocos') === []) {
             $this->merge(['carteirinha_blocos' => null]);
+        }
+
+        // Select vazio manda string vazia — normaliza pra null, senão
+        // "in:validade_senha,data_finalizacao" recusa "" como invalida.
+        if ($this->input('antecipacao_dias') === '') {
+            $this->merge(['antecipacao_dias' => null]);
+        }
+        if ($this->input('antecipacao_referencia') === '') {
+            $this->merge(['antecipacao_referencia' => null]);
         }
     }
 

@@ -258,6 +258,7 @@ class GuiaService
             'protocolo_operadora' => array_key_exists('protocolo_operadora', $dados) ? $dados['protocolo_operadora'] : null,
             'senha' => array_key_exists('senha', $dados) ? $dados['senha'] : null,
             'validade_senha' => array_key_exists('validade_senha', $dados) ? $dados['validade_senha'] : null,
+            'antecipacao_data_alvo' => array_key_exists('antecipacao_data_alvo', $dados) ? $dados['antecipacao_data_alvo'] : null,
             'observacoes' => array_key_exists('observacoes', $dados) ? $dados['observacoes'] : null,
         ], fn ($value) => $value !== null));
 
@@ -345,6 +346,14 @@ class GuiaService
     public function ocultarAlertaNegacao(Guia $guia): Guia
     {
         $guia->forceFill(['alerta_negacao_ocultado_em' => now()])->save();
+
+        return $guia->refresh();
+    }
+
+    /** Dispensa o alerta de antecipação desta guia — ver App\Services\Alertas\Regras\AntecipacaoDevida. */
+    public function ocultarAlertaAntecipacao(Guia $guia): Guia
+    {
+        $guia->forceFill(['alerta_antecipacao_ocultado_em' => now()])->save();
 
         return $guia->refresh();
     }

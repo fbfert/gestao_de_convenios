@@ -16,6 +16,8 @@ function inputClasses() {
 const formVazio: ConfiguracoesGlobaisForm = {
   sessao_minutos: '480',
   senha_alerta_dias: '7',
+  antecipacao_dias: '20',
+  antecipacao_referencia: 'validade_senha',
   sessoes_padrao: '10',
   itens_por_pagina: '15',
   auditoria_retencao_meses: '12',
@@ -245,6 +247,56 @@ export function ConfiguracoesGlobaisPage() {
             <span className="block text-meta text-slate-400">
               Quanto tempo a foto da carteirinha lida pela IA fica guardada. Passado o prazo, a
               imagem é apagada — o cadastro do paciente não muda.
+            </span>
+          </label>
+        </div>
+      </section>
+
+      <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
+        <h3 className="text-subtitulo font-semibold text-white">Antecipação</h3>
+        <p className="mt-1 text-corpo text-slate-300">
+          Quando uma guia aprovada está perto da data de referência, o sistema abre um alerta
+          convidando a gerar a solicitação do próximo ciclo — nunca gera nem envia nada sozinho, só
+          avisa. Cada convênio pode sobrescrever este padrão na própria tela de Convênios.
+        </p>
+
+        <div className="mt-5 grid gap-4 md:grid-cols-2">
+          <label className="space-y-2">
+            <span className="text-corpo font-medium text-slate-200">Dias de antecedência</span>
+            <input
+              type="number"
+              min={1}
+              max={180}
+              value={form.antecipacao_dias}
+              onChange={(event) => alterar('antecipacao_dias', event.target.value)}
+              className={inputClasses()}
+              required
+              data-testid="globais-antecipacao-dias"
+            />
+            <span className="block text-meta text-slate-400">
+              Quantos dias antes da data de referência o alerta nasce.
+            </span>
+          </label>
+
+          <label className="space-y-2">
+            <span className="text-corpo font-medium text-slate-200">Data de referência</span>
+            <select
+              value={form.antecipacao_referencia}
+              onChange={(event) =>
+                alterar(
+                  'antecipacao_referencia',
+                  event.target.value as ConfiguracoesGlobaisForm['antecipacao_referencia'],
+                )
+              }
+              className={inputClasses()}
+              required
+              data-testid="globais-antecipacao-referencia"
+            >
+              <option value="validade_senha">Validade da senha</option>
+              <option value="data_finalizacao">Data de finalização</option>
+            </select>
+            <span className="block text-meta text-slate-400">
+              A partir de qual data a antecedência é contada.
             </span>
           </label>
         </div>

@@ -6,6 +6,10 @@ export type ConfiguracoesGlobais = {
   /** Minutos que um login vale, contados da emissão do token. 0 = sem expirar. */
   sessao_minutos: number
   senha_alerta_dias: number
+  /** Dias de antecedência (sobre a data de referência) pra avisar que é hora de gerar o próximo ciclo. */
+  antecipacao_dias: number
+  /** Qual data conta como referência da antecedência: validade da senha ou data de finalização. */
+  antecipacao_referencia: 'validade_senha' | 'data_finalizacao'
   sessoes_padrao: number
   itens_por_pagina: number
   /** Meses que a trilha de auditoria e mantida antes do expurgo diario. */
@@ -55,6 +59,8 @@ export type ConfiguracoesGlobais = {
 export type ConfiguracoesGlobaisForm = {
   sessao_minutos: string
   senha_alerta_dias: string
+  antecipacao_dias: string
+  antecipacao_referencia: 'validade_senha' | 'data_finalizacao'
   sessoes_padrao: string
   itens_por_pagina: string
   auditoria_retencao_meses: string
@@ -89,6 +95,8 @@ export function paraFormulario(dados: ConfiguracoesGlobais): ConfiguracoesGlobai
   return {
     sessao_minutos: String(dados.sessao_minutos),
     senha_alerta_dias: String(dados.senha_alerta_dias),
+    antecipacao_dias: String(dados.antecipacao_dias),
+    antecipacao_referencia: dados.antecipacao_referencia,
     sessoes_padrao: String(dados.sessoes_padrao),
     itens_por_pagina: String(dados.itens_por_pagina),
     auditoria_retencao_meses: String(dados.auditoria_retencao_meses),
@@ -152,6 +160,8 @@ export function useSalvarConfiguracoesGlobais() {
       const { data } = await apiClient.put<{ data: ConfiguracoesGlobais }>('/configuracoes/globais', {
         sessao_minutos: Number(form.sessao_minutos),
         senha_alerta_dias: Number(form.senha_alerta_dias),
+        antecipacao_dias: Number(form.antecipacao_dias),
+        antecipacao_referencia: form.antecipacao_referencia,
         sessoes_padrao: Number(form.sessoes_padrao),
         itens_por_pagina: Number(form.itens_por_pagina),
         auditoria_retencao_meses: Number(form.auditoria_retencao_meses),

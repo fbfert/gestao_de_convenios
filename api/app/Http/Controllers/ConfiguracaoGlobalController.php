@@ -32,6 +32,8 @@ class ConfiguracaoGlobalController extends Controller
         return [
             'sessao_minutos' => $configuracao->sessao_minutos,
             'senha_alerta_dias' => $configuracao->senha_alerta_dias,
+            'antecipacao_dias' => $configuracao->antecipacao_dias,
+            'antecipacao_referencia' => $configuracao->antecipacao_referencia,
             'sessoes_padrao' => $configuracao->sessoes_padrao,
             'itens_por_pagina' => $configuracao->itens_por_pagina,
             'auditoria_retencao_meses' => $configuracao->auditoria_retencao_meses,

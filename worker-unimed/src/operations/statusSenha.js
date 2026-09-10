@@ -4,7 +4,6 @@ import {
   WorkerResultError,
   abrirBeneficiario,
   atualizarCadastroSeNecessario,
-  fillIfVisible,
   login,
   mapPortalStatus,
   normalize,
@@ -201,9 +200,31 @@ async function capturarAutorizacaoGuia(page, guia) {
  */
 async function abrirGuiaPorFiltro(page, numeroGuia) {
   await abrirExamesAbertos(page)
-  await fillIfVisible(page, '[name="s_nr_guia"]', numeroGuia)
+  // fillIfVisible so tenta se o campo ja estiver visivel dentro de 500ms —
+  // curto demais quando esta funcao roda em sequencia (consultarStatusBatch
+  // chama isto uma vez por guia, na MESMA page) e a tela ainda esta
+  // terminando de voltar da guia anterior. Achado ao vivo em 10/09/2026: a
+  // 2a guia de uma consulta de 3 veio GUIA_NOT_FOUND porque o preenchimento
+  // foi pulado em silencio e o filtro rodou vazio/com valor antigo. .fill()
+  // direto espera ate DEFAULT_TIMEOUT pelo campo ficar acionavel e lanca se
+  // nao conseguir — melhor um erro visivel do que um "nao encontrada" falso.
+  await page.locator('[name="s_nr_guia"]').fill(String(numeroGuia ?? ''), { timeout: DEFAULT_TIMEOUT })
   await page.locator('[name="Button_FIltro"]').first().click({ timeout: DEFAULT_TIMEOUT })
   await waitProcessing(page)
+  // Achado ao vivo em 10/09/2026: waitProcessing() so espera o texto
+  // "Processando..." sumir, mas o postback do filtro pode reescrever a
+  // tabela DEPOIS disso (o indicador some antes do DOM terminar de
+  // atualizar). rowByGuia lia a tabela stale (ainda com os 179 registros
+  // nao filtrados) e so achava a guia se ela por acaso estivesse na
+  // primeira pagina — 2 de 3 guias reais de uma mesma solicitacao vieram
+  // GUIA_NOT_FOUND por isso (usuario confirmou ao vivo no portal que
+  // estavam la, autorizadas). Esperar o rotulo "exame(s) encontrado(s)"
+  // aparecer e o sinal real de que o filtro processou.
+  await page
+    .getByText(/exame\(s\) encontrado\(s\)/)
+    .first()
+    .waitFor({ state: 'visible', timeout: DEFAULT_TIMEOUT })
+    .catch(() => {})
 
   const row = await rowByGuia(page, numeroGuia)
   if (!row) {
@@ -266,6 +287,13 @@ async function localizarGuiaPorCadastro(mainPage, guia) {
     await popup.locator('[name="Button_Filtro"]').first().click({ timeout: DEFAULT_TIMEOUT })
     await waitProcessing(popup)
     await popup.waitForLoadState('domcontentloaded', { timeout: DEFAULT_TIMEOUT }).catch(() => {})
+    // Mesma race do abrirGuiaPorFiltro acima — o postback pode terminar
+    // depois do indicador "Processando..." sumir.
+    await popup
+      .getByText(/exame\(s\) encontrado\(s\)/)
+      .first()
+      .waitFor({ state: 'visible', timeout: DEFAULT_TIMEOUT })
+      .catch(() => {})
 
     const row = await rowByGuia(popup, guia.numero_guia)
     if (!row) {

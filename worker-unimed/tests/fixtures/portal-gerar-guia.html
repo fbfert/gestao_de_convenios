@@ -299,7 +299,11 @@
       }
       const tr = popupWin.document.createElement('tr')
       tr.setAttribute('data-prestador-row', '')
-      tr.innerHTML = \`<td>\${providerName}</td><td>OK - Ativo</td>\`
+      // Ordem real do portal (achada ao vivo em 10/09/2026): "Codigo na
+      // Operadora" vem ANTES do nome, nao depois — a fixture so tinha 2
+      // colunas com o nome primeiro, e por isso nunca reproduziu o bug de
+      // buscarPrestadorPorNome ler a coluna errada.
+      tr.innerHTML = \`<td>90\${crm || '00000'}</td><td>\${providerName}</td><td>OK - Ativo</td>\`
       const td = popupWin.document.createElement('td')
       const btn = popupWin.document.createElement('button')
       btn.type = 'button'

@@ -56,9 +56,17 @@ export async function login(page, credential) {
  * operar nela dai em diante (troca o `page` que estava usando).
  */
 export async function abrirBeneficiario(page) {
+  // Mesmo padrao dos outros cliques que disparam navegacao/popup no portal
+  // (login, Finalizar, verificar carteirinha): o clique em si sempre
+  // "acontece", mas sob carga real o portal pode demorar mais que
+  // DEFAULT_TIMEOUT (5s) pra abrir a popup do window.open. Achado ao vivo em
+  // 10/09/2026 — item 2371 (Miguel Schweiter Zambom) falhou 4 vezes seguidas
+  // exatamente nesse waitForEvent, sem nenhuma guia chegando a ser criada
+  // (confirmado consultando o historico completo do beneficiario no portal).
+  const ABRIR_BENEFICIARIO_TIMEOUT = Math.max(DEFAULT_TIMEOUT, 30000)
   const [popup] = await Promise.all([
-    page.context().waitForEvent('page', { timeout: DEFAULT_TIMEOUT }),
-    page.locator(NOVO_EXAME_BOTAO).click({ timeout: DEFAULT_TIMEOUT }),
+    page.context().waitForEvent('page', { timeout: ABRIR_BENEFICIARIO_TIMEOUT }),
+    page.locator(NOVO_EXAME_BOTAO).click({ timeout: ABRIR_BENEFICIARIO_TIMEOUT }),
   ])
   await popup.waitForLoadState('domcontentloaded', { timeout: DEFAULT_TIMEOUT })
 

@@ -179,9 +179,14 @@ export async function selecionarContratado(page, nomeContratado) {
 }
 
 async function abrirBuscaContratado(page) {
+  // Mesmo padrao dos outros cliques que abrem popup/navegam no portal
+  // (abrirBeneficiario, login, Finalizar): achado ao vivo em 10/09/2026,
+  // item 2362 (Miguel Schweiter Zambom) falhou aqui com o DEFAULT_TIMEOUT
+  // de 5s sob carga real do portal.
+  const ABRIR_BUSCA_CONTRATADO_TIMEOUT = Math.max(DEFAULT_TIMEOUT, 30000)
   const [popup] = await Promise.all([
-    page.context().waitForEvent('page', { timeout: DEFAULT_TIMEOUT }),
-    page.locator('#link_busca_contrt').click({ timeout: DEFAULT_TIMEOUT }),
+    page.context().waitForEvent('page', { timeout: ABRIR_BUSCA_CONTRATADO_TIMEOUT }),
+    page.locator('#link_busca_contrt').click({ timeout: ABRIR_BUSCA_CONTRATADO_TIMEOUT }),
   ])
   await popup.waitForLoadState('domcontentloaded', { timeout: DEFAULT_TIMEOUT })
   await popup.waitForTimeout(1000)
@@ -499,7 +504,15 @@ async function buscarPrestadorPorNome(page, nomeEsperado) {
     const active = normalized.includes('OK - ATIVO') || normalized.includes('OK ATIVO')
     if (!active) continue
 
-    const nomePortal = (await row.locator('td').first().innerText().catch(() => '')).trim()
+    // A 1a coluna da tabela real e "Codigo na Operadora" (ex. "90025760"),
+    // nao o nome — a 2a ("Nome do Prestador") e a certa. Achado ao vivo em
+    // 10/09/2026: comparava o nome esperado contra o codigo numerico,
+    // similaridade sempre proxima de zero, e TODO medico cooperado caia no
+    // fallback "nao cooperado" mesmo sendo encontrado corretamente na busca
+    // (confirmado com Dr. Lucas Yuji Igarashi, CRM 25760, "OK - Ativo" na
+    // Unimed). A fixture de teste usava só 2 colunas (nome primeiro) e por
+    // isso nunca pegou esse bug — corrigida junto pra bater com a real.
+    const nomePortal = (await row.locator('td').nth(1).innerText().catch(() => '')).trim()
     const similaridade = compararNomes(nomeEsperado, nomePortal)
 
     if (!melhor || similaridade > melhor.similaridade) {

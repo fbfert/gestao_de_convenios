@@ -456,23 +456,21 @@ export function GuiaDetalheResumo({ guia }: { guia: Guia }) {
       <section className="grid gap-4 xl:grid-cols-2">
         <article className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
           <div className="flex items-center justify-between gap-4">
-            <h3 className="text-subtitulo font-semibold text-white">Antecipações</h3>
-            <Link to="/antecipacoes" className="inline-flex min-h-6 items-center text-corpo font-semibold text-cyan-200 hover:text-cyan-100">
-              Ver antecipações
+            <h3 className="text-subtitulo font-semibold text-white">Sessões</h3>
+            <Link
+              to={`/lancamentos?guia_id=${guia.id}`}
+              className="inline-flex min-h-6 items-center text-corpo font-semibold text-cyan-200 hover:text-cyan-100"
+            >
+              Ver sessões
             </Link>
           </div>
-          {guia.antecipacoes?.length ? (
-            <div className="mt-4 space-y-3">
-              {guia.antecipacoes.map((antecipacao) => (
-                <div key={antecipacao.id} className="rounded-superficie border border-linha bg-fundo p-4 shadow-e1 text-corpo text-slate-200">
-                  <p className="font-semibold text-white">Antecipação #{antecipacao.id}</p>
-                  <p className="mt-1">Cota: {antecipacao.qtd_utilizada}/{antecipacao.qtd_autorizada}</p>
-                </div>
-              ))}
+          <div className="mt-4 space-y-3">
+            <div className="rounded-superficie border border-linha bg-fundo p-4 shadow-e1 text-corpo text-slate-200">
+              <p className="font-semibold text-white">
+                {guia.lancamentos_count ?? 0} lançada(s) · {guia.sessoes_disponiveis} disponível(is)
+              </p>
             </div>
-          ) : (
-            <p className="mt-4 text-corpo text-slate-300">Nenhuma antecipação vinculada.</p>
-          )}
+          </div>
         </article>
 
         <article className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">

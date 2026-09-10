@@ -11,7 +11,6 @@ use App\Models\Paciente;
 use App\Models\MovimentoFinanceiro;
 use App\Models\Profissional;
 use App\Models\Tenant;
-use App\Services\AntecipacaoService;
 use App\Services\ConciliacaoService;
 use App\Services\LancamentoService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -25,16 +24,14 @@ class ConciliacaoServiceTest extends TestCase
 
     public function test_gerar_para_guia_soma_lancamentos_e_calcula_valor_total(): void
     {
-        $antecipacaoService = app(AntecipacaoService::class);
         $lancamentoService = app(LancamentoService::class);
         $service = app(ConciliacaoService::class);
 
-        $guia = $this->novaGuia('SC Saúde', 'Fonoaudiologia', 'convencional');
-        $antecipacao = $antecipacaoService->abrirCiclo($guia);
+        $guia = $this->novaGuia('SC Saúde', 'Fonoaudiologia', 'convencional', sessoesAutorizadas: 10);
         $profissional = Profissional::query()->where('nome', 'Dra. Paula Menezes')->firstOrFail();
 
-        $lancamentoService->registrar($antecipacao, $profissional, today());
-        $lancamentoService->registrar($antecipacao, $profissional, today()->copy()->addDay());
+        $lancamentoService->registrar($guia, $profissional, today());
+        $lancamentoService->registrar($guia, $profissional, today()->copy()->addDay());
 
         $conciliacao = $service->gerarParaGuia($guia);
 
@@ -66,12 +63,10 @@ class ConciliacaoServiceTest extends TestCase
 
     public function test_registra_movimentos_com_distincao_entre_profissional_informado_e_executor(): void
     {
-        $antecipacaoService = app(AntecipacaoService::class);
         $lancamentoService = app(LancamentoService::class);
         $service = app(ConciliacaoService::class);
 
-        $guia = $this->novaGuia('Unimed', 'Fisioterapia', 'especializada');
-        $antecipacao = $antecipacaoService->abrirCiclo($guia);
+        $guia = $this->novaGuia('Unimed', 'Fisioterapia', 'especializada', sessoesAutorizadas: 10);
 
         $profissionalInformado = Profissional::query()->where('nome', 'Dra. Marina Tavares')->firstOrFail();
         $profissionalExecutor = Profissional::query()->create([
@@ -83,7 +78,7 @@ class ConciliacaoServiceTest extends TestCase
             'percentual_repasse' => '70.00',
         ]);
 
-        $lancamentoService->registrar($antecipacao, $profissionalExecutor, today());
+        $lancamentoService->registrar($guia, $profissionalExecutor, today());
 
         $conciliacao = $service->gerarParaGuia($guia);
 
@@ -151,8 +146,12 @@ class ConciliacaoServiceTest extends TestCase
         $this->assertSame('LOTE-'.$lote->id, $conciliacao->referencia_analitico_convenio);
     }
 
-    private function novaGuia(string $convenioNome, string $especialidadeNome, string $tipoTerapia): Guia
-    {
+    private function novaGuia(
+        string $convenioNome,
+        string $especialidadeNome,
+        string $tipoTerapia,
+        ?int $sessoesAutorizadas = null,
+    ): Guia {
         $tenant = Tenant::query()->where('slug', 'clinica-exemplo')->firstOrFail();
         $convenio = Convenio::query()->where('nome', $convenioNome)->firstOrFail();
         $especialidade = Especialidade::query()->where('nome', $especialidadeNome)->firstOrFail();
@@ -168,7 +167,8 @@ class ConciliacaoServiceTest extends TestCase
             'especialidade_id' => $especialidade->id,
             'numero_guia' => 'GUIA-'.uniqid(),
             'tipo_terapia' => $tipoTerapia,
-            'status' => 'under_review',
+            'status' => $sessoesAutorizadas ? 'approved' : 'under_review',
+            'sessoes_autorizadas' => $sessoesAutorizadas,
             'data_solicitacao' => today(),
             'data_finalizacao' => null,
             'senha' => null,

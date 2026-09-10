@@ -4,7 +4,6 @@ namespace App\Providers;
 
 use App\Models\Guia;
 use App\Models\AutomacaoExecucao;
-use App\Models\Antecipacao;
 use App\Models\ConciliacaoFinanceira;
 use App\Models\Alerta;
 use App\Models\AlertaDestinatario;
@@ -137,15 +136,6 @@ class AppServiceProvider extends ServiceProvider
             $tenantId = request()->user()?->tenant_id;
 
             return AutomacaoExecucao::query()
-                ->where('tenant_id', $tenantId)
-                ->whereKey($value)
-                ->firstOrFail();
-        });
-
-        Route::bind('antecipacao', function ($value) {
-            $tenantId = request()->user()?->tenant_id;
-
-            return Antecipacao::query()
                 ->where('tenant_id', $tenantId)
                 ->whereKey($value)
                 ->firstOrFail();

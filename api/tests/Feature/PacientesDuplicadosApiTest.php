@@ -61,7 +61,7 @@ class PacientesDuplicadosApiTest extends TestCase
 
         $this->postJson('/api/pacientes/duplicados/preview', ['vencedor_id' => $vencedor->id, 'perdedor_id' => $perdedor->id])
             ->assertOk()
-            ->assertJsonStructure(['solicitacoes', 'guias', 'antecipacoes', 'telefones', 'documentos', 'arquivos', 'conflito_clinica_id']);
+            ->assertJsonStructure(['solicitacoes', 'guias', 'telefones', 'documentos', 'arquivos', 'conflito_clinica_id']);
     }
 
     public function test_mesclar_via_api(): void

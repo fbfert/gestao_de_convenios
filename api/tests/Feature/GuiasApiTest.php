@@ -6,7 +6,7 @@ use App\Models\AuditLog;
 use App\Models\AutomacaoExecucao;
 use App\Models\Convenio;
 use App\Models\ConciliacaoFinanceira;
-use App\Models\Antecipacao;
+use App\Models\Lancamento;
 use App\Models\Especialidade;
 use App\Models\Guia;
 use App\Models\Medico;
@@ -270,23 +270,22 @@ class GuiasApiTest extends TestCase
             'tenant_id' => Tenant::query()->where('slug', 'clinica-exemplo')->value('id'),
             ...$this->payloadGuia('Unimed'),
             'status' => 'finalized',
+            'sessoes_autorizadas' => 10,
             'data_finalizacao' => today(),
             'senha' => 'DETALHE123',
             'validade_senha' => today()->addDays(7),
             'observacoes' => null,
         ]);
 
-        $antecipacao = Antecipacao::query()->create([
-            'tenant_id' => $guia->tenant_id,
-            'guia_id' => $guia->id,
-            'paciente_id' => $guia->paciente_id,
-            'convenio_id' => $guia->convenio_id,
-            'ciclo_inicio' => today(),
-            'ciclo_fim' => today(),
-            'qtd_autorizada' => 10,
-            'qtd_utilizada' => 3,
-            'status' => 'open',
-        ]);
+        for ($i = 0; $i < 3; $i++) {
+            Lancamento::query()->create([
+                'tenant_id' => $guia->tenant_id,
+                'guia_id' => $guia->id,
+                'profissional_id' => $guia->profissional_id,
+                'data_sessao' => today(),
+                'status' => 'completed',
+            ]);
+        }
 
         $conciliacao = ConciliacaoFinanceira::query()->create([
             'tenant_id' => $guia->tenant_id,
@@ -305,10 +304,54 @@ class GuiasApiTest extends TestCase
             ->assertJsonPath('data.convenio.id', $guia->convenio_id)
             ->assertJsonPath('data.profissional.id', $guia->profissional_id)
             ->assertJsonPath('data.especialidade.id', $guia->especialidade_id)
-            ->assertJsonPath('data.antecipacoes.0.id', $antecipacao->id)
-            ->assertJsonPath('data.antecipacoes.0.qtd_utilizada', 3)
+            ->assertJsonPath('data.sessoes_disponiveis', 7)
+            ->assertJsonPath('data.lancamentos_count', 3)
             ->assertJsonPath('data.conciliacoes.0.id', $conciliacao->id)
             ->assertJsonPath('data.conciliacoes.0.status', 'pending');
+    }
+
+    public function test_filtro_disponivel_para_lancamento(): void
+    {
+        $this->autenticar();
+        $tenant = Tenant::query()->where('slug', 'clinica-exemplo')->firstOrFail();
+
+        $comSessaoSobrando = Guia::query()->create([
+            'tenant_id' => $tenant->id,
+            ...$this->payloadGuia('Unimed'),
+            'status' => 'approved',
+            'sessoes_autorizadas' => 10,
+        ]);
+
+        $semSessaoSobrando = Guia::query()->create([
+            'tenant_id' => $tenant->id,
+            ...$this->payloadGuia('Unimed'),
+            'status' => 'approved',
+            'sessoes_autorizadas' => 1,
+        ]);
+        Lancamento::query()->create([
+            'tenant_id' => $tenant->id,
+            'guia_id' => $semSessaoSobrando->id,
+            'profissional_id' => $semSessaoSobrando->profissional_id,
+            'data_sessao' => today(),
+            'status' => 'completed',
+        ]);
+
+        $aindaEmAnalise = Guia::query()->create([
+            'tenant_id' => $tenant->id,
+            ...$this->payloadGuia('Unimed'),
+            'status' => 'under_review',
+            'sessoes_autorizadas' => 10,
+        ]);
+
+        $ids = collect(
+            $this->getJson('/api/guias?disponivel_para_lancamento=1&per_page=50')
+                ->assertOk()
+                ->json('data')
+        )->pluck('id');
+
+        $this->assertTrue($ids->contains($comSessaoSobrando->id));
+        $this->assertFalse($ids->contains($semSessaoSobrando->id));
+        $this->assertFalse($ids->contains($aindaEmAnalise->id));
     }
 
     public function test_detalhe_expoe_medico_solicitante_e_estrategia_unimed(): void

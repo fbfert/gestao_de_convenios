@@ -8,7 +8,7 @@ use App\Http\Requests\LerRegistroSessoesRequest;
 use App\Http\Requests\StoreLancamentoRequest;
 use App\Http\Requests\UpdateLancamentoRequest;
 use App\Http\Resources\LancamentoResource;
-use App\Models\Antecipacao;
+use App\Models\Guia;
 use App\Models\Lancamento;
 use App\Models\Profissional;
 use App\Services\AnaliticoUnimedImportService;
@@ -40,13 +40,13 @@ class LancamentoController extends Controller
         return new LancamentoResource($this->service->buscar($lancamento->id));
     }
 
-    public function store(StoreLancamentoRequest $request, Antecipacao $antecipacao): JsonResponse
+    public function store(StoreLancamentoRequest $request, Guia $guia): JsonResponse
     {
         $dados = $request->validated();
 
         return (new LancamentoResource(
             $this->service->registrarSessao(
-                $antecipacao,
+                $guia,
                 $this->resolverProfissional($dados['profissional_id']),
                 $dados
             )
@@ -74,7 +74,7 @@ class LancamentoController extends Controller
      */
     public function lerRegistroSessoes(
         LerRegistroSessoesRequest $request,
-        Antecipacao $antecipacao,
+        Guia $guia,
         RegistroSessoesAiService $registroAi,
     ): JsonResponse {
         $tenantId = (int) $request->user()->tenant_id;
@@ -94,7 +94,7 @@ class LancamentoController extends Controller
         ]);
     }
 
-    public function importarTranscricao(ImportLancamentosTranscricaoRequest $request, Antecipacao $antecipacao): JsonResponse
+    public function importarTranscricao(ImportLancamentosTranscricaoRequest $request, Guia $guia): JsonResponse
     {
         $dados = $request->validated();
         $profissional = $this->resolverProfissional($dados['profissional_id']);
@@ -120,7 +120,7 @@ class LancamentoController extends Controller
         }
 
         $resultado = $this->service->confirmarTranscricao(
-            $antecipacao,
+            $guia,
             $profissional,
             $dados['transcricao'],
             $dados['sessoes'] ?? []

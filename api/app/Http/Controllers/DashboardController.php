@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Alerta;
 use App\Models\AnaliticoUnimedLote;
-use App\Models\Antecipacao;
 use App\Models\AuditLog;
 use App\Models\ConciliacaoFinanceira;
 use App\Models\Convenio;
@@ -53,14 +52,6 @@ class DashboardController extends Controller
                 // Conta os dois: senão a clínica 100% Unimed via aqui sempre "0/0".
                 'value' => Guia::query()->whereIn('status', ['under_review', 'needs_verification'])->count(),
                 'detail' => Guia::query()->whereIn('status', ['finalized', 'approved'])->count().' aprovadas',
-            ],
-            [
-                'key' => 'antecipacoes',
-                'permission' => 'dashboard.antecipacoes',
-                'label' => 'Antecipações',
-                'href' => '/antecipacoes',
-                'value' => Antecipacao::query()->where('status', 'open')->count(),
-                'detail' => Antecipacao::query()->where('status', 'closed')->count().' fechadas',
             ],
             [
                 'key' => 'lancamentos',

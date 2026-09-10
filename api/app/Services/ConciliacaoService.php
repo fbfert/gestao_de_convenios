@@ -150,7 +150,7 @@ class ConciliacaoService
 
     private function sincronizarMovimentosFinanceiros(ConciliacaoFinanceira $conciliacao): void
     {
-        $conciliacao->loadMissing(['guia.profissional', 'profissional', 'guia.antecipacoes.lancamentos.profissional']);
+        $conciliacao->loadMissing(['guia.profissional', 'profissional', 'guia.lancamentos.profissional']);
 
         MovimentoFinanceiro::query()
             ->where('conciliacao_financeira_id', $conciliacao->id)
@@ -179,9 +179,7 @@ class ConciliacaoService
         $lancamentos = Lancamento::query()
             ->with('profissional')
             ->where('status', 'completed')
-            ->whereHas('antecipacao', function ($query) use ($conciliacao) {
-                $query->where('guia_id', $conciliacao->guia_id);
-            })
+            ->where('guia_id', $conciliacao->guia_id)
             ->get()
             ->groupBy('profissional_id');
 
@@ -240,9 +238,7 @@ class ConciliacaoService
         if (! $loteImportado) {
             return Lancamento::query()
                 ->where('status', 'completed')
-                ->whereHas('antecipacao', function ($query) use ($guia) {
-                    $query->where('guia_id', $guia->id);
-                })
+                ->where('guia_id', $guia->id)
                 ->count();
         }
 

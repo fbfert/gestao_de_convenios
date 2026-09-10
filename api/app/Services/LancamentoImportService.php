@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\Antecipacao;
 use App\Models\Convenio;
 use App\Models\Guia;
 use App\Models\Lancamento;
@@ -24,18 +23,15 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Importação de Sessões (Lançamentos) por planilha .xlsx — quarta entidade
- * do padrão. Diferente das anteriores, uma sessão histórica é gravada mesmo
- * que ultrapasse a cota autorizada da Antecipação — a sessão já aconteceu de
- * verdade, travar por cota (bookkeeping) esconderia dado real; ver
- * AntecipacaoService::consumirCotaForcado().
+ * do padrão. Uma sessão histórica é gravada mesmo que ultrapasse
+ * `Guia::sessoesDisponiveis()` — a sessão já aconteceu de verdade, travar
+ * por cota (bookkeeping) esconderia dado real.
  *
- * A sessão não referencia a Antecipação diretamente na planilha (número
- * interno, sem sentido pra quem preenche) — resolve pelo número da guia +
- * convênio, e dentro das Antecipações da guia escolhe a que cobre a data da
- * sessão pelo ciclo (ciclo_inicio/ciclo_fim). Chave de correspondência pra
- * reimportação: antecipacao + data + hora_inicio + profissional — sem isso,
- * reimportar a mesma planilha duplicaria sessões E consumiria cota duas
- * vezes.
+ * A sessão referencia a guia direto (resolvida pelo número da guia +
+ * convênio da planilha — desde 10/09/2026, quando Lancamento passou a
+ * pertencer à Guia em vez de a um ciclo de Antecipação separado). Chave de
+ * correspondência pra reimportação: guia + data + hora_inicio + profissional
+ * — sem isso, reimportar a mesma planilha duplicaria sessões.
  */
 class LancamentoImportService
 {
@@ -155,9 +151,8 @@ class LancamentoImportService
 
         $refs = $this->carregarReferencias($tenantId);
         $selecionadas = array_flip($linhaIdsSelecionadas);
-        $antecipacaoService = app(AntecipacaoService::class);
 
-        return DB::transaction(function () use ($lote, $selecionadas, $edicoes, $tenantId, $refs, $antecipacaoService) {
+        return DB::transaction(function () use ($lote, $selecionadas, $edicoes, $tenantId, $refs) {
             $totais = ['importados' => 0, 'atualizados' => 0, 'ignorados' => 0, 'invalidas' => 0];
 
             foreach ($lote->linhas as $linha) {
@@ -193,7 +188,7 @@ class LancamentoImportService
                     ? Lancamento::query()->find($normalizado['matched_lancamento_id'])
                     : null;
 
-                $lancamento = $this->gravarLancamento($normalizado['dados'], $tenantId, $existente, $antecipacaoService);
+                $lancamento = $this->gravarLancamento($normalizado['dados'], $tenantId, $existente);
 
                 $linha->update([
                     'status' => $existente ? 'atualizado' : 'importado',
@@ -407,7 +402,6 @@ class LancamentoImportService
         }
 
         $guiaId = null;
-        $antecipacaoId = null;
         if ($numeroGuia !== '' && $convenio) {
             $guias = Guia::query()
                 ->where('tenant_id', $tenantId)
@@ -427,26 +421,6 @@ class LancamentoImportService
         $dataSessao = $this->normalizarData($bruta['data_sessao'] ?? null);
         if (! $dataSessao) {
             $erros['data_sessao'] = 'Data da sessão inválida ou ausente.';
-        }
-
-        if ($guiaId && $dataSessao && ! isset($erros['numero_guia'])) {
-            $antecipacoes = Antecipacao::query()->where('guia_id', $guiaId)->get(['id', 'ciclo_inicio', 'ciclo_fim']);
-
-            if ($antecipacoes->count() === 0) {
-                $erros['numero_guia'] = 'Guia sem Antecipação — finalize a guia no sistema ou importe a Antecipação primeiro.';
-            } elseif ($antecipacoes->count() === 1) {
-                $antecipacaoId = $antecipacoes->first()->id;
-            } else {
-                $noCiclo = $antecipacoes->filter(
-                    fn ($a) => $dataSessao >= $a->ciclo_inicio->toDateString() && $dataSessao <= $a->ciclo_fim->toDateString()
-                );
-
-                if ($noCiclo->count() === 1) {
-                    $antecipacaoId = $noCiclo->first()->id;
-                } else {
-                    $erros['numero_guia'] = 'Esta guia tem mais de uma Antecipação e nenhuma (ou mais de uma) cobre a data desta sessão pelo ciclo — não dá para saber qual usar.';
-                }
-            }
         }
 
         $nomeProfissional = trim((string) ($bruta['profissional'] ?? ''));
@@ -469,10 +443,10 @@ class LancamentoImportService
         }
 
         $matchedLancamentoId = null;
-        if ($antecipacaoId && $dataSessao && $profissional) {
+        if ($guiaId && $dataSessao && $profissional) {
             $matchedLancamentoId = Lancamento::query()
                 ->where('tenant_id', $tenantId)
-                ->where('antecipacao_id', $antecipacaoId)
+                ->where('guia_id', $guiaId)
                 ->whereDate('data_sessao', $dataSessao)
                 ->where('profissional_id', $profissional->id)
                 ->where(function ($query) use ($horaInicio) {
@@ -488,7 +462,6 @@ class LancamentoImportService
                 'convenio' => $nomeConvenio,
                 'convenio_id' => $convenio?->id,
                 'guia_id' => $guiaId,
-                'antecipacao_id' => $antecipacaoId,
                 'profissional' => $nomeProfissional,
                 'profissional_id' => $profissional?->id,
                 'data_sessao' => $dataSessao,
@@ -604,11 +577,11 @@ class LancamentoImportService
         ];
     }
 
-    private function gravarLancamento(array $dados, int $tenantId, ?Lancamento $existente, AntecipacaoService $antecipacaoService): Lancamento
+    private function gravarLancamento(array $dados, int $tenantId, ?Lancamento $existente): Lancamento
     {
         $atributos = [
             'tenant_id' => $tenantId,
-            'antecipacao_id' => $dados['antecipacao_id'],
+            'guia_id' => $dados['guia_id'],
             'profissional_id' => $dados['profissional_id'],
             'data_sessao' => $dados['data_sessao'],
             'hora_inicio' => $dados['hora_inicio'],
@@ -626,11 +599,6 @@ class LancamentoImportService
             return $existente;
         }
 
-        $lancamento = Lancamento::query()->create($atributos);
-
-        $antecipacao = Antecipacao::query()->lockForUpdate()->findOrFail($dados['antecipacao_id']);
-        $antecipacaoService->consumirCotaForcado($antecipacao);
-
-        return $lancamento;
+        return Lancamento::query()->create($atributos);
     }
 }

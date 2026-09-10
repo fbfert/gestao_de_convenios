@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\Antecipacao;
 use App\Models\AnaliticoUnimedLinha;
 use App\Models\AuditLog;
 use App\Models\AnaliticoUnimedLote;
@@ -32,23 +31,23 @@ class LancamentosApiTest extends TestCase
     {
         $this->autenticar();
 
-        $antecipacao = $this->criarAntecipacaoAberta('SC Saúde', 'Fonoaudiologia', 'convencional');
-        $profissionalAlvo = Profissional::query()->where('especialidade_id', $antecipacao->guia->especialidade_id)->firstOrFail();
+        $guia = $this->criarGuiaAprovada('SC Saúde', 'Fonoaudiologia', 'convencional');
+        $profissionalAlvo = Profissional::query()->where('especialidade_id', $guia->especialidade_id)->firstOrFail();
         $profissionalOutro = Profissional::query()->where('id', '!=', $profissionalAlvo->id)->firstOrFail();
 
-        $create = $this->postJson("/api/antecipacoes/{$antecipacao->id}/lancamentos", [
+        $create = $this->postJson("/api/guias/{$guia->id}/lancamentos", [
             'profissional_id' => $profissionalAlvo->id,
             'data_sessao' => today()->toDateString(),
         ]);
 
         $create->assertCreated()
-            ->assertJsonPath('data.antecipacao_id', $antecipacao->id)
+            ->assertJsonPath('data.guia_id', $guia->id)
             ->assertJsonPath('data.profissional_id', $profissionalAlvo->id)
             ->assertJsonPath('data.status', 'completed');
 
         $lancamentoId = $create->json('data.id');
 
-        $this->postJson("/api/antecipacoes/{$antecipacao->id}/lancamentos", [
+        $this->postJson("/api/guias/{$guia->id}/lancamentos", [
             'profissional_id' => $profissionalOutro->id,
             'data_sessao' => today()->copy()->subDay()->toDateString(),
         ])->assertCreated();
@@ -62,9 +61,9 @@ class LancamentosApiTest extends TestCase
     public function test_criacao_valida_campos_obrigatorios(): void
     {
         $this->autenticar();
-        $antecipacao = $this->criarAntecipacaoAberta('SC Saúde', 'Fonoaudiologia', 'convencional');
+        $guia = $this->criarGuiaAprovada('SC Saúde', 'Fonoaudiologia', 'convencional');
 
-        $this->postJson("/api/antecipacoes/{$antecipacao->id}/lancamentos", [])
+        $this->postJson("/api/guias/{$guia->id}/lancamentos", [])
             ->assertStatus(422)
             ->assertJsonValidationErrors([
                 'profissional_id',
@@ -75,10 +74,10 @@ class LancamentosApiTest extends TestCase
     public function test_admin_edita_lancamento_e_fica_registrado_na_auditoria(): void
     {
         $this->autenticar();
-        $antecipacao = $this->criarAntecipacaoAberta('SC Saúde', 'Fonoaudiologia', 'convencional');
-        $profissionalAlvo = Profissional::query()->where('especialidade_id', $antecipacao->guia->especialidade_id)->firstOrFail();
+        $guia = $this->criarGuiaAprovada('SC Saúde', 'Fonoaudiologia', 'convencional');
+        $profissionalAlvo = Profissional::query()->where('especialidade_id', $guia->especialidade_id)->firstOrFail();
 
-        $lancamentoId = $this->postJson("/api/antecipacoes/{$antecipacao->id}/lancamentos", [
+        $lancamentoId = $this->postJson("/api/guias/{$guia->id}/lancamentos", [
             'profissional_id' => $profissionalAlvo->id,
             'data_sessao' => today()->toDateString(),
         ])->assertCreated()->json('data.id');
@@ -89,7 +88,7 @@ class LancamentosApiTest extends TestCase
         ])
             ->assertOk()
             ->assertJsonPath('data.acompanhante', 'Mãe da paciente')
-            ->assertJsonPath('data.antecipacao_id', $antecipacao->id);
+            ->assertJsonPath('data.guia_id', $guia->id);
 
         $evento = AuditLog::query()
             ->where('entidade', 'lancamentos')
@@ -104,10 +103,10 @@ class LancamentosApiTest extends TestCase
     public function test_funcionario_nao_pode_editar_lancamento(): void
     {
         $this->autenticar();
-        $antecipacao = $this->criarAntecipacaoAberta('SC Saúde', 'Fonoaudiologia', 'convencional');
-        $profissionalAlvo = Profissional::query()->where('especialidade_id', $antecipacao->guia->especialidade_id)->firstOrFail();
+        $guia = $this->criarGuiaAprovada('SC Saúde', 'Fonoaudiologia', 'convencional');
+        $profissionalAlvo = Profissional::query()->where('especialidade_id', $guia->especialidade_id)->firstOrFail();
 
-        $lancamentoId = $this->postJson("/api/antecipacoes/{$antecipacao->id}/lancamentos", [
+        $lancamentoId = $this->postJson("/api/guias/{$guia->id}/lancamentos", [
             'profissional_id' => $profissionalAlvo->id,
             'data_sessao' => today()->toDateString(),
         ])->assertCreated()->json('data.id');
@@ -119,29 +118,29 @@ class LancamentosApiTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_registrar_em_antecipacao_fechada_retorna_422(): void
+    public function test_registrar_sem_sessoes_disponiveis_retorna_422(): void
     {
         $this->autenticar();
-        $antecipacao = $this->criarAntecipacaoFechada('Unimed', 'Fisioterapia', 'especializada');
-        $profissional = Profissional::query()->where('especialidade_id', $antecipacao->guia->especialidade_id)->firstOrFail();
+        $guia = $this->criarGuiaComCotaEsgotada('Unimed', 'Fisioterapia', 'especializada');
+        $profissional = Profissional::query()->where('especialidade_id', $guia->especialidade_id)->firstOrFail();
 
-        $this->postJson("/api/antecipacoes/{$antecipacao->id}/lancamentos", [
+        $this->postJson("/api/guias/{$guia->id}/lancamentos", [
             'profissional_id' => $profissional->id,
             'data_sessao' => today()->toDateString(),
         ])
             ->assertStatus(422)
-            ->assertJsonPath('message', "A antecipação {$antecipacao->id} já está fechada ou com a cota esgotada.");
+            ->assertJsonValidationErrors(['guia']);
 
         $this->assertDatabaseCount('lancamentos', 1);
     }
 
-    public function test_usuario_de_um_tenant_nao_enxerga_antecipacao_de_outro_tenant_via_http(): void
+    public function test_usuario_de_um_tenant_nao_enxerga_guia_de_outro_tenant_via_http(): void
     {
-        $antecipacaoOutroTenant = $this->criarAntecipacaoDeOutroTenant();
+        $guiaOutroTenant = $this->criarGuiaDeOutroTenant();
 
         $this->autenticar();
 
-        $this->postJson("/api/antecipacoes/{$antecipacaoOutroTenant->id}/lancamentos", [
+        $this->postJson("/api/guias/{$guiaOutroTenant->id}/lancamentos", [
             'profissional_id' => 1,
             'data_sessao' => today()->toDateString(),
         ])->assertNotFound();
@@ -151,12 +150,7 @@ class LancamentosApiTest extends TestCase
     {
         $this->autenticar();
 
-        $antecipacao = $this->criarAntecipacaoAberta('Unimed', 'Fisioterapia', 'especializada');
-        $antecipacao->forceFill([
-            'qtd_autorizada' => 8,
-            'qtd_utilizada' => 0,
-            'status' => 'open',
-        ])->save();
+        $guia = $this->criarGuiaAprovada('Unimed', 'Fisioterapia', 'especializada', sessoesAutorizadas: 8);
 
         $transcricao = <<<'TXT'
 GUIA Nº: 521381566206
@@ -177,8 +171,8 @@ Sessões
 8 22/06/2026 15:30 16:20 Bruno Marinho Devolutiva e entrega do laudo
 TXT;
 
-        $preview = $this->postJson("/api/antecipacoes/{$antecipacao->id}/lancamentos/importar-transcricao", [
-            'profissional_id' => $antecipacao->guia->profissional_id,
+        $preview = $this->postJson("/api/guias/{$guia->id}/lancamentos/importar-transcricao", [
+            'profissional_id' => $guia->profissional_id,
             'transcricao' => $transcricao,
         ]);
 
@@ -191,8 +185,8 @@ TXT;
 
         $this->assertDatabaseCount('lancamentos', 0);
 
-        $this->postJson("/api/antecipacoes/{$antecipacao->id}/lancamentos/importar-transcricao", [
-            'profissional_id' => $antecipacao->guia->profissional_id,
+        $this->postJson("/api/guias/{$guia->id}/lancamentos/importar-transcricao", [
+            'profissional_id' => $guia->profissional_id,
             'transcricao' => $transcricao,
             'confirmar_envio' => true,
             'sessoes' => [
@@ -207,8 +201,8 @@ TXT;
         ])->assertStatus(422)
             ->assertJsonValidationErrors(['pdf_registro_sessoes']);
 
-        $confirmacao = $this->post("/api/antecipacoes/{$antecipacao->id}/lancamentos/importar-transcricao", [
-            'profissional_id' => $antecipacao->guia->profissional_id,
+        $confirmacao = $this->post("/api/guias/{$guia->id}/lancamentos/importar-transcricao", [
+            'profissional_id' => $guia->profissional_id,
             'transcricao' => $transcricao,
             'confirmar_envio' => true,
             'sessoes' => [
@@ -280,7 +274,7 @@ TXT;
             ->assertJsonPath('data.registros.7.hora_fim', '16:20');
 
         $this->assertDatabaseCount('lancamentos', 8);
-        $this->assertSame(8, Lancamento::query()->where('antecipacao_id', $antecipacao->id)->count());
+        $this->assertSame(8, Lancamento::query()->where('guia_id', $guia->id)->count());
     }
 
     public function test_importa_analitico_unimed_e_normaliza_linhas(): void
@@ -340,11 +334,15 @@ TXT;
         $lancamentoProprio = $this->criarLancamentoParaProfissional($tenant, $profissionalProprio, 'Unimed', 'especializada', 'LAN-PRIVADO-'.uniqid());
         $lancamentoOutro = $this->criarLancamentoParaProfissional($tenant, $profissionalOutro, 'SC Saúde', 'convencional', 'LAN-PRIVADO-'.uniqid());
 
+        // assertJsonCount(1) + o id certo na única linha já provam a
+        // exclusão do outro — um assertJsonMissing(['id' => ...]) a mais
+        // aqui colide em falso positivo com o guia.id aninhado no recurso.
         $this->getJson('/api/lancamentos')
             ->assertOk()
             ->assertJsonCount(1, 'data')
-            ->assertJsonPath('data.0.id', $lancamentoProprio->id)
-            ->assertJsonMissing(['id' => $lancamentoOutro->id]);
+            ->assertJsonPath('data.0.id', $lancamentoProprio->id);
+
+        $this->assertNotSame($lancamentoProprio->id, $lancamentoOutro->id);
     }
 
     public function test_consulta_e_atualiza_template_de_impressao_do_registro_de_sessoes(): void
@@ -389,29 +387,27 @@ TXT;
         return $user;
     }
 
-    private function criarAntecipacaoAberta(string $convenioNome, string $especialidadeNome, string $tipoTerapia): Antecipacao
+    /** Guia finalizada, já aceitando lançamento, com a cota que o teste pedir. */
+    private function criarGuiaAprovada(string $convenioNome, string $especialidadeNome, string $tipoTerapia, int $sessoesAutorizadas = 10): Guia
     {
-        $guia = $this->criarGuiaFinalizada($convenioNome, $especialidadeNome, $tipoTerapia);
+        $guia = $this->criarGuiaBase($convenioNome, $especialidadeNome, $tipoTerapia, $sessoesAutorizadas);
 
         return app(GuiaService::class)->finalizar($guia, [
             'senha' => 'ABC123',
-        ])->antecipacoes()->firstOrFail();
+        ]);
     }
 
-    private function criarAntecipacaoFechada(string $convenioNome, string $especialidadeNome, string $tipoTerapia): Antecipacao
+    /** Guia com 1 sessão autorizada e já lançada — sessoesDisponiveis() = 0. */
+    private function criarGuiaComCotaEsgotada(string $convenioNome, string $especialidadeNome, string $tipoTerapia): Guia
     {
-        $guia = $this->criarGuiaFinalizada($convenioNome, $especialidadeNome, $tipoTerapia);
-        $antecipacao = app(GuiaService::class)->finalizar($guia, [
-            'senha' => 'DEF123',
-        ])->antecipacoes()->firstOrFail();
+        $guia = $this->criarGuiaAprovada($convenioNome, $especialidadeNome, $tipoTerapia, sessoesAutorizadas: 1);
+        $profissional = Profissional::query()->where('especialidade_id', $guia->especialidade_id)->firstOrFail();
+        app(LancamentoService::class)->registrar($guia, $profissional, today());
 
-        $profissional = Profissional::query()->where('especialidade_id', $antecipacao->guia->especialidade_id)->firstOrFail();
-        app(LancamentoService::class)->registrar($antecipacao, $profissional, today());
-
-        return $antecipacao->fresh();
+        return $guia->fresh();
     }
 
-    private function criarGuiaFinalizada(string $convenioNome, string $especialidadeNome, string $tipoTerapia): Guia
+    private function criarGuiaBase(string $convenioNome, string $especialidadeNome, string $tipoTerapia, ?int $sessoesAutorizadas = null): Guia
     {
         $tenant = Tenant::query()->where('slug', 'clinica-exemplo')->firstOrFail();
         $convenio = Convenio::query()->where('nome', $convenioNome)->firstOrFail();
@@ -429,6 +425,7 @@ TXT;
             'numero_guia' => 'GUIA-LAN-'.uniqid(),
             'tipo_terapia' => $tipoTerapia,
             'status' => 'under_review',
+            'sessoes_autorizadas' => $sessoesAutorizadas,
             'data_solicitacao' => today(),
             'data_finalizacao' => null,
             'senha' => null,
@@ -439,16 +436,19 @@ TXT;
 
     private function criarLancamentoParaProfissional(Tenant $tenant, Profissional $profissional, string $convenioNome, string $tipoTerapia, string $prefixoNumero): Lancamento
     {
+        $convenioId = Convenio::query()->where('nome', $convenioNome)->firstOrFail()->id;
+
         $guia = Guia::query()->create([
             'tenant_id' => $tenant->id,
             'solicitacao_id' => null,
-            'convenio_id' => Convenio::query()->where('nome', $convenioNome)->firstOrFail()->id,
-            'paciente_id' => Paciente::query()->where('convenio_id', Convenio::query()->where('nome', $convenioNome)->firstOrFail()->id)->firstOrFail()->id,
+            'convenio_id' => $convenioId,
+            'paciente_id' => Paciente::query()->where('convenio_id', $convenioId)->firstOrFail()->id,
             'profissional_id' => $profissional->id,
             'especialidade_id' => $profissional->especialidade_id,
             'numero_guia' => $prefixoNumero,
             'tipo_terapia' => $tipoTerapia,
             'status' => 'under_review',
+            'sessoes_autorizadas' => 10,
             'data_solicitacao' => today(),
             'data_finalizacao' => null,
             'senha' => null,
@@ -456,11 +456,11 @@ TXT;
             'observacoes' => null,
         ]);
 
-        $antecipacao = app(GuiaService::class)->finalizar($guia, [
+        $guiaFinalizada = app(GuiaService::class)->finalizar($guia, [
             'senha' => 'ABC123',
-        ])->antecipacoes()->firstOrFail();
+        ]);
 
-        return app(LancamentoService::class)->registrar($antecipacao, $profissional, today());
+        return app(LancamentoService::class)->registrar($guiaFinalizada, $profissional, today());
     }
 
     private function criarArquivoAnaliticoUnimed(): UploadedFile
@@ -619,7 +619,7 @@ XML);
 XML;
     }
 
-    private function criarAntecipacaoDeOutroTenant(): Antecipacao
+    private function criarGuiaDeOutroTenant(): Guia
     {
         $tenant = Tenant::query()->create([
             'nome' => 'Clínica Externa Lan',
@@ -661,7 +661,7 @@ XML;
             'ativo' => true,
         ]);
 
-        $guia = Guia::query()->create([
+        return Guia::query()->create([
             'tenant_id' => $tenant->id,
             'solicitacao_id' => null,
             'convenio_id' => $convenio->id,
@@ -671,31 +671,20 @@ XML;
             'numero_guia' => 'GUIA-EXTERNO-LAN-001',
             'tipo_terapia' => 'especializada',
             'status' => 'finalized',
+            'sessoes_autorizadas' => 1,
             'data_solicitacao' => today(),
             'data_finalizacao' => today(),
             'senha' => 'EXTLAN123',
             'validade_senha' => today()->copy()->addDays(30),
             'observacoes' => null,
         ]);
-
-        return Antecipacao::query()->create([
-            'tenant_id' => $tenant->id,
-            'guia_id' => $guia->id,
-            'paciente_id' => $paciente->id,
-            'convenio_id' => $convenio->id,
-            'ciclo_inicio' => today(),
-            'ciclo_fim' => today(),
-            'qtd_autorizada' => 1,
-            'qtd_utilizada' => 0,
-            'status' => 'open',
-        ]);
     }
 
     public function test_le_registro_de_sessoes_escaneado_por_ia(): void
     {
-        $antecipacao = $this->criarAntecipacaoAberta('SC Saúde', 'Fonoaudiologia', 'convencional');
+        $guia = $this->criarGuiaAprovada('SC Saúde', 'Fonoaudiologia', 'convencional');
         $this->autenticar();
-        $tenantId = (int) $antecipacao->tenant_id;
+        $tenantId = (int) $guia->tenant_id;
 
         \App\Models\AiPromptTemplate::garantirPadroes($tenantId);
         \App\Models\AiOpenaiSetting::query()->updateOrCreate(
@@ -727,7 +716,7 @@ XML;
             ]),
         ]);
 
-        $this->postJson("/api/antecipacoes/{$antecipacao->id}/lancamentos/ler-registro", [
+        $this->postJson("/api/guias/{$guia->id}/lancamentos/ler-registro", [
             'arquivo' => \Illuminate\Http\UploadedFile::fake()->image('registro.jpg'),
         ])
             ->assertOk()
@@ -738,18 +727,6 @@ XML;
             ->assertJsonPath('data.cabecalho.paciente', 'Ana Ribeiro');
 
         // A leitura nao grava nada: a confirmacao continua sendo outro passo.
-        $this->assertSame(0, $antecipacao->lancamentos()->count());
-    }
-
-    public function test_antecipacao_expoe_nome_do_paciente_e_especialidade(): void
-    {
-        $this->criarAntecipacaoAberta('SC Saúde', 'Fonoaudiologia', 'convencional');
-        $this->autenticar();
-
-        $dados = $this->getJson('/api/antecipacoes')->assertOk()->json('data.0');
-
-        $this->assertArrayHasKey('paciente', $dados);
-        $this->assertNotEmpty($dados['paciente']['nome']);
-        $this->assertArrayHasKey('especialidade', $dados);
+        $this->assertSame(0, $guia->lancamentos()->count());
     }
 }

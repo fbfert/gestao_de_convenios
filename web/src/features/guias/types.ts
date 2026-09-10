@@ -31,7 +31,9 @@ export type Guia = {
   solicitacao_item?: GuiaSolicitacaoItem | null
   automacao_execucao?: GuiaAutomacaoExecucao | null
   ultima_automacao_unimed?: GuiaAutomacaoExecucao | null
-  antecipacoes?: GuiaAntecipacao[]
+  /** Cota de sessões contada ao vivo — substituiu o antigo bloco de Antecipacoes. */
+  sessoes_disponiveis: number
+  lancamentos_count?: number
   conciliacoes?: GuiaConciliacao[]
   created_at: string
   updated_at: string
@@ -81,12 +83,6 @@ export type GuiaAutomacaoExecucao = {
   }>
 }
 
-export type GuiaAntecipacao = {
-  id: number
-  qtd_autorizada: number
-  qtd_utilizada: number
-  status: string
-}
 
 export type GuiaConciliacao = {
   id: number
@@ -110,6 +106,8 @@ export type GuiaFilters = {
   validade_senha_vencendo_em_dias: string
   mostrar_a_definir: string
   mostrar_historico: string
+  /** Só guias aprovadas/finalizadas com sessão sobrando — seletor de Sessões. */
+  disponivel_para_lancamento?: string
 }
 
 export type GuiaForm = {

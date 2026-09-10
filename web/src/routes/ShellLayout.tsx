@@ -28,7 +28,6 @@ const LARGURA_AMPLA_PREFIXOS = [
   '/solicitacoes',
   '/guias',
   '/lancamentos',
-  '/antecipacoes',
   '/analiticos',
   '/conciliacao',
   '/profissionais',

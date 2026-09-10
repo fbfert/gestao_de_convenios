@@ -22,7 +22,6 @@ export type PacienteDuplicado = {
 export type PreviewMesclagem = {
   solicitacoes: number
   guias: number
-  antecipacoes: number
   telefones: number
   documentos: number
   arquivos: number

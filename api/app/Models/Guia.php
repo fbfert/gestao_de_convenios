@@ -164,9 +164,29 @@ class Guia extends Model
         return $this->belongsTo(Especialidade::class);
     }
 
-    public function antecipacoes()
+    public function lancamentos()
     {
-        return $this->hasMany(Antecipacao::class);
+        return $this->hasMany(Lancamento::class);
+    }
+
+    /**
+     * Quantas sessões ainda cabem nesta guia — cota ao vivo, sem balde
+     * separado (substituiu o antigo Antecipacao::qtd_autorizada/qtd_utilizada).
+     * `sessoes_autorizadas` é o que a operadora realmente liberou; na
+     * ausência dele (convênio manual, ainda não capturado) cai para
+     * `sessoes_solicitadas`.
+     */
+    public function sessoesDisponiveis(): int
+    {
+        $total = $this->sessoes_autorizadas ?? $this->sessoes_solicitadas ?? 0;
+
+        return max(0, $total - $this->lancamentos()->count());
+    }
+
+    /** Guia em condição de receber lançamento de sessão — já aprovada, sem esperar Finalizar. */
+    public function aceitaLancamento(): bool
+    {
+        return in_array($this->status, [GuiaStatus::APPROVED, GuiaStatus::FINALIZED], true);
     }
 
     public function conciliacoes()

@@ -11,7 +11,6 @@ use App\Models\Paciente;
 use App\Models\Profissional;
 use App\Models\Solicitacao;
 use App\Models\Tenant;
-use App\Services\AntecipacaoService;
 use App\Services\ConciliacaoService;
 use App\Services\GuiaService;
 use App\Services\LancamentoService;
@@ -55,6 +54,7 @@ class FluxoConvenioCompletoTest extends TestCase
             'numero_guia' => 'GUIA-FEATURE-001',
             'tipo_terapia' => 'especializada',
             'status' => 'under_review',
+            'sessoes_autorizadas' => 1,
             'data_solicitacao' => today(),
             'data_finalizacao' => null,
             'senha' => null,
@@ -63,7 +63,6 @@ class FluxoConvenioCompletoTest extends TestCase
         ]);
 
         $guiaService = app(GuiaService::class);
-        $antecipacaoService = app(AntecipacaoService::class);
         $lancamentoService = app(LancamentoService::class);
         $conciliacaoService = app(ConciliacaoService::class);
 
@@ -71,19 +70,14 @@ class FluxoConvenioCompletoTest extends TestCase
             'senha' => 'ABC123',
         ]);
 
-        $antecipacao = $guiaFinalizada->antecipacoes()->firstOrFail();
-        $this->assertSame('open', $antecipacao->status);
-        $this->assertSame(1, $antecipacao->qtd_autorizada);
-        $this->assertSame(0, $antecipacao->qtd_utilizada);
+        $this->assertTrue($guiaFinalizada->aceitaLancamento());
+        $this->assertSame(1, $guiaFinalizada->sessoesDisponiveis());
 
-        $lancamento = $lancamentoService->registrar($antecipacao, $profissional, today());
-
-        $antecipacao->refresh();
+        $lancamento = $lancamentoService->registrar($guiaFinalizada, $profissional, today());
 
         $this->assertSame('completed', $lancamento->status);
-        $this->assertSame('closed', $antecipacao->status);
-        $this->assertSame(1, $antecipacao->qtd_utilizada);
-        $this->assertSame(1, Lancamento::query()->where('antecipacao_id', $antecipacao->id)->count());
+        $this->assertSame(0, $guiaFinalizada->fresh()->sessoesDisponiveis());
+        $this->assertSame(1, Lancamento::query()->where('guia_id', $guiaFinalizada->id)->count());
 
         $conciliacao = $conciliacaoService->gerarParaGuia($guiaFinalizada);
 

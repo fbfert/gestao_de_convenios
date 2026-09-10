@@ -55,7 +55,7 @@ export function useConfirmarImportLancamentos() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['lancamentos'] })
-      await queryClient.invalidateQueries({ queryKey: ['antecipacoes'] })
+      await queryClient.invalidateQueries({ queryKey: ['guias'] })
     },
   })
 }

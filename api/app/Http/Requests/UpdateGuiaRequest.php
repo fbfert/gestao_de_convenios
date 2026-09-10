@@ -10,7 +10,7 @@ use Illuminate\Validation\Rule;
  * Edicao manual de uma guia ja registrada, restrita a `guias.manage`.
  * Paciente, convenio, status e os vinculos com solicitacao/automacao ficam de
  * fora de proposito: paciente/convenio sao identidade com dados gravados em
- * Antecipacao/Conciliacao ja geradas, status muda so por Finalizar/Negar, e os
+ * Lancamento/Conciliacao ja gerados, status muda so por Finalizar/Negar, e os
  * campos unimed_* pertencem a automacao (editar a mao os desalinha do portal).
  */
 class UpdateGuiaRequest extends FormRequest

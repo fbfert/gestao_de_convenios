@@ -118,12 +118,10 @@ class GuiaResource extends JsonResource
                     ])->values()
                     : [],
             ] : null),
-            'antecipacoes' => $this->whenLoaded('antecipacoes', fn () => $this->antecipacoes->map(fn ($antecipacao) => [
-                'id' => $antecipacao->id,
-                'qtd_autorizada' => $antecipacao->qtd_autorizada,
-                'qtd_utilizada' => $antecipacao->qtd_utilizada,
-                'status' => $antecipacao->status,
-            ])->values()),
+            // Substitui o antigo bloco de Antecipacoes (balde de cota separado) —
+            // a cota agora é contada ao vivo direto na Guia.
+            'sessoes_disponiveis' => $this->sessoesDisponiveis(),
+            'lancamentos_count' => $this->whenLoaded('lancamentos', fn () => $this->lancamentos->count()),
             'conciliacoes' => $this->whenLoaded('conciliacoes', fn () => $this->conciliacoes->map(fn ($conciliacao) => [
                 'id' => $conciliacao->id,
                 'status' => $conciliacao->status,

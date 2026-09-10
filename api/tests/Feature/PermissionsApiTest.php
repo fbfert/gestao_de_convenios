@@ -35,7 +35,7 @@ class PermissionsApiTest extends TestCase
             ->assertJsonCount(count(PermissionCatalog::all()), 'data')
             ->json('data');
 
-        $this->assertContains('antecipacoes.manage', collect($permissoes)->pluck('name')->all());
+        $this->assertContains('lancamentos.manage', collect($permissoes)->pluck('name')->all());
     }
 
     public function test_carrega_e_atualiza_permissoes_do_role(): void
@@ -76,8 +76,8 @@ class PermissionsApiTest extends TestCase
 
         // O que importa é o rótulo legível existir, não em que posição ele está.
         $this->assertSame(
-            'Editar dados de antecipações',
-            $permissoes->firstWhere('name', 'antecipacoes.manage')['label'],
+            'Editar dados de sessões',
+            $permissoes->firstWhere('name', 'lancamentos.manage')['label'],
         );
     }
 

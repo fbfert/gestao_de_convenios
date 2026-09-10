@@ -12,7 +12,7 @@ class Lancamento extends Model
     use Auditable, BelongsToTenant, HasFactory;
 
     protected $fillable = [
-        'tenant_id', 'antecipacao_id', 'profissional_id',
+        'tenant_id', 'guia_id', 'profissional_id',
         'data_sessao', 'hora_inicio', 'hora_fim', 'acompanhante',
         'resumo_atividades', 'transcricao_bruta', 'status', 'observacoes',
     ];
@@ -21,9 +21,9 @@ class Lancamento extends Model
         'data_sessao' => 'date',
     ];
 
-    public function antecipacao()
+    public function guia()
     {
-        return $this->belongsTo(Antecipacao::class);
+        return $this->belongsTo(Guia::class);
     }
 
     public function profissional()

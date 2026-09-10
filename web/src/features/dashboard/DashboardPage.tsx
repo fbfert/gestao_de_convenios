@@ -166,7 +166,6 @@ export function DashboardPage() {
               ['Pacientes', '/pacientes'],
               ['Guias', '/guias'],
               ['Sessões', '/lancamentos'],
-              ['Antecipações', '/antecipacoes'],
               ['Analíticos', '/analiticos'],
               ['Conciliação', '/conciliacao'],
               ['Convênios', '/convenios'],

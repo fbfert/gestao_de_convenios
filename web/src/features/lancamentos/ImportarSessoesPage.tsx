@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Botao } from '../../components/ui/Botao'
 import { Select } from '../../components/ui/Select'
 import { useProfissionais } from '../../lib/queries/useReferenceData'
-import { useAntecipacoes } from '../antecipacoes/useAntecipacoes'
+import { useGuias } from '../guias/useGuias'
 import {
   getHttpErrorMessage,
   useConfirmarLancamentosTranscritos,
@@ -42,7 +42,7 @@ export function ImportarSessoesPage() {
   const arquivoRef = useRef<HTMLInputElement | null>(null)
 
   const [form, setForm] = useState<LancamentoImportForm>({
-    antecipacao_id: searchParams.get('antecipacao_id') ?? '',
+    guia_id: searchParams.get('guia_id') ?? '',
     profissional_id: '',
     transcricao: '',
   })
@@ -52,27 +52,39 @@ export function ImportarSessoesPage() {
   const [erro, setErro] = useState<string | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
 
-  const antecipacoesQuery = useAntecipacoes({ status: '', paciente_id: '', convenio_id: '' }, 1)
+  const guiasDisponiveisQuery = useGuias(
+    {
+      status: '',
+      convenio_id: '',
+      profissional_id: '',
+      paciente_nome: '',
+      validade_senha_vencendo_em_dias: '',
+      mostrar_a_definir: '',
+      mostrar_historico: '',
+      disponivel_para_lancamento: '1',
+    },
+    1,
+  )
   const profissionaisQuery = useProfissionais()
   const analisarTexto = useImportarLancamentosTranscritos()
   const lerArquivo = useLerRegistroSessoes()
   const confirmar = useConfirmarLancamentosTranscritos()
 
-  const antecipacoes = useMemo(() => antecipacoesQuery.data?.data ?? [], [antecipacoesQuery.data])
+  const guiasDisponiveis = useMemo(() => guiasDisponiveisQuery.data?.data ?? [], [guiasDisponiveisQuery.data])
   const profissionais = useMemo(() => profissionaisQuery.data ?? [], [profissionaisQuery.data])
 
-  const antecipacao = useMemo(
-    () => antecipacoes.find((item) => String(item.id) === form.antecipacao_id),
-    [antecipacoes, form.antecipacao_id],
+  const guia = useMemo(
+    () => guiasDisponiveis.find((item) => String(item.id) === form.guia_id),
+    [guiasDisponiveis, form.guia_id],
   )
 
   /*
-    Só quem atende a especialidade da antecipação. Lançar sessão no nome de
+    Só quem atende a especialidade da guia. Lançar sessão no nome de
     quem não faz aquela terapia gera glosa na conciliação, e a lista completa
     da clínica torna o erro fácil.
   */
   const executantes = useMemo(() => {
-    const especialidadeId = antecipacao?.especialidade?.id
+    const especialidadeId = guia?.especialidade?.id
 
     if (!especialidadeId) {
       return profissionais
@@ -86,7 +98,7 @@ export function ImportarSessoesPage() {
     )
 
     return doEspecialidade.length > 0 ? doEspecialidade : profissionais
-  }, [profissionais, antecipacao])
+  }, [profissionais, guia])
 
   // Um executante só não precisa de escolha; vários, sim.
   useEffect(() => {
@@ -140,7 +152,7 @@ export function ImportarSessoesPage() {
 
     try {
       aplicarResultado(
-        await lerArquivo.mutateAsync({ antecipacaoId: form.antecipacao_id, arquivo }),
+        await lerArquivo.mutateAsync({ guiaId: form.guia_id, arquivo }),
       )
     } catch (error) {
       setErro(getHttpErrorMessage(error, 'Não foi possível ler o registro de sessões.'))
@@ -184,7 +196,7 @@ export function ImportarSessoesPage() {
     }
   }
 
-  const prontoParaLer = form.antecipacao_id !== '' && form.profissional_id !== ''
+  const prontoParaLer = form.guia_id !== '' && form.profissional_id !== ''
 
   return (
     <div className="space-y-6" data-testid="importar-sessoes-page">
@@ -196,21 +208,21 @@ export function ImportarSessoesPage() {
       <section className="space-y-4 rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
         <div className="grid gap-4 md:grid-cols-2">
           <label className="block space-y-2">
-            <span className="text-corpo font-medium text-slate-200">Antecipação</span>
+            <span className="text-corpo font-medium text-slate-200">Guia</span>
             <Select
-              value={form.antecipacao_id}
+              value={form.guia_id}
               onChange={(event) =>
-                setForm((atual) => ({ ...atual, antecipacao_id: event.target.value }))
+                setForm((atual) => ({ ...atual, guia_id: event.target.value }))
               }
               className={campo}
-              data-testid="importar-antecipacao"
+              data-testid="importar-guia"
             >
               <option value="">Selecione</option>
-              {antecipacoes.map((item) => (
+              {guiasDisponiveis.map((item) => (
                 <option key={item.id} value={item.id}>
                   #{item.id} · {item.paciente?.nome ?? `Paciente ${item.paciente_id}`}
                   {item.especialidade?.nome ? ` · ${item.especialidade.nome}` : ''} ·{' '}
-                  {item.qtd_utilizada}/{item.qtd_autorizada} usadas
+                  {item.sessoes_disponiveis} disponível(is)
                 </option>
               ))}
             </Select>
@@ -224,7 +236,7 @@ export function ImportarSessoesPage() {
                 setForm((atual) => ({ ...atual, profissional_id: event.target.value }))
               }
               className={campo}
-              disabled={form.antecipacao_id === ''}
+              disabled={form.guia_id === ''}
               data-testid="importar-profissional"
             >
               <option value="">Selecione</option>
@@ -234,9 +246,9 @@ export function ImportarSessoesPage() {
                 </option>
               ))}
             </Select>
-            {antecipacao?.especialidade?.nome ? (
+            {guia?.especialidade?.nome ? (
               <span className="block text-meta text-slate-400">
-                Mostrando quem atende {antecipacao.especialidade.nome}.
+                Mostrando quem atende {guia.especialidade.nome}.
               </span>
             ) : null}
           </label>
@@ -265,7 +277,7 @@ export function ImportarSessoesPage() {
           <span className="text-meta text-slate-400">
             {prontoParaLer
               ? 'A IA lê o documento e traz as sessões para conferência.'
-              : 'Escolha a antecipação e o executante para começar.'}
+              : 'Escolha a guia e o executante para começar.'}
           </span>
         </div>
 

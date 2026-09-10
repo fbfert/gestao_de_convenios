@@ -2,11 +2,11 @@
 
 namespace Tests\Unit;
 
-use App\Models\Antecipacao;
 use App\Models\ClinicaPacientePendente;
 use App\Models\Convenio;
 use App\Models\Especialidade;
 use App\Models\Guia;
+use App\Models\Lancamento;
 use App\Models\Paciente;
 use App\Models\PacienteArquivo;
 use App\Models\PacienteDocumento;
@@ -86,22 +86,18 @@ class PacienteMergeServiceTest extends TestCase
         ]);
     }
 
-    private function criarAntecipacao(Paciente $paciente, Guia $guia): Antecipacao
+    private function criarLancamento(Guia $guia): Lancamento
     {
-        return Antecipacao::query()->create([
+        return Lancamento::query()->create([
             'tenant_id' => $this->tenantId(),
             'guia_id' => $guia->id,
-            'paciente_id' => $paciente->id,
-            'convenio_id' => $this->convenioId(),
-            'ciclo_inicio' => today(),
-            'ciclo_fim' => today(),
-            'qtd_autorizada' => 1,
-            'qtd_utilizada' => 0,
-            'status' => 'open',
+            'profissional_id' => $this->profissionalId(),
+            'data_sessao' => today(),
+            'status' => 'completed',
         ]);
     }
 
-    public function test_mesclar_reponta_solicitacoes_guias_e_antecipacoes(): void
+    public function test_mesclar_reponta_solicitacoes_e_guias_lancamento_segue_pela_guia(): void
     {
         $tenantId = $this->tenantId();
         $vencedor = $this->criarPaciente(['nome' => 'Abner dos Santos Beiger', 'cpf' => null]);
@@ -109,13 +105,15 @@ class PacienteMergeServiceTest extends TestCase
 
         $solicitacao = $this->criarSolicitacao($perdedor);
         $guia = $this->criarGuia($perdedor);
-        $antecipacao = $this->criarAntecipacao($perdedor, $guia);
+        // Lancamento não tem paciente_id próprio — pendura em guia_id, então
+        // repontar a Guia já basta pra ele "seguir" o vencedor.
+        $lancamento = $this->criarLancamento($guia);
 
         (new PacienteMergeService())->mesclar($tenantId, $vencedor->id, $perdedor->id);
 
         $this->assertSame($vencedor->id, $solicitacao->fresh()->paciente_id);
         $this->assertSame($vencedor->id, $guia->fresh()->paciente_id);
-        $this->assertSame($vencedor->id, $antecipacao->fresh()->paciente_id);
+        $this->assertSame($guia->id, $lancamento->fresh()->guia_id);
     }
 
     public function test_mesclar_reponta_telefones_documentos_e_arquivos(): void
@@ -277,13 +275,12 @@ class PacienteMergeServiceTest extends TestCase
         $perdedor = $this->criarPaciente(['nome' => 'Abner Santos Beiger']);
         $this->criarSolicitacao($perdedor);
         $guia = $this->criarGuia($perdedor);
-        $this->criarAntecipacao($perdedor, $guia);
+        $this->criarLancamento($guia);
 
         $resumo = (new PacienteMergeService())->preview($tenantId, $vencedor->id, $perdedor->id);
 
         $this->assertSame(1, $resumo['solicitacoes']);
         $this->assertSame(1, $resumo['guias']);
-        $this->assertSame(1, $resumo['antecipacoes']);
         $this->assertFalse($resumo['conflito_clinica_id']);
     }
 }

@@ -21,7 +21,6 @@ class RoleCatalog
             'dashboard.convenios',
             'dashboard.solicitacoes',
             'dashboard.guias',
-            'dashboard.antecipacoes',
             'dashboard.lancamentos',
             'dashboard.conciliacoes',
             'dashboard.pacientes',
@@ -36,9 +35,6 @@ class RoleCatalog
             'guias.view',
             'guias.viewOwn',
             'guias.manage',
-            'antecipacoes.view',
-            'antecipacoes.viewOwn',
-            'antecipacoes.manage',
             'lancamentos.view',
             'lancamentos.viewOwn',
             'lancamentos.manage',
@@ -58,17 +54,16 @@ class RoleCatalog
             'configuracoes.unimed.manage',
             'configuracoes.clinica.manage',
         ],
-        // As permissoes solicitacoes.manage/guias.manage/lancamentos.manage/
-        // antecipacoes.manage controlam a EDICAO manual desses 4 cadastros
-        // (nao a criacao normal, que continua liberada por .view/.viewOwn) e
-        // ficam de fora daqui de proposito: por padrao, so o admin corrige
-        // dados ja registrados. A clinica pode conceder ao funcionario depois,
-        // em Perfis e Permissoes, se quiser.
+        // As permissoes solicitacoes.manage/guias.manage/lancamentos.manage
+        // controlam a EDICAO manual desses cadastros (nao a criacao normal,
+        // que continua liberada por .view/.viewOwn) e ficam de fora daqui de
+        // proposito: por padrao, so o admin corrige dados ja registrados. A
+        // clinica pode conceder ao funcionario depois, em Perfis e Permissoes,
+        // se quiser.
         'funcionario' => [
             'dashboard.convenios',
             'dashboard.solicitacoes',
             'dashboard.guias',
-            'dashboard.antecipacoes',
             'dashboard.lancamentos',
             'dashboard.conciliacoes',
             'dashboard.pacientes',
@@ -79,8 +74,6 @@ class RoleCatalog
             'solicitacoes.view',
             'guias.view',
             'guias.viewOwn',
-            'antecipacoes.view',
-            'antecipacoes.viewOwn',
             'lancamentos.view',
             'lancamentos.viewOwn',
             'conciliacoes.view',
@@ -93,11 +86,9 @@ class RoleCatalog
         ],
         'profissional' => [
             'dashboard.guias',
-            'dashboard.antecipacoes',
             'dashboard.lancamentos',
             'dashboard.conciliacoes',
             'guias.viewOwn',
-            'antecipacoes.viewOwn',
             'lancamentos.viewOwn',
             'conciliacoes.viewOwn',
         ],

@@ -9,7 +9,7 @@ use Illuminate\Validation\Rule;
 /**
  * Edicao manual de uma solicitacao ja registrada, restrita a
  * `solicitacoes.manage`. Paciente e convenio ficam de fora de proposito: sao
- * campos de identidade com dados gravados (snapshot) em Guia/Antecipacao ja
+ * campos de identidade com dados gravados (snapshot) em Guia/Lancamento ja
  * geradas a partir deles.
  */
 class UpdateSolicitacaoRequest extends FormRequest

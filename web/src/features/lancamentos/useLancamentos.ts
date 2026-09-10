@@ -37,7 +37,7 @@ export function useCriarLancamento() {
   return useMutation({
     mutationFn: async (payload: LancamentoForm) => {
       const { data } = await apiClient.post<{ data: Lancamento }>(
-        `/antecipacoes/${Number(payload.antecipacao_id)}/lancamentos`,
+        `/guias/${Number(payload.guia_id)}/lancamentos`,
         {
           profissional_id: Number(payload.profissional_id),
           data_sessao: payload.data_sessao,
@@ -53,7 +53,7 @@ export function useCriarLancamento() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['lancamentos'] })
-      await queryClient.invalidateQueries({ queryKey: ['antecipacoes'] })
+      await queryClient.invalidateQueries({ queryKey: ['guias'] })
     },
   })
 }
@@ -65,7 +65,7 @@ export function useImportarLancamentosTranscritos() {
     mutationFn: async (payload: LancamentoImportForm) => {
       const { data } = await apiClient.post<{
         data: LancamentoTranscricaoImportResult
-      }>(`/antecipacoes/${Number(payload.antecipacao_id)}/lancamentos/importar-transcricao`, {
+      }>(`/guias/${Number(payload.guia_id)}/lancamentos/importar-transcricao`, {
         profissional_id: Number(payload.profissional_id),
         transcricao: payload.transcricao,
         confirmar_envio: false,
@@ -75,7 +75,7 @@ export function useImportarLancamentosTranscritos() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['lancamentos'] })
-      await queryClient.invalidateQueries({ queryKey: ['antecipacoes'] })
+      await queryClient.invalidateQueries({ queryKey: ['guias'] })
     },
   })
 }
@@ -88,12 +88,12 @@ export function useImportarLancamentosTranscritos() {
  */
 export function useLerRegistroSessoes() {
   return useMutation({
-    mutationFn: async ({ antecipacaoId, arquivo }: { antecipacaoId: string; arquivo: File }) => {
+    mutationFn: async ({ guiaId, arquivo }: { guiaId: string; arquivo: File }) => {
       const body = new FormData()
       body.append('arquivo', arquivo)
 
       const { data } = await apiClient.post<{ data: LancamentoTranscricaoImportResult }>(
-        `/antecipacoes/${Number(antecipacaoId)}/lancamentos/ler-registro`,
+        `/guias/${Number(guiaId)}/lancamentos/ler-registro`,
         body,
         { headers: { 'Content-Type': 'multipart/form-data' } },
       )
@@ -127,13 +127,13 @@ export function useConfirmarLancamentosTranscritos() {
 
       const { data } = await apiClient.post<{
         data: LancamentoTranscricaoImportResult
-      }>(`/antecipacoes/${Number(payload.antecipacao_id)}/lancamentos/importar-transcricao`, formData)
+      }>(`/guias/${Number(payload.guia_id)}/lancamentos/importar-transcricao`, formData)
 
       return data.data
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['lancamentos'] })
-      await queryClient.invalidateQueries({ queryKey: ['antecipacoes'] })
+      await queryClient.invalidateQueries({ queryKey: ['guias'] })
     },
   })
 }

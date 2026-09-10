@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\Antecipacao;
 use App\Models\ConciliacaoFinanceira;
 use App\Models\Convenio;
 use App\Models\Especialidade;
@@ -138,10 +137,9 @@ class ConciliacoesApiTest extends TestCase
     private function criarConciliacaoFinalizadaComLancamento(string $convenioNome, string $especialidadeNome, string $tipoTerapia): ConciliacaoFinanceira
     {
         $guia = $this->criarGuiaFinalizada($convenioNome, $especialidadeNome, $tipoTerapia);
-        $antecipacao = $guia->antecipacoes()->firstOrFail();
         $profissional = Profissional::query()->where('especialidade_id', $guia->especialidade_id)->firstOrFail();
 
-        app(LancamentoService::class)->registrar($antecipacao, $profissional, today());
+        app(LancamentoService::class)->registrar($guia, $profissional, today());
 
         return app(ConciliacaoService::class)->gerarParaGuia($guia)->fresh(['guia', 'profissional']);
     }
@@ -164,6 +162,7 @@ class ConciliacoesApiTest extends TestCase
             'numero_guia' => 'GUIA-CONC-'.uniqid(),
             'tipo_terapia' => $tipoTerapia,
             'status' => 'under_review',
+            'sessoes_autorizadas' => 10,
             'data_solicitacao' => today(),
             'data_finalizacao' => null,
             'senha' => null,
@@ -191,6 +190,7 @@ class ConciliacoesApiTest extends TestCase
             'numero_guia' => $prefixoNumero,
             'tipo_terapia' => $tipoTerapia,
             'status' => 'under_review',
+            'sessoes_autorizadas' => 10,
             'data_solicitacao' => today(),
             'data_finalizacao' => null,
             'senha' => null,
@@ -202,8 +202,7 @@ class ConciliacoesApiTest extends TestCase
             'senha' => 'ABC123',
         ]);
 
-        $antecipacao = $guia->antecipacoes()->firstOrFail();
-        app(LancamentoService::class)->registrar($antecipacao, $profissional, today());
+        app(LancamentoService::class)->registrar($guia, $profissional, today());
 
         return app(ConciliacaoService::class)->gerarParaGuia($guia)->fresh(['guia', 'profissional']);
     }
@@ -260,6 +259,7 @@ class ConciliacoesApiTest extends TestCase
             'numero_guia' => 'GUIA-EXTERNO-CONC-001',
             'tipo_terapia' => 'especializada',
             'status' => 'finalized',
+            'sessoes_autorizadas' => 1,
             'data_solicitacao' => today(),
             'data_finalizacao' => today(),
             'senha' => 'EXTCONC123',
@@ -267,21 +267,9 @@ class ConciliacoesApiTest extends TestCase
             'observacoes' => null,
         ]);
 
-        $antecipacao = Antecipacao::query()->create([
-            'tenant_id' => $tenant->id,
-            'guia_id' => $guia->id,
-            'paciente_id' => $paciente->id,
-            'convenio_id' => $convenio->id,
-            'ciclo_inicio' => today(),
-            'ciclo_fim' => today(),
-            'qtd_autorizada' => 1,
-            'qtd_utilizada' => 0,
-            'status' => 'open',
-        ]);
-
         Lancamento::query()->create([
             'tenant_id' => $tenant->id,
-            'antecipacao_id' => $antecipacao->id,
+            'guia_id' => $guia->id,
             'profissional_id' => $profissional->id,
             'data_sessao' => today(),
             'status' => 'completed',

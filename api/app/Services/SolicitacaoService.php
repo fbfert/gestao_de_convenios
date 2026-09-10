@@ -224,7 +224,7 @@ class SolicitacaoService
     /**
      * Edicao manual (admin): so medico/cid/data/observacoes — ver
      * UpdateSolicitacaoRequest. paciente_id/convenio_id ficam de fora de
-     * proposito: sao identidade com dados gravados em Guia/Antecipacao/
+     * proposito: sao identidade com dados gravados em Guia/Lancamento/
      * Conciliacao ja geradas a partir do valor original.
      */
     public function atualizar(Solicitacao $solicitacao, array $dados): Solicitacao

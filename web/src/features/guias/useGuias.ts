@@ -60,7 +60,6 @@ export function useCriarGuia() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['guias'] })
-      await queryClient.invalidateQueries({ queryKey: ['antecipacoes'] })
     },
   })
 }
@@ -118,7 +117,6 @@ export function useFinalizarGuia() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['guias'] })
-      await queryClient.invalidateQueries({ queryKey: ['antecipacoes'] })
     },
   })
 }

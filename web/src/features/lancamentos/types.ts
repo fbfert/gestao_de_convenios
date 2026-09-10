@@ -1,6 +1,6 @@
 export type Lancamento = {
   id: number
-  antecipacao_id: number
+  guia_id: number
   profissional_id: number
   data_sessao: string
   hora_inicio: string | null
@@ -10,9 +10,10 @@ export type Lancamento = {
   transcricao_bruta: string | null
   status: string
   observacoes: string | null
-  antecipacao?: {
+  guia?: {
     id: number
-    guia_id: number
+    numero_guia: string | null
+    paciente_id: number
   }
   profissional?: {
     id: number
@@ -33,7 +34,7 @@ export type LancamentoFilters = {
 }
 
 export type LancamentoForm = {
-  antecipacao_id: string
+  guia_id: string
   profissional_id: string
   data_sessao: string
   hora_inicio: string
@@ -44,7 +45,7 @@ export type LancamentoForm = {
 }
 
 export type LancamentoImportForm = {
-  antecipacao_id: string
+  guia_id: string
   profissional_id: string
   transcricao: string
 }
@@ -215,7 +216,6 @@ export type LancamentoImportLinhaDados = {
   convenio: string
   convenio_id: number | null
   guia_id: number | null
-  antecipacao_id: number | null
   profissional: string
   profissional_id: number | null
   data_sessao: string | null

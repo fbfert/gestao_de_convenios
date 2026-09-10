@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\Antecipacao;
+use App\Models\Guia;
 use App\Models\Lancamento;
 use App\Models\Profissional;
 use App\Services\Concerns\AppliesOwnScope;
@@ -12,6 +12,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use App\Support\OrdenaListagem;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use RuntimeException;
 
 class LancamentoService
@@ -19,7 +20,6 @@ class LancamentoService
     use AppliesOwnScope;
 
     public function __construct(
-        private readonly AntecipacaoService $antecipacaoService,
         private readonly LancamentoTranscricaoService $transcricaoService
     ) {
     }
@@ -27,7 +27,7 @@ class LancamentoService
     public function listar(array $filtros = [], int $perPage = 15): LengthAwarePaginator
     {
         $query = $this->aplicarEscopoOwn(
-            Lancamento::query()->with(['antecipacao.guia', 'profissional']),
+            Lancamento::query()->with(['guia', 'profissional']),
             'lancamentos.view',
             'lancamentos.viewOwn',
             fn ($query, $user) => $query->where('profissional_id', $user->profissional_id)
@@ -41,7 +41,7 @@ class LancamentoService
                 $filtros,
                 [
                     'id' => 'lancamentos.id',
-                    'antecipacao' => 'lancamentos.antecipacao_id',
+                    'guia' => 'lancamentos.guia_id',
                     'data' => 'lancamentos.data_sessao',
                     'acompanhante' => 'lancamentos.acompanhante',
                     'status' => 'lancamentos.status',
@@ -58,12 +58,12 @@ class LancamentoService
 
     public function buscar(int $id): Lancamento
     {
-        return Lancamento::query()->with(['antecipacao.guia', 'profissional'])->findOrFail($id);
+        return Lancamento::query()->with(['guia', 'profissional'])->findOrFail($id);
     }
 
-    public function registrar(Antecipacao $antecipacao, Profissional $profissional, Carbon $data): Lancamento
+    public function registrar(Guia $guia, Profissional $profissional, Carbon $data): Lancamento
     {
-        return $this->registrarSessao($antecipacao, $profissional, [
+        return $this->registrarSessao($guia, $profissional, [
             'data_sessao' => $data->toDateString(),
             'hora_inicio' => null,
             'hora_fim' => null,
@@ -73,14 +73,33 @@ class LancamentoService
         ]);
     }
 
-    public function registrarSessao(Antecipacao $antecipacao, Profissional $profissional, array $dados): Lancamento
+    public function registrarSessao(Guia $guia, Profissional $profissional, array $dados): Lancamento
     {
-        return DB::transaction(function () use ($antecipacao, $profissional, $dados) {
-            $lancamento = $this->persistirSessao($antecipacao, $profissional, $dados);
-            $this->antecipacaoService->consumirCota($antecipacao);
+        return DB::transaction(function () use ($guia, $profissional, $dados) {
+            $this->garantirVaga($guia);
 
-            return $lancamento->refresh();
+            return $this->persistirSessao($guia, $profissional, $dados)->refresh();
         });
+    }
+
+    /**
+     * Guia precisa estar aprovada/finalizada (Guia::aceitaLancamento()) e
+     * ter sessão sobrando (Guia::sessoesDisponiveis()) — substituiu o antigo
+     * AntecipacaoService::consumirCota(), sem tabela de cota separada.
+     */
+    private function garantirVaga(Guia $guia): void
+    {
+        if (! $guia->aceitaLancamento()) {
+            throw ValidationException::withMessages([
+                'guia' => ['Esta guia ainda não está aprovada — não dá para lançar sessão nela.'],
+            ]);
+        }
+
+        if ($guia->sessoesDisponiveis() <= 0) {
+            throw ValidationException::withMessages([
+                'guia' => ['Esta guia já não tem sessões disponíveis.'],
+            ]);
+        }
     }
 
     public function atualizar(Lancamento $lancamento, array $dados): Lancamento
@@ -99,21 +118,10 @@ class LancamentoService
         return $lancamento->refresh();
     }
 
+    /** Sem balde de cota pra reabrir — a cota é contada ao vivo, então apagar já basta. */
     public function remover(Lancamento $lancamento): void
     {
-        DB::transaction(function () use ($lancamento) {
-            $antecipacao = $lancamento->antecipacao()->lockForUpdate()->firstOrFail();
-
-            if ($antecipacao->qtd_utilizada > 0) {
-                $antecipacao->qtd_utilizada--;
-                if ($antecipacao->status === 'closed' && $antecipacao->qtd_utilizada < $antecipacao->qtd_autorizada) {
-                    $antecipacao->status = 'open';
-                }
-                $antecipacao->save();
-            }
-
-            $lancamento->delete();
-        });
+        $lancamento->delete();
     }
 
     /**
@@ -128,7 +136,7 @@ class LancamentoService
      * @param array<int, array{data_sessao:string, hora_inicio?:string|null, hora_fim?:string|null, acompanhante?:string|null, resumo_atividades?:string|null}> $sessoes
      * @return array{cabecalho: array<string, string|null>, sessoes: array<int, array<string, string|null>>, registros: array<int, Lancamento>}
      */
-    public function confirmarTranscricao(Antecipacao $antecipacao, Profissional $profissional, string $transcricao, array $sessoes): array
+    public function confirmarTranscricao(Guia $guia, Profissional $profissional, string $transcricao, array $sessoes): array
     {
         $extraido = $this->transcricaoService->extrair($transcricao);
 
@@ -136,11 +144,13 @@ class LancamentoService
             throw new RuntimeException('A transcrição não contém sessões reconhecíveis.');
         }
 
-        $registros = DB::transaction(function () use ($antecipacao, $profissional, $transcricao, $sessoes) {
+        $registros = DB::transaction(function () use ($guia, $profissional, $transcricao, $sessoes) {
             $registros = [];
 
             foreach ($sessoes as $sessao) {
-                $registros[] = $this->persistirSessao($antecipacao, $profissional, [
+                $this->garantirVaga($guia);
+
+                $registros[] = $this->persistirSessao($guia, $profissional, [
                     'data_sessao' => $sessao['data_sessao'],
                     'hora_inicio' => $sessao['hora_inicio'],
                     'hora_fim' => $sessao['hora_fim'],
@@ -148,7 +158,6 @@ class LancamentoService
                     'resumo_atividades' => $sessao['resumo_atividades'],
                     'transcricao_bruta' => $transcricao,
                 ]);
-                $this->antecipacaoService->consumirCota($antecipacao);
             }
 
             return $registros;
@@ -161,11 +170,11 @@ class LancamentoService
         ];
     }
 
-    private function persistirSessao(Antecipacao $antecipacao, Profissional $profissional, array $dados): Lancamento
+    private function persistirSessao(Guia $guia, Profissional $profissional, array $dados): Lancamento
     {
         return Lancamento::query()->create([
-            'tenant_id' => $antecipacao->tenant_id,
-            'antecipacao_id' => $antecipacao->id,
+            'tenant_id' => $guia->tenant_id,
+            'guia_id' => $guia->id,
             'profissional_id' => $profissional->id,
             'data_sessao' => $dados['data_sessao'],
             'hora_inicio' => $dados['hora_inicio'] ?? null,

@@ -4,8 +4,6 @@ use App\Http\Controllers\AlertaController;
 use App\Http\Controllers\AlertaDestinatarioController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AutomacaoController;
-use App\Http\Controllers\AntecipacaoController;
-use App\Http\Controllers\AntecipacaoImportController;
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmailSettingsController;
@@ -253,18 +251,9 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EncerrarSessaoExpirada::
     Route::post('/guias/{guia}/consultar-unimed', [GuiaController::class, 'consultarUnimed']);
     Route::post('/guias/{guia}/buscar-senha-validade-unimed', [GuiaController::class, 'buscarSenhaValidadeUnimed']);
 
-    Route::get('/antecipacoes', [AntecipacaoController::class, 'index']);
-    Route::get('/antecipacoes/importar/template', [AntecipacaoImportController::class, 'template'])
-        ->middleware('permission:antecipacoes.manage');
-    Route::post('/antecipacoes/importar', [AntecipacaoImportController::class, 'previsualizar'])
-        ->middleware('permission:antecipacoes.manage');
-    Route::post('/antecipacoes/importar/{antecipacao_import_lote}/confirmar', [AntecipacaoImportController::class, 'confirmar'])
-        ->middleware('permission:antecipacoes.manage');
-    Route::get('/antecipacoes/{antecipacao}', [AntecipacaoController::class, 'show']);
-    Route::patch('/antecipacoes/{antecipacao}', [AntecipacaoController::class, 'update'])->middleware('permission:antecipacoes.manage');
-    Route::post('/antecipacoes/{antecipacao}/lancamentos', [LancamentoController::class, 'store']);
-    Route::post('/antecipacoes/{antecipacao}/lancamentos/importar-transcricao', [LancamentoController::class, 'importarTranscricao']);
-    Route::post('/antecipacoes/{antecipacao}/lancamentos/ler-registro', [LancamentoController::class, 'lerRegistroSessoes']);
+    Route::post('/guias/{guia}/lancamentos', [LancamentoController::class, 'store']);
+    Route::post('/guias/{guia}/lancamentos/importar-transcricao', [LancamentoController::class, 'importarTranscricao']);
+    Route::post('/guias/{guia}/lancamentos/ler-registro', [LancamentoController::class, 'lerRegistroSessoes']);
     Route::post('/lancamentos/importar-analitico', [LancamentoController::class, 'importarAnalitico']);
     Route::get('/lancamentos/templates/registro-sessoes', [LancamentoPrintTemplateController::class, 'show']);
     Route::put('/lancamentos/templates/registro-sessoes', [LancamentoPrintTemplateController::class, 'update']);

@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\ClinicaPacientePendente;
 use App\Models\Guia;
-use App\Models\Antecipacao;
 use App\Models\Paciente;
 use App\Models\PacienteArquivo;
 use App\Models\PacienteDocumento;
@@ -18,15 +17,15 @@ use InvalidArgumentException;
 /**
  * Unifica dois cadastros de paciente duplicados (ver PacienteDuplicadoService).
  * O perdedor nunca é apagado — fica ativo=false e marcado como mesclado no
- * vencedor. `paciente_id` está denormalizado em solicitacoes/guias/
- * antecipacoes de forma independente (não herda via solicitacao_id/guia_id),
- * por isso as três precisam ser repontadas separadamente. `lancamentos` não
- * tem paciente_id próprio (pendura em antecipacao_id) — segue sozinho.
+ * vencedor. `paciente_id` está denormalizado em solicitacoes/guias de forma
+ * independente (não herda via solicitacao_id), por isso as duas precisam
+ * ser repontadas separadamente. `lancamentos` não tem paciente_id próprio
+ * (pendura em guia_id) — segue sozinho quando a guia é repontada.
  */
 class PacienteMergeService
 {
     /**
-     * @return array{solicitacoes: int, guias: int, antecipacoes: int, telefones: int, documentos: int, arquivos: int}
+     * @return array{solicitacoes: int, guias: int, telefones: int, documentos: int, arquivos: int}
      */
     public function preview(int $tenantId, int $vencedorId, int $perdedorId): array
     {
@@ -35,7 +34,6 @@ class PacienteMergeService
         return [
             'solicitacoes' => Solicitacao::where('tenant_id', $tenantId)->where('paciente_id', $perdedor->id)->count(),
             'guias' => Guia::where('tenant_id', $tenantId)->where('paciente_id', $perdedor->id)->count(),
-            'antecipacoes' => Antecipacao::where('tenant_id', $tenantId)->where('paciente_id', $perdedor->id)->count(),
             'telefones' => PacienteTelefone::where('tenant_id', $tenantId)->where('paciente_id', $perdedor->id)->count(),
             'documentos' => PacienteDocumento::where('tenant_id', $tenantId)->where('paciente_id', $perdedor->id)->count(),
             'arquivos' => PacienteArquivo::where('tenant_id', $tenantId)->where('paciente_id', $perdedor->id)->count(),
@@ -56,7 +54,7 @@ class PacienteMergeService
         }
 
         DB::transaction(function () use ($tenantId, $vencedor, $perdedor, $clinicaIdEscolhido) {
-            foreach ([Solicitacao::class, Guia::class, Antecipacao::class, PacienteTelefone::class, PacienteDocumento::class, PacienteArquivo::class] as $modelo) {
+            foreach ([Solicitacao::class, Guia::class, PacienteTelefone::class, PacienteDocumento::class, PacienteArquivo::class] as $modelo) {
                 $modelo::where('tenant_id', $tenantId)->where('paciente_id', $perdedor->id)
                     ->get()
                     ->each(fn ($registro) => $registro->update(['paciente_id' => $vencedor->id]));

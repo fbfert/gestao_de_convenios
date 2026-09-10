@@ -245,14 +245,13 @@ export function PacientesDuplicadosSecao({ onFechar }: { onFechar: () => void })
         (acc, item) => ({
           solicitacoes: acc.solicitacoes + item.solicitacoes,
           guias: acc.guias + item.guias,
-          antecipacoes: acc.antecipacoes + item.antecipacoes,
         }),
-        { solicitacoes: 0, guias: 0, antecipacoes: 0 },
+        { solicitacoes: 0, guias: 0 },
       )
 
       const confirmado = await confirmar({
         titulo: `Unificar ${inputs.length} par(es) de pacientes?`,
-        descricao: `Isso vai mover ${totais.solicitacoes} solicitação(ões), ${totais.guias} guia(s) e ${totais.antecipacoes} antecipação(ões) para o cadastro vencedor de cada par. O outro lado fica inativo e marcado como mesclado — nada é apagado.`,
+        descricao: `Isso vai mover ${totais.solicitacoes} solicitação(ões) e ${totais.guias} guia(s) para o cadastro vencedor de cada par. O outro lado fica inativo e marcado como mesclado — nada é apagado.`,
         confirmarTexto: 'Unificar',
         variante: 'perigo',
       })

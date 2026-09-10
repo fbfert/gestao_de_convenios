@@ -30,7 +30,6 @@ class OrdenacaoListagensApiTest extends TestCase
             'guias' => ['/api/guias', 'numero_guia'],
             'solicitações' => ['/api/solicitacoes', 'status'],
             'sessões' => ['/api/lancamentos', 'data'],
-            'antecipações' => ['/api/antecipacoes', 'status'],
             'conciliações' => ['/api/conciliacoes', 'status'],
             'analíticos' => ['/api/analiticos', 'importado_em'],
         ];

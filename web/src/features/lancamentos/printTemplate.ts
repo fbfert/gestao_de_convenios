@@ -157,10 +157,7 @@ export function buildGuiaTemplateData(guia: TemplateGuiaOrigin, clinica: string)
   }
 }
 
-export type TemplateAntecipacaoOrigin = {
-  paciente?: { nome: string; carteirinha?: string | null } | null
-  guia?: { numero_guia: string | null; tipo_terapia: string | null } | null
-  especialidade?: { nome: string } | null
+export type TemplateGuiaComSessoesOrigin = TemplateGuiaOrigin & {
   lancamentos?: Array<{
     data_sessao: string | null
     hora_inicio: string | null
@@ -181,16 +178,16 @@ function formatDataSessao(value: string | null | undefined) {
 }
 
 /**
- * Monta o modelo de impressão já preenchido com os dados reais da
- * antecipação (guia, paciente, sessões já lançadas) — em vez do modelo em
- * branco (`defaultBlankTemplateData`), que é só um formulário para o
- * profissional preencher à mão.
+ * Monta o modelo de impressão já preenchido com os dados reais da guia
+ * (paciente, sessões já lançadas) — em vez do modelo em branco
+ * (`defaultBlankTemplateData`), que é só um formulário para o profissional
+ * preencher à mão.
  */
 export function buildFilledTemplateData(
-  antecipacao: TemplateAntecipacaoOrigin,
+  guiaComSessoes: TemplateGuiaComSessoesOrigin,
   clinica: string,
 ): TemplateData {
-  const lancamentos = [...(antecipacao.lancamentos ?? [])].sort((a, b) =>
+  const lancamentos = [...(guiaComSessoes.lancamentos ?? [])].sort((a, b) =>
     (a.data_sessao ?? '').localeCompare(b.data_sessao ?? ''),
   )
 
@@ -203,12 +200,12 @@ export function buildFilledTemplateData(
   )
 
   return {
-    guia_numero: antecipacao.guia?.numero_guia || '—',
+    guia_numero: guiaComSessoes.numero_guia || '—',
     clinica: clinica || '—',
-    paciente: antecipacao.paciente?.nome || '—',
-    numero_cartao: antecipacao.paciente?.carteirinha || '—',
+    paciente: guiaComSessoes.paciente?.nome || '—',
+    numero_cartao: guiaComSessoes.paciente?.carteirinha || '—',
     profissional_executante: profissionais.join(', ') || '—',
-    terapia_aplicada: antecipacao.guia?.tipo_terapia || antecipacao.especialidade?.nome || '—',
+    terapia_aplicada: guiaComSessoes.especialidade?.nome || '—',
     data_impressao: new Date().toLocaleDateString('pt-BR'),
     sessoes: lancamentos.length
       ? lancamentos.map((lancamento, index) => ({

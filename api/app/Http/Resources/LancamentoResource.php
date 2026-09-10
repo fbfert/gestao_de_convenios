@@ -11,7 +11,7 @@ class LancamentoResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'antecipacao_id' => $this->antecipacao_id,
+            'guia_id' => $this->guia_id,
             'profissional_id' => $this->profissional_id,
             'data_sessao' => $this->data_sessao?->toDateString(),
             'hora_inicio' => $this->hora_inicio,
@@ -21,9 +21,10 @@ class LancamentoResource extends JsonResource
             'transcricao_bruta' => $this->transcricao_bruta,
             'status' => $this->status,
             'observacoes' => $this->observacoes,
-            'antecipacao' => $this->whenLoaded('antecipacao', fn () => [
-                'id' => $this->antecipacao->id,
-                'guia_id' => $this->antecipacao->guia_id,
+            'guia' => $this->whenLoaded('guia', fn () => [
+                'id' => $this->guia->id,
+                'numero_guia' => $this->guia->numero_guia,
+                'paciente_id' => $this->guia->paciente_id,
             ]),
             'profissional' => $this->whenLoaded('profissional', fn () => [
                 'id' => $this->profissional->id,

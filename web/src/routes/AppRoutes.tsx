@@ -10,9 +10,6 @@ import { SolicitacaoEditarPage } from '../features/solicitacoes/SolicitacaoEdita
 import { ImportarSolicitacoesPage } from '../features/solicitacoes/ImportarSolicitacoesPage'
 import { ImportarPacientesPage, PacientesPage } from '../features/pacientes'
 import { GuiaDetalhePage, GuiaEditarPage, GuiasPage, ImportarGuiasPage } from '../features/guias'
-import { AntecipacoesPage } from '../features/antecipacoes/AntecipacoesPage'
-import { AntecipacaoEditarPage } from '../features/antecipacoes/AntecipacaoEditarPage'
-import { ImportarAntecipacoesPage } from '../features/antecipacoes/ImportarAntecipacoesPage'
 import { AnaliticosPage, AnaliticoDetalhePage } from '../features/analiticos'
 import { LancamentosPage, LancamentoEditarPage } from '../features/lancamentos'
 import { LancamentoTemplatesPage } from '../features/lancamentos/LancamentoTemplatesPage'
@@ -78,9 +75,6 @@ export function AppRoutes() {
           <Route path="/convenios/ajuda" element={<ConvenioAjudaPage />} />
           <Route path="/convenios/:id" element={<ConvenioDetalhePage />} />
           <Route path="/convenios/:id/editar" element={<ConveniosPage />} />
-          <Route path="/antecipacoes" element={<AntecipacoesPage />} />
-          <Route path="/antecipacoes/importar" element={<ImportarAntecipacoesPage />} />
-          <Route path="/antecipacoes/:id/editar" element={<AntecipacaoEditarPage />} />
           <Route path="/lancamentos/templates" element={<LancamentoTemplatesPage />} />
           <Route path="/lancamentos/templates/" element={<LancamentoTemplatesPage />} />
           <Route path="/lancamentos" element={<LancamentosPage />} />

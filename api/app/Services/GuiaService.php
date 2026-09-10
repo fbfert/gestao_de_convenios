@@ -23,7 +23,6 @@ class GuiaService
     use AppliesOwnScope;
 
     public function __construct(
-        private readonly AntecipacaoService $antecipacaoService,
         private readonly SolicitacaoService $solicitacaoService,
     ) {
     }
@@ -90,6 +89,16 @@ class GuiaService
                     ->whereDate('validade_senha', '>=', today())
                     ->whereDate('validade_senha', '<=', today()->copy()->addDays($dias));
             })
+            // Guias com espaço pra lançar sessão — usado pelo seletor de guia
+            // na tela de Sessões (substituiu o antigo seletor de Antecipação
+            // aberta). Espelha Guia::sessoesDisponiveis() em SQL: não dá pra
+            // filtrar por um método de model direto na query.
+            ->when(Arr::get($filtros, 'disponivel_para_lancamento'), fn ($query) => $query
+                ->whereIn('status', [GuiaStatus::APPROVED, GuiaStatus::FINALIZED])
+                ->whereRaw(
+                    'COALESCE(sessoes_autorizadas, sessoes_solicitadas, 0) > '
+                    .'(SELECT COUNT(*) FROM lancamentos WHERE lancamentos.guia_id = guias.id)'
+                ))
             ->tap(fn ($query) => OrdenaListagem::aplicar(
                 $query->select('guias.*'),
                 $filtros,
@@ -225,7 +234,7 @@ class GuiaService
             'solicitacaoItem.profissional',
             'automacaoExecucao.eventos',
             'ultimaAutomacaoUnimed.eventos',
-            'antecipacoes',
+            'lancamentos',
             'conciliacoes',
         ])->findOrFail($id);
     }
@@ -260,10 +269,15 @@ class GuiaService
     /**
      * Tambem aceita guia ja 'approved' (achado em 31/08/2026: guias
      * aprovadas pela automacao Unimed pulam direto pra 'approved' e nunca
-     * passavam por aqui, entao nunca abriam ciclo de Antecipacao — sem
-     * ciclo, nenhum Lancamento de sessao tem cota pra consumir). Nesse caso
-     * senha/validade_senha ja vieram da automacao (CapturarSenhaValidadeUnimedService)
-     * e servem de default, mas continuam editaveis pelo usuario.
+     * passavam por aqui). Nesse caso senha/validade_senha ja vieram da
+     * automacao (CapturarSenhaValidadeUnimedService) e servem de default,
+     * mas continuam editaveis pelo usuario.
+     *
+     * Finalizar e so bookkeeping (senha/validade/data) desde 10/09/2026: o
+     * lancamento de sessao nao depende mais disto — guia com status APPROVED
+     * ou FINALIZED ja aceita Lancamento (Guia::aceitaLancamento()), a cota
+     * e contada ao vivo contra Guia::sessoesDisponiveis(). Antes disso
+     * Finalizar abria um ciclo de Antecipacao (removido).
      */
     public function finalizar(Guia $guia, array $dados): Guia
     {
@@ -313,8 +327,6 @@ class GuiaService
         $this->registrarTransicao($guia, GuiaStatus::FINALIZED, [
             'origem' => GuiaStatusHistorico::ORIGEM_MANUAL,
         ]);
-
-        $this->antecipacaoService->abrirCiclo($guia);
 
         if ($guia->solicitacao_id) {
             $this->solicitacaoService->sincronizarStatusComGuias($guia->solicitacao);

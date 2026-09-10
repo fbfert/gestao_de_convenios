@@ -9,7 +9,7 @@ import { Link, useMatch, useNavigate, useSearchParams } from 'react-router-dom'
 import { translateStatus } from '../../lib/statusLabels'
 import { Select } from '../../components/ui/Select'
 import { useProfissionais } from '../../lib/queries/useReferenceData'
-import { useAntecipacoes } from '../antecipacoes/useAntecipacoes'
+import { useGuias } from '../guias/useGuias'
 import {
   useCriarLancamento,
   useLancamentoPrintTemplate,
@@ -34,7 +34,7 @@ const defaultFilters: LancamentoFilters = {
 }
 
 const emptyForm: LancamentoForm = {
-  antecipacao_id: '',
+  guia_id: '',
   profissional_id: '',
   data_sessao: new Date().toISOString().slice(0, 10),
   hora_inicio: '',
@@ -57,14 +57,14 @@ export function LancamentosPage() {
   const navigate = useNavigate()
   const isCreateRoute = useMatch('/lancamentos/novo') !== null
   const [searchParams] = useSearchParams()
-  const initialAntecipacaoId = searchParams.get('antecipacao_id') ?? ''
+  const initialGuiaId = searchParams.get('guia_id') ?? ''
 
   const { filters, page, setFilters, setPage, searchParams: paginaSearchParams } = useListaNaUrl(defaultFilters)
   const [draftFilters, setDraftFilters] = useState(filters)
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [form, setForm] = useState<LancamentoForm>({
     ...emptyForm,
-    antecipacao_id: initialAntecipacaoId,
+    guia_id: initialGuiaId,
   })
   const [formError, setFormError] = useState<string | null>(null)
 
@@ -74,28 +74,40 @@ export function LancamentosPage() {
   })
 
   const profissionaisQuery = useProfissionais()
-  const antecipacoesQuery = useAntecipacoes({ status: '', paciente_id: '', convenio_id: '' }, 1)
+  const guiasDisponiveisQuery = useGuias(
+    {
+      status: '',
+      convenio_id: '',
+      profissional_id: '',
+      paciente_nome: '',
+      validade_senha_vencendo_em_dias: '',
+      mostrar_a_definir: '',
+      mostrar_historico: '',
+      disponivel_para_lancamento: '1',
+    },
+    1,
+  )
   const lancamentosQuery = useLancamentos({ ...filters, ...ordenacao }, page)
   const printTemplateQuery = useLancamentoPrintTemplate()
   const criarLancamento = useCriarLancamento()
 
   const profissionais = useMemo(() => profissionaisQuery.data ?? [], [profissionaisQuery.data])
-  const antecipacoes = useMemo(() => antecipacoesQuery.data?.data ?? [], [antecipacoesQuery.data])
+  const guiasDisponiveis = useMemo(() => guiasDisponiveisQuery.data?.data ?? [], [guiasDisponiveisQuery.data])
   const lancamentos = lancamentosQuery.data?.data ?? []
   const totalPages = lancamentosQuery.data?.meta?.last_page ?? 1
   const query = paginaSearchParams.toString()
   const fromHref = query ? `/lancamentos?${query}` : '/lancamentos'
 
   useEffect(() => {
-    if (antecipacoes.length === 0) {
+    if (guiasDisponiveis.length === 0) {
       return
     }
 
     setForm((current) => ({
       ...current,
-      antecipacao_id: current.antecipacao_id || initialAntecipacaoId || String(antecipacoes[0].id),
+      guia_id: current.guia_id || initialGuiaId || String(guiasDisponiveis[0].id),
     }))
-  }, [antecipacoes, initialAntecipacaoId])
+  }, [guiasDisponiveis, initialGuiaId])
 
   useEffect(() => {
     if (profissionais.length === 0) {
@@ -121,7 +133,7 @@ export function LancamentosPage() {
     navigate({ pathname: '/lancamentos/novo', search: query })
     setForm((current) => ({
       ...emptyForm,
-      antecipacao_id: current.antecipacao_id || initialAntecipacaoId || current.antecipacao_id,
+      guia_id: current.guia_id || initialGuiaId,
       profissional_id: current.profissional_id,
     }))
     setFormError(null)
@@ -143,9 +155,7 @@ export function LancamentosPage() {
     }
   }
 
-  const antecipaSelecionada = antecipacoes.find(
-    (antecipacao) => String(antecipacao.id) === form.antecipacao_id,
-  )
+  const guiaSelecionada = guiasDisponiveis.find((guia) => String(guia.id) === form.guia_id)
   const printHtml = useMemo(
     () =>
       renderLancamentoPrintTemplate(
@@ -168,9 +178,9 @@ export function LancamentosPage() {
                 <Tooltip rotulo="O que se registra aqui">
                   <p className="font-semibold text-white">O atendimento realizado</p>
                   <p className="mt-1">
-                    Cada sessão lançada aqui consome uma unidade da cota da Antecipação escolhida.
-                    Dá para digitar manualmente (botão Novo) ou importar a transcrição de um
-                    formulário em papel lido por IA (Importar transcrição).
+                    Cada sessão lançada aqui conta contra a cota de sessões disponíveis da guia
+                    escolhida. Dá para digitar manualmente (botão Novo) ou importar a transcrição
+                    de um formulário em papel lido por IA (Importar transcrição).
                   </p>
                 </Tooltip>
               </h2>
@@ -266,24 +276,25 @@ export function LancamentosPage() {
 
               <label className="block space-y-2">
                 <span className="flex items-center gap-1 text-corpo font-medium text-slate-200">
-                  Antecipação
+                  Guia
                   <Tooltip rotulo="O que escolher aqui">
-                    A cota de sessões do paciente para esta especialidade/ciclo. Escolha a que
-                    corresponde ao atendimento — lançar contra a antecipação errada consome a cota
-                    de outro paciente ou especialidade.
+                    A guia aprovada do paciente para esta especialidade. Escolha a que corresponde
+                    ao atendimento — lançar contra a guia errada consome a cota de outro paciente
+                    ou especialidade.
                   </Tooltip>
                 </span>
                 <Select
-                  value={form.antecipacao_id}
+                  value={form.guia_id}
                   onChange={(event) =>
-                    setForm((current) => ({ ...current, antecipacao_id: event.target.value }))
+                    setForm((current) => ({ ...current, guia_id: event.target.value }))
                   }
                   className={selectClasses()}
-                  data-testid="lancamento-antecipacao"
+                  data-testid="lancamento-guia"
                 >
-                  {antecipacoes.map((antecipacao) => (
-                    <option key={antecipacao.id} value={antecipacao.id}>
-                      #{antecipacao.id} · Paciente {antecipacao.paciente_id} · {antecipacao.status}
+                  {guiasDisponiveis.map((guia) => (
+                    <option key={guia.id} value={guia.id}>
+                      #{guia.id} · {guia.numero_guia ?? 'sem nº'} · Paciente {guia.paciente?.nome ?? guia.paciente_id} ·{' '}
+                      {guia.sessoes_disponiveis} disponível(is)
                     </option>
                   ))}
                 </Select>
@@ -392,9 +403,9 @@ export function LancamentosPage() {
               ) : null}
 
               <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-corpo text-slate-300">
-                {antecipaSelecionada
-                  ? `Antecipação selecionada: #${antecipaSelecionada.id} · ${antecipaSelecionada.status}`
-                  : 'Selecione uma antecipação para registrar a sessão.'}
+                {guiaSelecionada
+                  ? `Guia selecionada: #${guiaSelecionada.id} · ${guiaSelecionada.sessoes_disponiveis} sessão(ões) disponível(is)`
+                  : 'Selecione uma guia para registrar a sessão.'}
               </div>
 
               <Botao
@@ -477,8 +488,8 @@ export function LancamentosPage() {
                     onOrdenar={ordenarPor}
                   />
                     <ColunaOrdenavel
-                    titulo="Antecipação"
-                    coluna="antecipacao"
+                    titulo="Guia"
+                    coluna="guia"
                     ordenacao={ordenacao}
                     onOrdenar={ordenarPor}
                   />
@@ -514,7 +525,9 @@ export function LancamentosPage() {
                   {lancamentos.map((lancamento) => (
                     <tr key={lancamento.id} data-testid={`lancamento-row-${lancamento.id}`}>
                       <td data-rotulo="ID" className="px-4 py-4 font-medium text-white">#{lancamento.id}</td>
-                      <td data-rotulo="Antecipação" className="px-4 py-4 text-slate-200">#{lancamento.antecipacao_id}</td>
+                      <td data-rotulo="Guia" className="px-4 py-4 text-slate-200">
+                        {lancamento.guia?.numero_guia ?? `#${lancamento.guia_id}`}
+                      </td>
                       <td data-rotulo="Profissional executante" className="px-4 py-4 text-slate-200">
                         {lancamento.profissional?.nome ??
                           profissionais.find((item) => item.id === lancamento.profissional_id)?.nome ??

@@ -22,7 +22,6 @@ const domainLabels: Record<string, string> = {
   dashboard: 'Acesso às telas',
   solicitacoes: 'Solicitações',
   guias: 'Guias',
-  antecipacoes: 'Antecipações',
   lancamentos: 'Sessões',
   conciliacoes: 'Conciliações',
   profissionais: 'Profissionais',

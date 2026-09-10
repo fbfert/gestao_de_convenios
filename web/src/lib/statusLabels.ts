@@ -1,7 +1,6 @@
 export type StatusEntidade =
   | 'solicitacoes'
   | 'guias'
-  | 'antecipacoes'
   | 'lancamentos'
   | 'conciliacoes'
 
@@ -23,8 +22,9 @@ const statusLabels: Record<StatusEntidade, Record<string, string>> = {
     // 'approved' e 'finalized' eram o mesmo rótulo ("Aprovado") pra dois
     // estados diferentes — approved é a operadora ter autorizado (a
     // automação Unimed já captura senha/validade sozinha), finalized é
-    // depois de alguém confirmar isso no gescon clicando Finalizar (abre o
-    // ciclo de Antecipação). "Autorizado" usa a mesma palavra que a própria
+    // depois de alguém confirmar isso no gescon clicando Finalizar (só
+    // bookkeeping de senha/validade desde 10/09/2026 — lançar sessão já
+    // funciona com approved). "Autorizado" usa a mesma palavra que a própria
     // Unimed usa no portal pra esse estado — ver worker-unimed/src/portal.js.
     // "Finalizado" nomeia o clique em si, pra não ficar igual a "Autorizado".
     approved: 'Autorizado',
@@ -42,10 +42,6 @@ const statusLabels: Record<StatusEntidade, Record<string, string>> = {
     historico_canceled: 'Histórico · Cancelado',
     historico_denied: 'Histórico · Negado',
     historico_needs_verification: 'Histórico · Verificar Restrição',
-  },
-  antecipacoes: {
-    open: 'Aberta',
-    closed: 'Fechada',
   },
   lancamentos: {
     completed: 'Concluído',

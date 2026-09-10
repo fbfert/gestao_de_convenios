@@ -98,13 +98,13 @@ export function LancamentoEditarPage() {
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4 rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
           <div className="space-y-2">
-            <span className="text-meta uppercase tracking-[0.25em] text-slate-400">Antecipação</span>
+            <span className="text-meta uppercase tracking-[0.25em] text-slate-400">Guia</span>
             <p className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white">
-              #{lancamento.antecipacao?.id ?? lancamento.antecipacao_id}
+              {lancamento.guia?.numero_guia ?? `#${lancamento.guia_id}`}
             </p>
             <p className="text-meta text-slate-400">
-              Não é editável aqui: mudar de antecipação moveria a cota consumida para outro paciente/ciclo. Para
-              corrigir isso, remova a sessão e lance de novo na antecipação certa.
+              Não é editável aqui: mudar de guia moveria a cota consumida para outro paciente/especialidade. Para
+              corrigir isso, remova a sessão e lance de novo na guia certa.
             </p>
           </div>
 

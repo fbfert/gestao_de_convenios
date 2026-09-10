@@ -19,6 +19,7 @@ import {
   useGuias,
 } from './useGuias'
 import type { GuiaFilters, GuiaForm } from './types'
+import { GuiaAlertaNegacoes } from './GuiaAlertaNegacoes'
 import { GuiaStatusActions } from './GuiaStatusActions'
 import { statusTone } from './statusTone'
 import { SENHA_VENCENDO_EM_DIAS } from './senhaValidade'
@@ -299,9 +300,10 @@ export function GuiasPage() {
 
   return (
     <div className="space-y-8" data-testid="guias-page">
-      {/* O banner de guias negadas saiu daqui e do dashboard: virou a regra
-          `guia.negada` da central de alertas (/alertas), que carrega as mesmas
-          duas ações — ocultar e abrir nova solicitação a partir da guia. */}
+      {/* Banner restaurado a pedido do usuário (10/09): mesmo aviso ainda
+          existe consolidado em /alertas (regra `guia.negada`), mas o dia a dia
+          de quem opera Guias esperava vê-lo direto aqui também. */}
+      {!isCreateRoute ? <GuiaAlertaNegacoes /> : null}
       {!isCreateRoute ? (
       <section className="space-y-4">
         <div className="flex flex-col gap-4 sm:items-start lg:flex-row lg:items-end lg:justify-between">

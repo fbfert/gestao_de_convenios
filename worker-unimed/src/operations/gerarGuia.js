@@ -329,7 +329,26 @@ async function finalizar(page, request, estrategiaMedico) {
   // nao mascarar seletor quebrado nos outros passos com espera mais longa.
   const FINALIZAR_TIMEOUT = Math.max(DEFAULT_TIMEOUT, 30000)
   const finalize = page.locator('[name="Button_Finalizar"]')
-  await finalize.click({ timeout: FINALIZAR_TIMEOUT })
+  try {
+    await finalize.click({ timeout: FINALIZAR_TIMEOUT })
+  } catch (error) {
+    // Achado ao vivo em 10/09/2026 (solicitacao 2331): mesmo com FINALIZAR_TIMEOUT
+    // de 30s, o proprio click() pode estourar esperando a navegacao que ele
+    // dispara (nao so a espera pos-clique abaixo) — e nesse caso o clique JA
+    // aconteceu no portal (visto ao vivo: 3 guias criadas na Unimed pra uma
+    // solicitacao cujas execucoes vieram todas 'failed', nunca 'uncertain',
+    // porque essa excecao subia crua e virava WORKER_INTERNAL_FATAL, o que alem
+    // de nao acionar ConfirmarGuiaIncertaUnimedService ainda pausa a credencial
+    // do tenant inteiro via UnimedCircuitBreakerService). Mesmo desfecho abaixo:
+    // 'uncertain', nunca reenvio automatico.
+    return {
+      status: 'uncertain',
+      execution_id: request.executionId ?? null,
+      error_code: 'UNCERTAIN_AFTER_SUBMIT',
+      message: 'Timeout no clique de Finalizar — o clique pode ter sido efetivado no portal. Não houve retry automático.',
+      debug: await capturarDiagnosticoResultado(page),
+    }
+  }
   await waitProcessing(page)
   await page.waitForLoadState('domcontentloaded', { timeout: FINALIZAR_TIMEOUT }).catch(() => {})
   await page.waitForTimeout(1500)

@@ -15,6 +15,8 @@
     --roxo-fundo: #f5f3ff;
     --rosa: #be185d;
     --rosa-fundo: #fdf2f8;
+    --ciano: #0e7490;
+    --ciano-fundo: #ecfeff;
     --cinza-texto: #1f2937;
     --cinza-borda: #e2e8f0;
     --cinza-fundo: #f8fafc;
@@ -59,7 +61,7 @@
   .barra { width: 100%; max-width: 1080px; height: 2px; background: var(--cinza-borda); }
 
   .ramos {
-    display: grid; grid-template-columns: repeat(5, 1fr); gap: 18px;
+    display: grid; grid-template-columns: repeat(6, 1fr); gap: 18px;
     width: 100%; max-width: 1080px;
   }
   .ramo { display: flex; flex-direction: column; align-items: stretch; }
@@ -73,6 +75,7 @@
   .ramo-ambar .ramo-titulo { background: var(--ambar-fundo); color: var(--ambar); }
   .ramo-roxo .ramo-titulo { background: var(--roxo-fundo); color: var(--roxo); }
   .ramo-rosa .ramo-titulo { background: var(--rosa-fundo); color: var(--rosa); }
+  .ramo-ciano .ramo-titulo { background: var(--ciano-fundo); color: var(--ciano); }
 
   .folhas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
   .folhas li {
@@ -91,6 +94,7 @@
   .ramo-ambar .folhas li { border-color: #fde68a; }
   .ramo-roxo .folhas li { border-color: #ddd6fe; }
   .ramo-rosa .folhas li { border-color: #fbcfe8; }
+  .ramo-ciano .folhas li { border-color: #a5f3fc; }
 
   .rodape-nota {
     max-width: 1080px; margin: 8px auto 0; padding: 14px 20px;
@@ -98,7 +102,7 @@
     font-size: 13px; color: #475569;
   }
 
-  @media (max-width: 1100px) {
+  @media (max-width: 1300px) {
     .ramos { grid-template-columns: repeat(3, 1fr); row-gap: 32px; }
   }
   @media (max-width: 860px) {
@@ -115,9 +119,9 @@
   <p class="kicker">Documentação interna</p>
   <h1>Mapa Mental — Gestão de Convênios</h1>
   <p>
-    Visão de topo do sistema, organizada do mesmo jeito que o menu superior: a tela inicial e os grupos
-    Cadastros, Operação, Configurações e Administração, mais os papéis de acesso. Use para localizar
-    rapidamente onde cada tela se encaixa antes de ler o manual completo.
+    Visão de topo do sistema, organizada do mesmo jeito que o menu superior: a tela inicial, os grupos
+    Cadastros, Operação, Configurações e Administração, a Central de Alertas e os papéis de acesso. Use para
+    localizar rapidamente onde cada tela se encaixa antes de ler o manual completo.
   </p>
 </div>
 
@@ -126,6 +130,7 @@
   <span><i style="background:var(--azul)"></i> Operação (o caminho de um atendimento)</span>
   <span><i style="background:var(--ambar)"></i> Configurações</span>
   <span><i style="background:var(--roxo)"></i> Administração &amp; sistema</span>
+  <span><i style="background:var(--ciano)"></i> Alertas</span>
   <span><i style="background:var(--rosa)"></i> Papéis de acesso</span>
 </div>
 
@@ -156,12 +161,24 @@
       <div class="ramo-titulo">Operação</div>
       <ul class="folhas">
         <li><b>1. Pacientes</b><small>confira antes de abrir o pedido</small></li>
-        <li><b>2. Solicitações</b><small>pedido médico · várias especialidades · leitura por IA · admin edita</small></li>
-        <li><b>3. Guias</b><small>senha + validade, uma por especialidade · Unimed autoriza/nega sozinha · Finalizar abre a Antecipação · alerta quando negada, com atalho pra nova solicitação · admin edita mesmo depois</small></li>
-        <li><b>4. Sessões</b><small>atendimento realizado · registro lido por IA · admin edita</small></li>
-        <li><b>5. Antecipações</b><small>cota de sessões autorizadas por ciclo · admin edita a quantidade</small></li>
-        <li><b>6. Analíticos</b><small>extrato de pagamento do convênio</small></li>
-        <li><b>7. Conciliações</b><small>pendente → conferida → paga</small></li>
+        <li><b>2. Solicitações</b><small>pedido médico · várias especialidades · leitura por IA · pergunta ativa se já existe pedido do paciente · admin edita</small></li>
+        <li><b>3. Guias</b><small>senha + validade, uma por especialidade · Unimed autoriza/nega sozinha · Autorizada já libera lançamento de sessão · Finalizar só grava senha/validade · admin edita mesmo depois</small></li>
+        <li><b>4. Sessões</b><small>atendimento realizado, direto contra a guia · registro lido por IA · admin edita</small></li>
+        <li><b>5. Analíticos</b><small>extrato de pagamento do convênio</small></li>
+        <li><b>6. Conciliações</b><small>pendente → conferida → paga</small></li>
+      </ul>
+    </div>
+
+    <div class="ramo ramo-ciano">
+      <div class="stub"></div>
+      <div class="ramo-titulo">Alertas</div>
+      <ul class="folhas">
+        <li><b>Central de Alertas</b><small>entrada própria no menu · "o que precisa de você agora"</small></li>
+        <li><b>Senha vencendo</b><small>guia perto da validade</small></li>
+        <li><b>Guia negada</b><small>oculta ou abre nova solicitação</small></li>
+        <li><b>Antecipação devida</b><small>guia aprovada perto da data-alvo · nova solicitação pré-preenche o ciclo inteiro</small></li>
+        <li><b>Automação falhando / componente fora</b><small>saúde da automação e das integrações</small></li>
+        <li><b>Regras de Alerta</b><small>ativar, limiar e destinatários de e-mail · em Configurações</small></li>
       </ul>
     </div>
 
@@ -208,13 +225,16 @@
   <div class="rodape-nota">
     <strong>Como ler:</strong> a coluna azul é a sequência de um atendimento, de cima para baixo — os números são a
     ordem de uso. A verde reúne as bases que essa sequência consulta; nada pode ser aberto sem que o cadastro exista
-    antes. Âmbar e roxo são telas de apoio, sem ordem entre si. A coluna rosa mostra quem enxerga o quê: os três
-    primeiros são papéis, editáveis na tela de <em>Permissões</em>; o último é uma marca separada, concedida fora do
-    sistema. <strong>Pacientes aparece em duas colunas</strong> — é a mesma tela, listada em Operação por ser o
-    primeiro passo do fluxo. <strong>Perfis e Permissões e Logs de Auditoria</strong> migraram de Administração
-    para dentro de Configurações. <strong>"admin edita"</strong>, na coluna azul, marca as telas em que o papel
-    admin pode corrigir um registro já criado (permissões <code>*.manage</code> próprias, cedíveis ao
-    <em>funcionario</em> em Permissões) — não é a criação normal, que continua liberada pra quem acessa a tela.
+    antes. Âmbar e roxo são telas de apoio, sem ordem entre si. A ciano vigia o fluxo inteiro por cima — é uma
+    entrada própria no menu, não um grupo, mas ganha coluna à parte por reunir bastante coisa. A coluna rosa mostra
+    quem enxerga o quê: os três primeiros são papéis, editáveis na tela de <em>Permissões</em>; o último é uma marca
+    separada, concedida fora do sistema. <strong>Pacientes aparece em duas colunas</strong> — é a mesma tela,
+    listada em Operação por ser o primeiro passo do fluxo. <strong>Perfis e Permissões e Logs de Auditoria</strong>
+    migraram de Administração para dentro de Configurações. <strong>Antecipação</strong> deixou de ser cadastro com
+    tela própria — virou a regra "Antecipação devida" da coluna ciano. <strong>"admin edita"</strong>, na coluna
+    azul, marca as telas em que o papel admin pode corrigir um registro já criado (permissões <code>*.manage</code>
+    próprias, cedíveis ao <em>funcionario</em> em Permissões) — não é a criação normal, que continua liberada pra
+    quem acessa a tela.
   </div>
 </div>
 

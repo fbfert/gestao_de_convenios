@@ -159,7 +159,7 @@
     <li><a href="#solicitacoes">6. Solicitações</a></li>
     <li><a href="#guias">7. Guias</a></li>
     <li><a href="#convenios">8. Convênios</a></li>
-    <li><a href="#antecipacoes">9. Antecipações</a></li>
+    <li><a href="#alertas">9. Central de Alertas</a></li>
     <li><a href="#lancamentos">10. Sessões (Lançamentos)</a></li>
     <li><a href="#analiticos">11. Analíticos</a></li>
     <li><a href="#conciliacao">12. Conciliação</a></li>
@@ -189,7 +189,7 @@
   <tr><th>Papel</th><th>Uso típico</th></tr>
   <tr><td><span class="badge azul">admin</span></td><td>Administração completa: cadastros, usuários, permissões, convênios e edição do Manual.</td></tr>
   <tr><td><span class="badge cinza">funcionario</span></td><td>Operação do dia a dia: solicitações, guias, sessões, conciliação, pacientes.</td></tr>
-  <tr><td><span class="badge cinza">profissional</span></td><td>Acesso restrito ao que é "próprio" (own): consulta suas guias, antecipações, sessões e conciliações.</td></tr>
+  <tr><td><span class="badge cinza">profissional</span></td><td>Acesso restrito ao que é "próprio" (own): consulta suas guias, sessões e conciliações.</td></tr>
 </table>
 <p>
   Existe ainda uma marca separada, a de <strong>administrador do sistema</strong>, que não é um papel e não aparece
@@ -205,12 +205,13 @@
 </p>
 
 <h3>Como o menu está organizado</h3>
-<p>O menu superior tem seis entradas. Três delas são grupos: o rótulo abre uma tela de visão geral e a seta ao lado abre a lista de telas do grupo.</p>
+<p>O menu superior tem sete entradas. Três delas são grupos: o rótulo abre uma tela de visão geral e a seta ao lado abre a lista de telas do grupo.</p>
 <table>
   <tr><th>Entrada</th><th>O que reúne</th></tr>
   <tr><td><strong>Gestão de Convênios</strong></td><td>A tela inicial, com os números do seu papel e a auditoria recente.</td></tr>
   <tr><td><strong>Cadastros</strong> <span class="rota">/cadastros</span></td><td>Pacientes, Profissionais, Especialidades, Médicos, Convênios e Usuários — as bases que mudam pouco.</td></tr>
-  <tr><td><strong>Operação</strong> <span class="rota">/operacao-convenios</span></td><td>Pacientes, Solicitações, Guias, Sessões, Antecipações, Analíticos e Conciliações, nessa ordem — é a sequência de uso.</td></tr>
+  <tr><td><strong>Operação</strong> <span class="rota">/operacao-convenios</span></td><td>Pacientes, Solicitações, Guias, Sessões, Analíticos e Conciliações, nessa ordem — é a sequência de uso.</td></tr>
+  <tr><td><strong>Alertas</strong> <span class="rota">/alertas</span></td><td>Entrada própria, fora dos grupos — o que precisa de você agora. Ver <a href="#alertas">Central de Alertas</a>.</td></tr>
   <tr><td><strong>Automações</strong></td><td>O robô que gera guias e consulta status/senha no portal da Unimed, sem digitação manual. Ver <a href="#automacoes">Automações</a>.</td></tr>
   <tr><td><strong>Configurações</strong> <span class="rota">/configuracoes</span></td><td>Parâmetros e integrações, mais <strong>Perfis e Permissões</strong> e <strong>Logs de Auditoria</strong>.</td></tr>
   <tr><td><strong>Configurações</strong></td><td>Globais, Envio de E-mails, Configurações de IA, Prompts Operacionais, Templates de E-mails, Unimed RDA e Sincronização com o clinica.</td></tr>
@@ -268,24 +269,22 @@
 <div class="fluxo">
   <span class="passo">Solicitação</span><span class="seta">→</span>
   <span class="passo">Guia</span><span class="seta">→</span>
-  <span class="passo">Antecipação</span><span class="seta">→</span>
   <span class="passo">Sessões (Lançamentos)</span><span class="seta">→</span>
   <span class="passo">Analítico do convênio</span><span class="seta">→</span>
   <span class="passo">Conciliação</span>
 </div>
 <ol>
   <li><strong>Solicitação:</strong> pedido de autorização enviado ao convênio para um paciente fazer terapia com um profissional. Começa como <span class="badge cinza">Cadastrado</span>, evolui manualmente para <span class="badge azul">Em análise</span>, e termina em <span class="badge verde">Aprovado</span> ou <span class="badge vermelho">Negado</span>.</li>
-  <li><strong>Guia:</strong> o documento oficial de autorização, com senha e prazo de validade. Nasce em <span class="badge azul">Em análise</span>. Convênios com automação Unimed atualizam a guia sozinhos, sem clique nenhum, para <span class="badge verde">Autorizada</span> ou <span class="badge vermelho">Negada</span>; ao ser <strong>finalizada</strong> pelo botão Finalizar (com senha + validade — próprias ou já capturadas pela automação) fica <span class="badge verde">Aprovada</span> e abre o ciclo de Antecipação.</li>
-  <li><strong>Antecipação:</strong> a "cota" de sessões autorizadas por ciclo (ex.: 12 sessões/mês). Mostra quanto já foi utilizado da cota e alerta quando não há próximas sessões agendadas.</li>
-  <li><strong>Sessões (Lançamentos):</strong> o registro de cada atendimento realizado, digitado manualmente ou importado da transcrição de um formulário em papel. Cada sessão lançada consome uma unidade da cota da antecipação.</li>
+  <li><strong>Guia:</strong> o documento oficial de autorização, com senha e prazo de validade. Nasce em <span class="badge azul">Em análise</span>. Convênios com automação Unimed atualizam a guia sozinhos, sem clique nenhum, para <span class="badge verde">Autorizada</span> ou <span class="badge vermelho">Negada</span>. Assim que a guia está <span class="badge verde">Autorizada</span>, ela já aceita lançamento de sessão — <strong>Finalizar</strong> não abre mais nada, é só o registro de senha e validade que leva a guia a <span class="badge verde">Aprovada</span>.</li>
+  <li><strong>Sessões (Lançamentos):</strong> o registro de cada atendimento realizado, digitado manualmente ou importado da transcrição de um formulário em papel. Cada sessão lançada é descontada ao vivo da quantidade de sessões autorizadas da própria guia — não existe mais um cadastro de cota separado.</li>
   <li><strong>Analítico:</strong> a planilha que o convênio (hoje, Unimed) envia com o que efetivamente pagou e glosou (recusou) por guia. É importada em <a href="#analiticos">Analíticos</a>.</li>
   <li><strong>Conciliação:</strong> o fechamento financeiro por guia, cruzando o valor esperado com o analítico. Segue um ciclo fixo: <span class="badge cinza">Pendente</span> → <span class="badge azul">Conferida</span> → <span class="badge verde">Paga</span>.</li>
 </ol>
-<p>Por trás de tudo isso, o cadastro de <a href="#convenios">Convênios</a> define as regras (quantas sessões por ciclo, validade da senha) e os valores pagos por especialidade/profissional, usados nos cálculos da conciliação.</p>
+<p>Por trás de tudo isso, o cadastro de <a href="#convenios">Convênios</a> define as regras (quantas sessões por ciclo, validade da senha) e os valores pagos por especialidade/profissional, usados nos cálculos da conciliação. E vigiando o fluxo inteiro por cima, a <a href="#alertas">Central de Alertas</a> avisa quando algo precisa de atenção — de senha vencendo a "hora de pedir o próximo ciclo".</p>
 <div class="dica">
   <strong>Onde entra a automação:</strong> em convênios com conector API (hoje, Unimed), os dois primeiros passos — gerar a
   guia e descobrir se a senha já saiu — podem acontecer sozinhos, por trás da tela de <a href="#automacoes">Automações</a>.
-  O restante do fluxo (Antecipação em diante) é sempre manual, feito pela equipe da clínica.
+  O restante do fluxo é sempre manual, feito pela equipe da clínica.
 </div>
 
 <h2 class="secao" id="login">3. Login <span class="rota">/login</span></h2>
@@ -306,7 +305,6 @@
   <tr><td>Convênios</td><td>Total de convênios cadastrados / quantos estão ativos.</td></tr>
   <tr><td>Solicitações</td><td>Quantas estão em análise / quantas foram aprovadas.</td></tr>
   <tr><td>Guias</td><td>Quantas estão em análise / quantas autorizadas ou aprovadas.</td></tr>
-  <tr><td>Antecipações</td><td>Quantas estão abertas / quantas fechadas.</td></tr>
   <tr><td>Sessões</td><td>Quantas foram lançadas hoje / quantas concluídas.</td></tr>
   <tr><td>Conciliações</td><td>Quantas estão pendentes / quantas conferidas.</td></tr>
   <tr><td>Pacientes, Profissionais, Médicos, Especialidades</td><td>Totais ativos / total cadastrado.</td></tr>
@@ -317,7 +315,9 @@
 <p>
   Quando existir alguma guia <span class="badge vermelho">Negada</span> ainda não revisada, um aviso
   aparece entre o cabeçalho e os cartões, com a mesma lista e os mesmos botões da tela de
-  <a href="#guias">Guias</a> — ver "Alerta de guias negadas" na seção 7.
+  <a href="#guias">Guias</a> — ver "Alerta de guias negadas" na seção 7. O mesmo aviso, junto com os
+  demais tipos de alerta do sistema, também pode ser consultado a qualquer momento na
+  <a href="#alertas">Central de Alertas</a>.
 </p>
 <div class="nota">
   O cartão de <strong>Usuários</strong> não aparece aqui: ele foi retirado para a grade fechar em múltiplo de três.
@@ -330,7 +330,7 @@
 </table>
 
 <h2 class="secao" id="pacientes">5. Pacientes <span class="rota">/pacientes</span></h2>
-<div class="objetivo">Objetivo: cadastro central dos pacientes atendidos. É a referência usada por Solicitações, Guias e Antecipações — cadastre o paciente aqui antes de abrir uma solicitação para ele.</div>
+<div class="objetivo">Objetivo: cadastro central dos pacientes atendidos. É a referência usada por Solicitações e Guias — cadastre o paciente aqui antes de abrir uma solicitação para ele.</div>
 <table>
   <tr><th>Botão</th><th>O que faz</th></tr>
   <tr><td><span class="btn">Novo</span></td><td>Abre o cadastro em tela própria, em <code>/pacientes/novo</code>.</td></tr>
@@ -341,8 +341,16 @@
   <tr><td><span class="btn">Ativar</span> / <span class="btn">Desativar</span></td><td>Alterna o status do paciente imediatamente, sem pedir confirmação.</td></tr>
   <tr><td><span class="btn">Criar paciente</span> / <span class="btn">Salvar alterações</span></td><td>Grava o cadastro. Só habilita quando Nome Completo, Carteirinha e Convênio estão preenchidos.</td></tr>
   <tr><td><span class="btn">Cancelar</span></td><td>Fecha o formulário sem salvar.</td></tr>
-  <tr><td><span class="btn">Filtrar</span></td><td>Busca por nome, carteirinha, CPF ou telefone, com ou sem máscara, e filtra por convênio, status e situação da carteirinha.</td></tr>
+  <tr><td><span class="btn">Filtrar</span></td><td>Busca por nome, carteirinha, CPF ou telefone, com ou sem máscara, e filtra por convênio e situação da carteirinha.</td></tr>
 </table>
+<div class="nota">
+  A listagem <strong>esconde paciente inativo por padrão</strong> — marque a caixa <strong>Mostrar
+  inativos</strong> para trazê-los de volta. Mesmo comportamento em <a href="#profissionais">Profissionais</a> e
+  <a href="#medicos">Médicos</a>, e nos seletores de paciente/médico usados ao abrir uma solicitação: não fazia
+  sentido escolher um cadastro inativo para um atendimento novo. Abrindo a edição por um link direto
+  (<code>/pacientes/{id}/editar</code>), o paciente aparece mesmo inativo e com a caixa desmarcada — senão o
+  formulário não teria o que carregar.
+</div>
 <h3>Campos do cadastro</h3>
 <p>
   A ordem começa pelo <strong>Convênio</strong>, e ele <strong>não vem pré-selecionado</strong>. É ele que define o
@@ -432,7 +440,7 @@
 <div class="nota">Exige a permissão <code>dashboard.pacientes</code> — mais restrita que o cadastro manual, que hoje não exige nenhuma.</div>
 <p>
   Este é o mesmo padrão de importação disponível em <a href="#solicitacoes">Solicitações</a>,
-  <a href="#guias">Guias</a>, <a href="#lancamentos">Sessões</a>, <a href="#antecipacoes">Antecipações</a> e
+  <a href="#guias">Guias</a>, <a href="#lancamentos">Sessões</a> e
   <a href="#conciliacao">Conciliação</a> — cada tela com a chave de correspondência explicada na respectiva seção.
 </p>
 
@@ -480,6 +488,35 @@
   voltar, a lista de profissionais já traz o novo.
 </div>
 
+<h3>Paciente com Pedido Médico já anexado</h3>
+<p>
+  Ao escolher o paciente em <span class="rota">/solicitacoes/nova</span>, se ele já tiver um Pedido Médico
+  guardado na pasta (de uma solicitação anterior), a tela pergunta ativamente o que fazer, em vez de só avisar:
+</p>
+<table>
+  <tr><th>Opção</th><th>O que faz</th></tr>
+  <tr><td><span class="btn">Usar pedido existente</span></td><td>Havendo mais de um arquivo, lista para escolher. Busca médico, CIDs e os pares especialidade/profissional da solicitação mais recente que usou aquele arquivo, mostra para conferência e, ao confirmar, pré-preenche o formulário inteiro e vincula o arquivo já existente — sem pedir para anexar de novo.</td></tr>
+  <tr><td><span class="btn">Ler novo pedido</span></td><td>Vai para <a href="#solicitacoes">Ler pedido médico com IA</a>, já com paciente (e convênio) preenchidos.</td></tr>
+  <tr><td><span class="btn">Anexar novo pedido</span></td><td>Mesmo comportamento de sempre: preenche à mão e anexa o documento ao final.</td></tr>
+</table>
+<div class="nota">
+  Só entram nessa pergunta arquivos do tipo <strong>Pedido Médico</strong> — laudo, plano individualizado e
+  outros anexos continuam aparecendo apenas como aviso informativo, sem essa oferta de reaproveitamento.
+</div>
+
+<h3>Excluir item da solicitação</h3>
+<p>
+  O ícone <span class="btn">Excluir item</span>, ao lado de cada linha de especialidade/profissional, corrige um
+  cadastro errado sem precisar reabrir a solicitação inteira. Pede confirmação em duas etapas — a mesma tela de
+  <code>ConfirmarExclusao</code> usada nos anexos, com a digitação de <code>EXCLUIR</code>.
+</p>
+<div class="nota">
+  Só é permitido em item <strong>sem Guia gerada</strong> — mesmo que já tenha uma tentativa de automação falha,
+  que é exatamente o caso de uso mais comum. Também é bloqueado no <strong>último item</strong> da solicitação
+  (ela não pode ficar sem nenhum — negar ou cancelar é o caminho para isso) e em solicitação
+  <span class="badge vermelho">Negada</span> ou histórica.
+</div>
+
 <h3>Mudança de status</h3>
 <p>Cada linha da tabela tem botões de status (<span class="badge azul">Em análise</span>, <span class="badge verde">Aprovado</span>, <span class="badge vermelho">Negado</span>). Clicar em um deles pede confirmação ("Confirmar alteração da solicitação #X para..."). O botão do status atual fica desabilitado.</p>
 <table>
@@ -493,7 +530,7 @@
 <p>
   Quem tem a permissão <code>solicitacoes.manage</code> (por padrão, só o papel <strong>admin</strong>) pode
   corrigir <strong>médico solicitante, CID, data e observações</strong> depois de a solicitação já existir.
-  Paciente e convênio ficam travados: a guia e a antecipação já geradas usam esse dado.
+  Paciente e convênio ficam travados: a guia já gerada usa esse dado.
 </p>
 <table>
   <tr><th>Onde</th><th>Como</th></tr>
@@ -548,7 +585,7 @@
 <table>
   <tr><th>Botão</th><th>O que faz</th></tr>
   <tr><td><span class="btn">Novo</span></td><td>Abre o formulário de criação (Convênio, Paciente, Profissional executante, Especialidade, Número da guia — sugerido automaticamente mas editável —, Tipo de terapia, Data da solicitação).</td></tr>
-  <tr><td><span class="btn">Criar guia</span></td><td>Grava a guia. Uma guia nova pode gerar automaticamente uma Antecipação vinculada.</td></tr>
+  <tr><td><span class="btn">Criar guia</span></td><td>Grava a guia.</td></tr>
   <tr><td>Número da guia (link)</td><td>Abre a tela de detalhe da guia (<code>/guias/:id</code>).</td></tr>
   <tr><td>"Vencendo em 7 dias"</td><td>Filtro rápido para mostrar apenas guias cuja senha vence em até 7 dias — use para não perder o prazo de renovação.</td></tr>
   <tr><td><span class="btn">Gerar conciliação</span> (por linha)</td><td>Cria a linha de conciliação financeira para essa guia. Só fica disponível quando a guia está <span class="badge verde">Autorizada</span> ou <span class="badge verde">Aprovada</span>.</td></tr>
@@ -571,13 +608,17 @@
     <strong>Senha</strong> (obrigatória) e a <strong>Validade da senha</strong> (opcional).<br>
     Em <span class="badge verde">Autorizada</span>: o mesmo formulário já vem preenchido com a senha e
     validade que a automação capturou sozinha — revise e confirme.<br>
-    Nos dois casos, ao confirmar a guia passa para <span class="badge verde">Aprovada</span> e abre
-    automaticamente o ciclo de <a href="#antecipacoes">Antecipação</a> (a cota de sessões que os
-    Lançamentos vão consumir) — é este clique que efetivamente libera o faturamento da guia.
+    Nos dois casos, ao confirmar a guia passa para <span class="badge verde">Aprovada</span>.
   </td></tr>
   <tr><td><span class="btn">Negar</span></td><td>Só aparece em <span class="badge azul">Em análise</span>. Marca a guia como <span class="badge vermelho">Negada</span>, sem campos extra — não faz sentido negar uma guia que a operadora já autorizou.</td></tr>
 </table>
 <div class="nota">Uma vez aprovada, negada ou vencida, a guia não tem mais botões de mudança de status — o fluxo é de mão única pela tela.</div>
+<div class="nota">
+  <strong>Lançar sessão não espera mais o Finalizar.</strong> Toda guia <span class="badge verde">Autorizada</span>
+  ou <span class="badge verde">Aprovada</span> já aceita lançamento em <a href="#lancamentos">Sessões</a> — a
+  quantidade disponível é contada ao vivo a partir das sessões autorizadas da própria guia. Finalizar virou só
+  bookkeeping de senha e validade, sem efeito nenhum sobre isso.
+</div>
 <h3>Alerta de guias negadas</h3>
 <p>
   Sempre que existir alguma guia <span class="badge vermelho">Negada</span> ainda não revisada, um
@@ -596,12 +637,16 @@
   não volta a aparecer para ninguém. Não existe "ocultar só para mim".
 </div>
 <h3>Tela de detalhe da guia</h3>
-<p>Mostra todos os dados (paciente, carteirinha, convênio, profissional, especialidade, datas, senha e validade — destacada em âmbar quando está a vencer) e dois atalhos:</p>
+<p>Mostra todos os dados (paciente, carteirinha, convênio, profissional, especialidade, datas, senha e validade — destacada em âmbar quando está a vencer) e um atalho:</p>
 <table>
   <tr><th>Botão</th><th>O que faz</th></tr>
-  <tr><td><span class="btn">Ver antecipações</span></td><td>Leva para <a href="#antecipacoes">Antecipações</a>, já filtrando pela guia.</td></tr>
   <tr><td><span class="btn">Ver conciliação</span></td><td>Leva para <a href="#conciliacao">Conciliação</a>, já filtrando pela guia.</td></tr>
 </table>
+<p>
+  A tela também mostra a <strong>data-alvo de antecipação</strong> calculada para essa guia (ver
+  <a href="#alertas">Central de Alertas</a>) e um campo para travá-la manualmente, quando o cálculo automático
+  (validade da senha ou data de finalização, por padrão do tenant ou por convênio) não se aplica a esse caso.
+</p>
 
 <h3>Corrigir dados já registrados</h3>
 <p>
@@ -632,9 +677,9 @@
 </p>
 <p><strong>Chave de correspondência: o Número da guia</strong>, dentro do convênio. Reimportar o mesmo número atualiza a guia em vez de duplicar.</p>
 <div class="nota">
-  Importar uma guia como <span class="badge verde">Finalizado</span> <strong>não abre sozinho</strong> o ciclo de
-  Antecipação (diferente de clicar em <span class="btn">Finalizar</span> na tela) — quem migra histórico importa a
-  Antecipação separadamente, em <a href="#antecipacoes">Antecipações</a>.
+  Importar uma guia como <span class="badge verde">Finalizado</span> ou <span class="badge verde">Autorizado</span>
+  já deixa a quantidade de sessões autorizadas disponível para lançamento em <a href="#lancamentos">Sessões</a> —
+  não existe mais uma tela separada de cota para importar depois.
 </div>
 <div class="dica">Cabeçalho fora do modelo? O sistema tenta identificar as colunas por IA antes de desistir — ver <a href="#pacientes">Pacientes → Importar planilha</a>.</div>
 <div class="nota">Exige a permissão <code>guias.manage</code> (por padrão, só o admin).</div>
@@ -674,6 +719,14 @@
   conciliações antigas continuam usando a vigência correta, e as novas já usam o valor atualizado.
 </div>
 
+<h4 style="margin:16px 0 4px;font-size:15px;">Antecipação do próximo ciclo</h4>
+<p>
+  Sobrescreve, só para este convênio, o padrão global de quando o alerta <strong>Antecipação devida</strong> deve
+  disparar (ver <a href="#alertas">Central de Alertas</a>): quantos <strong>dias de antecedência</strong> e qual
+  <strong>data de referência</strong> usar — validade da senha ou data de finalização da guia. Em branco, vale o
+  padrão configurado em <a href="#configuracoes">Configurações → Globais</a>.
+</p>
+
 <h3>Formato da carteirinha</h3>
 <p>
   No cadastro do convênio há o campo <strong>Formato da carteirinha</strong>. Ele recebe os tamanhos dos blocos
@@ -686,49 +739,49 @@
   convênio, conector é decisão de integração.
 </p>
 
-<h2 class="secao" id="antecipacoes">9. Antecipações <span class="rota">/antecipacoes</span></h2>
-<div class="objetivo">Objetivo: acompanhar a cota de sessões autorizadas por ciclo (ex.: quantas sessões do mês já foram usadas) e identificar pacientes sem próximos agendamentos.</div>
-<p>Tela sobretudo de consulta e navegação — status possíveis: <span class="badge azul">Aberta</span> e <span class="badge cinza">Fechada</span>.</p>
+<h2 class="secao" id="alertas">9. Central de Alertas <span class="rota">/alertas</span></h2>
+<div class="objetivo">Objetivo: "o que precisa de você agora" — um painel único que reúne tudo que o sistema detectou sozinho e que espera uma decisão humana. Entrada própria no menu, acessível a quem tem a permissão <code>alertas.view</code>.</div>
+<p>
+  Substituiu o antigo cadastro de <strong>Antecipações</strong> (cota de sessões por ciclo, com tela e importação
+  próprias) e absorveu o banner de guias negadas que já existia no Dashboard. Cinco situações são vigiadas hoje:
+</p>
 <table>
-  <tr><th>Botão</th><th>O que faz</th></tr>
-  <tr><td><span class="btn">Registrar</span> (por linha)</td><td>Leva para <a href="#lancamentos">Sessões</a> já com essa antecipação pré-selecionada, para lançar um novo atendimento.</td></tr>
-  <tr><td><span class="btn">Editar</span> (por linha)</td><td>Só aparece para quem tem <code>antecipacoes.manage</code> (por padrão, só o admin). Abre <span class="rota">/antecipacoes/{id}/editar</span>.</td></tr>
-  <tr><td><span class="btn">Aplicar</span> (filtros)</td><td>Filtra por Status, Paciente e Convênio.</td></tr>
+  <tr><th>Alerta</th><th>Quando dispara</th></tr>
+  <tr><td><strong>Senha vencendo</strong></td><td>Guia com validade da senha se aproximando, dentro da antecedência configurada em Configurações → Globais.</td></tr>
+  <tr><td><strong>Guia negada</strong></td><td>Guia marcada como <span class="badge vermelho">Negada</span> e ainda não revisada. Mesmo aviso que já existia em <a href="#guias">Guias</a> e no Dashboard — os três lugares coexistem sobre a mesma marcação de "revisado".</td></tr>
+  <tr><td><strong>Automação falhando em série</strong></td><td>Várias execuções seguidas com erro na automação de um convênio — ver <a href="#automacoes">Automações</a>.</td></tr>
+  <tr><td><strong>Componente fora do ar</strong></td><td>Alguma dependência externa (ex.: portal do convênio) parou de responder.</td></tr>
+  <tr><td><strong>Antecipação devida</strong></td><td>Guia <span class="badge verde">Aprovada</span> (ou <span class="badge verde">Autorizada</span>) chegando perto da data-alvo de antecipação — a validade da senha ou a data de finalização, conforme configurado — e ainda sem uma solicitação sucessora.</td></tr>
 </table>
-<div class="nota">
-  A edição libera só <strong>quantidade autorizada por ciclo</strong> e <strong>ciclo início/fim</strong>. A
-  quantidade já utilizada e o status (aberta/fechada) continuam 100% automáticos, derivados das sessões lançadas —
-  não dá para descolar a cota do que foi de fato executado. Aumentar a quantidade autorizada reabre sozinha uma
-  antecipação que já tinha fechado. Fica registrado nos <a href="#auditoria">Logs de Auditoria</a>.
-</div>
-<div class="aviso">
-  Um aviso em destaque aparece quando existem antecipações abertas <strong>sem nenhuma sessão futura agendada</strong> —
-  fique atento a esse alerta para não deixar o paciente sem continuidade do tratamento.
-</div>
-<p>Cada linha mostra uma barra de progresso da cota (sessões utilizadas / sessões autorizadas no ciclo).</p>
-<div class="dica">
-  <strong>Exemplo:</strong> uma regra de convênio autoriza 12 sessões por mês para Fonoaudiologia. Ao abrir o ciclo, a
-  antecipação nasce com <em>0/12</em>. Cada sessão registrada em <a href="#lancamentos">Sessões</a> soma uma unidade;
-  ao chegar em <em>12/12</em> ela fecha sozinha. Se uma sessão for excluída depois, a cota volta e a antecipação reabre.
-</div>
+<table>
+  <tr><th>Botão / Filtro</th><th>O que faz</th></tr>
+  <tr><td>Situação</td><td>Abertos (padrão), Silenciados ou Resolvidos.</td></tr>
+  <tr><td>Nível</td><td>Crítico, Atenção ou Informativo — cor e rótulo, nunca só a cor (pensado para quem tem dificuldade de distinguir vermelho de amarelo).</td></tr>
+  <tr><td>Tipo</td><td>Filtra por um dos cinco alertas da tabela acima.</td></tr>
+  <tr><td><span class="btn">Marcar como visto</span></td><td>Registra quem reconheceu o alerta, sem escondê-lo da lista.</td></tr>
+  <tr><td><span class="btn">Silenciar 7 dias</span></td><td>Some da lista de "Abertos" por uma semana; volta sozinho se a condição continuar valendo.</td></tr>
+  <tr><td><span class="btn">Ocultar</span> (só em Guia negada e Antecipação devida)</td><td>Dispensa definitivamente o alerta <strong>dessa guia específica</strong> — vale para toda a clínica, não existe "ocultar só para mim".</td></tr>
+  <tr><td><span class="btn">Nova Solicitação</span> (só em Guia negada e Antecipação devida)</td><td>Abre <span class="rota">/solicitacoes/nova</span> pré-preenchida. Em Guia negada, com o item (especialidade + profissional) daquela guia. Em Antecipação devida, com o ciclo inteiro da solicitação de origem — médico, CIDs e todos os itens — para revisar e confirmar, nunca envia nada sozinho.</td></tr>
+</table>
 
-<h3>Importar planilha <span class="rota">/antecipacoes/importar</span></h3>
+<h3>Configurar regras <span class="rota">/alertas/configuracoes</span></h3>
 <p>
-  Diferente do resto do sistema, esta importação <strong>grava os valores direto</strong> — quantidade autorizada,
-  quantidade já utilizada, ciclo início/fim e status —, sem passar pela abertura automática de ciclo (que só
-  acontece ao finalizar uma guia). Pensada para quem está trazendo histórico e já sabe a cota real.
+  Exige a permissão <code>alertas.manage</code> — também alcançável por Automações → Configurações. Cada regra tem:
 </p>
+<ul>
+  <li><strong>Ativa</strong>: liga ou desliga a regra inteira.</li>
+  <li><strong>Crítica</strong>: marca a regra para destaque, independente do nível calculado.</li>
+  <li><strong>Nível base</strong>: Crítico, Atenção ou Informativo, usado quando a regra não recalcula o nível sozinha.</li>
+  <li><strong>Limiar</strong>: o número que decide quando o alerta vira crítico — por exemplo, dias de atraso sobre a data-alvo, em Antecipação devida. É dado, não código: muda na hora, sem precisar de deploy.</li>
+</ul>
+<div class="nota">Ligar e desligar regra fica registrado nos <a href="#auditoria">Logs de Auditoria</a> — justamente porque um limiar configurável convida a desligar o alerta incômodo em vez de resolver o que ele está avisando.</div>
 <p>
-  A guia precisa já existir no sistema (ver <a href="#guias">Guias</a>). <strong>Chave de correspondência: guia +
-  início do ciclo</strong> — uma guia pode ter mais de um ciclo ao longo do tempo, e reimportar o mesmo início de
-  ciclo atualiza em vez de duplicar.
+  A mesma tela cadastra os <strong>destinatários de e-mail</strong>: cada pessoa escolhe os níveis e os tipos de
+  alerta que quer receber, o canal (resumo diário ou aviso imediato) e o horário do resumo. Sem nenhum destinatário
+  cadastrado, nenhum e-mail sai — o painel continua funcionando normalmente. O texto das mensagens fica em
+  <a href="#configuracoes">Configurações → Templates de E-mails</a>, nas chaves <code>alertas.digest_diario</code>
+  e <code>alertas.imediato</code>; sem modelo cadastrado, o sistema manda um texto padrão.
 </p>
-<div class="nota">
-  Status em branco na planilha é calculado sozinho (Aberta ou Fechada, comparando quantidade utilizada com
-  autorizada) — só preencha para forçar um valor diferente do calculado.
-</div>
-<div class="dica">Cabeçalho fora do modelo? O sistema tenta identificar as colunas por IA antes de desistir — ver <a href="#pacientes">Pacientes → Importar planilha</a>.</div>
-<div class="nota">Exige a permissão <code>antecipacoes.manage</code> (por padrão, só o admin).</div>
 
 <h2 class="secao" id="lancamentos">10. Sessões / Lançamentos <span class="rota">/lancamentos</span></h2>
 <div class="objetivo">Objetivo: registrar cada sessão de terapia realizada, seja digitando manualmente, seja importando a transcrição de um formulário em papel preenchido durante o atendimento.</div>
@@ -737,19 +790,25 @@
   <tr><td><span class="btn">Importar transcrição</span></td><td>Abre a importação do registro de sessões em tela própria, em <code>/lancamentos/importar</code>. Fica ao lado de Templates.</td></tr>
   <tr><td><span class="btn">Importar planilha</span></td><td>Abre a importação em massa por planilha (várias sessões de uma vez), em <code>/lancamentos/importar-planilha</code>. Ver abaixo.</td></tr>
   <tr><td><span class="btn">Imprimir modelo em branco</span></td><td>Imprime uma tabela em branco (8 linhas) para o profissional preencher à mão durante o atendimento, antes de ser digitada ou transcrita no sistema.</td></tr>
-  <tr><td><span class="btn">Novo</span></td><td>Abre o formulário manual de lançamento (Antecipação e Profissional executante são obrigatórios; data/hora, acompanhante, resumo e observações completam o registro).</td></tr>
+  <tr><td><span class="btn">Novo</span></td><td>Abre o formulário manual de lançamento (Guia e Profissional executante são obrigatórios; data/hora, acompanhante, resumo e observações completam o registro).</td></tr>
   <tr><td><span class="btn">Registrar sessão</span></td><td>Grava a sessão manualmente digitada.</td></tr>
 </table>
+<div class="nota">
+  O seletor de guia só lista <span class="badge verde">Autorizada</span> ou <span class="badge verde">Aprovada</span>
+  com sessão sobrando — cada opção mostra número, paciente e quantas sessões ainda cabem, por exemplo
+  <em>#134 · 50144598876 · Paciente Ana Ribeiro · 6 disponível(is)</em>. A quantidade é contada ao vivo (sessões
+  autorizadas da guia menos sessões já lançadas) — não existe mais um cadastro de cota à parte.
+</div>
 <h3>Importar registro de sessões</h3>
 <p>
   Abre em tela própria. São três passos, e nada é gravado antes do último.
 </p>
 <ol>
   <li>
-    <strong>Escolher a antecipação e o executante.</strong> A antecipação aparece com o nome do paciente, a
-    especialidade e quanto do ciclo já foi usado — por exemplo <em>#12 · Ana Ribeiro · Fonoaudiologia ABA · 6/10
-    usadas</em>. O executante lista apenas quem atende aquela especialidade e, havendo um só, já vem escolhido:
-    lançar sessão no nome de quem não faz a terapia gera glosa na conciliação.
+    <strong>Escolher a guia e o executante.</strong> Só entram guias autorizadas/aprovadas com sessão disponível —
+    por exemplo <em>#134 · 50144598876 · Paciente Ana Ribeiro · 6 disponível(is)</em>. O executante lista apenas
+    quem atende aquela especialidade e, havendo um só, já vem escolhido: lançar sessão no nome de quem não faz a
+    terapia gera glosa na conciliação.
   </li>
   <li>
     <strong>Ler o documento.</strong> O botão <span class="btn">Ler foto ou PDF do registro</span> envia a imagem
@@ -778,17 +837,16 @@
   padrão de <a href="#pacientes">Pacientes</a> (modelo → prévia editável → confirmação seletiva).
 </p>
 <p>
-  A planilha não pede o número interno da antecipação (sem sentido pra quem preenche) — só o <strong>número da
-  guia</strong> e a <strong>data da sessão</strong>. O sistema acha a antecipação sozinho: se a guia tem só um
-  ciclo, usa ele; se tem mais de um, escolhe o ciclo cuja janela (início/fim) cobre a data da sessão.
+  A planilha pede o <strong>número da guia</strong>, o <strong>convênio</strong> e a <strong>data da sessão</strong>
+  — a sessão referencia a guia direto, sem cadastro intermediário nenhum.
 </p>
 <div class="aviso">
   <strong>Sessão importada não trava por cota estourada.</strong> Uma sessão histórica já aconteceu de verdade — se
-  a quantidade importada passar da cota autorizada da antecipação, a sessão é gravada mesmo assim (e a antecipação
-  fecha), diferente do lançamento manual, que recusa quando a cota já esgotou.
+  a quantidade importada passar as sessões autorizadas da guia, a sessão é gravada mesmo assim, diferente do
+  lançamento manual, que recusa quando a cota já esgotou.
 </div>
 <p>
-  <strong>Chave de correspondência:</strong> antecipação + data + hora de início + profissional. Reimportar a mesma
+  <strong>Chave de correspondência:</strong> guia + data + hora de início + profissional. Reimportar a mesma
   sessão atualiza os demais campos (acompanhante, resumo...) sem contar a cota de novo.
 </p>
 <div class="dica">Cabeçalho fora do modelo? O sistema tenta identificar as colunas por IA antes de desistir — ver <a href="#pacientes">Pacientes → Importar planilha</a>.</div>
@@ -797,10 +855,10 @@
 <table>
   <tr><th>Botão</th><th>O que faz</th></tr>
   <tr><td><span class="btn">Aplicar</span> (filtros)</td><td>Filtra por Profissional executante e Data da sessão.</td></tr>
-  <tr><td><span class="btn">Editar</span> (por linha)</td><td>Só aparece para quem tem <code>lancamentos.manage</code> (por padrão, só o admin). Abre <span class="rota">/lancamentos/{id}/editar</span>, com Profissional executante, data, hora início/fim, acompanhante, resumo e observações — a antecipação vinculada fica travada.</td></tr>
+  <tr><td><span class="btn">Editar</span> (por linha)</td><td>Só aparece para quem tem <code>lancamentos.manage</code> (por padrão, só o admin). Abre <span class="rota">/lancamentos/{id}/editar</span>, com Profissional executante, data, hora início/fim, acompanhante, resumo e observações — a guia vinculada fica travada (mudar de guia moveria a cota consumida para outro paciente/especialidade; para corrigir isso, remova a sessão e lance de novo na guia certa).</td></tr>
 </table>
 <p>
-  A listagem <strong>ordena pelos cabeçalhos</strong>: ID, Antecipação, Profissional executante, Data/Hora,
+  A listagem <strong>ordena pelos cabeçalhos</strong>: ID, Guia, Profissional executante, Data/Hora,
   Acompanhante e Status.
 </p>
 <div class="nota">Toda edição fica registrada nos <a href="#auditoria">Logs de Auditoria</a>, com o valor anterior e o novo.</div>
@@ -864,8 +922,12 @@
   <tr><td><span class="btn">Novo</span></td><td>Abre o formulário (Nome e Especialidade principal são obrigatórios; Conselho/registro e Percentual de repasse são opcionais).</td></tr>
   <tr><td><span class="btn">Editar</span></td><td>Preenche o formulário com os dados do profissional clicado.</td></tr>
   <tr><td><span class="btn">Desativar</span> / <span class="btn">Ativar</span></td><td>Alterna o status imediatamente, sem confirmação.</td></tr>
-  <tr><td><span class="btn">Filtrar</span></td><td>Busca por nome/conselho/especialidade e permite filtrar por uma Especialidade específica. A lista sempre mostra ativos e inativos juntos.</td></tr>
+  <tr><td><span class="btn">Filtrar</span></td><td>Busca por nome/conselho/especialidade e permite filtrar por uma Especialidade específica.</td></tr>
 </table>
+<div class="nota">
+  A listagem <strong>esconde inativo por padrão</strong> — marque <strong>Mostrar inativos</strong> para trazê-los
+  de volta. Mesmo comportamento em <a href="#pacientes">Pacientes</a> e <a href="#medicos">Médicos</a>.
+</div>
 <h3>Atuar em mais de uma especialidade</h3>
 <p>
   O cadastro tem dois campos de especialidade. A <strong>Especialidade principal</strong> é o registro de conselho da
@@ -892,6 +954,10 @@
   <tr><td><span class="btn">Desativar</span> / <span class="btn">Ativar</span></td><td>Alterna o status imediatamente.</td></tr>
   <tr><td><span class="btn">Filtrar</span></td><td>Busca por nome, CRM ou especialidade.</td></tr>
 </table>
+<div class="nota">
+  A listagem <strong>esconde inativo por padrão</strong> — marque <strong>Mostrar inativos</strong> para trazê-los
+  de volta. Mesmo comportamento em <a href="#pacientes">Pacientes</a> e <a href="#profissionais">Profissionais</a>.
+</div>
 
 <h2 class="secao" id="especialidades">15. Especialidades <span class="rota">/especialidades</span></h2>
 <div class="objetivo">Objetivo: cadastro das especialidades (ex.: Fisioterapia, Fonoaudiologia) usadas pelos cadastros de Profissionais e pelas regras/valores de Convênios.</div>
@@ -1058,14 +1124,19 @@
   Cada permissão aparece com um rótulo legível — "Abrir apenas as próprias sessões" em vez de
   <code>lancamentos.viewOwn</code> —, com o nome técnico embaixo.
 </div>
-<h3>Editar dados de Solicitações, Guias, Sessões e Antecipações</h3>
+<h3>Editar dados de Solicitações, Guias e Sessões</h3>
 <p>
-  <code>solicitacoes.manage</code>, <code>guias.manage</code>, <code>lancamentos.manage</code> e
-  <code>antecipacoes.manage</code> controlam a <strong>correção</strong> de um registro já existente — ver
-  <a href="#solicitacoes">Solicitações</a>, <a href="#guias">Guias</a>, <a href="#lancamentos">Sessões</a> e
-  <a href="#antecipacoes">Antecipações</a> — e não a criação normal, que continua liberada pra quem tem acesso à
-  tela. Por padrão, só o papel <code>admin</code> tem essas quatro; a clínica pode conceder ao
+  <code>solicitacoes.manage</code>, <code>guias.manage</code> e <code>lancamentos.manage</code> controlam a
+  <strong>correção</strong> de um registro já existente — ver <a href="#solicitacoes">Solicitações</a>,
+  <a href="#guias">Guias</a> e <a href="#lancamentos">Sessões</a> — e não a criação normal, que continua liberada
+  pra quem tem acesso à tela. Por padrão, só o papel <code>admin</code> tem essas três; a clínica pode conceder ao
   <code>funcionario</code> se quiser que a operação corrija os próprios erros sem depender do admin.
+</p>
+<h3>Alertas</h3>
+<p>
+  <code>alertas.view</code> dá acesso à tela <a href="#alertas">Central de Alertas</a>; <code>alertas.manage</code>
+  libera a configuração de regras, limiares e destinatários de e-mail. São permissões separadas de propósito —
+  quem acompanha os alertas do dia a dia não precisa poder desligar uma regra.
 </p>
 
 <h2 class="secao" id="auditoria">20. Logs de Auditoria <span class="rota">/auditoria</span></h2>
@@ -1076,7 +1147,7 @@
 </p>
 <h3>O que é registrado</h3>
 <ul>
-  <li><strong>Alterações</strong>: criação, edição e exclusão de convênios, regras e valores, pacientes, profissionais, especialidades, médicos, solicitações, guias, sessões, antecipações, conciliações, usuários, papéis, permissões e todas as configurações. O registro é automático — não depende de alguém lembrar de anotar.</li>
+  <li><strong>Alterações</strong>: criação, edição e exclusão de convênios, regras e valores, pacientes, profissionais, especialidades, médicos, solicitações, guias, sessões, conciliações, usuários, papéis, permissões, regras de alerta e todas as configurações. O registro é automático — não depende de alguém lembrar de anotar.</li>
   <li><strong>Acessos</strong>: login, logout, tentativa de login recusada e acesso negado por falta de permissão, com IP e navegador.</li>
   <li><strong>Importações</strong>: um evento por lote de analítico, com arquivo, quantidade de linhas e totais — e não um evento por linha.</li>
   <li><strong>Manutenção</strong>: o próprio expurgo da trilha se registra.</li>
@@ -1108,7 +1179,7 @@
 </div>
 
 <h2 class="secao" id="configuracoes">21. Configurações <span class="rota">/configuracoes</span></h2>
-<div class="objetivo">Objetivo: parâmetros e integrações da clínica. É um grupo do menu: o rótulo abre esta tela e a seta ao lado lista as nove áreas.</div>
+<div class="objetivo">Objetivo: parâmetros e integrações da clínica. É um grupo do menu: o rótulo abre esta tela e a seta ao lado lista as dez áreas.</div>
 <p>
   A tela de entrada tem a escolha de <strong>tema visual</strong> no topo e, abaixo, um cartão explicando cada área.
   Todas exigem a permissão <code>configuracoes.manage</code> (Unimed RDA exige <code>configuracoes.unimed.manage</code>;
@@ -1123,6 +1194,7 @@
   <tr><td><strong>Templates de E-mails</strong></td><td>O texto de cada mensagem que o sistema envia.</td></tr>
   <tr><td><strong>Unimed RDA</strong></td><td>Credenciais do portal e o de-para de especialidades e profissionais da automação.</td></tr>
   <tr><td><strong>Sincronização com o clinica</strong> <span class="rota">/configuracoes/clinica</span></td><td>Status e botão para forçar na hora a sincronização automática de Profissionais e Pacientes com o clinica.gestaonossa.com.br.</td></tr>
+  <tr><td><strong>Regras de Alerta</strong> <span class="rota">/alertas/configuracoes</span></td><td>Ativa/desativa e ajusta o limiar de cada tipo de alerta, e cadastra quem recebe e-mail. Ver <a href="#alertas">Central de Alertas</a>. Exige <code>alertas.manage</code>, e também é alcançável por Automações → Configurações.</td></tr>
   <tr><td><strong>Perfis e Permissões</strong></td><td>Os papéis da clínica e o que cada um enxerga e altera. Ver <a href="#permissoes">Perfis e Permissões</a>.</td></tr>
   <tr><td><strong>Logs de Auditoria</strong></td><td>Quem alterou o quê e quando. Ver <a href="#auditoria">Logs de Auditoria</a>.</td></tr>
 </table>
@@ -1159,6 +1231,7 @@
   <tr><th>Parâmetro</th><th>O que faz</th></tr>
   <tr><td><strong>Tempo de sessão</strong></td><td>Minutos que um login vale. Passado o prazo, o sistema pede login de novo. Há atalhos (30 min, 2 h, 8 h, 24 h) e o valor <code>0</code> desliga a expiração.</td></tr>
   <tr><td><strong>Aviso de senha vencendo</strong></td><td>Com quantos dias de antecedência a guia é marcada como prestes a vencer.</td></tr>
+  <tr><td><strong>Antecedência e referência da antecipação</strong></td><td>Padrão do tenant para o alerta <strong>Antecipação devida</strong> (ver <a href="#alertas">Central de Alertas</a>): quantos dias antes e se a contagem usa a validade da senha ou a data de finalização da guia. Um convênio pode sobrescrever em <a href="#convenios">Convênios</a>, e uma guia específica pode travar a data manualmente.</td></tr>
   <tr><td><strong>Sessões por especialidade</strong></td><td>Quantidade sugerida ao acrescentar uma especialidade na solicitação.</td></tr>
   <tr><td><strong>Itens por página</strong></td><td>Tamanho padrão das listagens.</td></tr>
   <tr><td><strong>Retenção da auditoria (meses)</strong></td><td>Por quanto tempo a trilha é mantida. Padrão de 12 meses, mínimo de 3. Todo dia o que vence é exportado em CSV no servidor e depois removido.</td></tr>
@@ -1202,30 +1275,25 @@
 <div class="objetivo">Objetivo: esta própria tela — o manual de uso do sistema, disponível a qualquer usuário logado a partir do menu superior.</div>
 <p>
   A tela tem duas abas: <strong>Manual</strong>, este texto, e <strong>Mapa Mental</strong>, uma visão de topo em uma
-  página só, útil para localizar rapidamente onde cada tela se encaixa. As duas são editáveis, separadamente, por quem
-  tem <code>manual.manage</code>.
+  página só, útil para localizar rapidamente onde cada tela se encaixa.
 </p>
-<table>
-  <tr><th>Botão</th><th>O que faz</th></tr>
-  <tr><td><span class="btn">Editar manual</span></td><td>Visível apenas para quem tem a permissão <code>manual.manage</code> (por padrão, papel <strong>admin</strong>). Abre um editor de texto com o HTML completo desta página.</td></tr>
-  <tr><td><span class="btn">Salvar alterações</span></td><td>Grava o HTML editado — a partir daí, todos os usuários da clínica passam a ver a versão nova.</td></tr>
-  <tr><td><span class="btn">Cancelar</span></td><td>Descarta as alterações feitas no editor e volta para a visualização normal, sem salvar nada.</td></tr>
-</table>
-<div class="aviso">
-  A edição é em HTML puro — quem editar precisa manter as tags bem formadas (abrir e fechar corretamente) para o
-  manual continuar legível para todo mundo. Se não tiver familiaridade com HTML, peça apoio de alguém da equipe
-  técnica antes de salvar mudanças grandes.
+<div class="nota">
+  <strong>Somente leitura.</strong> Manual e Mapa Mental viraram conteúdo do produto, versionado no repositório do
+  gescon (<code>api/resources/manual/</code>) — não existe mais edição pela interface, nem a permissão
+  <code>manual.manage</code>. Enquanto era editável por clínica, cada uma tinha um manual diferente e ninguém sabia
+  qual era o certo. Corrigir o texto agora exige um deploy; quem alterou fica registrado no histórico do git, não
+  mais em <a href="#auditoria">Logs de Auditoria</a>.
 </div>
 
 <h2 class="secao" id="glossario">23. Glossário de status</h2>
 <table>
   <tr><th>Tela</th><th>Status possíveis</th></tr>
   <tr><td>Solicitações</td><td><span class="badge cinza">Cadastrado</span> · <span class="badge azul">Em análise</span> · <span class="badge verde">Aprovado</span> · <span class="badge vermelho">Negado</span> · <span class="badge cinza">Cancelado</span> · <span class="badge ambar">Vencido</span></td></tr>
-  <tr><td>Guias</td><td><span class="badge cinza">Cadastrado</span> · <span class="badge azul">Em análise</span> · <span class="badge verde">Autorizado</span> (operadora autorizou; ciclo de Antecipação ainda não aberto) · <span class="badge verde">Aprovado</span> (passou pelo Finalizar; ciclo de Antecipação aberto) · <span class="badge vermelho">Negado</span> · <span class="badge cinza">Cancelado</span> · <span class="badge ambar">Vencido</span></td></tr>
-  <tr><td>Antecipações</td><td><span class="badge azul">Aberta</span> · <span class="badge cinza">Fechada</span></td></tr>
+  <tr><td>Guias</td><td><span class="badge cinza">Cadastrado</span> · <span class="badge azul">Em análise</span> · <span class="badge verde">Autorizado</span> (operadora autorizou; já aceita lançamento de sessão) · <span class="badge verde">Aprovado</span> (passou pelo Finalizar — só bookkeeping de senha/validade) · <span class="badge vermelho">Negado</span> · <span class="badge cinza">Cancelado</span> · <span class="badge ambar">Vencido</span></td></tr>
   <tr><td>Sessões (Lançamentos)</td><td><span class="badge verde">Concluído</span> · <span class="badge ambar">Perdido</span> · <span class="badge cinza">Cancelado</span></td></tr>
   <tr><td>Conciliação</td><td><span class="badge cinza">Pendente</span> · <span class="badge azul">Conferida</span> · <span class="badge verde">Paga</span></td></tr>
   <tr><td>Automações</td><td><span class="badge cinza">queued</span> · <span class="badge azul">running</span> · <span class="badge verde">succeeded</span> · <span class="badge vermelho">failed</span> · <span class="badge ambar">uncertain</span> · <span class="badge ambar">needs_attention</span></td></tr>
+  <tr><td>Alertas</td><td>Situação: Aberto · Silenciado · Resolvido. Nível: <span class="badge vermelho">Crítico</span> · <span class="badge ambar">Atenção</span> · <span class="badge azul">Informativo</span></td></tr>
 </table>
 
 <hr class="fim" />

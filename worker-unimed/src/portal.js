@@ -12,7 +12,18 @@ export async function login(page, credential) {
 
   await page.locator('#login').fill(String(credential.login ?? ''), { timeout: DEFAULT_TIMEOUT })
   await page.locator('#passwordTemp').fill(String(credential.password ?? ''), { timeout: DEFAULT_TIMEOUT })
-  await page.locator('[name="Button_DoLogin"]').click({ timeout: DEFAULT_TIMEOUT })
+
+  // Mesma classe de bug do Finalizar (gerarGuia.js) e do "verificar
+  // carteirinha" abaixo: o clique em si sempre "acontece", mas o Playwright
+  // espera a navegacao pos-login terminar dentro do proprio .click(), e o
+  // portal pode demorar mais que DEFAULT_TIMEOUT (5s) pra responder. Achado
+  // ao vivo em 10/09/2026 (execucao 416, consult_status_batch): esse timeout
+  // sozinho ja bastou pra pausar a credencial do tenant inteiro via
+  // UnimedCircuitBreakerService, mesmo sem nenhuma guia envolvida. Login e o
+  // primeiro passo de TODA operacao, entao e o ponto de maior exposicao a
+  // esse padrao — timeout maior so aqui, nao em DEFAULT_TIMEOUT global.
+  const LOGIN_TIMEOUT = Math.max(DEFAULT_TIMEOUT, 30000)
+  await page.locator('[name="Button_DoLogin"]').click({ timeout: LOGIN_TIMEOUT })
   await waitProcessing(page)
 
   if (

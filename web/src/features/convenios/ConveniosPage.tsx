@@ -17,7 +17,7 @@ type Convenio = {
   carteirinha_blocos?: number[] | null
   /** Override do padrão global de antecipação. null = usa configuracoes_globais. */
   antecipacao_dias: number | null
-  antecipacao_referencia: 'validade_senha' | 'data_finalizacao' | null
+  antecipacao_referencia: 'validade_senha' | 'data_finalizacao' | 'data_solicitacao' | null
   ativo: boolean
 }
 
@@ -29,7 +29,7 @@ type ConvenioForm = {
   carteirinha: string
   /** Vazio = usa o padrão global (ver Configurações → Globais). */
   antecipacao_dias: string
-  antecipacao_referencia: '' | 'validade_senha' | 'data_finalizacao'
+  antecipacao_referencia: '' | 'validade_senha' | 'data_finalizacao' | 'data_solicitacao'
   ativo: boolean
 }
 
@@ -326,7 +326,7 @@ export function ConveniosPage() {
               />
               <div className="space-y-1 md:col-span-2">
                 <span className="text-meta text-slate-300">
-                  Antecipação — dias de antecedência (em branco = usa o padrão global)
+                  Antecipação — dias (em branco = usa o padrão global)
                 </span>
                 <input
                   type="number"
@@ -356,6 +356,7 @@ export function ConveniosPage() {
                   <option value="">Padrão global</option>
                   <option value="validade_senha">Validade da senha</option>
                   <option value="data_finalizacao">Data de finalização</option>
+                  <option value="data_solicitacao">Dias após a guia ser criada</option>
                 </Select>
               </div>
               <label className="flex flex-col gap-2 sm:flex-row sm:items-center">

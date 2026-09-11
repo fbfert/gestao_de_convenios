@@ -262,7 +262,7 @@ export function ConfiguracoesGlobaisPage() {
 
         <div className="mt-5 grid gap-4 md:grid-cols-2">
           <label className="space-y-2">
-            <span className="text-corpo font-medium text-slate-200">Dias de antecedência</span>
+            <span className="text-corpo font-medium text-slate-200">Dias</span>
             <input
               type="number"
               min={1}
@@ -274,7 +274,9 @@ export function ConfiguracoesGlobaisPage() {
               data-testid="globais-antecipacao-dias"
             />
             <span className="block text-meta text-slate-400">
-              Quantos dias antes da data de referência o alerta nasce.
+              {form.antecipacao_referencia === 'data_solicitacao'
+                ? 'Quantos dias depois da guia criada o alerta nasce.'
+                : 'Quantos dias antes da data de referência o alerta nasce.'}
             </span>
           </label>
 
@@ -294,9 +296,10 @@ export function ConfiguracoesGlobaisPage() {
             >
               <option value="validade_senha">Validade da senha</option>
               <option value="data_finalizacao">Data de finalização</option>
+              <option value="data_solicitacao">Dias após a guia ser criada</option>
             </select>
             <span className="block text-meta text-slate-400">
-              A partir de qual data a antecedência é contada.
+              A partir de qual data o prazo é contado.
             </span>
           </label>
         </div>

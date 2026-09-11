@@ -23,7 +23,7 @@ class UpdateConfiguracaoGlobalRequest extends FormRequest
             // sobrescrever (ver UpsertConvenioRequest) e a guia pode
             // sobrescrever de novo com data manual.
             'antecipacao_dias' => ['required', 'integer', 'min:1', 'max:180'],
-            'antecipacao_referencia' => ['required', 'in:validade_senha,data_finalizacao'],
+            'antecipacao_referencia' => ['required', 'in:validade_senha,data_finalizacao,data_solicitacao'],
 
             'sessoes_padrao' => ['required', 'integer', 'min:1', 'max:999'],
             'itens_por_pagina' => ['required', 'integer', 'min:5', 'max:200'],

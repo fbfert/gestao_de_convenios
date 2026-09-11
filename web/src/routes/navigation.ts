@@ -119,6 +119,13 @@ export const operacaoItems: NavLeaf[] = [
     permissao: 'dashboard.guias',
   },
   {
+    to: '/antecipacoes',
+    label: 'Antecipações',
+    descricao:
+      'Guias perto da data de gerar o próximo ciclo, e o histórico do que já foi antecipado manualmente.',
+    permissao: 'dashboard.antecipacoes',
+  },
+  {
     to: '/lancamentos',
     label: 'Sessões',
     descricao:

@@ -1,0 +1,1 @@
+export { AntecipacoesPage } from './AntecipacoesPage'

@@ -10,6 +10,7 @@ import { SolicitacaoEditarPage } from '../features/solicitacoes/SolicitacaoEdita
 import { ImportarSolicitacoesPage } from '../features/solicitacoes/ImportarSolicitacoesPage'
 import { ImportarPacientesPage, PacientesPage } from '../features/pacientes'
 import { GuiaDetalhePage, GuiaEditarPage, GuiasPage, ImportarGuiasPage } from '../features/guias'
+import { AntecipacoesPage } from '../features/antecipacoes'
 import { AnaliticosPage, AnaliticoDetalhePage } from '../features/analiticos'
 import { LancamentosPage, LancamentoEditarPage } from '../features/lancamentos'
 import { LancamentoTemplatesPage } from '../features/lancamentos/LancamentoTemplatesPage'
@@ -70,6 +71,7 @@ export function AppRoutes() {
           <Route path="/guias/importar" element={<ImportarGuiasPage />} />
           <Route path="/guias/:id" element={<GuiaDetalhePage />} />
           <Route path="/guias/:id/editar" element={<GuiaEditarPage />} />
+          <Route path="/antecipacoes" element={<AntecipacoesPage />} />
           <Route path="/convenios" element={<ConveniosPage />} />
           <Route path="/convenios/novo" element={<ConveniosPage />} />
           <Route path="/convenios/ajuda" element={<ConvenioAjudaPage />} />

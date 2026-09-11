@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Alerta;
 use App\Models\AlertaRegra;
 use App\Models\Cid;
+use App\Models\ConfiguracaoGlobal;
 use App\Models\Convenio;
 use App\Models\Especialidade;
 use App\Models\Guia;
@@ -382,6 +383,53 @@ class CentralDeAlertasTest extends TestCase
             1,
             Alerta::query()->where('chave', AlertaRegra::CHAVE_ANTECIPACAO_DEVIDA)
                 ->where('entidade_id', $guia->id)->aberto()->count(),
+        );
+    }
+
+    public function test_antecipacao_referencia_guia_criada_nao_alerta_antes_do_prazo(): void
+    {
+        $this->autenticar();
+        ConfiguracaoGlobal::doTenant($this->tenantId)->update([
+            'antecipacao_referencia' => 'data_solicitacao',
+            'antecipacao_dias' => 40,
+        ]);
+
+        // data_solicitacao é sempre "hoje - 30" no helper. Referência
+        // "guia criada" conta pra frente: +40 dias cai daqui a 10 dias,
+        // ainda não devida.
+        $guia = $this->guiaAprovadaComSenha(200);
+
+        $this->avaliar();
+
+        $this->assertSame(
+            0,
+            Alerta::query()->where('chave', AlertaRegra::CHAVE_ANTECIPACAO_DEVIDA)
+                ->where('entidade_id', $guia->id)->aberto()->count(),
+        );
+    }
+
+    public function test_antecipacao_referencia_guia_criada_alerta_quando_prazo_passou(): void
+    {
+        $this->autenticar();
+        ConfiguracaoGlobal::doTenant($this->tenantId)->update([
+            'antecipacao_referencia' => 'data_solicitacao',
+            'antecipacao_dias' => 25,
+        ]);
+
+        // data_solicitacao "hoje - 30" + 25 dias = "hoje - 5": já devida.
+        $guia = $this->guiaAprovadaComSenha(200);
+
+        $this->avaliar();
+
+        $alerta = Alerta::query()
+            ->where('chave', AlertaRegra::CHAVE_ANTECIPACAO_DEVIDA)
+            ->where('entidade_id', $guia->id)
+            ->aberto()
+            ->firstOrFail();
+
+        $this->assertSame(
+            $guia->data_solicitacao->copy()->addDays(25)->toDateString(),
+            $alerta->dados['data_alvo'],
         );
     }
 

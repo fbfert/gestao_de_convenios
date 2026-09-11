@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Concerns\Auditable;
 use App\Concerns\BelongsToTenant;
+use App\Scopes\TenantScope;
 use App\Support\GuiaStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -201,9 +202,13 @@ class Guia extends Model
      *   2. `convenio.antecipacao_dias`/`antecipacao_referencia` — override do convênio.
      *   3. `configuracoes_globais.antecipacao_dias`/`antecipacao_referencia` — padrão do tenant.
      *
-     * Nulo quando a data de referência escolhida (validade da senha ou data de
-     * finalização) ainda não está preenchida nesta guia — nesse caso não dá
-     * pra calcular, e o avaliador simplesmente pula a guia.
+     * `validade_senha` e `data_finalizacao` são vencimentos: conta-se pra
+     * trás (antecedência antes de vencer). `data_solicitacao` ("guia
+     * criada") é um início: conta-se pra frente (dias depois de emitida).
+     *
+     * Nulo quando a data de referência escolhida ainda não está preenchida
+     * nesta guia — nesse caso não dá pra calcular, e o avaliador
+     * simplesmente pula a guia.
      */
     public function antecipacaoDataAlvo(): ?\Illuminate\Support\Carbon
     {
@@ -218,13 +223,52 @@ class Guia extends Model
         $referencia = $convenio?->antecipacao_referencia
             ?? ConfiguracaoGlobal::doTenant($this->tenant_id)->antecipacao_referencia;
 
-        $dataBase = $referencia === 'data_finalizacao' ? $this->data_finalizacao : $this->validade_senha;
+        $dataBase = match ($referencia) {
+            'data_finalizacao' => $this->data_finalizacao,
+            'data_solicitacao' => $this->data_solicitacao,
+            default => $this->validade_senha,
+        };
 
         if (! $dataBase) {
             return null;
         }
 
-        return $dataBase->copy()->subDays($dias);
+        return $referencia === 'data_solicitacao'
+            ? $dataBase->copy()->addDays($dias)
+            : $dataBase->copy()->subDays($dias);
+    }
+
+    /**
+     * Guias com antecipação devida hoje ou já atrasada — a mesma lista que
+     * alimenta o alerta App\Services\Alertas\Regras\AntecipacaoDevida, e
+     * também a fila "Elegíveis" de App\Services\AntecipacaoService. Um único
+     * lugar pras duas leituras não divergirem.
+     */
+    public static function elegiveisParaAntecipacao(int $tenantId)
+    {
+        $hoje = today();
+
+        return static::query()
+            ->withoutGlobalScope(TenantScope::class)
+            ->where('tenant_id', $tenantId)
+            ->whereIn('status', [GuiaStatus::APPROVED, GuiaStatus::FINALIZED])
+            ->whereNull('alerta_antecipacao_ocultado_em')
+            ->naoHistorica()
+            ->with([
+                'paciente',
+                'convenio',
+                'solicitacao.medico',
+                'solicitacao.cidCadastros',
+                'solicitacao.itens.especialidade',
+                'solicitacao.itens.profissional',
+            ])
+            ->get()
+            ->filter(function (self $guia) use ($hoje) {
+                $dataAlvo = $guia->antecipacaoDataAlvo();
+
+                return $dataAlvo !== null && ! $hoje->lt($dataAlvo);
+            })
+            ->values();
     }
 
     public function conciliacoes()

@@ -6,10 +6,10 @@ export type ConfiguracoesGlobais = {
   /** Minutos que um login vale, contados da emissão do token. 0 = sem expirar. */
   sessao_minutos: number
   senha_alerta_dias: number
-  /** Dias de antecedência (sobre a data de referência) pra avisar que é hora de gerar o próximo ciclo. */
+  /** Dias (antes de um vencimento ou depois da guia criada, conforme a referência) pra avisar que é hora de gerar o próximo ciclo. */
   antecipacao_dias: number
-  /** Qual data conta como referência da antecedência: validade da senha ou data de finalização. */
-  antecipacao_referencia: 'validade_senha' | 'data_finalizacao'
+  /** Qual data serve de base: validade da senha, data de finalização (contam pra trás) ou data da guia criada (conta pra frente). */
+  antecipacao_referencia: 'validade_senha' | 'data_finalizacao' | 'data_solicitacao'
   sessoes_padrao: number
   itens_por_pagina: number
   /** Meses que a trilha de auditoria e mantida antes do expurgo diario. */
@@ -60,7 +60,7 @@ export type ConfiguracoesGlobaisForm = {
   sessao_minutos: string
   senha_alerta_dias: string
   antecipacao_dias: string
-  antecipacao_referencia: 'validade_senha' | 'data_finalizacao'
+  antecipacao_referencia: 'validade_senha' | 'data_finalizacao' | 'data_solicitacao'
   sessoes_padrao: string
   itens_por_pagina: string
   auditoria_retencao_meses: string

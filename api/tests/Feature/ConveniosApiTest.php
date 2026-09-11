@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Convenio;
 use App\Models\User;
+use App\Support\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -36,9 +37,42 @@ class ConveniosApiTest extends TestCase
         ]);
     }
 
+    public function test_aceita_dias_apos_a_guia_criada_como_override_de_antecipacao(): void
+    {
+        $this->autenticar();
+
+        $convenio = Convenio::query()->where('nome', 'Unimed')->firstOrFail();
+
+        $this->patchJson("/api/convenios/{$convenio->id}", [
+            'nome' => 'Unimed',
+            'connector_type' => 'manual',
+            'ativo' => true,
+            'antecipacao_dias' => 35,
+            'antecipacao_referencia' => 'data_solicitacao',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.antecipacao_dias', 35)
+            ->assertJsonPath('data.antecipacao_referencia', 'data_solicitacao');
+    }
+
+    public function test_recusa_referencia_de_antecipacao_desconhecida(): void
+    {
+        $this->autenticar();
+
+        $convenio = Convenio::query()->where('nome', 'Unimed')->firstOrFail();
+
+        $this->patchJson("/api/convenios/{$convenio->id}", [
+            'nome' => 'Unimed',
+            'connector_type' => 'manual',
+            'ativo' => true,
+            'antecipacao_referencia' => 'outra_coisa',
+        ])->assertJsonValidationErrors('antecipacao_referencia');
+    }
+
     private function autenticar(): void
     {
         $user = User::query()->where('email', 'admin@clinica-exemplo.test')->firstOrFail();
         Sanctum::actingAs($user);
+        TenantContext::set((int) $user->tenant_id);
     }
 }

@@ -5,9 +5,7 @@ namespace App\Services\Alertas\Regras;
 use App\Models\Alerta;
 use App\Models\AlertaRegra;
 use App\Models\Guia;
-use App\Scopes\TenantScope;
 use App\Services\Alertas\AvaliadorDeAlerta;
-use App\Support\GuiaStatus;
 
 /**
  * Guias aprovadas (ou finalizadas) que já passaram da data-alvo de
@@ -35,26 +33,7 @@ class AntecipacaoDevida implements AvaliadorDeAlerta
         $diasVermelho = $regra->limiar_vermelho ?? self::PADRAO_VERMELHO;
         $hoje = today();
 
-        $guias = Guia::query()
-            ->withoutGlobalScope(TenantScope::class)
-            ->where('tenant_id', $tenantId)
-            ->whereIn('status', [GuiaStatus::APPROVED, GuiaStatus::FINALIZED])
-            ->whereNull('alerta_antecipacao_ocultado_em')
-            ->naoHistorica()
-            ->with([
-                'paciente',
-                'convenio',
-                'solicitacao.medico',
-                'solicitacao.cidCadastros',
-                'solicitacao.itens.especialidade',
-                'solicitacao.itens.profissional',
-            ])
-            ->get()
-            ->filter(function (Guia $guia) use ($hoje) {
-                $dataAlvo = $guia->antecipacaoDataAlvo();
-
-                return $dataAlvo !== null && ! $hoje->lt($dataAlvo);
-            });
+        $guias = Guia::elegiveisParaAntecipacao($tenantId);
 
         return $guias->map(function (Guia $guia) use ($hoje, $diasVermelho, $regra) {
             $dataAlvo = $guia->antecipacaoDataAlvo();

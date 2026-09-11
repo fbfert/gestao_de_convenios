@@ -88,4 +88,10 @@ class Solicitacao extends Model
     {
         return $this->hasMany(SolicitacaoDocumento::class);
     }
+
+    /** Antecipações que tiveram esta solicitação como origem (ver App\Models\Antecipacao). */
+    public function antecipacoes()
+    {
+        return $this->hasMany(Antecipacao::class, 'solicitacao_origem_id');
+    }
 }

@@ -29,7 +29,7 @@ class UpsertConvenioRequest extends FormRequest
             // Override do padrão global de antecipação — nulo (ausente ou
             // enviado vazio) volta a usar configuracoes_globais.
             'antecipacao_dias' => ['nullable', 'integer', 'min:1', 'max:180'],
-            'antecipacao_referencia' => ['nullable', 'in:validade_senha,data_finalizacao'],
+            'antecipacao_referencia' => ['nullable', 'in:validade_senha,data_finalizacao,data_solicitacao'],
 
             'ativo' => ['required', 'boolean'],
         ];

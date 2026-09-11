@@ -94,6 +94,23 @@ class ConfiguracoesGlobaisApiTest extends TestCase
         $this->putJson('/api/configuracoes/globais', $this->payloadValido([
             'unimed_captura_senha_validade_intervalo_horas' => 3,
         ]))->assertJsonValidationErrors('unimed_captura_senha_validade_intervalo_horas');
+
+        // So aceita os 3 valores conhecidos de referencia da antecipacao.
+        $this->putJson('/api/configuracoes/globais', $this->payloadValido([
+            'antecipacao_referencia' => 'outra_coisa',
+        ]))->assertJsonValidationErrors('antecipacao_referencia');
+    }
+
+    public function test_aceita_dias_apos_a_guia_criada_como_referencia_de_antecipacao(): void
+    {
+        $this->autenticarComToken();
+
+        $this->putJson('/api/configuracoes/globais', $this->payloadValido([
+            'antecipacao_referencia' => 'data_solicitacao',
+            'antecipacao_dias' => 40,
+        ]))->assertOk()
+            ->assertJsonPath('data.antecipacao_referencia', 'data_solicitacao')
+            ->assertJsonPath('data.antecipacao_dias', 40);
     }
 
     /** A janela "madrugada" cruza a meia-noite de propósito (fim < início) — não pode exigir `after`. */

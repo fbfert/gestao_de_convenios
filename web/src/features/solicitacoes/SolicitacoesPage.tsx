@@ -52,6 +52,8 @@ import {
   PedidoMedicoExistentePrompt,
   type PedidoExistenteEscolhido,
 } from './PedidoMedicoExistentePrompt'
+import { SelecionarItensAntecipacaoModal } from '../antecipacoes/SelecionarItensAntecipacaoModal'
+import { useMarcarAntecipacaoGerada } from '../antecipacoes/useAntecipacoes'
 import { Indicadores } from '../../components/ui/Indicadores'
 import { Tooltip } from '../../components/ui/Tooltip'
 import { usePode } from '../../lib/permissoes'
@@ -83,6 +85,13 @@ type AntecipacaoPrefill = {
     profissional_id: number
     profissional_nome: string
   }[]
+  /**
+   * Presente quando o gatilho foi um registro `Antecipacao` (tela
+   * /antecipacoes ou botão em Solicitações) — ausente quando veio direto do
+   * alerta. Usado só pra, depois de criar a solicitação, marcar esse
+   * registro como `gerada` (ver handleSubmit).
+   */
+  antecipacaoId?: number
 }
 
 const defaultFilters: SolicitacaoFilters = {
@@ -176,6 +185,7 @@ export function SolicitacoesPage() {
   const [selectedSolicitacaoId, setSelectedSolicitacaoId] = useState<number | null>(null)
   const [progressoExecucaoId, setProgressoExecucaoId] = useState<number | null>(null)
   const [adicionarSessoesId, setAdicionarSessoesId] = useState<number | null>(null)
+  const [gerarAntecipacaoId, setGerarAntecipacaoId] = useState<number | null>(null)
   const [form, setForm] = useState<SolicitacaoForm>(emptyForm)
   const [formError, setFormError] = useState<string | null>(null)
   const [pacienteSelecionado, setPacienteSelecionado] = useState<PacienteRef | null>(null)
@@ -218,6 +228,7 @@ export function SolicitacoesPage() {
   const enviarItemUnimed = useEnviarItemUnimed()
   const removerItem = useRemoverItem()
   const vincularDocumento = useVincularDocumento()
+  const marcarAntecipacaoGerada = useMarcarAntecipacaoGerada()
   const verificarAndamentoItem = useVerificarAndamentoItem()
   const { tratarErroUnimed, modalProps: automacaoUnimedModalProps } = useAutomacaoUnimedGate()
 
@@ -386,6 +397,10 @@ export function SolicitacoesPage() {
   )
   // Mesmo motivo do de cima: guardar o id, não o objeto — depois de acrescentar
   // o item, a lista refaz a consulta e o modal precisa ver a versão nova.
+  const solicitacaoParaAntecipar = useMemo(
+    () => solicitacoes.find((item) => item.id === gerarAntecipacaoId) ?? null,
+    [solicitacoes, gerarAntecipacaoId],
+  )
   const solicitacaoParaAdicionar = useMemo(
     () => solicitacoes.find((item) => item.id === adicionarSessoesId) ?? null,
     [solicitacoes, adicionarSessoesId],
@@ -399,6 +414,11 @@ export function SolicitacoesPage() {
   const podeAdicionarSessoes = (solicitacao: Solicitacao) =>
     pode('solicitacoes.manage') &&
     !STATUS_QUE_BLOQUEIAM_ADICAO.includes(solicitacao.status as SolicitacaoStatus)
+
+  /** Só faz sentido antecipar quando existe pelo menos uma guia já aprovada (ou finalizada) pra repetir. */
+  const podeGerarAntecipacao = (solicitacao: Solicitacao) =>
+    pode('antecipacoes.manage') &&
+    (solicitacao.itens ?? []).some((item) => item.guia && ['approved', 'finalized'].includes(item.guia.status))
 
   // Convênio do FILTRO da lista, não o do formulário de Nova Solicitação —
   // achado 03/09/2026: usava form.convenio_id por engano, e como o
@@ -474,6 +494,21 @@ export function SolicitacoesPage() {
               'Solicitação criada, mas não foi possível vincular o pedido médico existente — anexe manualmente na próxima etapa.',
             ),
           )
+        }
+      }
+
+      // Veio de uma Antecipacao (tela /antecipacoes ou botão em
+      // Solicitações) — marca como gerada agora que a nova solicitação
+      // existe de verdade. Falha aqui não desfaz a criação: só fica sem
+      // marcar, e a pessoa ainda enxerga o registro pendente no histórico.
+      if (antecipacaoPrefill?.antecipacaoId) {
+        try {
+          await marcarAntecipacaoGerada.mutateAsync({
+            id: antecipacaoPrefill.antecipacaoId,
+            solicitacao_gerada_id: criada.id,
+          })
+        } catch {
+          // silencioso de propósito — ver comentário acima.
         }
       }
 
@@ -1320,6 +1355,16 @@ export function SolicitacoesPage() {
                               </span>
                             </DropdownMenu.Item>
 
+                            {podeGerarAntecipacao(solicitacao) ? (
+                              <DropdownMenu.Item
+                                onSelect={() => setGerarAntecipacaoId(solicitacao.id)}
+                                className="flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-slate-100 outline-none transition data-[highlighted]:bg-white/10"
+                                data-testid={`solicitacao-gerar-antecipacao-${solicitacao.id}`}
+                              >
+                                Gerar Antecipação
+                              </DropdownMenu.Item>
+                            ) : null}
+
                             {pode('solicitacoes.manage') ? (
                               <DropdownMenu.Item
                                 asChild
@@ -1371,6 +1416,12 @@ export function SolicitacoesPage() {
         especialidades={especialidades}
         profissionais={profissionais}
         onClose={() => setAdicionarSessoesId(null)}
+      />
+
+      <SelecionarItensAntecipacaoModal
+        open={gerarAntecipacaoId !== null}
+        solicitacao={solicitacaoParaAntecipar}
+        onClose={() => setGerarAntecipacaoId(null)}
       />
 
       <AutomacaoProgressoModal

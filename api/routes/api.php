@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AlertaController;
 use App\Http\Controllers\AlertaDestinatarioController;
+use App\Http\Controllers\AntecipacaoController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AutomacaoController;
 use App\Http\Controllers\AuditController;
@@ -234,6 +235,19 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EncerrarSessaoExpirada::
     Route::patch('/solicitacoes/{solicitacao}/negar', [SolicitacaoController::class, 'negar']);
     Route::post('/solicitacao-itens/{solicitacaoItem}/enviar-unimed', [SolicitacaoController::class, 'enviarItemUnimed']);
     Route::post('/solicitacao-itens/{solicitacaoItem}/verificar-andamento', [SolicitacaoController::class, 'verificarAndamentoItem']);
+
+    Route::get('/antecipacoes/elegiveis', [AntecipacaoController::class, 'elegiveis'])
+        ->middleware('permission:antecipacoes.view');
+    Route::get('/antecipacoes', [AntecipacaoController::class, 'index'])
+        ->middleware('permission:antecipacoes.view');
+    Route::post('/antecipacoes', [AntecipacaoController::class, 'store'])
+        ->middleware('permission:antecipacoes.manage');
+    Route::patch('/antecipacoes/{antecipacao}', [AntecipacaoController::class, 'update'])
+        ->middleware('permission:antecipacoes.manage');
+    Route::delete('/antecipacoes/{antecipacao}', [AntecipacaoController::class, 'destroy'])
+        ->middleware('permission:antecipacoes.manage');
+    Route::patch('/antecipacoes/{antecipacao}/marcar-gerada', [AntecipacaoController::class, 'marcarGerada'])
+        ->middleware('permission:antecipacoes.manage');
 
     Route::get('/guias', [GuiaController::class, 'index']);
     Route::post('/guias', [GuiaController::class, 'store']);

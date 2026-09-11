@@ -751,7 +751,7 @@
   <tr><td><strong>Guia negada</strong></td><td>Guia marcada como <span class="badge vermelho">Negada</span> e ainda não revisada. Mesmo aviso que já existia em <a href="#guias">Guias</a> e no Dashboard — os três lugares coexistem sobre a mesma marcação de "revisado".</td></tr>
   <tr><td><strong>Automação falhando em série</strong></td><td>Várias execuções seguidas com erro na automação de um convênio — ver <a href="#automacoes">Automações</a>.</td></tr>
   <tr><td><strong>Componente fora do ar</strong></td><td>Alguma dependência externa (ex.: portal do convênio) parou de responder.</td></tr>
-  <tr><td><strong>Antecipação devida</strong></td><td>Guia <span class="badge verde">Aprovada</span> (ou <span class="badge verde">Autorizada</span>) chegando perto da data-alvo de antecipação — a validade da senha ou a data de finalização, conforme configurado — e ainda sem uma solicitação sucessora.</td></tr>
+  <tr><td><strong>Antecipação devida</strong></td><td>Guia <span class="badge verde">Aprovada</span> (ou <span class="badge verde">Autorizada</span>) chegando perto da data-alvo de antecipação — validade da senha, data de finalização ou dias após a guia ser criada, conforme configurado — e ainda sem antecipação gerada ou dispensada para essa solicitação.</td></tr>
 </table>
 <table>
   <tr><th>Botão / Filtro</th><th>O que faz</th></tr>
@@ -761,8 +761,30 @@
   <tr><td><span class="btn">Marcar como visto</span></td><td>Registra quem reconheceu o alerta, sem escondê-lo da lista.</td></tr>
   <tr><td><span class="btn">Silenciar 7 dias</span></td><td>Some da lista de "Abertos" por uma semana; volta sozinho se a condição continuar valendo.</td></tr>
   <tr><td><span class="btn">Ocultar</span> (só em Guia negada e Antecipação devida)</td><td>Dispensa definitivamente o alerta <strong>dessa guia específica</strong> — vale para toda a clínica, não existe "ocultar só para mim".</td></tr>
-  <tr><td><span class="btn">Nova Solicitação</span> (só em Guia negada e Antecipação devida)</td><td>Abre <span class="rota">/solicitacoes/nova</span> pré-preenchida. Em Guia negada, com o item (especialidade + profissional) daquela guia. Em Antecipação devida, com o ciclo inteiro da solicitação de origem — médico, CIDs e todos os itens — para revisar e confirmar, nunca envia nada sozinho.</td></tr>
+  <tr><td><span class="btn">Nova Solicitação</span> (só em Guia negada)</td><td>Abre <span class="rota">/solicitacoes/nova</span> pré-preenchida com o item (especialidade + profissional) daquela guia.</td></tr>
+  <tr><td><span class="btn">Gerar Antecipação</span> (só em Antecipação devida)</td><td>Leva para <span class="rota">/antecipacoes</span> já com a checklist de itens daquela solicitação aberta — ver <a href="#antecipacoes">9.1 Antecipações</a>.</td></tr>
 </table>
+
+<h3 id="antecipacoes">9.1 Antecipações <span class="rota">/antecipacoes</span></h3>
+<div class="objetivo">Objetivo: gerar as guias do próximo ciclo de tratamento antes que o ciclo atual acabe — sem esperar o alerta, e sem criar uma solicitação nova. Exige a permissão <code>antecipacoes.view</code> (ou <code>antecipacoes.manage</code> para gerar/ignorar/excluir).</div>
+<p>
+  Antecipar <strong>não cria uma Solicitação nova</strong>: cria um item novo, encadeado por renovação
+  (mesmo mecanismo de <a href="#solicitacoes">Adicionar sessões</a>), <strong>na própria solicitação de
+  origem</strong>, para cada especialidade + profissional escolhido. Em convênio manual a guia já nasce
+  junto; em convênio Unimed RDA o item fica pronto para alguém clicar <span class="btn">Enviar para
+  Unimed</span> depois — a antecipação nunca dispara a automação sozinha.
+</p>
+<table>
+  <tr><th>Seção</th><th>O que mostra</th></tr>
+  <tr><td><strong>Elegíveis</strong></td><td>As mesmas guias que alimentam o alerta "Antecipação devida", calculadas na hora — sem cadastro próprio. Para cada uma: <span class="btn">Gerar</span> abre a checklist de itens da solicitação; <span class="btn">Ignorar</span> dispensa sem gerar nada (some da fila).</td></tr>
+  <tr><td><strong>Histórico</strong></td><td>Todo acionamento manual (desta tela, do botão em Solicitações, ou do alerta), com status <strong>Gerada</strong> ou <strong>Ignorada</strong>, filtrável por status. <span class="btn">Excluir</span> remove só o registro de acompanhamento — nunca desfaz o item ou a guia já gerados.</td></tr>
+  <tr><td><span class="btn">Nova antecipação manual</span></td><td>Busca uma solicitação por nome do paciente e abre a mesma checklist, sem depender de ela estar na fila de elegíveis.</td></tr>
+</table>
+<p>
+  O mesmo botão <span class="btn">Gerar Antecipação</span> aparece na listagem de
+  <a href="#solicitacoes">Solicitações</a>, em qualquer solicitação com pelo menos um item com guia
+  Aprovada ou Finalizada — abre a checklist direto, sem passar por esta tela.
+</p>
 
 <h3>Configurar regras <span class="rota">/alertas/configuracoes</span></h3>
 <p>
@@ -1231,7 +1253,7 @@
   <tr><th>Parâmetro</th><th>O que faz</th></tr>
   <tr><td><strong>Tempo de sessão</strong></td><td>Minutos que um login vale. Passado o prazo, o sistema pede login de novo. Há atalhos (30 min, 2 h, 8 h, 24 h) e o valor <code>0</code> desliga a expiração.</td></tr>
   <tr><td><strong>Aviso de senha vencendo</strong></td><td>Com quantos dias de antecedência a guia é marcada como prestes a vencer.</td></tr>
-  <tr><td><strong>Antecedência e referência da antecipação</strong></td><td>Padrão do tenant para o alerta <strong>Antecipação devida</strong> (ver <a href="#alertas">Central de Alertas</a>): quantos dias antes e se a contagem usa a validade da senha ou a data de finalização da guia. Um convênio pode sobrescrever em <a href="#convenios">Convênios</a>, e uma guia específica pode travar a data manualmente.</td></tr>
+  <tr><td><strong>Antecedência e referência da antecipação</strong></td><td>Padrão do tenant para o alerta <strong>Antecipação devida</strong> e para a fila de <a href="#antecipacoes">Antecipações</a>: quantos dias e qual data serve de base — validade da senha, data de finalização (contam pra trás, antes de vencer) ou dias após a guia ser criada (conta pra frente). Um convênio pode sobrescrever em <a href="#convenios">Convênios</a>, e uma guia específica pode travar a data manualmente.</td></tr>
   <tr><td><strong>Sessões por especialidade</strong></td><td>Quantidade sugerida ao acrescentar uma especialidade na solicitação.</td></tr>
   <tr><td><strong>Itens por página</strong></td><td>Tamanho padrão das listagens.</td></tr>
   <tr><td><strong>Retenção da auditoria (meses)</strong></td><td>Por quanto tempo a trilha é mantida. Padrão de 12 meses, mínimo de 3. Todo dia o que vence é exportado em CSV no servidor e depois removido.</td></tr>

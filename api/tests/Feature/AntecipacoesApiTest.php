@@ -50,6 +50,9 @@ class AntecipacoesApiTest extends TestCase
         $user = User::query()->where('email', 'admin@clinica-exemplo.test')->firstOrFail();
         $tenantId = (int) $user->tenant_id;
 
+        // Convênio "Unimed" da suíte é `connector_type: manual` (não é o
+        // `unimed_rda` do ambiente real) — então gerar item aqui já cria a
+        // guia na hora, o mesmo caminho que qualquer convênio manual segue.
         $convenio = Convenio::query()->where('nome', 'Unimed')->firstOrFail();
         $especialidade = Especialidade::query()->where('nome', 'Fisioterapia')->firstOrFail();
         $profissional = Profissional::query()->where('especialidade_id', $especialidade->id)->firstOrFail();
@@ -107,7 +110,7 @@ class AntecipacoesApiTest extends TestCase
         $this->assertCount(1, $data[0]['guias']);
     }
 
-    public function test_elegiveis_exclui_solicitacao_com_antecipacao_pendente(): void
+    public function test_elegiveis_exclui_solicitacao_ja_gerada_ou_ignorada(): void
     {
         $user = $this->autenticar();
         $solicitacao = $this->solicitacaoComGuiaAprovada();
@@ -115,8 +118,8 @@ class AntecipacoesApiTest extends TestCase
         Antecipacao::query()->create([
             'tenant_id' => $user->tenant_id,
             'solicitacao_origem_id' => $solicitacao->id,
-            'status' => Antecipacao::STATUS_PENDENTE,
-            'itens_selecionados' => [['especialidade_id' => 1, 'profissional_id' => 1]],
+            'status' => Antecipacao::STATUS_IGNORADA,
+            'ignorado_em' => now(),
         ]);
 
         $data = $this->getJson('/api/antecipacoes/elegiveis')->assertOk()->json('data');
@@ -124,50 +127,72 @@ class AntecipacoesApiTest extends TestCase
         $this->assertCount(0, $data);
     }
 
-    public function test_cria_atualiza_marca_gerada_e_remove(): void
+    /** O coração da correção: gera item+guia NA MESMA solicitação, não uma solicitação nova. */
+    public function test_criar_gera_item_e_guia_por_renovacao_na_mesma_solicitacao(): void
     {
         $user = $this->autenticar();
         $solicitacao = $this->solicitacaoComGuiaAprovada();
-        $item = $solicitacao->itens()->firstOrFail();
+        $itemOrigem = $solicitacao->itens()->firstOrFail();
+        $totalSolicitacoesAntes = Solicitacao::query()->count();
 
         $criada = $this->postJson('/api/antecipacoes', [
             'solicitacao_origem_id' => $solicitacao->id,
             'itens_selecionados' => [[
-                'especialidade_id' => $item->especialidade_id,
-                'profissional_id' => $item->profissional_id,
+                'especialidade_id' => $itemOrigem->especialidade_id,
+                'profissional_id' => $itemOrigem->profissional_id,
             ]],
         ])->assertCreated()->json('data');
 
-        $this->assertSame('pendente', $criada['status']);
+        $this->assertSame('gerada', $criada['status']);
+        $this->assertNotNull($criada['gerado_em']);
         $this->assertSame($user->id, Antecipacao::query()->findOrFail($criada['id'])->criado_por_id);
+        $this->assertSame($solicitacao->id, $criada['solicitacao_origem']['id']);
 
-        $this->patchJson("/api/antecipacoes/{$criada['id']}", ['observacoes' => 'Aguardando confirmação'])
-            ->assertOk()
-            ->assertJsonPath('data.observacoes', 'Aguardando confirmação');
+        // Nenhuma solicitação nova foi criada.
+        $this->assertSame($totalSolicitacoesAntes, Solicitacao::query()->count());
 
-        $outraSolicitacao = Solicitacao::query()->create([
-            'tenant_id' => $user->tenant_id,
-            'paciente_id' => $solicitacao->paciente_id,
-            'profissional_id' => $solicitacao->profissional_id,
-            'especialidade_id' => $solicitacao->especialidade_id,
-            'convenio_id' => $solicitacao->convenio_id,
-            'medico_id' => $solicitacao->medico_id,
-            'status' => 'under_review',
-            'solicitado_em' => today()->toDateString(),
-        ]);
+        $itemGeradoId = $criada['itens_selecionados'][0]['item_gerado_id'];
+        $itemGerado = $solicitacao->itens()->findOrFail($itemGeradoId);
+        $this->assertSame($itemOrigem->id, $itemGerado->renovacao_de_item_id);
+        $this->assertNotNull($itemGerado->guia);
+        $this->assertSame($criada['itens_selecionados'][0]['guia_gerada_id'], $itemGerado->guia->id);
 
-        $this->patchJson("/api/antecipacoes/{$criada['id']}/marcar-gerada", [
-            'solicitacao_gerada_id' => $outraSolicitacao->id,
-        ])
-            ->assertOk()
-            ->assertJsonPath('data.status', 'gerada')
-            ->assertJsonPath('data.solicitacao_gerada.id', $outraSolicitacao->id);
+        // Já gerada: some da fila de elegíveis.
+        $this->getJson('/api/antecipacoes/elegiveis')->assertOk()->assertJsonCount(0, 'data');
 
         $this->deleteJson("/api/antecipacoes/{$criada['id']}")->assertNoContent();
         $this->assertNull(Antecipacao::query()->find($criada['id']));
+        // Excluir o registro de acompanhamento não desfaz o item/guia gerados.
+        $this->assertNotNull($solicitacao->itens()->find($itemGeradoId));
     }
 
-    public function test_atualizar_para_ignorada_carimba_ignorado_em(): void
+    public function test_criar_recusa_item_que_nao_pertence_a_solicitacao(): void
+    {
+        $this->autenticar();
+        $solicitacao = $this->solicitacaoComGuiaAprovada();
+
+        $this->postJson('/api/antecipacoes', [
+            'solicitacao_origem_id' => $solicitacao->id,
+            'itens_selecionados' => [['especialidade_id' => 999999, 'profissional_id' => 999999]],
+        ])->assertJsonValidationErrors('itens_selecionados');
+    }
+
+    public function test_ignorar_cria_registro_sem_gerar_nada(): void
+    {
+        $user = $this->autenticar();
+        $solicitacao = $this->solicitacaoComGuiaAprovada();
+
+        $ignorada = $this->postJson('/api/antecipacoes/ignorar', [
+            'solicitacao_origem_id' => $solicitacao->id,
+            'observacoes' => 'Paciente em pausa no tratamento',
+        ])->assertCreated()->json('data');
+
+        $this->assertSame('ignorada', $ignorada['status']);
+        $this->assertSame($user->id, Antecipacao::query()->findOrFail($ignorada['id'])->criado_por_id);
+        $this->assertSame(1, $solicitacao->itens()->count());
+    }
+
+    public function test_atualizar_edita_apenas_observacoes(): void
     {
         $user = $this->autenticar();
         $solicitacao = $this->solicitacaoComGuiaAprovada();
@@ -175,15 +200,14 @@ class AntecipacoesApiTest extends TestCase
         $antecipacao = Antecipacao::query()->create([
             'tenant_id' => $user->tenant_id,
             'solicitacao_origem_id' => $solicitacao->id,
-            'status' => Antecipacao::STATUS_PENDENTE,
-            'itens_selecionados' => [['especialidade_id' => 1, 'profissional_id' => 1]],
+            'status' => Antecipacao::STATUS_IGNORADA,
+            'ignorado_em' => now(),
         ]);
 
-        $this->patchJson("/api/antecipacoes/{$antecipacao->id}", ['status' => 'ignorada'])
+        $this->patchJson("/api/antecipacoes/{$antecipacao->id}", ['observacoes' => 'Revisado depois'])
             ->assertOk()
+            ->assertJsonPath('data.observacoes', 'Revisado depois')
             ->assertJsonPath('data.status', 'ignorada');
-
-        $this->assertNotNull($antecipacao->fresh()->ignorado_em);
     }
 
     public function test_sem_permissao_de_ver_a_listagem_recusa(): void

@@ -5,9 +5,9 @@ namespace App\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
- * Edição do registro de acompanhamento — só status (pendente ↔ ignorada) e
- * observações. Virar `gerada` só acontece por PATCH /marcar-gerada, disparado
- * pelo próprio fluxo de criação da solicitação, nunca por edição manual.
+ * Edição do registro de acompanhamento — só observações. `gerada` e
+ * `ignorada` são status terminais, escritos só por `criar()`/`ignorar()`
+ * (ver AntecipacaoService); não há edição manual de status.
  */
 class UpdateAntecipacaoRequest extends FormRequest
 {
@@ -19,7 +19,6 @@ class UpdateAntecipacaoRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status' => ['sometimes', 'in:pendente,ignorada'],
             'observacoes' => ['sometimes', 'nullable', 'string'],
         ];
     }

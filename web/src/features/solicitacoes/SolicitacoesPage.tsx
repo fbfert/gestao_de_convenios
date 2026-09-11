@@ -53,7 +53,6 @@ import {
   type PedidoExistenteEscolhido,
 } from './PedidoMedicoExistentePrompt'
 import { SelecionarItensAntecipacaoModal } from '../antecipacoes/SelecionarItensAntecipacaoModal'
-import { useMarcarAntecipacaoGerada } from '../antecipacoes/useAntecipacoes'
 import { Indicadores } from '../../components/ui/Indicadores'
 import { Tooltip } from '../../components/ui/Tooltip'
 import { usePode } from '../../lib/permissoes'
@@ -67,32 +66,6 @@ import { Badge, type BadgeProps } from '../../components/ui/Badge'
 import { statusTone as guiaStatusTone } from '../guias/statusTone'
 
 const emptyArray: never[] = []
-
-/**
- * Pré-preenchimento vindo do alerta "Antecipação devida" (Central de Alertas)
- * — repete o ciclo inteiro da solicitação de origem (médico, CIDs, todos os
- * itens), diferente do link de "Guia negada" que só repete um item via query
- * param. Viaja em `location.state` porque tem forma rica demais pra URL.
- */
-type AntecipacaoPrefill = {
-  pacienteId: number | null
-  convenioId: number | null
-  medico: { id: number; nome: string; crm: string; crm_uf: string | null } | null
-  cidIds: number[]
-  itens: {
-    especialidade_id: number
-    especialidade_nome: string
-    profissional_id: number
-    profissional_nome: string
-  }[]
-  /**
-   * Presente quando o gatilho foi um registro `Antecipacao` (tela
-   * /antecipacoes ou botão em Solicitações) — ausente quando veio direto do
-   * alerta. Usado só pra, depois de criar a solicitação, marcar esse
-   * registro como `gerada` (ver handleSubmit).
-   */
-  antecipacaoId?: number
-}
 
 const defaultFilters: SolicitacaoFilters = {
   status: '',
@@ -177,8 +150,6 @@ export function SolicitacoesPage() {
   // adiante em `state` (nunca na URL de /nova — essa já usa query string
   // pra outra coisa: pré-preencher paciente/convênio por deep link).
   const voltarPara = (location.state as { from?: string } | null)?.from ?? '/solicitacoes'
-  const antecipacaoPrefill =
-    (location.state as { antecipacao?: AntecipacaoPrefill } | null)?.antecipacao ?? null
   const { filters, page, setFilters, setPage } = useListaNaUrl(defaultFilters)
   const [draftFilters, setDraftFilters] = useState(filters)
   const [isFormOpen, setIsFormOpen] = useState(false)
@@ -214,13 +185,9 @@ export function SolicitacoesPage() {
   const especialidadesQuery = useEspecialidades({ convenio_id: form.convenio_id })
   // Todos os profissionais: cada linha de item filtra pela sua própria especialidade.
   const profissionaisQuery = useProfissionais()
-  // Paciente pré-preenchido por link (alerta de guia negada) ou por state
-  // (alerta de antecipação) — ver useEffects abaixo. Sem isso o botão de
-  // Paciente mostraria só o id.
-  const pacienteIdParam = isCreateRoute
-    ? (searchParams.get('paciente_id') ??
-      (antecipacaoPrefill?.pacienteId ? String(antecipacaoPrefill.pacienteId) : null))
-    : null
+  // Paciente pré-preenchido por link (alerta de guia negada) — ver useEffect
+  // abaixo. Sem isso o botão de Paciente mostraria só o id.
+  const pacienteIdParam = isCreateRoute ? searchParams.get('paciente_id') : null
   const pacientePreSelecionadoQuery = usePaciente(pacienteIdParam ? Number(pacienteIdParam) : null)
   const solicitacoesQuery = useSolicitacoes({ ...filters, ...ordenacao }, page)
   const criarSolicitacao = useCriarSolicitacao()
@@ -228,7 +195,6 @@ export function SolicitacoesPage() {
   const enviarItemUnimed = useEnviarItemUnimed()
   const removerItem = useRemoverItem()
   const vincularDocumento = useVincularDocumento()
-  const marcarAntecipacaoGerada = useMarcarAntecipacaoGerada()
   const verificarAndamentoItem = useVerificarAndamentoItem()
   const { tratarErroUnimed, modalProps: automacaoUnimedModalProps } = useAutomacaoUnimedGate()
 
@@ -339,48 +305,6 @@ export function SolicitacoesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isCreateRoute])
 
-  // Pré-preenche a partir do "Nova Solicitação" do alerta de antecipação
-  // devida (AlertasPage) — repete o ciclo inteiro (médico, CIDs, todos os
-  // itens da solicitação de origem), mesma lógica de handleUsarPedidoExistente
-  // mas disparada pelo state da navegação em vez de um clique na tela.
-  useEffect(() => {
-    if (!isCreateRoute || !antecipacaoPrefill) {
-      return
-    }
-
-    setPedidoExistenteResolvido(true)
-
-    if (antecipacaoPrefill.medico) {
-      const medico = antecipacaoPrefill.medico
-      setMedicoSelecionado({
-        id: medico.id,
-        nome: medico.nome,
-        crm: medico.crm,
-        crm_uf: medico.crm_uf,
-        especialidade_medica: '',
-        telefone: '',
-        email: null,
-        ativo: true,
-      })
-    }
-
-    setForm((current) => ({
-      ...current,
-      paciente_id: antecipacaoPrefill.pacienteId ? String(antecipacaoPrefill.pacienteId) : current.paciente_id,
-      convenio_id: antecipacaoPrefill.convenioId ? String(antecipacaoPrefill.convenioId) : current.convenio_id,
-      medico_id: antecipacaoPrefill.medico ? String(antecipacaoPrefill.medico.id) : current.medico_id,
-      cid_ids: antecipacaoPrefill.cidIds.length > 0 ? antecipacaoPrefill.cidIds.map(String) : current.cid_ids,
-      itens:
-        antecipacaoPrefill.itens.length > 0
-          ? antecipacaoPrefill.itens.map((item) => ({
-              ...itemComPadraoDoConvenio(convenioSelecionado?.sessoes_por_guia),
-              especialidade_id: String(item.especialidade_id),
-              profissional_id: String(item.profissional_id),
-            }))
-          : current.itens,
-    }))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isCreateRoute])
 
   const totalPages = solicitacoesQuery.data?.meta?.last_page ?? 1
   const fromHref = !isCreateRoute && searchParams.toString() ? `/solicitacoes?${searchParams.toString()}` : '/solicitacoes'
@@ -494,21 +418,6 @@ export function SolicitacoesPage() {
               'Solicitação criada, mas não foi possível vincular o pedido médico existente — anexe manualmente na próxima etapa.',
             ),
           )
-        }
-      }
-
-      // Veio de uma Antecipacao (tela /antecipacoes ou botão em
-      // Solicitações) — marca como gerada agora que a nova solicitação
-      // existe de verdade. Falha aqui não desfaz a criação: só fica sem
-      // marcar, e a pessoa ainda enxerga o registro pendente no histórico.
-      if (antecipacaoPrefill?.antecipacaoId) {
-        try {
-          await marcarAntecipacaoGerada.mutateAsync({
-            id: antecipacaoPrefill.antecipacaoId,
-            solicitacao_gerada_id: criada.id,
-          })
-        } catch {
-          // silencioso de propósito — ver comentário acima.
         }
       }
 

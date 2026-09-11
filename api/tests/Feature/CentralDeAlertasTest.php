@@ -286,7 +286,7 @@ class CentralDeAlertasTest extends TestCase
         );
     }
 
-    public function test_antecipacao_alerta_com_payload_de_pre_preenchimento(): void
+    public function test_antecipacao_alerta_leva_para_a_tela_de_geracao(): void
     {
         $this->autenticar();
         // Senha vencendo em 18 dias => data-alvo há 2 dias (atraso 2, abaixo
@@ -302,14 +302,8 @@ class CentralDeAlertasTest extends TestCase
             ->firstOrFail();
 
         $this->assertSame(Alerta::NIVEL_AMARELO, $alerta->nivel);
-        $this->assertSame(['ocultar', 'nova_solicitacao'], $alerta->dados['acoes']);
-        $this->assertSame($guia->paciente_id, $alerta->dados['paciente_id']);
-        $this->assertSame($guia->convenio_id, $alerta->dados['convenio_id']);
-        $this->assertNotNull($alerta->dados['medico']);
-        $this->assertNotEmpty($alerta->dados['cid_ids']);
-        $this->assertCount(1, $alerta->dados['itens']);
-        $this->assertSame($guia->especialidade_id, $alerta->dados['itens'][0]['especialidade_id']);
-        $this->assertSame($guia->profissional_id, $alerta->dados['itens'][0]['profissional_id']);
+        $this->assertSame(['ocultar', 'gerar_antecipacao'], $alerta->dados['acoes']);
+        $this->assertSame($guia->solicitacao_id, $alerta->dados['solicitacao_id']);
     }
 
     public function test_antecipacao_vira_vermelho_apos_limiar_de_atraso(): void

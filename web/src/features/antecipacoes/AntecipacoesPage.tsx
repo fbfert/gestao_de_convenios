@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { Badge } from '../../components/ui/Badge'
 import { Botao } from '../../components/ui/Botao'
 import { ConfirmarExclusao } from '../../components/ui/ConfirmarExclusao'
@@ -12,28 +13,28 @@ import { SelecionarSolicitacaoModal } from './SelecionarSolicitacaoModal'
 import {
   useAntecipacoes,
   useAntecipacoesElegiveis,
-  useAtualizarAntecipacao,
+  useIgnorarAntecipacao,
   useRemoverAntecipacao,
 } from './useAntecipacoes'
 import type { Antecipacao, AntecipacaoStatus } from './types'
 
-function statusTone(status: AntecipacaoStatus): 'neutro' | 'sucesso' | 'alerta' {
-  if (status === 'gerada') return 'sucesso'
-  if (status === 'ignorada') return 'neutro'
-  return 'alerta'
+function statusTone(status: AntecipacaoStatus): 'neutro' | 'sucesso' {
+  return status === 'gerada' ? 'sucesso' : 'neutro'
 }
 
 function statusLabel(status: AntecipacaoStatus): string {
-  return { pendente: 'Pendente', gerada: 'Gerada', ignorada: 'Ignorada' }[status]
+  return { gerada: 'Gerada', ignorada: 'Ignorada' }[status]
 }
 
 export function AntecipacoesPage() {
   const pode = usePode()
+  const location = useLocation()
   const [historicoStatus, setHistoricoStatus] = useState<'' | AntecipacaoStatus>('')
   const [page, setPage] = useState(1)
 
-  // Elegível clicado em "Gerar" — busca a solicitação inteira (com
-  // itens+guia) antes de abrir o checklist, já que a fila só traz um resumo.
+  // Elegível clicado em "Gerar" (ou aberto direto pelo alerta) — busca a
+  // solicitação inteira (com itens+guia) antes de abrir o checklist, já que
+  // a fila só traz um resumo.
   const [elegivelSolicitacaoId, setElegivelSolicitacaoId] = useState<number | null>(null)
   const solicitacaoElegivelQuery = useSolicitacao(elegivelSolicitacaoId)
 
@@ -44,10 +45,20 @@ export function AntecipacoesPage() {
 
   const elegiveisQuery = useAntecipacoesElegiveis(pode('antecipacoes.view'))
   const historicoQuery = useAntecipacoes({ status: historicoStatus }, page)
-  const atualizar = useAtualizarAntecipacao()
+  const ignorar = useIgnorarAntecipacao()
   const remover = useRemoverAntecipacao()
 
   const podeGerenciar = pode('antecipacoes.manage')
+
+  // Veio do botão "Gerar Antecipação" do alerta (Central de Alertas) — abre
+  // a checklist direto, sem precisar achar a solicitação na fila manualmente.
+  useEffect(() => {
+    const state = location.state as { abrirGeracaoParaSolicitacao?: number } | null
+    if (state?.abrirGeracaoParaSolicitacao) {
+      setElegivelSolicitacaoId(state.abrirGeracaoParaSolicitacao)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const solicitacaoParaModal = manualSolicitacao ?? solicitacaoElegivelQuery.data ?? null
   const modalAberto = elegivelSolicitacaoId !== null || manualSolicitacao !== null
@@ -63,8 +74,8 @@ export function AntecipacoesPage() {
         <h1 className="text-titulo font-semibold text-white">Antecipações</h1>
         <p className="text-corpo text-slate-300">
           Guias aprovadas perto da data de gerar o próximo ciclo, e o histórico do que já foi
-          antecipado manualmente. Antecipar nunca gera nem envia nada sozinho — sempre passa por
-          Nova Solicitação, com os dados já pré-preenchidos, pra você revisar e confirmar.
+          antecipado manualmente. Antecipar nunca envia nada sozinho pra automação — gera os itens
+          e, quando possível, a guia, na mesma solicitação, pra você revisar e enviar quando quiser.
         </p>
       </header>
 
@@ -93,15 +104,26 @@ export function AntecipacoesPage() {
                 </p>
               </div>
               {podeGerenciar ? (
-                <Botao
-                  type="button"
-                  variante="secundario"
-                  disabled={solicitacaoElegivelQuery.isLoading && elegivelSolicitacaoId === item.solicitacao_id}
-                  onClick={() => setElegivelSolicitacaoId(item.solicitacao_id)}
-                  data-testid={`antecipacao-elegivel-gerar-${item.solicitacao_id}`}
-                >
-                  Gerar
-                </Botao>
+                <div className="flex items-center gap-2">
+                  <Botao
+                    type="button"
+                    variante="secundario"
+                    disabled={ignorar.isPending}
+                    onClick={() => ignorar.mutate({ solicitacao_origem_id: item.solicitacao_id })}
+                    data-testid={`antecipacao-elegivel-ignorar-${item.solicitacao_id}`}
+                  >
+                    Ignorar
+                  </Botao>
+                  <Botao
+                    type="button"
+                    variante="primario"
+                    disabled={solicitacaoElegivelQuery.isLoading && elegivelSolicitacaoId === item.solicitacao_id}
+                    onClick={() => setElegivelSolicitacaoId(item.solicitacao_id)}
+                    data-testid={`antecipacao-elegivel-gerar-${item.solicitacao_id}`}
+                  >
+                    Gerar
+                  </Botao>
+                </div>
               ) : null}
             </div>
           ))}
@@ -121,7 +143,6 @@ export function AntecipacoesPage() {
               data-testid="antecipacoes-filtro-status"
             >
               <option value="">Todas</option>
-              <option value="pendente">Pendente</option>
               <option value="gerada">Gerada</option>
               <option value="ignorada">Ignorada</option>
             </Select>
@@ -157,35 +178,16 @@ export function AntecipacoesPage() {
                   {antecipacao.solicitacao_origem?.convenio?.nome ?? 'Convênio não informado'}
                 </p>
                 <p className="text-meta text-slate-400">
-                  Criada em {formatarData(antecipacao.created_at)}
+                  {antecipacao.status === 'gerada'
+                    ? `${antecipacao.itens_selecionados?.length ?? 0} item(ns) gerado(s)`
+                    : 'Dispensada'}{' '}
+                  em {formatarData(antecipacao.created_at)}
                   {antecipacao.criado_por ? ` por ${antecipacao.criado_por.nome}` : ''}
                   {antecipacao.observacoes ? ` · ${antecipacao.observacoes}` : ''}
                 </p>
               </div>
               <div className="flex items-center gap-2">
                 <Badge tone={statusTone(antecipacao.status)}>{statusLabel(antecipacao.status)}</Badge>
-                {podeGerenciar && antecipacao.status === 'pendente' ? (
-                  <Botao
-                    type="button"
-                    variante="secundario"
-                    disabled={atualizar.isPending}
-                    onClick={() => atualizar.mutate({ id: antecipacao.id, status: 'ignorada' })}
-                    data-testid={`antecipacao-ignorar-${antecipacao.id}`}
-                  >
-                    Ignorar
-                  </Botao>
-                ) : null}
-                {podeGerenciar && antecipacao.status === 'ignorada' ? (
-                  <Botao
-                    type="button"
-                    variante="secundario"
-                    disabled={atualizar.isPending}
-                    onClick={() => atualizar.mutate({ id: antecipacao.id, status: 'pendente' })}
-                    data-testid={`antecipacao-reabrir-${antecipacao.id}`}
-                  >
-                    Reabrir
-                  </Botao>
-                ) : null}
                 {podeGerenciar ? (
                   <Botao
                     type="button"
@@ -241,7 +243,7 @@ export function AntecipacoesPage() {
       {antecipacaoAExcluir ? (
         <ConfirmarExclusao
           titulo="Excluir antecipação"
-          descricao="Remove só o registro de acompanhamento — não afeta nenhuma guia ou solicitação já gerada."
+          descricao="Remove só o registro de acompanhamento — não afeta nenhum item ou guia já gerados."
           alvo={`Antecipação #${antecipacaoAExcluir.id}`}
           confirmando={remover.isPending}
           onConfirmar={() => {

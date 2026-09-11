@@ -9,19 +9,18 @@ use App\Services\Alertas\AvaliadorDeAlerta;
 
 /**
  * Guias aprovadas (ou finalizadas) que já passaram da data-alvo de
- * antecipação — hora de alguém revisar e, se fizer sentido, gerar a
- * solicitação do próximo ciclo. Nunca gera nada sozinho: só avisa.
+ * antecipação — hora de alguém revisar e, se fizer sentido, gerar as guias do
+ * próximo ciclo. Nunca gera nada sozinho: só avisa.
  *
  * Data-alvo vem de Guia::antecipacaoDataAlvo() (override da guia > override do
  * convênio > padrão global). Guia sem data de referência ainda preenchida
- * (validade da senha ou data de finalização, conforme a regra escolhida)
  * simplesmente não entra — não dá pra calcular.
  *
  * Duas ações viajam em `dados.acoes`, mesmo padrão de GuiaNegada: "ocultar"
- * (`alerta_antecipacao_ocultado_em`, dispensa esta guia) e "nova_solicitacao"
- * — que aqui carrega médico, CIDs e todos os itens (especialidade+profissional)
- * da solicitação de origem, pra tela pré-preencher a solicitação inteira do
- * próximo ciclo, e não só um item.
+ * (`alerta_antecipacao_ocultado_em`, dispensa esta guia) e "gerar_antecipacao"
+ * — que leva pra tela /antecipacoes já abrindo a checklist de itens desta
+ * solicitação (ver App\Services\AntecipacaoService::criar(), que gera itens
+ * novos por renovação na MESMA solicitação, não uma solicitação nova).
  */
 class AntecipacaoDevida implements AvaliadorDeAlerta
 {
@@ -39,7 +38,6 @@ class AntecipacaoDevida implements AvaliadorDeAlerta
             $dataAlvo = $guia->antecipacaoDataAlvo();
             $atraso = $dataAlvo->diffInDays($hoje);
             $vermelho = $atraso >= $diasVermelho;
-            $solicitacao = $guia->solicitacao;
 
             return [
                 'nivel' => $vermelho ? Alerta::NIVEL_VERMELHO : ($regra->nivel_base ?: Alerta::NIVEL_AMARELO),
@@ -52,29 +50,8 @@ class AntecipacaoDevida implements AvaliadorDeAlerta
                 'dados' => [
                     'data_alvo' => $dataAlvo->toDateString(),
                     'dias_de_atraso' => (int) $atraso,
-                    'acoes' => ['ocultar', 'nova_solicitacao'],
-                    'paciente_id' => $guia->paciente_id,
-                    'convenio_id' => $guia->convenio_id,
-                    'medico' => $solicitacao?->medico ? [
-                        'id' => $solicitacao->medico->id,
-                        'nome' => $solicitacao->medico->nome,
-                        'crm' => $solicitacao->medico->crm,
-                        'crm_uf' => $solicitacao->medico->crm_uf,
-                    ] : null,
-                    'cid_ids' => $solicitacao?->cidCadastros->pluck('id')->all() ?? [],
-                    // Par especialidade+profissional de cada item da solicitação
-                    // de origem — repete o ciclo inteiro, não só um item.
-                    'itens' => $solicitacao?->itens
-                        ->filter(fn ($item) => $item->especialidade && $item->profissional)
-                        ->unique(fn ($item) => "{$item->especialidade_id}-{$item->profissional_id}")
-                        ->values()
-                        ->map(fn ($item) => [
-                            'especialidade_id' => $item->especialidade->id,
-                            'especialidade_nome' => $item->especialidade->nome,
-                            'profissional_id' => $item->profissional->id,
-                            'profissional_nome' => $item->profissional->nome,
-                        ])
-                        ->all() ?? [],
+                    'acoes' => ['ocultar', 'gerar_antecipacao'],
+                    'solicitacao_id' => $guia->solicitacao_id,
                 ],
             ];
         })->values()->all();

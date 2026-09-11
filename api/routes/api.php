@@ -242,11 +242,11 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EncerrarSessaoExpirada::
         ->middleware('permission:antecipacoes.view');
     Route::post('/antecipacoes', [AntecipacaoController::class, 'store'])
         ->middleware('permission:antecipacoes.manage');
+    Route::post('/antecipacoes/ignorar', [AntecipacaoController::class, 'ignorar'])
+        ->middleware('permission:antecipacoes.manage');
     Route::patch('/antecipacoes/{antecipacao}', [AntecipacaoController::class, 'update'])
         ->middleware('permission:antecipacoes.manage');
     Route::delete('/antecipacoes/{antecipacao}', [AntecipacaoController::class, 'destroy'])
-        ->middleware('permission:antecipacoes.manage');
-    Route::patch('/antecipacoes/{antecipacao}/marcar-gerada', [AntecipacaoController::class, 'marcarGerada'])
         ->middleware('permission:antecipacoes.manage');
 
     Route::get('/guias', [GuiaController::class, 'index']);

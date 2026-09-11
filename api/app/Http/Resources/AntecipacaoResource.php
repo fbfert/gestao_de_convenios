@@ -29,9 +29,6 @@ class AntecipacaoResource extends JsonResource
                     'nome' => $this->solicitacaoOrigem->convenio->nome,
                 ] : null,
             ]),
-            'solicitacao_gerada' => $this->whenLoaded('solicitacaoGerada', fn () => $this->solicitacaoGerada ? [
-                'id' => $this->solicitacaoGerada->id,
-            ] : null),
             'criado_por' => $this->whenLoaded('criadoPor', fn () => $this->criadoPor ? [
                 'id' => $this->criadoPor->id,
                 'nome' => $this->criadoPor->name,

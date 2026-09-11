@@ -6,6 +6,7 @@ import type {
   AntecipacaoElegivel,
   AntecipacaoFilters,
   CriarAntecipacaoPayload,
+  IgnorarAntecipacaoPayload,
   PaginatedResponse,
 } from './types'
 
@@ -36,10 +37,17 @@ export function useAntecipacoes(filters: AntecipacaoFilters, page: number) {
   })
 }
 
-function invalidarAntecipacoes(queryClient: ReturnType<typeof useQueryClient>) {
-  return queryClient.invalidateQueries({ queryKey: ['antecipacoes'] })
+function invalidarAposGerar(queryClient: ReturnType<typeof useQueryClient>) {
+  // 'guias' junto: gerar cria item+guia na solicitação de origem (mesmo
+  // motivo que useAdicionarItem já invalida os dois).
+  return Promise.all([
+    queryClient.invalidateQueries({ queryKey: ['antecipacoes'] }),
+    queryClient.invalidateQueries({ queryKey: ['solicitacoes'] }),
+    queryClient.invalidateQueries({ queryKey: ['guias'] }),
+  ])
 }
 
+/** Gera de fato: cria item(ns) novo(s) por renovação na solicitação de origem. */
 export function useCriarAntecipacao() {
   const queryClient = useQueryClient()
 
@@ -50,7 +58,22 @@ export function useCriarAntecipacao() {
       return data.data
     },
     onSuccess: async () => {
-      await invalidarAntecipacoes(queryClient)
+      await invalidarAposGerar(queryClient)
+    },
+  })
+}
+
+export function useIgnorarAntecipacao() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (payload: IgnorarAntecipacaoPayload) => {
+      const { data } = await apiClient.post<{ data: Antecipacao }>('/antecipacoes/ignorar', payload)
+
+      return data.data
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['antecipacoes'] })
     },
   })
 }
@@ -59,24 +82,13 @@ export function useAtualizarAntecipacao() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({
-      id,
-      status,
-      observacoes,
-    }: {
-      id: number
-      status?: 'pendente' | 'ignorada'
-      observacoes?: string | null
-    }) => {
-      const { data } = await apiClient.patch<{ data: Antecipacao }>(`/antecipacoes/${id}`, {
-        status,
-        observacoes,
-      })
+    mutationFn: async ({ id, observacoes }: { id: number; observacoes?: string | null }) => {
+      const { data } = await apiClient.patch<{ data: Antecipacao }>(`/antecipacoes/${id}`, { observacoes })
 
       return data.data
     },
     onSuccess: async () => {
-      await invalidarAntecipacoes(queryClient)
+      await queryClient.invalidateQueries({ queryKey: ['antecipacoes'] })
     },
   })
 }
@@ -89,24 +101,7 @@ export function useRemoverAntecipacao() {
       await apiClient.delete(`/antecipacoes/${id}`)
     },
     onSuccess: async () => {
-      await invalidarAntecipacoes(queryClient)
-    },
-  })
-}
-
-export function useMarcarAntecipacaoGerada() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: async ({ id, solicitacao_gerada_id }: { id: number; solicitacao_gerada_id: number }) => {
-      const { data } = await apiClient.patch<{ data: Antecipacao }>(`/antecipacoes/${id}/marcar-gerada`, {
-        solicitacao_gerada_id,
-      })
-
-      return data.data
-    },
-    onSuccess: async () => {
-      await invalidarAntecipacoes(queryClient)
+      await queryClient.invalidateQueries({ queryKey: ['antecipacoes'] })
     },
   })
 }

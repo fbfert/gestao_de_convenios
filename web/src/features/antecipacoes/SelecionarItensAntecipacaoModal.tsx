@@ -1,7 +1,6 @@
 import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/react'
 import { useEffect, useState } from 'react'
 import { X } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
 import { Botao } from '../../components/ui/Botao'
 import { useFechamentoExplicito } from '../../lib/useFechamentoExplicito'
 import type { Solicitacao } from '../solicitacoes/types'
@@ -21,18 +20,18 @@ function chave(especialidadeId: number, profissionalId: number) {
 
 /**
  * Checklist dos itens (especialidade+profissional) de uma solicitação já
- * carregada, pra decidir o que vai pro próximo ciclo. Ao confirmar, cria o
- * registro `Antecipacao` e navega pra Nova Solicitação já pré-preenchida —
- * mesmo `location.state.antecipacao` que o alerta "Antecipação devida" usa
- * (ver AntecipacaoPrefill em SolicitacoesPage.tsx), só que com `antecipacaoId`
- * pra marcar como gerada depois de salvar.
+ * carregada, pra decidir o que repete no próximo ciclo. Ao confirmar, gera
+ * de verdade: cria um item novo por renovação (`renovacao_de_item_id`) PRA
+ * CADA item marcado, na MESMA solicitação — não uma solicitação nova (ver
+ * App\Services\AntecipacaoService::criar()). Convênio manual já ganha guia
+ * na hora; Unimed RDA fica pronto pra alguém clicar "Enviar para Unimed"
+ * depois, exatamente como "Adicionar sessões" hoje.
  */
 export function SelecionarItensAntecipacaoModal({
   open,
   onClose,
   solicitacao,
 }: SelecionarItensAntecipacaoModalProps) {
-  const navigate = useNavigate()
   const criarAntecipacao = useCriarAntecipacao()
   const [selecionados, setSelecionados] = useState<Set<string>>(new Set())
   const [erro, setErro] = useState<string | null>(null)
@@ -88,7 +87,7 @@ export function SelecionarItensAntecipacaoModal({
     }
 
     try {
-      const antecipacao = await criarAntecipacao.mutateAsync({
+      await criarAntecipacao.mutateAsync({
         solicitacao_origem_id: solicitacao.id,
         itens_selecionados: itens.map((item) => ({
           especialidade_id: item.especialidade_id,
@@ -97,32 +96,8 @@ export function SelecionarItensAntecipacaoModal({
       })
 
       onClose()
-      navigate('/solicitacoes/nova', {
-        state: {
-          antecipacao: {
-            pacienteId: solicitacao.paciente_id,
-            convenioId: solicitacao.convenio_id,
-            medico: solicitacao.medico
-              ? {
-                  id: solicitacao.medico.id,
-                  nome: solicitacao.medico.nome,
-                  crm: solicitacao.medico.crm,
-                  crm_uf: solicitacao.medico.crm_uf,
-                }
-              : null,
-            cidIds: (solicitacao.cids ?? []).map((cid) => cid.id),
-            itens: itens.map((item) => ({
-              especialidade_id: item.especialidade_id,
-              especialidade_nome: item.especialidade?.nome ?? '',
-              profissional_id: item.profissional_id,
-              profissional_nome: item.profissional?.nome ?? '',
-            })),
-            antecipacaoId: antecipacao.id,
-          },
-        },
-      })
     } catch (error) {
-      setErro(getHttpErrorMessage(error, 'Não foi possível iniciar a antecipação.'))
+      setErro(getHttpErrorMessage(error, 'Não foi possível gerar a antecipação.'))
     }
   }
 
@@ -150,8 +125,8 @@ export function SelecionarItensAntecipacaoModal({
             <p className="mt-2 text-corpo text-slate-300">
               {solicitacao.paciente?.nome ?? 'Paciente não informado'} ·{' '}
               {solicitacao.convenio?.nome ?? 'Convênio não informado'}. Escolha os itens que
-              repetem no próximo ciclo — a nova solicitação abre com médico, CIDs e estes itens
-              já preenchidos.
+              repetem no próximo ciclo — cada um vira um item novo (e, quando possível, a guia já
+              junto) nesta mesma solicitação, pronto pra entrar na automação.
             </p>
 
             <div className="mt-4 max-h-80 space-y-2 overflow-y-auto">
@@ -201,7 +176,7 @@ export function SelecionarItensAntecipacaoModal({
                 onClick={() => void handleConfirmar()}
                 data-testid="selecionar-itens-antecipacao-confirmar"
               >
-                {criarAntecipacao.isPending ? 'Gerando...' : 'Continuar para Nova Solicitação'}
+                {criarAntecipacao.isPending ? 'Gerando...' : 'Gerar guias'}
               </Botao>
             </div>
           </DialogPanel>

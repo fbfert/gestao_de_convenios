@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\MarcarAntecipacaoGeradaRequest;
+use App\Http\Requests\IgnorarAntecipacaoRequest;
 use App\Http\Requests\StoreAntecipacaoRequest;
 use App\Http\Requests\UpdateAntecipacaoRequest;
 use App\Http\Resources\AntecipacaoResource;
@@ -36,9 +36,17 @@ class AntecipacaoController extends Controller
         );
     }
 
+    /** Gera de fato: cria os itens/guias de renovação na solicitação de origem. */
     public function store(StoreAntecipacaoRequest $request): JsonResponse
     {
         return (new AntecipacaoResource($this->service->criar($request->validated())))
+            ->response()
+            ->setStatusCode(201);
+    }
+
+    public function ignorar(IgnorarAntecipacaoRequest $request): JsonResponse
+    {
+        return (new AntecipacaoResource($this->service->ignorar($request->validated())))
             ->response()
             ->setStatusCode(201);
     }
@@ -53,12 +61,5 @@ class AntecipacaoController extends Controller
         $this->service->remover($antecipacao);
 
         return response()->json(null, 204);
-    }
-
-    public function marcarGerada(MarcarAntecipacaoGeradaRequest $request, Antecipacao $antecipacao): AntecipacaoResource
-    {
-        return new AntecipacaoResource(
-            $this->service->marcarGerada($antecipacao, $request->validated('solicitacao_gerada_id'))
-        );
     }
 }

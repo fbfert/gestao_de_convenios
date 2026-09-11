@@ -256,7 +256,7 @@ export function ConfiguracoesGlobaisPage() {
         <h3 className="text-subtitulo font-semibold text-white">Antecipação</h3>
         <p className="mt-1 text-corpo text-slate-300">
           Quando uma guia aprovada está perto da data de referência, o sistema abre um alerta
-          convidando a gerar a solicitação do próximo ciclo — nunca gera nem envia nada sozinho, só
+          convidando a gerar as guias do próximo ciclo — nunca gera nem envia nada sozinho, só
           avisa. Cada convênio pode sobrescrever este padrão na própria tela de Convênios.
         </p>
 

@@ -6,21 +6,6 @@ import { NIVEIS, rotuloDaChave } from './nivel'
 import { useAlertas, useReconhecerAlerta, useSilenciarAlerta, type FiltrosAlertas } from './useAlertas'
 import type { Alerta, NivelAlerta, SituacaoAlerta } from './types'
 
-type AntecipacaoItem = {
-  especialidade_id: number
-  especialidade_nome: string
-  profissional_id: number
-  profissional_nome: string
-}
-
-type AntecipacaoDados = {
-  paciente_id?: number | null
-  convenio_id?: number | null
-  medico?: { id: number; nome: string; crm: string | null; crm_uf: string | null } | null
-  cid_ids?: number[]
-  itens?: AntecipacaoItem[]
-}
-
 const campo =
   'h-10 rounded-campo border border-borda-campo bg-superficie px-3 text-corpo text-texto'
 
@@ -78,26 +63,19 @@ export function AlertasPage() {
   }
 
   /**
-   * "Guia negada" só repete um item (especialidade+profissional) via query
-   * params. "Antecipação devida" precisa repetir o ciclo inteiro — médico,
-   * CIDs e todos os itens da solicitação de origem — então viaja em
-   * `location.state`, consumido pelo mesmo pré-preenchimento que
-   * PedidoMedicoExistentePrompt usa em SolicitacoesPage.
+   * "Guia negada" repete um item (especialidade+profissional) numa
+   * Solicitação nova, via query params. "Antecipação devida" é diferente:
+   * gera itens novos NA MESMA solicitação (renovação — ver
+   * App\Services\AntecipacaoService::criar()), então leva pra /antecipacoes
+   * já abrindo a checklist de itens daquela solicitação, em vez de abrir
+   * Nova Solicitação.
    */
-  const novaSolicitacao = (alerta: Alerta) => {
+  const acionarAlerta = (alerta: Alerta) => {
     if (alerta.chave === 'antecipacao.devida') {
-      const dados = (alerta.dados ?? {}) as AntecipacaoDados
-      navigate('/solicitacoes/nova', {
-        state: {
-          antecipacao: {
-            pacienteId: dados.paciente_id ?? null,
-            convenioId: dados.convenio_id ?? null,
-            medico: dados.medico ?? null,
-            cidIds: dados.cid_ids ?? [],
-            itens: dados.itens ?? [],
-          },
-        },
-      })
+      const dados = (alerta.dados ?? {}) as { solicitacao_id?: number | null }
+      if (!dados.solicitacao_id) return
+
+      navigate('/antecipacoes', { state: { abrirGeracaoParaSolicitacao: dados.solicitacao_id } })
       return
     }
 
@@ -215,10 +193,10 @@ export function AlertasPage() {
                       <Botao
                         variante="primario"
                         tamanho="sm"
-                        onClick={() => novaSolicitacao(alerta)}
-                        data-testid={`alerta-nova-solicitacao-${alerta.id}`}
+                        onClick={() => acionarAlerta(alerta)}
+                        data-testid={`alerta-acao-${alerta.id}`}
                       >
-                        Nova Solicitação
+                        {alerta.chave === 'antecipacao.devida' ? 'Gerar Antecipação' : 'Nova Solicitação'}
                       </Botao>
                     </>
                   ) : null}

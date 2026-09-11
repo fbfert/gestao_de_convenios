@@ -1,9 +1,12 @@
-export type AntecipacaoStatus = 'pendente' | 'gerada' | 'ignorada'
+export type AntecipacaoStatus = 'gerada' | 'ignorada'
 
 /** Item escolhido pra levar pro próximo ciclo — par especialidade+profissional. */
 export type AntecipacaoItemSelecionado = {
   especialidade_id: number
   profissional_id: number
+  /** Preenchidos pela API depois de gerado (ver AntecipacaoService::criar). */
+  item_gerado_id?: number
+  guia_gerada_id?: number | null
 }
 
 export type Antecipacao = {
@@ -20,7 +23,6 @@ export type Antecipacao = {
     paciente: { id: number; nome: string } | null
     convenio: { id: number; nome: string } | null
   }
-  solicitacao_gerada?: { id: number } | null
   criado_por?: { id: number; nome: string } | null
 }
 
@@ -34,8 +36,6 @@ export type AntecipacaoElegivel = {
   data_alvo: string | null
   paciente: { id: number; nome: string } | null
   convenio: { id: number; nome: string } | null
-  medico: { id: number; nome: string; crm: string; crm_uf: string | null } | null
-  cid_ids: number[]
   guias: Array<{
     guia_id: number
     numero_guia: string | null
@@ -47,9 +47,16 @@ export type AntecipacaoElegivel = {
   }>
 }
 
+/** Gera de fato: cria item(ns) novo(s) por renovação na MESMA solicitação de origem. */
 export type CriarAntecipacaoPayload = {
   solicitacao_origem_id: number
-  itens_selecionados: AntecipacaoItemSelecionado[]
+  itens_selecionados: Array<{ especialidade_id: number; profissional_id: number }>
+  data_alvo?: string | null
+  observacoes?: string | null
+}
+
+export type IgnorarAntecipacaoPayload = {
+  solicitacao_origem_id: number
   data_alvo?: string | null
   observacoes?: string | null
 }

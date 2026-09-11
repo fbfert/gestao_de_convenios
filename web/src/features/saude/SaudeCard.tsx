@@ -174,13 +174,19 @@ export function SaudeCard() {
       {guiasNegadas.length > 0 ? (
         <button
           type="button"
-          className="mt-3 block text-corpo font-medium text-perigo-texto underline-offset-2 hover:underline"
+          className="group mt-3 flex items-center gap-3"
           onClick={() => setModalNegadasAberto(true)}
           data-testid="saude-guias-negadas-resumo"
         >
-          {guiasNegadas.length === 1
-            ? '1 guia negada precisa de revisão'
-            : `${guiasNegadas.length} guias negadas precisam de revisão`}
+          <span
+            aria-hidden="true"
+            className="inline-flex h-8 min-w-8 shrink-0 items-center justify-center rounded-full bg-perigo px-1.5 text-corpo font-bold text-sobre-perigo"
+          >
+            {guiasNegadas.length}
+          </span>
+          <span className="text-corpo font-medium text-texto underline-offset-2 group-hover:underline">
+            {guiasNegadas.length === 1 ? 'guia negada precisa de revisão' : 'guias negadas precisam de revisão'}
+          </span>
         </button>
       ) : null}
 

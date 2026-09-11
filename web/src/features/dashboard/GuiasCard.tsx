@@ -38,26 +38,27 @@ export function GuiasCard({ linhas }: { linhas: GuiasCardLinha[] }) {
         </Link>
       </div>
 
-      <ul className="mt-4 space-y-2">
+      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {linhas.map((linha) => (
-          <li key={linha.key}>
-            <Link
-              to={linha.href}
-              className="flex flex-wrap items-center justify-between gap-3 rounded-superficie border border-linha bg-fundo px-4 py-3 transition hover:border-acento/40 hover:bg-acento-suave"
-              data-testid={`dashboard-guias-linha-${linha.key}`}
-            >
-              <span className="text-corpo font-medium text-texto">{linha.label}</span>
-              <span className="flex items-baseline gap-2">
-                <span className="text-titulo font-semibold text-texto">{linha.value}</span>
-                {linha.unidade ? (
-                  <span className="text-meta text-texto-suave">{linha.unidade}</span>
-                ) : null}
-              </span>
-              <span className="w-full text-meta text-texto-suave sm:w-auto">{linha.detail}</span>
-            </Link>
-          </li>
+          <Link
+            key={linha.key}
+            to={linha.href}
+            className={
+              linha.key === 'negadas'
+                ? 'flex flex-col gap-1 rounded-superficie border border-perigo/30 bg-perigo-suave px-4 py-3 transition hover:border-perigo/50'
+                : 'flex flex-col gap-1 rounded-superficie border border-linha bg-fundo px-4 py-3 transition hover:border-acento/40 hover:bg-acento-suave'
+            }
+            data-testid={`dashboard-guias-linha-${linha.key}`}
+          >
+            <span className="text-corpo font-medium text-texto">{linha.label}</span>
+            <span className="flex items-baseline gap-2">
+              <span className="text-titulo font-semibold text-texto">{linha.value}</span>
+              {linha.unidade ? <span className="text-meta text-texto-suave">{linha.unidade}</span> : null}
+            </span>
+            <span className="text-meta text-texto-suave">{linha.detail}</span>
+          </Link>
         ))}
-      </ul>
+      </div>
     </article>
   )
 }

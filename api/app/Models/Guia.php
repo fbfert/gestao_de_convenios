@@ -271,6 +271,33 @@ class Guia extends Model
             ->values();
     }
 
+    /**
+     * Mesma elegibilidade de elegiveisParaAntecipacao(), só a contagem — usada
+     * pelo card de Guias do dashboard, que não precisa dos dados de exibição
+     * (paciente/solicitação/itens). Sem esses `with()` pesados, só a relation
+     * mínima que antecipacaoDataAlvo() consulta.
+     */
+    public static function countElegiveisParaAntecipacao(int $tenantId): int
+    {
+        $hoje = today();
+
+        return static::query()
+            ->withoutGlobalScope(TenantScope::class)
+            ->where('tenant_id', $tenantId)
+            ->whereIn('status', [GuiaStatus::APPROVED, GuiaStatus::FINALIZED])
+            ->whereNull('alerta_antecipacao_ocultado_em')
+            ->naoHistorica()
+            ->select(['id', 'tenant_id', 'convenio_id', 'antecipacao_data_alvo', 'data_finalizacao', 'data_solicitacao', 'validade_senha'])
+            ->with('convenio:id,antecipacao_dias,antecipacao_referencia')
+            ->get()
+            ->filter(function (self $guia) use ($hoje) {
+                $dataAlvo = $guia->antecipacaoDataAlvo();
+
+                return $dataAlvo !== null && ! $hoje->lt($dataAlvo);
+            })
+            ->count();
+    }
+
     public function conciliacoes()
     {
         return $this->hasMany(ConciliacaoFinanceira::class);

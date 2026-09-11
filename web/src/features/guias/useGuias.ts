@@ -124,8 +124,8 @@ export function useFinalizarGuia() {
   })
 }
 
-/** Guias negadas com o alerta ainda visível (não ocultado) — Guias + Dashboard. */
-export function useGuiasAlertaNegacao() {
+/** Guias negadas com o alerta ainda visível (não ocultado) — Guias, Dashboard e Saúde do sistema. */
+export function useGuiasAlertaNegacao({ enabled = true }: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: ['guias', 'alerta-negacao'],
     queryFn: async () => {
@@ -135,6 +135,7 @@ export function useGuiasAlertaNegacao() {
 
       return data.data
     },
+    enabled,
   })
 }
 

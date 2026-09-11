@@ -264,7 +264,7 @@ export function AutomacoesConfiguracoesPage() {
 
       <SecaoAutomacao
         titulo="Busca de senha e validade Unimed"
-        descricao="Busca a senha e a validade de guias Unimed já aprovadas que ainda não têm um dos dois. O job de fila continua checando a cada 30 minutos, mas cada guia só é reprocessada depois do intervalo escolhido abaixo."
+        descricao="Busca a senha e a validade de guias Unimed já aprovadas que ainda não têm um dos dois. O job de fila roda a cada 30 minutos, mas só reprocessa cada guia depois do intervalo escolhido abaixo (mínimo de 1 hora, sempre acima do ciclo do job)."
         ativo={form.automacao_captura_senha_validade_ativo}
         onAlterarAtivo={(valor) => alterar('automacao_captura_senha_validade_ativo', valor)}
         testIdAtivo="automacoes-config-captura-senha-validade-ativo"

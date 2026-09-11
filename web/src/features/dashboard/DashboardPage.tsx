@@ -2,7 +2,6 @@ import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { apiClient } from '../../api/client'
 import { AlertasCard, type AlertaDoCard } from '../alertas/AlertasCard'
-import { GuiaAlertaNegacoes } from '../guias/GuiaAlertaNegacoes'
 import { NovidadesCard } from '../novidades'
 import { SaudeCard } from '../saude'
 import { GuiasCard, type GuiasCardLinha } from './GuiasCard'
@@ -125,11 +124,6 @@ export function DashboardPage() {
         <div className="min-w-0 empty:hidden lg:grow lg:basis-0"><SaudeCard /></div>
         <div className="min-w-0 empty:hidden lg:grow lg:basis-0"><NovidadesCard /></div>
       </div>
-
-      {/* Restaurado a pedido do usuário (10/09): coexiste com a regra
-          `guia.negada` da central de alertas abaixo (mesma fonte de dados,
-          `alerta_negacao_ocultado_em`) — ocultar aqui também resolve lá. */}
-      {pode('dashboard.guias') ? <GuiaAlertaNegacoes /> : null}
 
       {pode('alertas.view') ? <AlertasCard alertas={alertasCard} /> : null}
 

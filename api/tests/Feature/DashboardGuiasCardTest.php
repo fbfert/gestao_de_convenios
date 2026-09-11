@@ -63,12 +63,12 @@ class DashboardGuiasCardTest extends TestCase
         return collect($corpo)->keyBy('key')->all();
     }
 
-    public function test_card_traz_as_tres_linhas(): void
+    public function test_card_traz_as_quatro_linhas(): void
     {
         $this->autenticar();
 
         $this->assertSame(
-            ['negadas', 'em_analise', 'senha_vencendo'],
+            ['negadas', 'em_analise', 'senha_vencendo', 'prontas_antecipacao'],
             array_keys($this->linhas()),
         );
     }

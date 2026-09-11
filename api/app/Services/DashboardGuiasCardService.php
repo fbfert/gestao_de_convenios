@@ -61,6 +61,14 @@ class DashboardGuiasCardService
                 'detail' => $this->detalheSenha((int) $totais->senha_urgente, $diasAlerta),
                 'href' => '/guias?senha_vencendo=1',
             ],
+            [
+                'key' => 'prontas_antecipacao',
+                'label' => 'Prontas para Antecipação',
+                'value' => Guia::countElegiveisParaAntecipacao($tenantId),
+                'unidade' => null,
+                'detail' => 'antecipação devida hoje ou atrasada',
+                'href' => '/antecipacoes',
+            ],
         ];
     }
 

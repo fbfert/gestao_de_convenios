@@ -1,3 +1,7 @@
+import { useState } from 'react'
+import { usePode } from '../../lib/permissoes'
+import { GuiaAlertaNegacoesModal } from '../guias/GuiaAlertaNegacoes'
+import { useGuiasAlertaNegacao } from '../guias/useGuias'
 import { useSaudeComponentes } from './useSaude'
 import type { ComponenteSaude, EstadoSaude } from './types'
 
@@ -87,6 +91,13 @@ function PontoDeEstado({ estado }: { estado: EstadoSaude }) {
 
 export function SaudeCard() {
   const saudeQuery = useSaudeComponentes()
+  const pode = usePode()
+  // Guias negadas é dado clínico, não saúde do sistema: diferente do resto do
+  // card, essa parte respeita a permissão de Guias (SaudeCard em si fica sem
+  // `pode(...)` de propósito — ver comentário do módulo).
+  const podeVerGuias = pode('dashboard.guias')
+  const alertaNegacaoQuery = useGuiasAlertaNegacao({ enabled: podeVerGuias })
+  const [modalNegadasAberto, setModalNegadasAberto] = useState(false)
 
   // Enquanto carrega, nada: um card que pisca a cada 30s de polling seria ruído
   // permanente numa tela que as pessoas deixam aberta.
@@ -113,6 +124,7 @@ export function SaudeCard() {
 
   const comProblema = componentes.filter((c) => c.estado !== 'healthy')
   const tudoSaudavel = comProblema.length === 0
+  const guiasNegadas = podeVerGuias ? alertaNegacaoQuery.data ?? [] : []
 
   return (
     <section
@@ -158,6 +170,21 @@ export function SaudeCard() {
           ))}
         </ul>
       )}
+
+      {guiasNegadas.length > 0 ? (
+        <button
+          type="button"
+          className="mt-3 block text-corpo font-medium text-perigo-texto underline-offset-2 hover:underline"
+          onClick={() => setModalNegadasAberto(true)}
+          data-testid="saude-guias-negadas-resumo"
+        >
+          {guiasNegadas.length === 1
+            ? '1 guia negada precisa de revisão'
+            : `${guiasNegadas.length} guias negadas precisam de revisão`}
+        </button>
+      ) : null}
+
+      {modalNegadasAberto ? <GuiaAlertaNegacoesModal onFechar={() => setModalNegadasAberto(false)} /> : null}
     </section>
   )
 }

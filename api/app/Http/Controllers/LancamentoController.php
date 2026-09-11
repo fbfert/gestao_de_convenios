@@ -100,7 +100,12 @@ class LancamentoController extends Controller
         $profissional = $this->resolverProfissional($dados['profissional_id']);
 
         if (! $request->boolean('confirmar_envio')) {
-            $resultado = $this->service->previsualizarTranscricao($dados['transcricao']);
+            // Este ramo só existe para o "colar texto → Analisar" da grade: os
+            // outros dois caminhos (leitura por IA, preenchimento manual) já
+            // chegam aqui com confirmar_envio=true, sem passar por preview.
+            $resultado = filled($dados['transcricao'] ?? null)
+                ? $this->service->previsualizarTranscricao($dados['transcricao'])
+                : ['cabecalho' => [], 'sessoes' => []];
 
             return response()->json([
                 'data' => [
@@ -112,8 +117,17 @@ class LancamentoController extends Controller
             ]);
         }
 
-        $previsualizacao = $this->service->previsualizarTranscricao($dados['transcricao']);
-        if ($this->regiaoExigePdf($previsualizacao['cabecalho']['numero_cartao'] ?? null) && ! $request->hasFile('pdf_registro_sessoes')) {
+        // numero_cartao vem explícito do payload quando a leitura foi por
+        // imagem/PDF ou a grade foi preenchida manualmente (não há
+        // transcrição para reprocessar nesses casos). Quando não vier
+        // explícito mas houver transcrição colada, cai no comportamento de
+        // sempre: deriva o número do cartão reprocessando o texto.
+        $numeroCartao = $dados['numero_cartao'] ?? null;
+        if (blank($numeroCartao) && filled($dados['transcricao'] ?? null)) {
+            $numeroCartao = $this->service->previsualizarTranscricao($dados['transcricao'])['cabecalho']['numero_cartao'] ?? null;
+        }
+
+        if ($this->regiaoExigePdf($numeroCartao) && ! $request->hasFile('pdf_registro_sessoes')) {
             throw ValidationException::withMessages([
                 'pdf_registro_sessoes' => 'O PDF do registro de sessões é obrigatório para a regional 0220.',
             ]);
@@ -122,7 +136,7 @@ class LancamentoController extends Controller
         $resultado = $this->service->confirmarTranscricao(
             $guia,
             $profissional,
-            $dados['transcricao'],
+            $dados['transcricao'] ?? null,
             $dados['sessoes'] ?? []
         );
 

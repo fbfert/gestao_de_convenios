@@ -133,29 +133,41 @@ class LancamentoService
     }
 
     /**
-     * @param array<int, array{data_sessao:string, hora_inicio?:string|null, hora_fim?:string|null, acompanhante?:string|null, resumo_atividades?:string|null}> $sessoes
+     * @param array<int, array{data_sessao?:string|null, hora_inicio?:string|null, hora_fim?:string|null, acompanhante?:string|null, resumo_atividades?:string|null}> $sessoes
      * @return array{cabecalho: array<string, string|null>, sessoes: array<int, array<string, string|null>>, registros: array<int, Lancamento>}
      */
-    public function confirmarTranscricao(Guia $guia, Profissional $profissional, string $transcricao, array $sessoes): array
+    public function confirmarTranscricao(Guia $guia, Profissional $profissional, ?string $transcricao, array $sessoes): array
     {
-        $extraido = $this->transcricaoService->extrair($transcricao);
+        // Nula quando a leitura veio de imagem/PDF (a IA já devolveu cabeçalho
+        // e sessões prontos) ou de preenchimento manual da grade — só a
+        // transcrição colada precisa ser reprocessada pelo parser de texto.
+        $cabecalho = $transcricao !== null && trim($transcricao) !== ''
+            ? $this->transcricaoService->extrair($transcricao)['cabecalho']
+            : array_fill_keys(['guia_numero', 'clinica', 'paciente', 'numero_cartao', 'profissional_executante', 'terapia_aplicada'], null);
 
-        if ($sessoes === []) {
-            throw new RuntimeException('A transcrição não contém sessões reconhecíveis.');
+        // A grade tem 10 linhas fixas, mas linha em branco (sem data) não é
+        // sessão — só as preenchidas viram lançamento.
+        $sessoesPreenchidas = array_values(array_filter(
+            $sessoes,
+            fn ($sessao) => ! empty($sessao['data_sessao'])
+        ));
+
+        if ($sessoesPreenchidas === []) {
+            throw new RuntimeException('Nenhuma linha da grade tem data preenchida.');
         }
 
-        $registros = DB::transaction(function () use ($guia, $profissional, $transcricao, $sessoes) {
+        $registros = DB::transaction(function () use ($guia, $profissional, $transcricao, $sessoesPreenchidas) {
             $registros = [];
 
-            foreach ($sessoes as $sessao) {
+            foreach ($sessoesPreenchidas as $sessao) {
                 $this->garantirVaga($guia);
 
                 $registros[] = $this->persistirSessao($guia, $profissional, [
                     'data_sessao' => $sessao['data_sessao'],
-                    'hora_inicio' => $sessao['hora_inicio'],
-                    'hora_fim' => $sessao['hora_fim'],
-                    'acompanhante' => $sessao['acompanhante'],
-                    'resumo_atividades' => $sessao['resumo_atividades'],
+                    'hora_inicio' => $sessao['hora_inicio'] ?? null,
+                    'hora_fim' => $sessao['hora_fim'] ?? null,
+                    'acompanhante' => $sessao['acompanhante'] ?? null,
+                    'resumo_atividades' => $sessao['resumo_atividades'] ?? null,
                     'transcricao_bruta' => $transcricao,
                 ]);
             }
@@ -164,7 +176,7 @@ class LancamentoService
         });
 
         return [
-            'cabecalho' => $extraido['cabecalho'],
+            'cabecalho' => $cabecalho,
             'sessoes' => $sessoes,
             'registros' => $registros,
         ];

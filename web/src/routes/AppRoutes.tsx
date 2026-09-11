@@ -14,7 +14,6 @@ import { AntecipacoesPage } from '../features/antecipacoes'
 import { AnaliticosPage, AnaliticoDetalhePage } from '../features/analiticos'
 import { LancamentosPage, LancamentoEditarPage } from '../features/lancamentos'
 import { LancamentoTemplatesPage } from '../features/lancamentos/LancamentoTemplatesPage'
-import { ImportarSessoesPage } from '../features/lancamentos/ImportarSessoesPage'
 import { ImportarSessoesPlanilhaPage } from '../features/lancamentos/ImportarSessoesPlanilhaPage'
 import { ConciliacaoPage } from '../features/conciliacao'
 import { ImportarConciliacoesPage } from '../features/conciliacao/ImportarConciliacoesPage'
@@ -82,7 +81,8 @@ export function AppRoutes() {
           <Route path="/lancamentos" element={<LancamentosPage />} />
           <Route path="/lancamentos/novo" element={<LancamentosPage />} />
           <Route path="/lancamentos/:id/editar" element={<LancamentoEditarPage />} />
-          <Route path="/lancamentos/importar" element={<ImportarSessoesPage />} />
+          {/* Absorvido por "Novo": a leitura por IA e a grade de 10 sessões vivem lá agora. */}
+          <Route path="/lancamentos/importar" element={<Navigate to="/lancamentos/novo" replace />} />
           <Route path="/lancamentos/importar-planilha" element={<ImportarSessoesPlanilhaPage />} />
           <Route path="/analiticos" element={<AnaliticosPage />} />
           <Route path="/analiticos/:id" element={<AnaliticoDetalhePage />} />

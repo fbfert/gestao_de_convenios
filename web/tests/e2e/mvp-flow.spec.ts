@@ -285,14 +285,14 @@ test('fluxo completo de negocio', async ({ page }, testInfo: TestInfo) => {
   )
 
   /*
-   * A importação de sessões saiu de dentro da tela de Sessões e virou página
-   * própria em `/lancamentos/importar` (change `importar-sessoes-por-ia`), com
-   * outros testids: `importar-*` no lugar de `lancamento-import-*`. Os passos
-   * abaixo são os da tela atual — escolher antecipação e profissional, colar a
-   * transcrição, analisar, anexar o PDF e confirmar.
+   * A importação de sessões foi unificada com "Novo" (change
+   * `lancamento-novo-busca-guia-ia`): `/lancamentos/importar` não existe mais
+   * como tela própria — os testids trocam de `importar-*` para
+   * `lancamento-*`, e a guia é escolhida por um modal de busca, não mais por
+   * um select de antecipação.
    */
-  await page.goto('/lancamentos/importar', { waitUntil: 'domcontentloaded' })
-  await expect(page.getByTestId('importar-sessoes-page')).toBeVisible()
+  await page.goto('/lancamentos/novo', { waitUntil: 'domcontentloaded' })
+  await expect(page.getByTestId('lancamento-fechar')).toBeVisible()
 
   const pdfPath = testInfo.outputPath('registro-sessao.pdf')
   writeFileSync(
@@ -301,14 +301,15 @@ test('fluxo completo de negocio', async ({ page }, testInfo: TestInfo) => {
     'utf8',
   )
 
-  // O select de profissional só habilita depois da antecipação escolhida: ele
-  // mostra apenas quem atende a especialidade dela.
-  await page.getByTestId('importar-antecipacao').click()
-  await page.getByRole('option', { name: new RegExp(`^#${antecipacaoId} `) }).click()
-  await selectOption(page, 'importar-profissional', 'Dra. Marina Tavares')
+  // O select de profissional só habilita depois da guia escolhida: ele mostra
+  // apenas quem atende a especialidade dela.
+  await page.getByTestId('lancamento-guia').click()
+  await page.getByTestId('selecionar-guia-busca').fill(String(guideId))
+  await page.getByTestId('selecionar-guia-item').filter({ hasText: `#${guideId} ` }).first().click()
+  await selectOption(page, 'lancamento-profissional', 'Dra. Marina Tavares')
 
   await page.getByText('Colar a transcrição em texto').click()
-  await page.getByTestId('importar-transcricao').fill(`GUIA Nº: 521381566206
+  await page.getByTestId('lancamento-transcricao').fill(`GUIA Nº: 521381566206
 Clínica: Centro Neuro Kids Ltda
 Paciente: Ana Paula Ribeiro
 Número Cartão: 0220 090000 551.330-8
@@ -317,20 +318,20 @@ Terapia aplicada: ABA - AV. Neuropsicológica
 
 Sessões
 1 08/04/26 14:50 15:40 Bruno Marinho Aplicação testes Neuropsicológicos`)
-  await page.getByTestId('importar-analisar-texto').click()
+  await page.getByTestId('lancamento-analisar-texto').click()
 
   // A carteirinha da regional 0220 torna o PDF obrigatório para confirmar.
-  await expect(page.getByTestId('importar-pdf')).toBeVisible({ timeout: 30000 })
-  await page.getByTestId('importar-pdf').setInputFiles(pdfPath)
-  await expect(page.getByTestId('importar-confirmar')).toBeEnabled()
+  await expect(page.getByTestId('lancamento-pdf')).toBeVisible({ timeout: 30000 })
+  await page.getByTestId('lancamento-pdf').setInputFiles(pdfPath)
+  await expect(page.getByTestId('lancamento-submit')).toBeEnabled()
 
   const confirmImportResponsePromise = page.waitForResponse((response) => {
     return (
       response.request().method() === 'POST' &&
-      response.url().includes(`/antecipacoes/${antecipacaoId}/lancamentos/importar-transcricao`)
+      response.url().includes(`/guias/${guideId}/lancamentos/importar-transcricao`)
     )
   })
-  await page.getByTestId('importar-confirmar').click()
+  await page.getByTestId('lancamento-submit').click()
   expect((await confirmImportResponsePromise).status()).toBe(201)
 
   await page.goto('/antecipacoes', { waitUntil: 'domcontentloaded' })

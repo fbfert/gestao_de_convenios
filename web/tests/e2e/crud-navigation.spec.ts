@@ -62,7 +62,7 @@ test('formularios de criacao abrem em rotas proprias sem lista inline', async ({
     },
     {
       path: '/lancamentos/novo',
-      formHeading: 'Novo lançamento manual',
+      formHeading: 'Novo lançamento',
       listButtonTestId: 'lancamento-novo',
       closeButtonTestId: 'lancamento-fechar',
     },

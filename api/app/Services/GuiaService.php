@@ -75,6 +75,24 @@ class GuiaService
             ->when(Arr::get($filtros, 'profissional_id'), fn ($query, $profissionalId) => $query->where('profissional_id', $profissionalId))
             ->when(Arr::get($filtros, 'paciente_nome'), fn ($query, $pacienteNome) => $query
                 ->whereHas('paciente', fn ($query) => $query->where('nome', 'like', '%' . $pacienteNome . '%')))
+            // Busca livre do modal de seleção de guia (lançamento de sessão):
+            // ID, número da guia, nome do paciente ou do profissional executante,
+            // qualquer um batendo já mostra a guia. Distinto do par
+            // profissional_id/paciente_nome acima, que são filtros exatos/parciais
+            // dedicados da tela de listagem de Guias.
+            ->when(trim((string) Arr::get($filtros, 'busca', '')) !== '', function ($query) use ($filtros) {
+                $busca = trim((string) $filtros['busca']);
+
+                $query->where(function ($nested) use ($busca) {
+                    $nested->where('guias.numero_guia', 'like', '%' . $busca . '%')
+                        ->orWhereHas('paciente', fn ($query) => $query->where('nome', 'like', '%' . $busca . '%'))
+                        ->orWhereHas('profissional', fn ($query) => $query->where('nome', 'like', '%' . $busca . '%'));
+
+                    if (ctype_digit($busca)) {
+                        $nested->orWhere('guias.id', (int) $busca);
+                    }
+                });
+            })
             ->when(Arr::get($filtros, 'alerta_negacao_pendente'), fn ($query) => $query
                 ->where('status', GuiaStatus::DENIED)
                 ->whereNull('alerta_negacao_ocultado_em')

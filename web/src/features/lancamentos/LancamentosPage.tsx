@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { ColunaOrdenavel } from '../../components/ui/ColunaOrdenavel'
 import { useOrdenacao } from '../../lib/useOrdenacao'
 import { useListaNaUrl } from '../../lib/useListaNaUrl'
@@ -9,17 +9,21 @@ import { Link, useMatch, useNavigate, useSearchParams } from 'react-router-dom'
 import { translateStatus } from '../../lib/statusLabels'
 import { Select } from '../../components/ui/Select'
 import { useProfissionais } from '../../lib/queries/useReferenceData'
-import { useGuias } from '../guias/useGuias'
+import { useGuia } from '../guias/useGuias'
+import type { Guia } from '../guias/types'
 import {
-  useCriarLancamento,
+  getHttpErrorMessage,
+  useConfirmarLancamentosTranscritos,
+  useImportarLancamentosTranscritos,
   useLancamentoPrintTemplate,
   useLancamentos,
+  useLerRegistroSessoes,
 } from './useLancamentos'
 import type {
+  LancamentoConfirmImportForm,
   LancamentoFilters,
-  LancamentoForm,
+  LancamentoTranscricaoSessao,
 } from './types'
-import { getHttpErrorMessage } from './useLancamentos'
 import {
   defaultBlankTemplateData,
   renderLancamentoPrintTemplate,
@@ -27,25 +31,46 @@ import {
 import { Tooltip } from '../../components/ui/Tooltip'
 import { usePode } from '../../lib/permissoes'
 import { HtmlIsolado } from '../../components/ui/HtmlIsolado'
+import { SelecionarGuiaModal } from './SelecionarGuiaModal'
 
 const defaultFilters: LancamentoFilters = {
   profissional_id: '',
   data_sessao: '',
 }
 
-const emptyForm: LancamentoForm = {
-  guia_id: '',
-  profissional_id: '',
-  data_sessao: new Date().toISOString().slice(0, 10),
-  hora_inicio: '',
-  hora_fim: '',
-  acompanhante: '',
-  resumo_atividades: '',
-  observacoes: '',
+const LINHA_VAZIA: LancamentoTranscricaoSessao = {
+  data_sessao: null,
+  hora_inicio: null,
+  hora_fim: null,
+  acompanhante: null,
+  resumo_atividades: null,
+}
+
+/** A folha de registro tem no máximo 10 linhas — a grade sempre mostra as 10. */
+function criarGradeVazia(): LancamentoTranscricaoSessao[] {
+  return Array.from({ length: 10 }, () => ({ ...LINHA_VAZIA }))
+}
+
+/**
+ * Normaliza o resultado de uma leitura (IA ou texto colado) para exatamente
+ * 10 posições, preservando a ordem recebida — a leitura por IA já devolve 10
+ * itens (posição física da folha), mas o parser de texto colado não tem essa
+ * noção e pode devolver qualquer quantidade.
+ */
+function normalizarDezLinhas(sessoes: LancamentoTranscricaoSessao[]): LancamentoTranscricaoSessao[] {
+  const recortadas = sessoes.slice(0, 10)
+  while (recortadas.length < 10) {
+    recortadas.push({ ...LINHA_VAZIA })
+  }
+  return recortadas
 }
 
 function selectClasses() {
   return 'w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20'
+}
+
+function celulaClasses() {
+  return 'w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-white outline-none focus:border-cyan-300/70'
 }
 
 function formatEmpty(value: string | null | undefined) {
@@ -62,11 +87,17 @@ export function LancamentosPage() {
   const { filters, page, setFilters, setPage, searchParams: paginaSearchParams } = useListaNaUrl(defaultFilters)
   const [draftFilters, setDraftFilters] = useState(filters)
   const [isFormOpen, setIsFormOpen] = useState(false)
-  const [form, setForm] = useState<LancamentoForm>({
-    ...emptyForm,
-    guia_id: initialGuiaId,
-  })
+
+  const [guiaModalAberto, setGuiaModalAberto] = useState(false)
+  const [guiaSelecionada, setGuiaSelecionada] = useState<Guia | null>(null)
+  const [profissionalId, setProfissionalId] = useState('')
+  const [sessoes, setSessoes] = useState<LancamentoTranscricaoSessao[]>(criarGradeVazia())
+  const [numeroCartao, setNumeroCartao] = useState<string | null>(null)
+  const [transcricaoTexto, setTranscricaoTexto] = useState('')
+  const [pdf, setPdf] = useState<File | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
+  const [aviso, setAviso] = useState<string | null>(null)
+  const arquivoRef = useRef<HTMLInputElement | null>(null)
 
   const { ordenacao, ordenarPor } = useOrdenacao({
     ordenar_por: 'id',
@@ -74,51 +105,58 @@ export function LancamentosPage() {
   })
 
   const profissionaisQuery = useProfissionais()
-  const guiasDisponiveisQuery = useGuias(
-    {
-      status: '',
-      convenio_id: '',
-      profissional_id: '',
-      paciente_nome: '',
-      validade_senha_vencendo_em_dias: '',
-      mostrar_a_definir: '',
-      mostrar_historico: '',
-      disponivel_para_lancamento: '1',
-    },
-    1,
-  )
+  const guiaPreSelecionadaQuery = useGuia(initialGuiaId ? Number(initialGuiaId) : null)
   const lancamentosQuery = useLancamentos({ ...filters, ...ordenacao }, page)
   const printTemplateQuery = useLancamentoPrintTemplate()
-  const criarLancamento = useCriarLancamento()
+  const lerArquivo = useLerRegistroSessoes()
+  const analisarTexto = useImportarLancamentosTranscritos()
+  const confirmar = useConfirmarLancamentosTranscritos()
 
   const profissionais = useMemo(() => profissionaisQuery.data ?? [], [profissionaisQuery.data])
-  const guiasDisponiveis = useMemo(() => guiasDisponiveisQuery.data?.data ?? [], [guiasDisponiveisQuery.data])
   const lancamentos = lancamentosQuery.data?.data ?? []
   const totalPages = lancamentosQuery.data?.meta?.last_page ?? 1
   const query = paginaSearchParams.toString()
   const fromHref = query ? `/lancamentos?${query}` : '/lancamentos'
 
   useEffect(() => {
-    if (guiasDisponiveis.length === 0) {
-      return
+    if (guiaPreSelecionadaQuery.data && !guiaSelecionada) {
+      setGuiaSelecionada(guiaPreSelecionadaQuery.data)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [guiaPreSelecionadaQuery.data])
+
+  /*
+    Só quem atende a especialidade da guia. Lançar sessão no nome de quem não
+    faz aquela terapia gera glosa na conciliação, e a lista completa da
+    clínica torna o erro fácil.
+  */
+  const executantes = useMemo(() => {
+    const especialidadeId = guiaSelecionada?.especialidade?.id
+
+    if (!especialidadeId) {
+      return profissionais
     }
 
-    setForm((current) => ({
-      ...current,
-      guia_id: current.guia_id || initialGuiaId || String(guiasDisponiveis[0].id),
-    }))
-  }, [guiasDisponiveis, initialGuiaId])
+    const doEspecialidade = profissionais.filter((profissional) =>
+      (profissional.especialidade_ids?.length
+        ? profissional.especialidade_ids
+        : [profissional.especialidade_id]
+      ).includes(especialidadeId),
+    )
 
+    return doEspecialidade.length > 0 ? doEspecialidade : profissionais
+  }, [profissionais, guiaSelecionada])
+
+  // Um executante só não precisa de escolha; vários, sim.
   useEffect(() => {
-    if (profissionais.length === 0) {
-      return
-    }
+    setProfissionalId((atual) => {
+      if (atual && executantes.some((profissional) => String(profissional.id) === atual)) {
+        return atual
+      }
 
-    setForm((current) => ({
-      ...current,
-      profissional_id: current.profissional_id || String(profissionais[0].id),
-    }))
-  }, [profissionais])
+      return executantes.length === 1 ? String(executantes[0].id) : ''
+    })
+  }, [executantes])
 
   useEffect(() => {
     setIsFormOpen(isCreateRoute)
@@ -129,33 +167,136 @@ export function LancamentosPage() {
     setFilters(draftFilters)
   }
 
-  const handleNew = () => {
-    navigate({ pathname: '/lancamentos/novo', search: query })
-    setForm((current) => ({
-      ...emptyForm,
-      guia_id: current.guia_id || initialGuiaId,
-      profissional_id: current.profissional_id,
-    }))
+  const resetarFormulario = () => {
+    setGuiaSelecionada(null)
+    setProfissionalId('')
+    setSessoes(criarGradeVazia())
+    setNumeroCartao(null)
+    setTranscricaoTexto('')
+    setPdf(null)
     setFormError(null)
+    setAviso(null)
   }
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
+  const handleNew = () => {
+    navigate({ pathname: '/lancamentos/novo', search: query })
+    resetarFormulario()
+  }
+
+  const fecharFormulario = () => {
+    if (isCreateRoute) {
+      navigate({ pathname: '/lancamentos', search: query })
+      return
+    }
+
+    setIsFormOpen(false)
+  }
+
+  const prontoParaLer = Boolean(guiaSelecionada) && profissionalId !== ''
+  const lendo = analisarTexto.isPending || lerArquivo.isPending
+  const exigePdf = numeroCartao?.replace(/\D+/g, '').startsWith('0220') ?? false
+  const sessoesPreenchidas = useMemo(() => sessoes.filter((sessao) => Boolean(sessao.data_sessao)).length, [sessoes])
+
+  const aplicarResultado = (resultado: {
+    cabecalho: { numero_cartao: string | null }
+    sessoes: LancamentoTranscricaoSessao[]
+  }) => {
+    const normalizadas = normalizarDezLinhas(resultado.sessoes)
+    setSessoes(normalizadas)
+    setNumeroCartao(resultado.cabecalho.numero_cartao ?? null)
+    setPdf(null)
+    setAviso(normalizadas.every((sessao) => !sessao.data_sessao) ? 'Nenhuma sessão foi reconhecida no documento.' : null)
+  }
+
+  const ler = async (arquivo: File | undefined) => {
+    if (!arquivo || !guiaSelecionada) {
+      return
+    }
+
     setFormError(null)
+    setAviso(null)
 
     try {
-      await criarLancamento.mutateAsync(form)
+      aplicarResultado(await lerArquivo.mutateAsync({ guiaId: String(guiaSelecionada.id), arquivo }))
+    } catch (error) {
+      setFormError(getHttpErrorMessage(error, 'Não foi possível ler o registro de sessões.'))
+    } finally {
+      if (arquivoRef.current) {
+        arquivoRef.current.value = ''
+      }
+    }
+  }
+
+  const analisar = async (event: FormEvent) => {
+    event.preventDefault()
+    if (!guiaSelecionada || !profissionalId) {
+      return
+    }
+
+    setFormError(null)
+    setAviso(null)
+
+    try {
+      aplicarResultado(
+        await analisarTexto.mutateAsync({
+          guia_id: String(guiaSelecionada.id),
+          profissional_id: profissionalId,
+          transcricao: transcricaoTexto,
+        }),
+      )
+    } catch (error) {
+      setFormError(getHttpErrorMessage(error, 'Não foi possível analisar a transcrição.'))
+    }
+  }
+
+  const atualizarSessao = (
+    indice: number,
+    campo: keyof LancamentoTranscricaoSessao,
+    valor: string,
+  ) => {
+    setSessoes((atual) => atual.map((sessao, i) => (i === indice ? { ...sessao, [campo]: valor || null } : sessao)))
+  }
+
+  const enviar = async () => {
+    setFormError(null)
+
+    if (!guiaSelecionada || !profissionalId) {
+      setFormError('Selecione a guia e o profissional executante.')
+      return
+    }
+
+    if (sessoesPreenchidas === 0) {
+      setFormError('Preencha ao menos uma linha com data da sessão.')
+      return
+    }
+
+    if (exigePdf && !pdf) {
+      setFormError('O PDF do registro de sessões é obrigatório para a regional 0220.')
+      return
+    }
+
+    try {
+      const payload: LancamentoConfirmImportForm = {
+        guia_id: String(guiaSelecionada.id),
+        profissional_id: profissionalId,
+        transcricao: transcricaoTexto,
+        numero_cartao: numeroCartao,
+        sessoes,
+        pdf_registro_sessoes: pdf,
+      }
+
+      await confirmar.mutateAsync(payload)
+
       if (isCreateRoute) {
         navigate({ pathname: '/lancamentos', search: query })
       } else {
         setIsFormOpen(false)
       }
     } catch (error) {
-      setFormError(getHttpErrorMessage(error, 'Não foi possível registrar a sessão.'))
+      setFormError(getHttpErrorMessage(error, 'Não foi possível registrar as sessões.'))
     }
   }
 
-  const guiaSelecionada = guiasDisponiveis.find((guia) => String(guia.id) === form.guia_id)
   const printHtml = useMemo(
     () =>
       renderLancamentoPrintTemplate(
@@ -179,8 +320,8 @@ export function LancamentosPage() {
                   <p className="font-semibold text-white">O atendimento realizado</p>
                   <p className="mt-1">
                     Cada sessão lançada aqui conta contra a cota de sessões disponíveis da guia
-                    escolhida. Dá para digitar manualmente (botão Novo) ou importar a transcrição
-                    de um formulário em papel lido por IA (Importar transcrição).
+                    escolhida. Preencha manualmente ou anexe uma foto/PDF da folha de registro
+                    para a IA ler e trazer até 10 sessões de uma vez, prontas para conferência.
                   </p>
                 </Tooltip>
               </h2>
@@ -193,13 +334,6 @@ export function LancamentosPage() {
                 data-testid="lancamento-templates"
               >
                 Templates
-              </Link>
-              <Link
-                to="/lancamentos/importar"
-                className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 h-10 px-4 text-corpo font-semibold text-white transition hover:bg-white/10"
-                data-testid="lancamento-importar-transcricao"
-              >
-                Importar transcrição
               </Link>
               {pode('lancamentos.manage') ? (
                 <Link
@@ -224,14 +358,13 @@ export function LancamentosPage() {
               <Tooltip rotulo="Diferença entre os botões">
                 <p><strong>Templates:</strong> textos padrão reaproveitados no resumo da sessão.</p>
                 <p className="mt-1">
-                  <strong>Importar transcrição:</strong> lê por IA um formulário em papel já
-                  preenchido, com várias sessões de uma vez.
-                </p>
-                <p className="mt-1">
                   <strong>Imprimir modelo em branco:</strong> gera a tabela em papel para o
                   profissional preencher à mão durante o atendimento.
                 </p>
-                <p className="mt-1"><strong>Novo:</strong> digita uma sessão manualmente, uma de cada vez.</p>
+                <p className="mt-1">
+                  <strong>Novo:</strong> busca a guia, escolhe o executante e registra até 10
+                  sessões — digitando, colando a transcrição ou anexando a folha para a IA ler.
+                </p>
               </Tooltip>
             </div>
           </div>
@@ -245,179 +378,233 @@ export function LancamentosPage() {
         </section>
         ) : null}
 
-        {!isCreateRoute ? (
-        <>
-
-        </>
-        ) : null}
-
         {isFormOpen ? (
-          <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <h3 className="text-subtitulo font-semibold text-white">Novo lançamento manual</h3>
-                </div>
-              <Botao
-                variante="secundario"
-                onClick={() => {
-                  if (isCreateRoute) {
-                    navigate({ pathname: '/lancamentos', search: query })
-                    return
-                  }
-
-                  setIsFormOpen(false)
-                }}
-                data-testid="lancamento-fechar"
-              >
+          <section className="space-y-6 rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
+            <div className="flex items-start justify-between gap-4">
+              <h3 className="text-subtitulo font-semibold text-white">Novo lançamento</h3>
+              <Botao variante="secundario" onClick={fecharFormulario} data-testid="lancamento-fechar">
                 Fechar
               </Botao>
-              </div>
+            </div>
 
-              <label className="block space-y-2">
-                <span className="flex items-center gap-1 text-corpo font-medium text-slate-200">
-                  Guia
-                  <Tooltip rotulo="O que escolher aqui">
-                    A guia aprovada do paciente para esta especialidade. Escolha a que corresponde
-                    ao atendimento — lançar contra a guia errada consome a cota de outro paciente
-                    ou especialidade.
-                  </Tooltip>
-                </span>
-                <Select
-                  value={form.guia_id}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, guia_id: event.target.value }))
-                  }
-                  className={selectClasses()}
-                  data-testid="lancamento-guia"
-                >
-                  {guiasDisponiveis.map((guia) => (
-                    <option key={guia.id} value={guia.id}>
-                      #{guia.id} · {guia.numero_guia ?? 'sem nº'} · Paciente {guia.paciente?.nome ?? guia.paciente_id} ·{' '}
-                      {guia.sessoes_disponiveis} disponível(is)
-                    </option>
-                  ))}
-                </Select>
-              </label>
-
-              <label className="block space-y-2">
-                <span className="text-corpo font-medium text-slate-200">Profissional executante</span>
-                <Select
-                  value={form.profissional_id}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, profissional_id: event.target.value }))
-                  }
-                  className={selectClasses()}
-                  data-testid="lancamento-profissional"
-                >
-                  {profissionais.map((profissional) => (
-                    <option key={profissional.id} value={profissional.id}>
-                      {profissional.nome}
-                    </option>
-                  ))}
-                </Select>
-              </label>
-
-              <label className="block space-y-2">
-                <span className="text-corpo font-medium text-slate-200">Data da sessão</span>
-                <input
-                  type="date"
-                  value={form.data_sessao}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, data_sessao: event.target.value }))
-                  }
-                  className={selectClasses()}
-                  data-testid="lancamento-data-sessao"
-                />
-              </label>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <label className="block space-y-2">
-                  <span className="text-corpo font-medium text-slate-200">Hora início</span>
-                  <input
-                    type="time"
-                    value={form.hora_inicio}
-                    onChange={(event) =>
-                      setForm((current) => ({ ...current, hora_inicio: event.target.value }))
-                    }
-                    className={selectClasses()}
-                    data-testid="lancamento-hora-inicio"
-                  />
-                </label>
-
-                <label className="block space-y-2">
-                  <span className="text-corpo font-medium text-slate-200">Hora fim</span>
-                  <input
-                    type="time"
-                    value={form.hora_fim}
-                    onChange={(event) =>
-                      setForm((current) => ({ ...current, hora_fim: event.target.value }))
-                    }
-                    className={selectClasses()}
-                    data-testid="lancamento-hora-fim"
-                  />
-                </label>
-              </div>
-
-              <label className="block space-y-2">
-                <span className="text-corpo font-medium text-slate-200">Acompanhante</span>
-                <input
-                  value={form.acompanhante}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, acompanhante: event.target.value }))
-                  }
-                  className={selectClasses()}
-                  data-testid="lancamento-acompanhante"
-                />
-              </label>
-
-              <label className="block space-y-2">
-                <span className="text-corpo font-medium text-slate-200">Resumo das atividades</span>
-                <textarea
-                  value={form.resumo_atividades}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, resumo_atividades: event.target.value }))
-                  }
-                  className={`${selectClasses()} min-h-28`}
-                  data-testid="lancamento-resumo"
-                />
-              </label>
-
-              <label className="block space-y-2">
-                <span className="text-corpo font-medium text-slate-200">Observações</span>
-                <textarea
-                  value={form.observacoes}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, observacoes: event.target.value }))
-                  }
-                  className={`${selectClasses()} min-h-24`}
-                  placeholder="Opcional"
-                  data-testid="lancamento-observacoes"
-                />
-              </label>
-
-              {formError ? (
-                <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-corpo text-rose-100">
-                  {formError}
+            <div className="space-y-2">
+              <span className="flex items-center gap-1 text-corpo font-medium text-slate-200">
+                Guia
+                <Tooltip rotulo="O que escolher aqui">
+                  A guia aprovada do paciente para esta especialidade. Escolha a que corresponde
+                  ao atendimento — lançar contra a guia errada consome a cota de outro paciente
+                  ou especialidade.
+                </Tooltip>
+              </span>
+              <button
+                type="button"
+                onClick={() => setGuiaModalAberto(true)}
+                className={`${selectClasses()} text-left`}
+                data-testid="lancamento-guia"
+              >
+                {guiaSelecionada
+                  ? `#${guiaSelecionada.id} · ${guiaSelecionada.numero_guia ?? 'sem nº'} · ${guiaSelecionada.paciente?.nome ?? `Paciente ${guiaSelecionada.paciente_id}`}`
+                  : 'Selecione uma guia'}
+              </button>
+              {guiaSelecionada ? (
+                <p className="text-meta text-slate-400" data-testid="lancamento-especialidade">
+                  Especialidade: {guiaSelecionada.especialidade?.nome ?? 'não definida'} ·{' '}
+                  {guiaSelecionada.sessoes_disponiveis} sessão(ões) disponível(is)
                 </p>
               ) : null}
+            </div>
 
-              <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-corpo text-slate-300">
-                {guiaSelecionada
-                  ? `Guia selecionada: #${guiaSelecionada.id} · ${guiaSelecionada.sessoes_disponiveis} sessão(ões) disponível(is)`
-                  : 'Selecione uma guia para registrar a sessão.'}
+            <label className="block space-y-2">
+              <span className="text-corpo font-medium text-slate-200">Profissional executante</span>
+              <Select
+                value={profissionalId}
+                onChange={(event) => setProfissionalId(event.target.value)}
+                className={selectClasses()}
+                disabled={!guiaSelecionada}
+                data-testid="lancamento-profissional"
+              >
+                <option value="">Selecione</option>
+                {executantes.map((profissional) => (
+                  <option key={profissional.id} value={profissional.id}>
+                    {profissional.nome}
+                  </option>
+                ))}
+              </Select>
+            </label>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <Botao
+                variante="primario"
+                onClick={() => arquivoRef.current?.click()}
+                disabled={!prontoParaLer || lendo}
+                data-testid="lancamento-anexo-botao"
+              >
+                {lerArquivo.isPending ? 'Lendo registro...' : 'Ler foto ou PDF do registro'}
+              </Botao>
+
+              <input
+                ref={arquivoRef}
+                type="file"
+                accept="image/*,application/pdf"
+                capture="environment"
+                onChange={(event) => void ler(event.target.files?.[0])}
+                className="hidden"
+                data-testid="lancamento-anexo"
+              />
+
+              <span className="text-meta text-slate-400">
+                {prontoParaLer
+                  ? 'A IA lê o documento e traz até 10 sessões para conferência.'
+                  : 'Escolha a guia e o executante para começar.'}
+              </span>
+            </div>
+
+            {lendo ? (
+              <div
+                className="flex items-center gap-3 rounded-2xl border border-cyan-300/30 bg-cyan-400/10 px-4 py-3 text-corpo text-cyan-50"
+                role="status"
+                aria-live="polite"
+                data-testid="lancamento-lendo"
+              >
+                <span className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-cyan-200/40 border-t-cyan-100" />
+                <span>
+                  <strong className="font-semibold">Lendo o registro…</strong> costuma levar de 5 a 30
+                  segundos. Não feche a tela nem clique de novo.
+                </span>
               </div>
+            ) : null}
+
+            <details className="rounded-superficie border border-linha bg-fundo p-4 shadow-e1">
+              <summary className="cursor-pointer text-corpo font-semibold text-slate-200">
+                Colar a transcrição em texto
+              </summary>
+
+              <form onSubmit={analisar} className="mt-4 space-y-3">
+                <textarea
+                  value={transcricaoTexto}
+                  onChange={(event) => setTranscricaoTexto(event.target.value)}
+                  className={`${selectClasses()} min-h-48 font-mono text-corpo leading-6`}
+                  placeholder={`GUIA Nº: 521381566206\nPaciente: ...\nNúmero Cartão: 0220 090000 551.330-8\n\n08/04/26 14:50 15:40 Bruno Marinho Aplicação de testes`}
+                  data-testid="lancamento-transcricao"
+                />
+
+                <button
+                  type="submit"
+                  disabled={!prontoParaLer || lendo || transcricaoTexto.trim() === ''}
+                  className="rounded-2xl border border-cyan-300/30 bg-cyan-400/10 px-4 py-2 text-corpo font-semibold text-cyan-100 transition hover:bg-cyan-400/20 disabled:opacity-60"
+                  data-testid="lancamento-analisar-texto"
+                >
+                  {analisarTexto.isPending ? 'Analisando...' : 'Analisar texto colado'}
+                </button>
+              </form>
+            </details>
+
+            {formError ? (
+              <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-corpo text-rose-100">
+                {formError}
+              </p>
+            ) : null}
+
+            {aviso ? (
+              <p className="rounded-2xl border border-amber-300/20 bg-amber-400/10 px-4 py-3 text-corpo text-amber-100">
+                {aviso}
+              </p>
+            ) : null}
+
+            {exigePdf ? (
+              <div className="rounded-2xl border border-amber-400/20 bg-amber-500/10 px-4 py-3 text-corpo text-amber-50">
+                Regional 0220 detectada pela carteirinha. O PDF do registro de sessões é obrigatório
+                para confirmar o envio.
+              </div>
+            ) : null}
+
+            {exigePdf ? (
+              <label className="block space-y-2">
+                <span className="text-corpo font-medium text-slate-200">PDF do registro de sessões</span>
+                <input
+                  type="file"
+                  accept="application/pdf,.pdf"
+                  onChange={(event) => setPdf(event.target.files?.[0] ?? null)}
+                  className="inline-flex items-center justify-center block w-full rounded-2xl border border-white/10 bg-white/5 h-10 px-4 text-corpo text-slate-200 file:mr-4 file:rounded-full file:border-0 file:bg-cyan-400 file:px-4 file:py-2 file:text-corpo file:font-semibold file:text-slate-950"
+                  data-testid="lancamento-pdf"
+                />
+              </label>
+            ) : null}
+
+            <div className="overflow-x-auto rounded-superficie border border-linha">
+              <table className="w-full min-w-[52rem] border-collapse text-left text-corpo" data-cartoes="lg">
+                <thead className="bg-fundo text-meta uppercase tracking-[0.25em] text-texto-suave">
+                  <tr>
+                    <th className="px-4 py-3">Linha</th>
+                    <th className="px-4 py-3">Data</th>
+                    <th className="px-4 py-3">Início</th>
+                    <th className="px-4 py-3">Fim</th>
+                    <th className="px-4 py-3">Acompanhante</th>
+                    <th className="px-4 py-3">Resumo</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-linha bg-superficie">
+                  {sessoes.map((sessao, indice) => (
+                    <tr key={indice} data-testid={`lancamento-linha-${indice + 1}`}>
+                      <td className="px-4 py-3 text-slate-400">{indice + 1}</td>
+                      <td data-rotulo="Data" className="px-4 py-3">
+                        <input
+                          type="date"
+                          value={sessao.data_sessao ?? ''}
+                          onChange={(event) => atualizarSessao(indice, 'data_sessao', event.target.value)}
+                          className={celulaClasses()}
+                        />
+                      </td>
+                      <td data-rotulo="Início" className="px-4 py-3">
+                        <input
+                          type="time"
+                          value={sessao.hora_inicio ?? ''}
+                          onChange={(event) => atualizarSessao(indice, 'hora_inicio', event.target.value)}
+                          className={celulaClasses()}
+                        />
+                      </td>
+                      <td data-rotulo="Fim" className="px-4 py-3">
+                        <input
+                          type="time"
+                          value={sessao.hora_fim ?? ''}
+                          onChange={(event) => atualizarSessao(indice, 'hora_fim', event.target.value)}
+                          className={celulaClasses()}
+                        />
+                      </td>
+                      <td data-rotulo="Acompanhante" className="px-4 py-3">
+                        <input
+                          value={sessao.acompanhante ?? ''}
+                          onChange={(event) => atualizarSessao(indice, 'acompanhante', event.target.value)}
+                          className={celulaClasses()}
+                        />
+                      </td>
+                      <td data-rotulo="Resumo" data-rotulo-bloco className="px-4 py-3">
+                        <textarea
+                          value={sessao.resumo_atividades ?? ''}
+                          onChange={(event) => atualizarSessao(indice, 'resumo_atividades', event.target.value)}
+                          className={`${celulaClasses()} min-h-16`}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="inline-flex min-h-6 items-center text-corpo text-slate-300">
+                {sessoesPreenchidas} de 10 linha(s) preenchida(s).
+              </p>
 
               <Botao
-                type="submit"
                 variante="primario"
-                className="w-full"
-                disabled={criarLancamento.isPending}
+                onClick={() => void enviar()}
+                disabled={confirmar.isPending || sessoesPreenchidas === 0}
                 data-testid="lancamento-submit"
               >
-                {criarLancamento.isPending ? 'Salvando...' : 'Registrar sessão'}
+                {confirmar.isPending ? 'Salvando...' : 'Registrar sessões'}
               </Botao>
-            </form>
+            </div>
           </section>
         ) : null}
 
@@ -578,6 +765,15 @@ export function LancamentosPage() {
         </section>
         ) : null}
       </div>
+
+      <SelecionarGuiaModal
+        open={guiaModalAberto}
+        onClose={() => setGuiaModalAberto(false)}
+        onSelecionar={(guia) => {
+          setGuiaSelecionada(guia)
+          setProfissionalId('')
+        }}
+      />
 
       <HtmlIsolado
         className="hidden print:block bg-white p-8 text-slate-950"

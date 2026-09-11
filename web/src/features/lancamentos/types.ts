@@ -33,17 +33,6 @@ export type LancamentoFilters = {
   data_sessao: string
 }
 
-export type LancamentoForm = {
-  guia_id: string
-  profissional_id: string
-  data_sessao: string
-  hora_inicio: string
-  hora_fim: string
-  acompanhante: string
-  resumo_atividades: string
-  observacoes: string
-}
-
 export type LancamentoImportForm = {
   guia_id: string
   profissional_id: string
@@ -53,6 +42,7 @@ export type LancamentoImportForm = {
 export type LancamentoConfirmImportForm = LancamentoImportForm & {
   sessoes: LancamentoTranscricaoSessao[]
   pdf_registro_sessoes: File | null
+  numero_cartao: string | null
 }
 
 export type LancamentoTranscricaoSessao = {

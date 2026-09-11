@@ -1,18 +1,42 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '../../api/client'
 import { getHttpErrorMessage } from '../../lib/httpError'
+import type { Guia, PaginatedResponse as GuiaPaginatedResponse } from '../guias/types'
 import type {
   AnaliticoUnimedPreview,
   LancamentoConfirmImportForm,
   Lancamento,
   LancamentoFilters,
-  LancamentoForm,
   LancamentoImportForm,
   LancamentoPrintTemplate,
   LancamentoPrintTemplateForm,
   LancamentoTranscricaoImportResult,
   PaginatedResponse,
 } from './types'
+
+/**
+ * Busca paginada de guias para o modal de seleção da tela de Sessões — por
+ * ID, número da guia, nome do paciente ou do profissional executante (filtro
+ * `busca` da API). Ao contrário de `usePacientesBusca`/`useMedicosBusca`, fica
+ * habilitada mesmo com o termo vazio: sem busca, mostra a listagem default
+ * (guias com sessão disponível), não uma tela em branco.
+ */
+export function useGuiasBusca(params: { busca: string; page: number; enabled?: boolean }) {
+  return useQuery({
+    queryKey: ['guias-busca', params.busca, params.page],
+    queryFn: async () => {
+      const { data } = await apiClient.get<GuiaPaginatedResponse<Guia>>('/guias', {
+        params: {
+          busca: params.busca.trim() || undefined,
+          disponivel_para_lancamento: '1',
+          page: params.page,
+        },
+      })
+      return { itens: data.data, meta: data.meta ?? null }
+    },
+    enabled: params.enabled ?? true,
+  })
+}
 
 export function useLancamentos(filters: LancamentoFilters, page: number) {
   return useQuery({
@@ -27,33 +51,6 @@ export function useLancamentos(filters: LancamentoFilters, page: number) {
       })
 
       return data
-    },
-  })
-}
-
-export function useCriarLancamento() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: async (payload: LancamentoForm) => {
-      const { data } = await apiClient.post<{ data: Lancamento }>(
-        `/guias/${Number(payload.guia_id)}/lancamentos`,
-        {
-          profissional_id: Number(payload.profissional_id),
-          data_sessao: payload.data_sessao,
-          hora_inicio: payload.hora_inicio || null,
-          hora_fim: payload.hora_fim || null,
-          acompanhante: payload.acompanhante || null,
-          resumo_atividades: payload.resumo_atividades || null,
-          observacoes: payload.observacoes || null,
-        },
-      )
-
-      return data.data
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['lancamentos'] })
-      await queryClient.invalidateQueries({ queryKey: ['guias'] })
     },
   })
 }
@@ -111,6 +108,7 @@ export function useConfirmarLancamentosTranscritos() {
       const formData = new FormData()
       formData.append('profissional_id', payload.profissional_id)
       formData.append('transcricao', payload.transcricao)
+      formData.append('numero_cartao', payload.numero_cartao ?? '')
       formData.append('confirmar_envio', '1')
 
       payload.sessoes.forEach((sessao, index) => {

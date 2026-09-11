@@ -99,6 +99,57 @@ class GuiasApiTest extends TestCase
         $this->assertNotContains($outraId, $porNomePaciente);
     }
 
+    /**
+     * Busca livre do modal de seleção de guia (lançamento de sessão): ID,
+     * número da guia, nome do paciente ou do profissional executante.
+     */
+    public function test_busca_guias_por_id_numero_paciente_ou_profissional(): void
+    {
+        $this->autenticar();
+
+        $payload = $this->payloadGuia('Unimed');
+        $id = $this->postJson('/api/guias', $payload)
+            ->assertCreated()
+            ->json('data.id');
+
+        $outroPaciente = Paciente::query()
+            ->where('convenio_id', $payload['convenio_id'])
+            ->where('id', '!=', $payload['paciente_id'])
+            ->firstOrFail();
+
+        $outraGuia = $this->payloadGuia('Unimed', 'Fonoaudiologia');
+        $outraGuia['paciente_id'] = $outroPaciente->id;
+        $outraId = $this->postJson('/api/guias', $outraGuia)
+            ->assertCreated()
+            ->json('data.id');
+
+        $paciente = Paciente::query()->findOrFail($payload['paciente_id']);
+        $profissional = Profissional::query()->findOrFail($payload['profissional_id']);
+
+        $porId = $this->getJson('/api/guias?busca='.$id)
+            ->assertOk()
+            ->json('data.*.id');
+        $this->assertContains($id, $porId);
+        $this->assertNotContains($outraId, $porId);
+
+        $porNumeroGuia = $this->getJson('/api/guias?busca='.urlencode($payload['numero_guia']))
+            ->assertOk()
+            ->json('data.*.id');
+        $this->assertContains($id, $porNumeroGuia);
+        $this->assertNotContains($outraId, $porNumeroGuia);
+
+        $porNomePaciente = $this->getJson('/api/guias?busca='.urlencode(mb_substr($paciente->nome, 0, 4)))
+            ->assertOk()
+            ->json('data.*.id');
+        $this->assertContains($id, $porNomePaciente);
+        $this->assertNotContains($outraId, $porNomePaciente);
+
+        $porNomeProfissional = $this->getJson('/api/guias?busca='.urlencode(mb_substr($profissional->nome, 0, 4)))
+            ->assertOk()
+            ->json('data.*.id');
+        $this->assertContains($id, $porNomeProfissional);
+    }
+
     public function test_finaliza_via_http_sem_validade_senha_calculando_data_automaticamente(): void
     {
         $this->autenticar();

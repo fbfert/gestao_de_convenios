@@ -59,7 +59,7 @@ class RegistroSessoesAiService
                   o que a tela de revisão espera. Reescrever o prompt na tela
                   passaria a devolver campos vazios sem erro nenhum.
                 */
-                'text' => $prompt->user_prompt."\n\nRetorne somente JSON com as chaves: cabecalho (objeto com guia_numero, clinica, paciente, numero_cartao, profissional_executante, terapia_aplicada) e sessoes (array; cada item com data_sessao no formato YYYY-MM-DD, hora_inicio e hora_fim no formato HH:MM, acompanhante e resumo_atividades). Use null no campo que não conseguir ler; não invente valor. Mantenha a ordem em que as sessões aparecem no documento.",
+                'text' => $prompt->user_prompt."\n\nRetorne somente JSON com as chaves: cabecalho (objeto com guia_numero, clinica, paciente, numero_cartao, profissional_executante, terapia_aplicada) e sessoes (array; cada item com data_sessao no formato YYYY-MM-DD, hora_inicio e hora_fim no formato HH:MM, acompanhante e resumo_atividades). Use null no campo que não conseguir ler; não invente valor. A folha tem exatamente 10 linhas numeradas para sessões: retorne sempre um array 'sessoes' com exatamente 10 itens, na mesma ordem/numeração das linhas impressas na folha — se uma linha estiver em branco ou não puder ser lida, retorne o item nessa posição com todos os campos null, sem pular nem reordenar. Ignore qualquer assinatura desenhada ou manuscrita do acompanhante: leia somente o nome escrito por extenso, quando houver. O resumo das atividades de uma sessão pode ocupar mais de uma linha de texto dentro do mesmo bloco delimitado pelas linhas divisórias da folha; junte todo esse texto em um único resumo_atividades para aquela sessão e nunca misture texto de um bloco de sessão com o de outro.",
             ],
         ];
 
@@ -123,19 +123,45 @@ class RegistroSessoesAiService
                 'profissional_executante' => $this->texto($dados['cabecalho']['profissional_executante'] ?? null),
                 'terapia_aplicada' => $this->texto($dados['cabecalho']['terapia_aplicada'] ?? null),
             ],
-            'sessoes' => collect($dados['sessoes'] ?? [])
-                ->map(fn ($sessao) => [
-                    'data_sessao' => $this->data($sessao['data_sessao'] ?? null),
-                    'hora_inicio' => $this->hora($sessao['hora_inicio'] ?? null),
-                    'hora_fim' => $this->hora($sessao['hora_fim'] ?? null),
-                    'acompanhante' => $this->texto($sessao['acompanhante'] ?? null),
-                    'resumo_atividades' => $this->texto($sessao['resumo_atividades'] ?? null),
-                ])
-                // Linha sem data e sem horário não é sessão: é ruído de leitura.
-                ->reject(fn ($sessao) => ! $sessao['data_sessao'] && ! $sessao['hora_inicio'])
-                ->values()
-                ->all(),
+            'sessoes' => $this->preencherDezLinhas(
+                collect($dados['sessoes'] ?? [])
+                    ->map(fn ($sessao) => [
+                        'data_sessao' => $this->data($sessao['data_sessao'] ?? null),
+                        'hora_inicio' => $this->hora($sessao['hora_inicio'] ?? null),
+                        'hora_fim' => $this->hora($sessao['hora_fim'] ?? null),
+                        'acompanhante' => $this->texto($sessao['acompanhante'] ?? null),
+                        'resumo_atividades' => $this->texto($sessao['resumo_atividades'] ?? null),
+                    ])
+                    ->all()
+            ),
         ];
+    }
+
+    /**
+     * A folha tem exatamente 10 linhas numeradas. Uma linha em branco ou
+     * ilegível é uma posição vazia na folha, não ruído a descartar — descartar
+     * reordenaria as sessões seguintes para posições que não são as delas.
+     *
+     * @param array<int, array<string, string|null>> $sessoes
+     * @return array<int, array<string, string|null>>
+     */
+    private function preencherDezLinhas(array $sessoes): array
+    {
+        $vazia = [
+            'data_sessao' => null,
+            'hora_inicio' => null,
+            'hora_fim' => null,
+            'acompanhante' => null,
+            'resumo_atividades' => null,
+        ];
+
+        $sessoes = array_slice($sessoes, 0, 10);
+
+        while (count($sessoes) < 10) {
+            $sessoes[] = $vazia;
+        }
+
+        return $sessoes;
     }
 
     private function texto(mixed $valor): ?string

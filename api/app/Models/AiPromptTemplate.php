@@ -68,7 +68,7 @@ class AiPromptTemplate extends Model
                 'descricao' => 'Extrai sessões escaneadas para criar lançamentos no banco.',
                 'model_id' => null,
                 'system_prompt' => 'Você extrai registros de sessões terapêuticas de documentos escaneados. Responda somente em JSON válido.',
-                'user_prompt' => 'Leia o registro de sessões escaneado e retorne data, hora início, hora fim, acompanhante, profissional e resumo das atividades de cada sessão.',
+                'user_prompt' => 'Leia o registro de sessões escaneado e retorne data, hora início, hora fim, acompanhante, profissional e resumo das atividades de cada sessão. A folha tem exatamente 10 linhas numeradas: preserve a numeração de cada uma, mesmo as em branco ou ilegíveis. Leia apenas o nome do acompanhante, nunca a assinatura dele. Quando o resumo de uma sessão ocupar mais de uma linha de texto, junte tudo num só resumo, respeitando as linhas divisórias entre sessões.',
                 'ativo' => true,
             ],
             [

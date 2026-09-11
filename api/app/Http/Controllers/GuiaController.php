@@ -30,6 +30,7 @@ class GuiaController extends Controller
                 'paciente_id',
                 'profissional_id',
                 'paciente_nome',
+                'busca',
                 'validade_senha_vencendo_em_dias',
                 'alerta_negacao_pendente',
                 'mostrar_a_definir',

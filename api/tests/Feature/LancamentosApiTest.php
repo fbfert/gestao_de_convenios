@@ -709,7 +709,8 @@ XML;
                             'acompanhante' => 'Bruno Marinho',
                             'resumo_atividades' => 'Aplicação de testes',
                         ],
-                        // Linha sem data nem horario e ruido de leitura.
+                        // Linha sem data nem horario: posicao em branco na
+                        // folha, preservada (nao mais descartada).
                         ['data_sessao' => null, 'hora_inicio' => null, 'resumo_atividades' => 'rodapé'],
                     ],
                 ]),
@@ -721,12 +722,118 @@ XML;
         ])
             ->assertOk()
             ->assertJsonPath('data.confirmacao_pendente', true)
-            ->assertJsonCount(1, 'data.sessoes')
+            // A folha tem 10 linhas fixas: a IA devolveu 2, as 8 restantes
+            // vem preenchidas com null, preservando a posicao das duas.
+            ->assertJsonCount(10, 'data.sessoes')
             ->assertJsonPath('data.sessoes.0.data_sessao', '2026-04-08')
             ->assertJsonPath('data.sessoes.0.hora_inicio', '14:50')
+            ->assertJsonPath('data.sessoes.1.data_sessao', null)
+            ->assertJsonPath('data.sessoes.1.resumo_atividades', 'rodapé')
+            ->assertJsonPath('data.sessoes.9.data_sessao', null)
             ->assertJsonPath('data.cabecalho.paciente', 'Ana Ribeiro');
 
         // A leitura nao grava nada: a confirmacao continua sendo outro passo.
         $this->assertSame(0, $guia->lancamentos()->count());
+    }
+
+    public function test_confirma_sessoes_da_grade_sem_transcricao_ignorando_linhas_em_branco(): void
+    {
+        $this->autenticar();
+
+        $guia = $this->criarGuiaAprovada('Unimed', 'Fisioterapia', 'especializada', sessoesAutorizadas: 8);
+
+        // Grade fixa de 10 linhas: so 2 preenchidas (as demais, em branco,
+        // simulam linhas da folha que nao foram lidas ou preenchidas ainda).
+        $sessoes = array_fill(0, 10, [
+            'data_sessao' => null,
+            'hora_inicio' => null,
+            'hora_fim' => null,
+            'acompanhante' => null,
+            'resumo_atividades' => null,
+        ]);
+        $sessoes[2] = [
+            'data_sessao' => '2026-04-09',
+            'hora_inicio' => '14:50',
+            'hora_fim' => '15:40',
+            'acompanhante' => 'Bruno Marinho',
+            'resumo_atividades' => 'Aplicação testes',
+        ];
+        $sessoes[7] = [
+            'data_sessao' => '2026-04-10',
+            'hora_inicio' => '15:00',
+            'hora_fim' => '15:50',
+            'acompanhante' => null,
+            'resumo_atividades' => 'Sessão sem acompanhante',
+        ];
+
+        $confirmacao = $this->postJson("/api/guias/{$guia->id}/lancamentos/importar-transcricao", [
+            'profissional_id' => $guia->profissional_id,
+            'confirmar_envio' => true,
+            'sessoes' => $sessoes,
+        ]);
+
+        $confirmacao->assertCreated()
+            ->assertJsonPath('data.confirmacao_pendente', false)
+            ->assertJsonCount(2, 'data.registros');
+
+        $this->assertSame(2, Lancamento::query()->where('guia_id', $guia->id)->count());
+    }
+
+    public function test_confirma_sessoes_exige_pdf_quando_numero_cartao_e_da_regional_0220(): void
+    {
+        $this->autenticar();
+
+        $guia = $this->criarGuiaAprovada('Unimed', 'Fisioterapia', 'especializada', sessoesAutorizadas: 8);
+
+        $sessoes = array_fill(0, 10, [
+            'data_sessao' => null,
+            'hora_inicio' => null,
+            'hora_fim' => null,
+            'acompanhante' => null,
+            'resumo_atividades' => null,
+        ]);
+        $sessoes[0] = [
+            'data_sessao' => '2026-04-09',
+            'hora_inicio' => '14:50',
+            'hora_fim' => '15:40',
+            'acompanhante' => null,
+            'resumo_atividades' => null,
+        ];
+
+        // numero_cartao vem explicito no payload (lido por IA ou digitado),
+        // sem depender de transcricao nenhuma.
+        $this->postJson("/api/guias/{$guia->id}/lancamentos/importar-transcricao", [
+            'profissional_id' => $guia->profissional_id,
+            'confirmar_envio' => true,
+            'numero_cartao' => '0220 090000 551.330-8',
+            'sessoes' => $sessoes,
+        ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['pdf_registro_sessoes']);
+
+        $this->assertDatabaseCount('lancamentos', 0);
+    }
+
+    public function test_sessoes_da_grade_recusa_mais_de_dez_linhas(): void
+    {
+        $this->autenticar();
+
+        $guia = $this->criarGuiaAprovada('SC Saúde', 'Fonoaudiologia', 'convencional');
+
+        $sessoes = array_fill(0, 11, [
+            'data_sessao' => '2026-04-09',
+            'hora_inicio' => null,
+            'hora_fim' => null,
+            'acompanhante' => null,
+            'resumo_atividades' => null,
+        ]);
+
+        $this->postJson("/api/guias/{$guia->id}/lancamentos/importar-transcricao", [
+            'profissional_id' => $guia->profissional_id,
+            'confirmar_envio' => true,
+            'sessoes' => $sessoes,
+        ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['sessoes']);
     }
 }

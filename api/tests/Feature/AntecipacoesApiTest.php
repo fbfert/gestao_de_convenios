@@ -322,23 +322,11 @@ class AntecipacoesApiTest extends TestCase
         // Sem isto a asserção acima seria vazia: provaria apenas que uma
         // solicitação inelegível não aparece, o que seria verdade mesmo com o
         // escopo de tenant quebrado. Aqui fica dito que ela É elegível — para a
-        // clínica dona dela.
-        //
-        // O TenantContext precisa acompanhar: `ConfiguracaoGlobal::doTenant()`,
-        // que a data-alvo consulta, faz `firstOrCreate` por baixo do TenantScope
-        // e, chamado de fora do tenant vigente, não enxerga a linha existente e
-        // esbarra no índice único ao tentar criar outra.
-        $tenantVigente = TenantContext::get();
-        TenantContext::set((int) $deOutroTenant->tenant_id);
-
-        try {
-            $this->assertNotEmpty(
-                Guia::elegiveisParaAntecipacao((int) $deOutroTenant->tenant_id)
-                    ->where('solicitacao_id', $deOutroTenant->id),
-            );
-        } finally {
-            TenantContext::set($tenantVigente);
-        }
+        // clínica dona dela, consultada de dentro do contexto da outra.
+        $this->assertNotEmpty(
+            Guia::elegiveisParaAntecipacao((int) $deOutroTenant->tenant_id)
+                ->where('solicitacao_id', $deOutroTenant->id),
+        );
     }
 
     /** Mesma receita de `solicitacaoComGuiaAprovada()`, num tenant à parte. */

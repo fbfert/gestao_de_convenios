@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreConvenioEspecialidadeMapeamentoRequest;
 use App\Http\Resources\ConvenioEspecialidadeMapeamentoResource;
+use App\Models\ConfiguracaoGlobal;
 use App\Models\ConvenioEspecialidadeMapeamento;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -29,7 +30,7 @@ class ConvenioEspecialidadeMapeamentoController extends Controller
         $mapeamento = ConvenioEspecialidadeMapeamento::query()->create([
             ...$request->validated(),
             'tenant_id' => $request->user()->tenant_id,
-            'quantidade_padrao' => $request->integer('quantidade_padrao') ?: 10,
+            'quantidade_padrao' => $request->integer('quantidade_padrao') ?: ConfiguracaoGlobal::doTenant((int) $request->user()->tenant_id)->sessoes_padrao,
             'usa_descricao_generica' => $request->boolean('usa_descricao_generica'),
             'ativo' => $request->boolean('ativo', true),
         ]);
@@ -44,7 +45,7 @@ class ConvenioEspecialidadeMapeamentoController extends Controller
         ConvenioEspecialidadeMapeamento $especialidadeMapeamento
     ): ConvenioEspecialidadeMapeamentoResource {
         $especialidadeMapeamento->fill($request->validated());
-        $especialidadeMapeamento->quantidade_padrao = $request->integer('quantidade_padrao') ?: 10;
+        $especialidadeMapeamento->quantidade_padrao = $request->integer('quantidade_padrao') ?: ConfiguracaoGlobal::doTenant((int) $request->user()->tenant_id)->sessoes_padrao;
         $especialidadeMapeamento->usa_descricao_generica = $request->boolean('usa_descricao_generica');
         $especialidadeMapeamento->ativo = $request->boolean('ativo', true);
         $especialidadeMapeamento->save();

@@ -8,16 +8,17 @@ use App\Http\Requests\LerRegistroSessoesRequest;
 use App\Http\Requests\StoreLancamentoRequest;
 use App\Http\Requests\UpdateLancamentoRequest;
 use App\Http\Resources\LancamentoResource;
+use App\Models\ConfiguracaoGlobal;
 use App\Models\Guia;
 use App\Models\Lancamento;
 use App\Models\Profissional;
 use App\Services\AnaliticoUnimedImportService;
 use App\Services\LancamentoService;
 use App\Services\RegistroSessoesAiService;
-use Illuminate\Support\Str;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class LancamentoController extends Controller
@@ -25,13 +26,12 @@ class LancamentoController extends Controller
     public function __construct(
         private readonly LancamentoService $service,
         private readonly AnaliticoUnimedImportService $analiticoImportService
-    ) {
-    }
+    ) {}
 
     public function index(Request $request): AnonymousResourceCollection
     {
         return LancamentoResource::collection(
-            $this->service->listar($request->only(['profissional_id', 'data_sessao']), (int) $request->integer('per_page', 15))
+            $this->service->listar($request->only(['profissional_id', 'data_sessao']), $request->integer('per_page') ?: ConfiguracaoGlobal::itensPorPagina())
         );
     }
 

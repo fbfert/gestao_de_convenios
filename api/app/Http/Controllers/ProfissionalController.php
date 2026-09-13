@@ -22,7 +22,7 @@ class ProfissionalController extends Controller
 
         $query = Profissional::query()
             ->with(['especialidade', 'especialidades'])
-            ->when(! $incluirInativos, fn ($query) => $query->where('ativo', true))
+            ->when(! $incluirInativos, fn ($query) => $query->where('profissionais.ativo', true))
             // Filtra pela ligacao, nao pela coluna: quem atua na
             // especialidade tem que aparecer mesmo que ela nao seja a
             // principal dele.
@@ -32,25 +32,33 @@ class ProfissionalController extends Controller
             ))
             ->when($busca !== '', function ($query) use ($busca) {
                 $query->where(function ($nested) use ($busca) {
-                    $nested->where('nome', 'like', "%{$busca}%")
-                        ->orWhere('conselho_registro', 'like', "%{$busca}%")
+                    $nested->where('profissionais.nome', 'like', "%{$busca}%")
+                        ->orWhere('profissionais.conselho_registro', 'like', "%{$busca}%")
                         ->orWhereHas('especialidade', function ($especialidadeQuery) use ($busca) {
                             $especialidadeQuery->where('nome', 'like', "%{$busca}%");
                         });
                 });
             })
             ->tap(fn ($query) => OrdenaListagem::aplicar(
-                $query,
+                $query->select('profissionais.*'),
                 $request->only(['ordenar_por', 'direcao']),
                 [
-                    'nome' => 'nome',
-                    'conselho' => 'conselho_registro',
-                    'repasse' => 'percentual_repasse',
-                    'status' => 'ativo',
+                    'nome' => 'profissionais.nome',
+                    'conselho' => 'profissionais.conselho_registro',
+                    'repasse' => 'profissionais.percentual_repasse',
+                    'status' => 'profissionais.ativo',
+                    // Pela especialidade principal, que é o que a coluna mostra.
+                    // O profissional pode atuar em várias (pivot
+                    // `especialidade_profissional`), e ordenar por um conjunto
+                    // não teria resposta única — a principal é sempre uma só, e
+                    // o próprio model garante que ela está entre as demais.
+                    'especialidade' => fn ($query, $direcao) => $query
+                        ->leftJoin('especialidades', 'especialidades.id', '=', 'profissionais.especialidade_id')
+                        ->orderBy('especialidades.nome', $direcao),
                 ],
-                padrao: 'nome',
+                padrao: 'profissionais.nome',
                 direcaoPadrao: 'asc',
-                desempate: 'nome',
+                desempate: 'profissionais.nome',
             ));
 
         return ProfissionalResource::collection(PaginaListagem::aplicar($query, $request));

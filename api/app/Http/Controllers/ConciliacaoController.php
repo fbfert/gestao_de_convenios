@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ListConciliacaoRequest;
 use App\Http\Resources\ConciliacaoFinanceiraResource;
 use App\Models\ConciliacaoFinanceira;
+use App\Models\ConfiguracaoGlobal;
 use App\Models\Guia;
 use App\Services\ConciliacaoService;
 use Illuminate\Http\JsonResponse;
@@ -14,13 +15,12 @@ class ConciliacaoController extends Controller
 {
     public function __construct(
         private readonly ConciliacaoService $service
-    ) {
-    }
+    ) {}
 
     public function index(ListConciliacaoRequest $request): AnonymousResourceCollection
     {
         return ConciliacaoFinanceiraResource::collection(
-            $this->service->listar($request->validated(), (int) $request->integer('per_page', 15))
+            $this->service->listar($request->validated(), $request->integer('per_page') ?: ConfiguracaoGlobal::itensPorPagina())
         );
     }
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Resources\AutomacaoExecucaoResource;
 use App\Jobs\ExecutarAutomacaoUnimedJob;
 use App\Models\AutomacaoExecucao;
+use App\Models\ConfiguracaoGlobal;
 use App\Services\Automation\AutomacaoService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -43,7 +44,7 @@ class AutomacaoController extends Controller
             ->orderByDesc('id');
 
         return AutomacaoExecucaoResource::collection(
-            $query->paginate((int) $request->integer('per_page', 15))
+            $query->paginate($request->integer('per_page') ?: ConfiguracaoGlobal::itensPorPagina())
         );
     }
 

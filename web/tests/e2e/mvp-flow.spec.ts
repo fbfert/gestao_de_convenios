@@ -77,10 +77,12 @@ const selecionarMedico = (page: Page, nome: string) =>
  * Aceita o diálogo de confirmação do app.
  *
  * Ações destrutivas e de efeito irreversível passaram a pedir confirmação no
- * change `densidade-e-confirmacao-de-exclusao`. Não é o `window.confirm` do
- * navegador (aquele o teste já trata com `page.once('dialog', ...)`), e sim um
- * `alertdialog` do próprio app — sem aceitá-lo, a requisição simplesmente nunca
- * sai e o teste morre esperando uma resposta que não vem.
+ * change `densidade-e-confirmacao-de-exclusao`. É um `alertdialog` do próprio
+ * app, não o `window.confirm` do navegador — sem aceitá-lo, a requisição
+ * simplesmente nunca sai e o teste morre esperando uma resposta que não vem.
+ *
+ * Não sobrou nenhum `window.confirm` no app, então também não há mais
+ * `page.once('dialog', ...)` aqui.
  */
 async function confirmarNoDialogo(page: Page) {
   const dialogo = page.getByTestId('confirm-dialog')
@@ -152,9 +154,12 @@ test('fluxo completo de negocio', async ({ page }, testInfo: TestInfo) => {
       response.url().includes(`/solicitacoes/${solicitacaoId}/status`)
     )
   })
-  page.once('dialog', (dialog) => dialog.accept())
+  // A confirmação de troca de status era `window.confirm` — diálogo do
+  // navegador, que trava a aba e não deixa rastro na tela. Virou o
+  // `ConfirmDialog` do app, o mesmo de finalizar guia.
   await page.getByTestId(`solicitacao-acoes-${solicitacaoId}`).click()
   await page.getByTestId(`solicitacao-status-action-ready_for_automation-${solicitacaoId}`).click()
+  await confirmarNoDialogo(page)
   const aprovarResponse = await aprovarResponsePromise
   const aprovarResponseText = await aprovarResponse.text()
   console.log(

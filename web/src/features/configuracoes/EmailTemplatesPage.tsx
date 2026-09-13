@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { Indicadores } from '../../components/ui/Indicadores'
+import { ConfirmarExclusao } from '../../components/ui/ConfirmarExclusao'
 import { Link, useMatch, useNavigate } from 'react-router-dom'
 import {
   getHttpErrorMessage,
@@ -56,6 +57,7 @@ export function EmailTemplatesPage() {
   const [form, setForm] = useState<EmailTemplateForm>(emptyForm)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [templateAExcluir, setTemplateAExcluir] = useState<EmailTemplateSettings | null>(null)
 
   const templates = useMemo(() => templatesQuery.data ?? [], [templatesQuery.data])
   const totalAtivos = useMemo(
@@ -166,7 +168,7 @@ export function EmailTemplatesPage() {
   }
 
   const handleDelete = async (template: EmailTemplateSettings) => {
-    if (!template.id || !window.confirm(`Excluir o template "${template.nome}"?`)) {
+    if (!template.id) {
       return
     }
 
@@ -181,6 +183,8 @@ export function EmailTemplatesPage() {
       setMessage('Template excluído.')
     } catch (deleteError) {
       setError(getHttpErrorMessage(deleteError, 'Não foi possível excluir o template.'))
+    } finally {
+      setTemplateAExcluir(null)
     }
   }
 
@@ -398,7 +402,7 @@ export function EmailTemplatesPage() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => void handleDelete(template)}
+                          onClick={() => setTemplateAExcluir(template)}
                           className="rounded-full border border-rose-300/30 bg-rose-400/10 px-3 py-1.5 text-meta font-semibold text-rose-100 transition hover:bg-rose-400/20 disabled:opacity-60"
                           disabled={excluirTemplate.isPending}
                           data-testid={`email-template-excluir-${template.id}`}
@@ -421,6 +425,17 @@ export function EmailTemplatesPage() {
           </div>
         )}
       </section>
+
+      {templateAExcluir ? (
+        <ConfirmarExclusao
+          titulo="Excluir template de e-mail"
+          descricao="Remove o template. Os avisos que dependiam dele passam a usar o texto padrão de reserva."
+          alvo={templateAExcluir.nome}
+          confirmando={excluirTemplate.isPending}
+          onConfirmar={() => void handleDelete(templateAExcluir)}
+          onCancelar={() => setTemplateAExcluir(null)}
+        />
+      ) : null}
     </div>
   )
 }

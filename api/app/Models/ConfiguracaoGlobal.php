@@ -4,11 +4,20 @@ namespace App\Models;
 
 use App\Concerns\Auditable;
 use App\Concerns\BelongsToTenant;
+use App\Scopes\TenantScope;
+use App\Support\TenantContext;
 use Illuminate\Database\Eloquent\Model;
 
 class ConfiguracaoGlobal extends Model
 {
     use Auditable, BelongsToTenant;
+
+    /** Mesmos limites do campo "Itens por página" na tela de configurações. */
+    public const ITENS_POR_PAGINA_MINIMO = 5;
+
+    public const ITENS_POR_PAGINA_MAXIMO = 200;
+
+    public const ITENS_POR_PAGINA_PADRAO = 15;
 
     protected $table = 'configuracoes_globais';
 
@@ -85,8 +94,41 @@ class ConfiguracaoGlobal extends Model
      */
     public static function doTenant(int $tenantId): self
     {
-        $configuracao = static::query()->firstOrCreate(['tenant_id' => $tenantId]);
+        // `withoutGlobalScope` porque o método recebe o tenant por parâmetro e
+        // precisa valer para ele, não para o do contexto. Sob o TenantScope, uma
+        // chamada feita de dentro de outro tenant não enxergava a linha já
+        // existente, tentava criar a segunda e batia no índice único de
+        // `configuracoes_globais.tenant_id`. Passava despercebido porque o
+        // scope é no-op quando não há contexto — que é justamente o caso do
+        // worker onde `AvaliarAlertasJob` percorre os tenants.
+        $configuracao = static::query()
+            ->withoutGlobalScope(TenantScope::class)
+            ->firstOrCreate(['tenant_id' => $tenantId]);
 
         return $configuracao->wasRecentlyCreated ? $configuracao->fresh() : $configuracao;
+    }
+
+    /**
+     * Tamanho de página das listagens do tenant.
+     *
+     * Existe para que `itens_por_pagina` deixe de ser enfeite: a configuração
+     * era editável, salva e auditada, e nenhuma linha de código a lia — cada
+     * controller trazia o próprio número fixo e o front mandava `per_page` em
+     * toda requisição, então o valor escolhido pelo operador nunca chegava a
+     * ter efeito.
+     *
+     * O piso e o teto acompanham os limites do campo na tela.
+     */
+    public static function itensPorPagina(?int $tenantId = null): int
+    {
+        $tenantId ??= TenantContext::get();
+
+        if (! $tenantId) {
+            return self::ITENS_POR_PAGINA_PADRAO;
+        }
+
+        $valor = (int) (self::doTenant($tenantId)->itens_por_pagina ?: self::ITENS_POR_PAGINA_PADRAO);
+
+        return max(self::ITENS_POR_PAGINA_MINIMO, min(self::ITENS_POR_PAGINA_MAXIMO, $valor));
     }
 }

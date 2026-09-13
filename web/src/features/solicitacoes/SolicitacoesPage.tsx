@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useConfirm } from '../../components/ui/ConfirmDialog'
 import { MoreVertical, Plus, X } from 'lucide-react'
 import { DropdownMenu } from 'radix-ui'
 import { ColunaOrdenavel } from '../../components/ui/ColunaOrdenavel'
@@ -140,6 +141,7 @@ function selectClasses() {
 
 export function SolicitacoesPage() {
   const pode = usePode()
+  const confirmar = useConfirm()
   const navigate = useNavigate()
   const isCreateRoute = useMatch('/solicitacoes/nova') !== null
   const [searchParams] = useSearchParams()
@@ -159,6 +161,10 @@ export function SolicitacoesPage() {
   const [gerarAntecipacaoId, setGerarAntecipacaoId] = useState<number | null>(null)
   const [form, setForm] = useState<SolicitacaoForm>(emptyForm)
   const [formError, setFormError] = useState<string | null>(null)
+  // Erros das ações da listagem (mudar status, excluir item). Eram
+  // `window.alert`, que trava a aba até alguém clicar OK e não deixa rastro
+  // nenhum na tela depois de fechado.
+  const [erroAcao, setErroAcao] = useState<string | null>(null)
   const [pacienteSelecionado, setPacienteSelecionado] = useState<PacienteRef | null>(null)
   const [medicoSelecionado, setMedicoSelecionado] = useState<MedicoRef | null>(null)
   /** Criada com sucesso: troca o formulário pela etapa de anexos, sem navegar pra outro lugar. */
@@ -497,18 +503,22 @@ export function SolicitacoesPage() {
     }
 
     const statusLabel = translateStatus('solicitacoes', status)
-    const confirmed = window.confirm(
-      `Confirmar alteração da solicitação #${solicitacao.id} para ${statusLabel}?`,
-    )
+    const confirmado = await confirmar({
+      titulo: 'Alterar status da solicitação',
+      descricao: `A solicitação #${solicitacao.id} passa para ${statusLabel}.`,
+      confirmarTexto: 'Alterar',
+    })
 
-    if (!confirmed) {
+    if (!confirmado) {
       return
     }
 
     try {
       await atualizarStatusSolicitacao.mutateAsync({ id: solicitacao.id, status })
     } catch (error) {
-      window.alert(getHttpErrorMessage(error, 'Não foi possível alterar o status da solicitação.'))
+      setErroAcao(
+        getHttpErrorMessage(error, 'Não foi possível alterar o status da solicitação.'),
+      )
     }
   }
 
@@ -546,12 +556,21 @@ export function SolicitacoesPage() {
       })
       setItemAExcluir(null)
     } catch (error) {
-      window.alert(getHttpErrorMessage(error, 'Não foi possível excluir o item.'))
+      setErroAcao(getHttpErrorMessage(error, 'Não foi possível excluir o item.'))
     }
   }
 
   return (
     <div className="space-y-8" data-testid="solicitacoes-page">
+      {erroAcao ? (
+        <p
+          className="rounded-janela border border-perigo/30 bg-perigo-suave px-4 py-3 text-corpo text-perigo-texto"
+          role="alert"
+          data-testid="solicitacoes-erro-acao"
+        >
+          {erroAcao}
+        </p>
+      ) : null}
       {!isCreateRoute ? (
       <section className="space-y-4">
         <div className="flex flex-col gap-4 sm:items-start lg:flex-row lg:items-end lg:justify-between">

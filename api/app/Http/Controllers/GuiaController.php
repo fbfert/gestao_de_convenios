@@ -6,6 +6,7 @@ use App\Http\Requests\MutateGuiaStatusRequest;
 use App\Http\Requests\StoreGuiaRequest;
 use App\Http\Requests\UpdateGuiaRequest;
 use App\Http\Resources\GuiaResource;
+use App\Models\ConfiguracaoGlobal;
 use App\Models\Guia;
 use App\Services\Automation\CapturarSenhaValidadeUnimedService;
 use App\Services\Automation\ConsultarStatusUnimedService;
@@ -18,8 +19,7 @@ class GuiaController extends Controller
 {
     public function __construct(
         private readonly GuiaService $service
-    ) {
-    }
+    ) {}
 
     public function index(Request $request): AnonymousResourceCollection
     {
@@ -42,7 +42,7 @@ class GuiaController extends Controller
                 // dentro; a tradução para os filtros internos é logo abaixo.
                 'pendente',
                 'senha_vencendo',
-            ]), (int) $request->integer('per_page', 15))
+            ]), $request->integer('per_page') ?: ConfiguracaoGlobal::itensPorPagina())
         );
     }
 

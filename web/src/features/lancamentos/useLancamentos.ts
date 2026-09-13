@@ -45,8 +45,7 @@ export function useLancamentos(filters: LancamentoFilters, page: number) {
       const { data } = await apiClient.get<PaginatedResponse<Lancamento>>('/lancamentos', {
         params: {
           ...filters,
-          page,
-          per_page: 10,
+          page,
         },
       })
 

@@ -3,7 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\ConfiguracaoGlobal;
+use App\Models\Tenant;
 use App\Models\User;
+use App\Scopes\TenantScope;
+use App\Support\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Tests\TestCase;
@@ -222,6 +225,68 @@ class ConfiguracoesGlobaisApiTest extends TestCase
         Carbon::setTestNow(now()->addYear());
         $this->withToken($token)->getJson('/api/dashboard')->assertOk();
         Carbon::setTestNow();
+    }
+
+    /**
+     * `itens_por_pagina` era enfeite: editável, salva e auditada, e nenhuma
+     * linha de código a lia — cada controller trazia o próprio número fixo. O
+     * operador mudava, via o registro na auditoria, e a listagem continuava
+     * igual. Este teste existe para que a configuração não volte a mentir.
+     */
+    public function test_itens_por_pagina_governa_o_tamanho_das_listagens(): void
+    {
+        $this->autenticarComToken();
+
+        ConfiguracaoGlobal::doTenant((int) $this->usuario()->tenant_id)
+            ->update(['itens_por_pagina' => 7]);
+
+        $this->getJson('/api/guias')->assertOk()->assertJsonPath('meta.per_page', 7);
+        $this->getJson('/api/solicitacoes')->assertOk()->assertJsonPath('meta.per_page', 7);
+        $this->getJson('/api/usuarios')->assertOk()->assertJsonPath('meta.per_page', 7);
+    }
+
+    /** Um `per_page` explícito na query continua mandando — é o caso das buscas dirigidas. */
+    public function test_per_page_explicito_prevalece_sobre_a_configuracao(): void
+    {
+        $this->autenticarComToken();
+
+        ConfiguracaoGlobal::doTenant((int) $this->usuario()->tenant_id)
+            ->update(['itens_por_pagina' => 7]);
+
+        $this->getJson('/api/guias?per_page=30')->assertOk()->assertJsonPath('meta.per_page', 30);
+    }
+
+    /**
+     * `doTenant()` recebe o tenant por parâmetro e precisa valer para ele. Sob o
+     * TenantScope, chamado de dentro de outro tenant, não enxergava a linha
+     * existente e batia no índice único ao tentar criar a segunda.
+     */
+    public function test_configuracao_de_outro_tenant_e_lida_sem_esbarrar_no_indice_unico(): void
+    {
+        $tenantId = (int) $this->usuario()->tenant_id;
+        TenantContext::set($tenantId);
+        ConfiguracaoGlobal::doTenant($tenantId);
+
+        $outroTenant = Tenant::query()->create([
+            'nome' => 'Clínica Config Vizinha',
+            'slug' => 'clinica-config-vizinha',
+            'cnpj' => '33.333.333/0001-33',
+            'ativo' => true,
+        ]);
+
+        // Duas vezes: a primeira cria a linha do outro tenant, a segunda tem de
+        // encontrá-la em vez de tentar criar de novo.
+        ConfiguracaoGlobal::doTenant((int) $outroTenant->id);
+        $configuracao = ConfiguracaoGlobal::doTenant((int) $outroTenant->id);
+
+        $this->assertSame((int) $outroTenant->id, (int) $configuracao->tenant_id);
+        $this->assertSame(
+            1,
+            ConfiguracaoGlobal::query()
+                ->withoutGlobalScope(TenantScope::class)
+                ->where('tenant_id', $outroTenant->id)
+                ->count(),
+        );
     }
 
     private function usuario(): User

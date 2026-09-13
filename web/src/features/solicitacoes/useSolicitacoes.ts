@@ -21,8 +21,7 @@ export function useSolicitacoes(filters: SolicitacaoFilters, page: number) {
       const { data } = await apiClient.get<PaginatedResponse<Solicitacao>>('/solicitacoes', {
         params: {
           ...filters,
-          page,
-          per_page: 10,
+          page,
         },
       })
 

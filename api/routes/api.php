@@ -170,6 +170,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EncerrarSessaoExpirada::
     Route::post('/cids', [CidController::class, 'store']);
     Route::patch('/cids/{cid}', [CidController::class, 'update']);
     Route::get('/convenios', [ConvenioController::class, 'index']);
+    Route::get('/convenios/{convenio}', [ConvenioController::class, 'show']);
     Route::post('/convenios', [ConvenioController::class, 'store'])->middleware('permission:convenios.manage');
     Route::patch('/convenios/{convenio}', [ConvenioController::class, 'update'])->middleware('permission:convenios.manage');
     Route::get('/convenios/{convenio}/regras', [ConvenioController::class, 'regras'])->middleware('permission:convenios.manage');
@@ -200,6 +201,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EncerrarSessaoExpirada::
     Route::post('/tenants/{tenant}/acessar', [TenantController::class, 'acessar'])->middleware('super-admin');
 
     Route::get('/usuarios', [UserController::class, 'index'])->middleware('permission:usuarios.manage');
+    Route::get('/usuarios/{usuario}', [UserController::class, 'show'])->middleware('permission:usuarios.manage');
     Route::post('/usuarios', [UserController::class, 'store'])->middleware('permission:usuarios.manage');
     Route::patch('/usuarios/{usuario}', [UserController::class, 'update'])->middleware('permission:usuarios.manage');
 

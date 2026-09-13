@@ -18,12 +18,29 @@ export function useUsuarios(filters: UsuarioFilters, page: number) {
           ordenar_por: filters.ordenar_por,
           direcao: filters.direcao,
           page,
-          per_page: 10,
         },
       })
 
       return data
     },
+  })
+}
+
+/**
+ * Um usuário pelo id, para a tela de edição aberta por link direto.
+ *
+ * A hidratação procurava o usuário na página já carregada da listagem: quem
+ * não estivesse nela abria o formulário em branco no modo "Novo usuário", e
+ * salvar criava um usuário novo em vez de editar o pretendido.
+ */
+export function useUsuario(id: number | null) {
+  return useQuery({
+    queryKey: ['usuario', id],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ data: Usuario }>(`/usuarios/${id}`)
+      return data.data
+    },
+    enabled: id !== null,
   })
 }
 

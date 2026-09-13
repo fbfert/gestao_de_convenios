@@ -11,6 +11,7 @@ import {
   useCriarUsuario,
   useProfissionaisDoTenant,
   useRolesDoTenant,
+  useUsuario,
   useUsuarios,
 } from './useUsuarios'
 import type { Usuario, UsuarioForm } from './types'
@@ -65,6 +66,10 @@ export function UsuariosPage() {
   })
 
   const usuariosQuery = useUsuarios({ ...filters, ...ordenacao }, page)
+  // Rede de segurança para a edição aberta por link direto: a listagem só traz
+  // a página atual, e quem não estiver nela precisa vir pelo id.
+  const usuarioBuscadoQuery = useUsuario(isEditRoute ? routeEditingId : null)
+  const usuarioBuscado = usuarioBuscadoQuery.data ?? null
   const rolesQuery = useRolesDoTenant()
   const profissionaisQuery = useProfissionaisDoTenant()
   const criarUsuario = useCriarUsuario()
@@ -117,8 +122,11 @@ export function UsuariosPage() {
   }, [profissionais])
 
   const usuarioEmEdicao = useMemo(
-    () => (isEditRoute ? usuarios.find((usuario) => usuario.id === routeEditingId) ?? null : null),
-    [isEditRoute, routeEditingId, usuarios],
+    () =>
+      isEditRoute
+        ? (usuarios.find((usuario) => usuario.id === routeEditingId) ?? usuarioBuscado ?? null)
+        : null,
+    [isEditRoute, routeEditingId, usuarios, usuarioBuscado],
   )
 
   /*

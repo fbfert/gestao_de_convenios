@@ -285,7 +285,12 @@ export function ConciliacaoPage() {
                     onOrdenar={ordenarPor}
                   />
                   <ColunaOrdenavel titulo="Guia" />
-                  <ColunaOrdenavel titulo="Convênio" />
+                  <ColunaOrdenavel
+                    titulo="Convênio"
+                    coluna="convenio"
+                    ordenacao={ordenacao}
+                    onOrdenar={ordenarPor}
+                  />
                   <ColunaOrdenavel titulo="Especialidade" />
                   <ColunaOrdenavel
                     titulo="Profissional"

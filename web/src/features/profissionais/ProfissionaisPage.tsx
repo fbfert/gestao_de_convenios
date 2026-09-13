@@ -479,7 +479,12 @@ export function ProfissionaisPage() {
                     onOrdenar={ordenarPor}
                     className="w-full px-4 py-3"
                   />
-                  <ColunaOrdenavel titulo="Especialidade" />
+                  <ColunaOrdenavel
+                    titulo="Especialidade"
+                    coluna="especialidade"
+                    ordenacao={ordenacao}
+                    onOrdenar={ordenarPor}
+                  />
                   <ColunaOrdenavel
                     titulo="Conselho"
                     coluna="conselho"

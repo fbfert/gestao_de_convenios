@@ -17,8 +17,7 @@ export function useGuias(filters: GuiaFilters, page: number) {
       const { data } = await apiClient.get<PaginatedResponse<Guia>>('/guias', {
         params: {
           ...filters,
-          page,
-          per_page: 10,
+          page,
         },
       })
 

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { ConfirmarExclusao } from '../../components/ui/ConfirmarExclusao'
 import { Link, useMatch, useNavigate } from 'react-router-dom'
 import { Select } from '../../components/ui/Select'
 import {
@@ -219,6 +220,7 @@ function EditarPapel({ nome }: { nome: string }) {
   const [selecionadas, setSelecionadas] = useState<string[]>([])
   const [novoNome, setNovoNome] = useState(nome)
   const [erro, setErro] = useState<string | null>(null)
+  const [confirmandoExclusao, setConfirmandoExclusao] = useState(false)
   const carregadoRef = useRef<string | null>(null)
 
   const permissionsQuery = usePermissions()
@@ -277,14 +279,12 @@ function EditarPapel({ nome }: { nome: string }) {
   const remover = async () => {
     setErro(null)
 
-    if (!window.confirm(`Excluir o perfil "${nome}"? Isso não pode ser desfeito.`)) {
-      return
-    }
-
     try {
       await excluir.mutateAsync(nome)
+      setConfirmandoExclusao(false)
       navigate('/permissoes')
     } catch (error) {
+      setConfirmandoExclusao(false)
       setErro(getHttpErrorMessage(error, 'Não foi possível excluir o perfil.'))
     }
   }
@@ -382,7 +382,7 @@ function EditarPapel({ nome }: { nome: string }) {
           {papel && !papel.sistema ? (
             <button
               type="button"
-              onClick={remover}
+              onClick={() => setConfirmandoExclusao(true)}
               className="inline-flex items-center justify-center rounded-2xl border border-rose-400/30 h-10 px-4 text-corpo font-semibold text-rose-100 transition hover:bg-rose-500/10 disabled:opacity-60"
               disabled={excluir.isPending}
               data-testid="papel-excluir"
@@ -392,6 +392,17 @@ function EditarPapel({ nome }: { nome: string }) {
           ) : null}
         </div>
       </section>
+
+      {confirmandoExclusao ? (
+        <ConfirmarExclusao
+          titulo="Excluir perfil"
+          descricao="Remove o perfil e tira as permissões dele de quem o tiver. Não há como desfazer."
+          alvo={nome}
+          confirmando={excluir.isPending}
+          onConfirmar={remover}
+          onCancelar={() => setConfirmandoExclusao(false)}
+        />
+      ) : null}
     </div>
   )
 }

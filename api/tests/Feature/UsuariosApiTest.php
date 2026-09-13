@@ -7,7 +7,6 @@ use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
-use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 class UsuariosApiTest extends TestCase
@@ -113,6 +112,27 @@ class UsuariosApiTest extends TestCase
         $this->patchJson("/api/usuarios/{$usuarioExterno->id}", [
             'ativo' => false,
         ])->assertNotFound();
+
+        $this->getJson("/api/usuarios/{$usuarioExterno->id}")->assertNotFound();
+    }
+
+    /**
+     * A tela de edição hidratava o formulário procurando o usuário na página já
+     * carregada da listagem — quem não estivesse nela abria o formulário em
+     * branco, no modo "Novo usuário", e salvar criava um usuário novo em vez de
+     * editar o pretendido. O endpoint existe para a hidratação não depender da
+     * página aberta.
+     */
+    public function test_busca_um_usuario_pelo_id_independente_da_pagina_da_listagem(): void
+    {
+        $this->autenticar();
+
+        $usuario = User::query()->where('email', 'profissional@clinica-exemplo.test')->firstOrFail();
+
+        $this->getJson("/api/usuarios/{$usuario->id}")
+            ->assertOk()
+            ->assertJsonPath('data.id', $usuario->id)
+            ->assertJsonPath('data.email', $usuario->email);
     }
 
     public function test_usuario_sem_permissao_nao_acessa_crud_de_usuarios(): void

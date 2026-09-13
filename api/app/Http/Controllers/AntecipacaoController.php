@@ -7,6 +7,7 @@ use App\Http\Requests\StoreAntecipacaoRequest;
 use App\Http\Requests\UpdateAntecipacaoRequest;
 use App\Http\Resources\AntecipacaoResource;
 use App\Models\Antecipacao;
+use App\Models\ConfiguracaoGlobal;
 use App\Services\AntecipacaoService;
 use App\Support\TenantContext;
 use Illuminate\Http\JsonResponse;
@@ -17,8 +18,7 @@ class AntecipacaoController extends Controller
 {
     public function __construct(
         private readonly AntecipacaoService $service
-    ) {
-    }
+    ) {}
 
     public function elegiveis(Request $request): JsonResponse
     {
@@ -32,7 +32,7 @@ class AntecipacaoController extends Controller
     public function index(Request $request): AnonymousResourceCollection
     {
         return AntecipacaoResource::collection(
-            $this->service->listar($request->only(['status']), (int) $request->integer('per_page', 20))
+            $this->service->listar($request->only(['status']), $request->integer('per_page') ?: ConfiguracaoGlobal::itensPorPagina())
         );
     }
 

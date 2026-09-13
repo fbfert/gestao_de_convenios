@@ -11,7 +11,6 @@ export function useConciliacoes(filters: ConciliacaoFilters, page: number) {
         params: {
           ...filters,
           page,
-          per_page: 10,
         },
       })
 

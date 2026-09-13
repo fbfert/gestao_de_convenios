@@ -10,6 +10,7 @@ use App\Http\Requests\UpdateSolicitacaoRequest;
 use App\Http\Requests\UpdateSolicitacaoStatusRequest;
 use App\Http\Resources\SolicitacaoResource;
 use App\Models\Cid;
+use App\Models\ConfiguracaoGlobal;
 use App\Models\Convenio;
 use App\Models\Especialidade;
 use App\Models\Medico;
@@ -30,13 +31,12 @@ class SolicitacaoController extends Controller
 {
     public function __construct(
         private readonly SolicitacaoService $service
-    ) {
-    }
+    ) {}
 
     public function index(Request $request): AnonymousResourceCollection
     {
         return SolicitacaoResource::collection(
-            $this->service->listar($request->only(['status', 'convenio_id', 'medico_id', 'paciente', 'medico', 'profissional', 'mostrar_historico']), (int) $request->integer('per_page', 15))
+            $this->service->listar($request->only(['status', 'convenio_id', 'medico_id', 'paciente', 'medico', 'profissional', 'mostrar_historico']), $request->integer('per_page') ?: ConfiguracaoGlobal::itensPorPagina())
         );
     }
 

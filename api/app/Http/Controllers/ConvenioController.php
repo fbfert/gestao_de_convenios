@@ -28,6 +28,16 @@ class ConvenioController extends Controller
         );
     }
 
+    /**
+     * Um convênio só, pelo id — inclusive inativo.
+     *
+     * A listagem devolve apenas `ativo = true`, e a tela de edição hidratava o
+     * formulário a partir dela: abrir a edição de um convênio inativo mostrava
+     * "não encontrado", e reativá-lo passa justamente por editá-lo. O escopo
+     * por tenant vem do `BelongsToTenant` do model, que devolve 404 para
+     * convênio de outra clínica.
+     */
+    public function show(Convenio $convenio): ConvenioResource { return new ConvenioResource($convenio); }
     public function store(UpsertConvenioRequest $request): JsonResponse
     {
         $convenio = Convenio::query()->create([...$request->validated(), 'tenant_id' => $request->user()->tenant_id]);

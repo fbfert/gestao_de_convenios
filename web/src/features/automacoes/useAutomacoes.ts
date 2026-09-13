@@ -12,7 +12,6 @@ export function useAutomacoes(filters: AutomacaoFilters, page: number) {
           ...filters,
           needs_attention: filters.needs_attention || undefined,
           page,
-          per_page: 10,
         },
       })
 

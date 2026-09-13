@@ -29,7 +29,7 @@ export function useAntecipacoes(filters: AntecipacaoFilters, page: number) {
     queryKey: ['antecipacoes', filters, page],
     queryFn: async () => {
       const { data } = await apiClient.get<PaginatedResponse<Antecipacao>>('/antecipacoes', {
-        params: { ...filters, page, per_page: 20 },
+        params: { ...filters, page },
       })
 
       return data

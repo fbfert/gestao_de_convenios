@@ -10,9 +10,9 @@ use App\Models\Lancamento;
 use App\Models\MovimentoFinanceiro;
 use App\Models\Profissional;
 use App\Services\Concerns\AppliesOwnScope;
+use App\Support\OrdenaListagem;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use App\Support\OrdenaListagem;
 use Illuminate\Support\Arr;
 
 class ConciliacaoService
@@ -23,8 +23,7 @@ class ConciliacaoService
 
     public function __construct(
         private readonly TabelaValoresService $tabelaValoresService
-    ) {
-    }
+    ) {}
 
     public function listar(array $filtros = [], int $perPage = 15): LengthAwarePaginator
     {
@@ -57,6 +56,13 @@ class ConciliacaoService
                     'profissional' => fn ($query, $direcao) => $query
                         ->leftJoin('profissionais', 'profissionais.id', '=', 'conciliacoes_financeiras.profissional_id')
                         ->orderBy('profissionais.nome', $direcao),
+                    // O convênio chega pela guia — daí os dois `leftJoin` em vez
+                    // de um. A coluna existia na tabela sem ordenar, porque o
+                    // join nunca tinha sido feito.
+                    'convenio' => fn ($query, $direcao) => $query
+                        ->leftJoin('guias', 'guias.id', '=', 'conciliacoes_financeiras.guia_id')
+                        ->leftJoin('convenios', 'convenios.id', '=', 'guias.convenio_id')
+                        ->orderBy('convenios.nome', $direcao),
                 ],
                 padrao: 'conciliacoes_financeiras.id',
                 direcaoPadrao: 'desc',

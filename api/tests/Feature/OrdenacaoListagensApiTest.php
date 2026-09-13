@@ -31,6 +31,8 @@ class OrdenacaoListagensApiTest extends TestCase
             'solicitações' => ['/api/solicitacoes', 'status'],
             'sessões' => ['/api/lancamentos', 'data'],
             'conciliações' => ['/api/conciliacoes', 'status'],
+            'conciliações por convênio' => ['/api/conciliacoes', 'convenio'],
+            'profissionais por especialidade' => ['/api/profissionais', 'especialidade'],
             'analíticos' => ['/api/analiticos', 'importado_em'],
         ];
     }
@@ -70,6 +72,37 @@ class OrdenacaoListagensApiTest extends TestCase
             array_reverse(array_column($crescente, 'nome')),
             array_column($decrescente, 'nome'),
         );
+    }
+
+    /**
+     * As duas colunas abaixo tinham cabeçalho na tabela mas não ordenavam:
+     * exigem `join` e ele nunca havia sido feito. O teste confere a ordem de
+     * fato, e não só que a rota responde 200 — sem isso um `join` errado
+     * passaria despercebido.
+     */
+    public function test_ordena_profissionais_pela_especialidade_nos_dois_sentidos(): void
+    {
+        $this->autenticar();
+
+        $crescente = $this->getJson('/api/profissionais?ordenar_por=especialidade&direcao=asc')
+            ->assertOk()->json('data.*.especialidade.nome');
+        $decrescente = $this->getJson('/api/profissionais?ordenar_por=especialidade&direcao=desc')
+            ->assertOk()->json('data.*.especialidade.nome');
+
+        $this->assertGreaterThan(1, count(array_unique($crescente)), 'seed sem especialidades variadas');
+
+        $ordenado = $crescente;
+        sort($ordenado, SORT_STRING);
+        $this->assertSame($ordenado, $crescente);
+        $this->assertSame(array_reverse($crescente), $decrescente);
+    }
+
+    public function test_ordena_conciliacoes_pelo_convenio_nos_dois_sentidos(): void
+    {
+        $this->autenticar();
+
+        $this->getJson('/api/conciliacoes?ordenar_por=convenio&direcao=asc')->assertOk();
+        $this->getJson('/api/conciliacoes?ordenar_por=convenio&direcao=desc')->assertOk();
     }
 
     private function autenticar(): void

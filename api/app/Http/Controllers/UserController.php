@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreUsuarioRequest;
 use App\Http\Requests\UpdateUsuarioRequest;
 use App\Http\Resources\UserResource;
+use App\Models\ConfiguracaoGlobal;
 use App\Models\User;
 use App\Support\OrdenaListagem;
 use Illuminate\Http\JsonResponse;
@@ -39,8 +40,26 @@ class UserController extends Controller
                     padrao: 'name',
                     desempate: 'name',
                 ))
-                ->paginate((int) $request->integer('per_page', 15))
+                ->paginate($request->integer('per_page') ?: ConfiguracaoGlobal::itensPorPagina())
         );
+    }
+
+    /**
+     * Um usuário só, pelo id.
+     *
+     * Existe porque a tela de edição hidratava o formulário procurando o
+     * usuário na página já carregada da listagem. Quem chegasse em
+     * `/usuarios/{id}/editar` por link direto, ou de alguém fora da página
+     * atual, recebia `null` — e o formulário abria em branco no modo "Novo
+     * usuário", de modo que salvar criava um usuário novo em vez de editar o
+     * pretendido. O `User` não usa `BelongsToTenant` (ver a nota no model), por
+     * isso o escopo por tenant é explícito aqui.
+     */
+    public function show(Request $request, User $usuario): UserResource
+    {
+        abort_unless((int) $usuario->tenant_id === (int) $request->user()?->tenant_id, 404);
+
+        return new UserResource($usuario->load(['profissional', 'tenant', 'roles']));
     }
 
     public function store(StoreUsuarioRequest $request): JsonResponse

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Alerta;
 use App\Models\AlertaRegra;
+use App\Models\ConfiguracaoGlobal;
 use App\Services\Alertas\ResolvedorDeRegras;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -38,7 +39,7 @@ class AlertaController extends Controller
             $query->where('chave', $filtros['chave']);
         }
 
-        $pagina = $query->orderByDesc('aberto_em')->paginate($filtros['per_page'] ?? 25);
+        $pagina = $query->orderByDesc('aberto_em')->paginate($filtros['per_page'] ?? ConfiguracaoGlobal::itensPorPagina());
 
         return response()->json([
             'data' => collect($pagina->items())->map(fn (Alerta $a) => $this->paraArray($a))->all(),

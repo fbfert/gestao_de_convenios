@@ -171,10 +171,23 @@ export function ConveniosPage() {
   const [salvando, setSalvando] = useState(false)
   const carregadoRef = useRef<number | null>(null)
 
+  // A listagem devolve só os ativos. Para a edição aberta por link direto — e
+  // para reativar um convênio, que passa justamente por editá-lo — o registro
+  // vem pelo id, que alcança inativo também.
+  const convenioPorId = useQuery({
+    queryKey: ['convenio', editingId],
+    queryFn: async () =>
+      (await apiClient.get<{ data: Convenio }>(`/convenios/${editingId}`)).data.data,
+    enabled: isEditRoute && editingId !== null,
+  })
+
   const convenios = useMemo(() => q.data ?? [], [q.data])
   const convenioEmEdicao = useMemo(
-    () => (isEditRoute ? convenios.find((convenio) => convenio.id === editingId) ?? null : null),
-    [isEditRoute, editingId, convenios],
+    () =>
+      isEditRoute
+        ? (convenios.find((convenio) => convenio.id === editingId) ?? convenioPorId.data ?? null)
+        : null,
+    [isEditRoute, editingId, convenios, convenioPorId.data],
   )
 
   // Preenche o formulario quando a tela de edicao e aberta direto pela URL ou
@@ -245,19 +258,20 @@ export function ConveniosPage() {
   }
 
   if (isFormRoute) {
-    // Edicao de um convenio que nao esta na lista carregada (id inexistente ou
-    // inativo): sem isso a tela abriria um formulario vazio que salvaria por cima.
+    // Edicao de um convenio que nao existe ou e de outra clinica: sem isso a
+    // tela abriria um formulario vazio que salvaria por cima. Convenio inativo
+    // deixou de cair aqui — a busca por id alcanca ele.
     if (isEditRoute && !convenioEmEdicao) {
       return (
         <div className="space-y-5">
           <h2 className="text-display font-semibold">Editar convênio</h2>
           <section className={card}>
-            {q.isLoading ? (
+            {q.isLoading || convenioPorId.isLoading ? (
               <p className="inline-flex min-h-6 items-center text-corpo text-slate-300">Carregando convênio…</p>
             ) : (
               <>
                 <p className="inline-flex min-h-6 items-center text-corpo text-slate-300">
-                  Convênio não encontrado entre os convênios ativos desta clínica.
+                  Convênio não encontrado nesta clínica.
                 </p>
                 <Link to="/convenios" className="mt-3 inline-block text-cyan-200">
                   ← Voltar para a lista

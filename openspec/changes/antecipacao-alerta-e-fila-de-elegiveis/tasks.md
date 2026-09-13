@@ -45,6 +45,12 @@
 
 ## 6. Lacunas de cobertura encontradas ao mapear
 
-- [ ] 6.1 Cobrir a exclusão de um registro de antecipação que gerou itens, provando que os itens e guias sobrevivem — `AntecipacaoService::remover()` não tem teste; `AntecipacoesApiTest` cobre criar, ignorar, atualizar e permissões, mas não excluir.
-- [ ] 6.2 Cobrir o filtro por status do histórico — `AntecipacaoService::listar()` aceita `status`, e nenhum teste exercita o filtro.
-- [ ] 6.3 Cobrir explicitamente o isolamento cross-tenant da fila de elegíveis — hoje só o `BelongsToTenant` e o teste de permissão cobrem por tabela; um teste direto, como o `test_usuario_de_um_tenant_nao_enxerga_solicitacao_de_outro_tenant_via_http` das solicitações, fecharia o requisito.
+- [x] 6.1 Cobrir a exclusão de um registro que gerou itens, provando que itens **e guias** sobrevivem — `test_excluir_do_historico_preserva_item_e_guia_gerados`. Correção ao levantamento inicial: a exclusão não estava descoberta, ela já era exercitada no fim de `test_criar_gera_item_e_guia_por_renovacao_na_mesma_solicitacao`; o que faltava era conferir a **guia** (só o item era verificado) e ter a falha apontando a exclusão em vez da criação.
+- [x] 6.2 Cobrir o filtro por status do histórico — `test_historico_filtra_por_status`, conferindo `gerada`, `ignorada` e a listagem sem filtro.
+- [x] 6.3 Cobrir o isolamento cross-tenant da fila de elegíveis — `test_elegiveis_nao_vaza_solicitacao_de_outro_tenant`. A fila não passa por `Antecipacao`: sai de `Guia::elegiveisParaAntecipacao()`, que derruba o `TenantScope` e filtra `tenant_id` na mão, então o `BelongsToTenant` não cobria esse caminho. O teste também prova que a solicitação da outra clínica **é** elegível para a dona dela — sem isso a asserção passaria mesmo com o escopo quebrado.
+
+## 7. Achado colateral, fora do escopo desta change
+
+- [ ] 7.1 `ConfiguracaoGlobal::doTenant()` não é seguro quando há um `TenantContext` de **outro** tenant ativo: o `firstOrCreate` roda sob o `TenantScope`, não enxerga a linha existente e esbarra no índice único de `configuracoes_globais.tenant_id`. Apareceu ao escrever 6.3, e no teste foi contornado fixando o contexto.
+
+  Conferido antes de registrar: **não afeta produção hoje.** `TenantScope` é no-op quando o contexto é nulo, e `AvaliarAlertasJob` percorre os tenants num worker sem contexto nenhum, chamando `AvaliadorDeAlertas::avaliarTenant()`, que escopa por `withoutGlobalScope` + `where('tenant_id')`. O tiro só sai se alguém avaliar um tenant de dentro de uma requisição autenticada em outro. Fica anotado como armadilha para quem for mexer aí, não como bug aberto.

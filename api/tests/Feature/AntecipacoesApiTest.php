@@ -11,6 +11,7 @@ use App\Models\Medico;
 use App\Models\Paciente;
 use App\Models\Profissional;
 use App\Models\Solicitacao;
+use App\Models\Tenant;
 use App\Models\User;
 use App\Services\GuiaService;
 use App\Support\GuiaStatus;
@@ -235,5 +236,189 @@ class AntecipacoesApiTest extends TestCase
             'solicitacao_origem_id' => $solicitacao->id,
             'itens_selecionados' => [['especialidade_id' => 1, 'profissional_id' => 1]],
         ])->assertForbidden();
+    }
+
+    /**
+     * O registro de antecipação é só acompanhamento: apagá-lo não pode
+     * derrubar o que foi gerado. `test_criar_gera_item_e_guia_...` já exclui no
+     * final, mas só confere o item sobreviver — a guia, que é o que de fato
+     * vai para a operadora, ficava sem ninguém olhando. Aqui num teste próprio,
+     * pra falha apontar a exclusão e não a criação.
+     */
+    public function test_excluir_do_historico_preserva_item_e_guia_gerados(): void
+    {
+        $this->autenticar();
+        $solicitacao = $this->solicitacaoComGuiaAprovada();
+        $itemOrigem = $solicitacao->itens()->firstOrFail();
+
+        $criada = $this->postJson('/api/antecipacoes', [
+            'solicitacao_origem_id' => $solicitacao->id,
+            'itens_selecionados' => [[
+                'especialidade_id' => $itemOrigem->especialidade_id,
+                'profissional_id' => $itemOrigem->profissional_id,
+            ]],
+        ])->assertCreated()->json('data');
+
+        $itemGeradoId = (int) $criada['itens_selecionados'][0]['item_gerado_id'];
+        $guiaGeradaId = (int) $criada['itens_selecionados'][0]['guia_gerada_id'];
+        $this->assertNotNull(Guia::query()->find($guiaGeradaId));
+
+        $this->deleteJson("/api/antecipacoes/{$criada['id']}")->assertNoContent();
+
+        $this->assertNull(Antecipacao::query()->find($criada['id']));
+        $this->assertNotNull($solicitacao->itens()->find($itemGeradoId));
+        $this->assertNotNull(Guia::query()->find($guiaGeradaId));
+    }
+
+    public function test_historico_filtra_por_status(): void
+    {
+        $user = $this->autenticar();
+        $solicitacao = $this->solicitacaoComGuiaAprovada();
+
+        $ignorada = Antecipacao::query()->create([
+            'tenant_id' => $user->tenant_id,
+            'solicitacao_origem_id' => $solicitacao->id,
+            'status' => Antecipacao::STATUS_IGNORADA,
+            'ignorado_em' => now(),
+        ]);
+        $gerada = Antecipacao::query()->create([
+            'tenant_id' => $user->tenant_id,
+            'solicitacao_origem_id' => $solicitacao->id,
+            'status' => Antecipacao::STATUS_GERADA,
+            'gerado_em' => now(),
+        ]);
+
+        $this->assertSame(
+            [$gerada->id],
+            $this->getJson('/api/antecipacoes?status=gerada')->assertOk()->json('data.*.id'),
+        );
+        $this->assertSame(
+            [$ignorada->id],
+            $this->getJson('/api/antecipacoes?status=ignorada')->assertOk()->json('data.*.id'),
+        );
+
+        $todas = $this->getJson('/api/antecipacoes')->assertOk()->json('data.*.id');
+        $this->assertCount(2, $todas);
+    }
+
+    /**
+     * A fila de elegíveis não passa por `Antecipacao` (que tem BelongsToTenant):
+     * ela sai de `Guia::elegiveisParaAntecipacao()`, que derruba o TenantScope e
+     * filtra por `tenant_id` na mão. Sem um teste direto, uma troca de escopo
+     * ali vazaria paciente de outra clínica sem nada reprovar.
+     */
+    public function test_elegiveis_nao_vaza_solicitacao_de_outro_tenant(): void
+    {
+        $this->autenticar();
+        $minha = $this->solicitacaoComGuiaAprovada();
+        $deOutroTenant = $this->solicitacaoElegivelDeOutroTenant();
+
+        $data = $this->getJson('/api/antecipacoes/elegiveis')->assertOk()->json('data');
+
+        $ids = array_column($data, 'solicitacao_id');
+        $this->assertContains($minha->id, $ids);
+        $this->assertNotContains($deOutroTenant->id, $ids);
+
+        // Sem isto a asserção acima seria vazia: provaria apenas que uma
+        // solicitação inelegível não aparece, o que seria verdade mesmo com o
+        // escopo de tenant quebrado. Aqui fica dito que ela É elegível — para a
+        // clínica dona dela.
+        //
+        // O TenantContext precisa acompanhar: `ConfiguracaoGlobal::doTenant()`,
+        // que a data-alvo consulta, faz `firstOrCreate` por baixo do TenantScope
+        // e, chamado de fora do tenant vigente, não enxerga a linha existente e
+        // esbarra no índice único ao tentar criar outra.
+        $tenantVigente = TenantContext::get();
+        TenantContext::set((int) $deOutroTenant->tenant_id);
+
+        try {
+            $this->assertNotEmpty(
+                Guia::elegiveisParaAntecipacao((int) $deOutroTenant->tenant_id)
+                    ->where('solicitacao_id', $deOutroTenant->id),
+            );
+        } finally {
+            TenantContext::set($tenantVigente);
+        }
+    }
+
+    /** Mesma receita de `solicitacaoComGuiaAprovada()`, num tenant à parte. */
+    private function solicitacaoElegivelDeOutroTenant(): Solicitacao
+    {
+        $tenant = Tenant::query()->create([
+            'nome' => 'Clínica Vizinha Antec',
+            'slug' => 'clinica-vizinha-antec',
+            'cnpj' => '44.444.444/0001-44',
+            'ativo' => true,
+        ]);
+
+        $especialidade = Especialidade::query()->create([
+            'tenant_id' => $tenant->id,
+            'nome' => 'Fisioterapia Vizinha',
+            'ativo' => true,
+        ]);
+        $profissional = Profissional::query()->create([
+            'tenant_id' => $tenant->id,
+            'especialidade_id' => $especialidade->id,
+            'nome' => 'Dra. Vizinha Antec',
+            'conselho_registro' => 'CREFITO 444444-F',
+            'ativo' => true,
+        ]);
+        $convenio = Convenio::query()->create([
+            'tenant_id' => $tenant->id,
+            'nome' => 'Convênio Vizinho Antec',
+            'connector_type' => 'manual',
+            'connector_config' => null,
+            'ativo' => true,
+        ]);
+        $paciente = Paciente::query()->create([
+            'tenant_id' => $tenant->id,
+            'convenio_id' => $convenio->id,
+            'nome' => 'Paciente Vizinho Antec',
+            'carteirinha' => 'VIZ-2026-0001',
+            'ativo' => true,
+        ]);
+        $medico = Medico::query()->create([
+            'tenant_id' => $tenant->id,
+            'nome' => 'Dr. Vizinho Antec',
+            'especialidade_medica' => 'Neurologia',
+            'telefone' => '(11) 97777-0001',
+            'ativo' => true,
+        ]);
+
+        $solicitacao = Solicitacao::query()->create([
+            'tenant_id' => $tenant->id,
+            'paciente_id' => $paciente->id,
+            'profissional_id' => $profissional->id,
+            'especialidade_id' => $especialidade->id,
+            'convenio_id' => $convenio->id,
+            'medico_id' => $medico->id,
+            'status' => 'guia_gerada',
+            'solicitado_em' => today()->subDays(30)->toDateString(),
+        ]);
+        $solicitacao->itens()->create([
+            'tenant_id' => $tenant->id,
+            'especialidade_id' => $especialidade->id,
+            'profissional_id' => $profissional->id,
+            'quantidade' => 10,
+            'status_operacional' => 'pending',
+        ]);
+
+        Guia::query()->create([
+            'tenant_id' => $tenant->id,
+            'solicitacao_id' => $solicitacao->id,
+            'convenio_id' => $convenio->id,
+            'paciente_id' => $paciente->id,
+            'profissional_id' => $profissional->id,
+            'especialidade_id' => $especialidade->id,
+            'numero_guia' => 'ANTEC-VIZINHA-'.uniqid(),
+            'tipo_terapia' => 'especializada',
+            'status' => GuiaStatus::APPROVED,
+            'data_solicitacao' => today()->subDays(30)->toDateString(),
+            // Mesmo cálculo do helper do tenant próprio: com o padrão global de
+            // 20 dias sobre a validade da senha, esta guia está devida há 10.
+            'validade_senha' => today()->copy()->addDays(10)->toDateString(),
+        ]);
+
+        return $solicitacao;
     }
 }

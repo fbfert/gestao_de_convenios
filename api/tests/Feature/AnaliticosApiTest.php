@@ -7,11 +7,15 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Laravel\Sanctum\Sanctum;
+use Tests\Support\ConstroiAnaliticoUnimedXlsx;
 use Tests\TestCase;
 
 class AnaliticosApiTest extends TestCase
 {
+    use ConstroiAnaliticoUnimedXlsx;
     use RefreshDatabase;
+
+    private const ARQUIVO = 'analitico-unimed-exemplo.xlsx';
 
     protected bool $seed = true;
 
@@ -28,7 +32,7 @@ class AnaliticosApiTest extends TestCase
         $response = $this->getJson('/api/analiticos');
 
         $response->assertOk()
-            ->assertJsonPath('data.0.arquivo_nome_original', 'item3.3.xlsx')
+            ->assertJsonPath('data.0.arquivo_nome_original', self::ARQUIVO)
             ->assertJsonPath('data.0.status', 'importado');
 
         $this->assertGreaterThan(0, (int) $response->json('data.0.total_linhas_analitico'));
@@ -37,7 +41,7 @@ class AnaliticosApiTest extends TestCase
         $this->assertDatabaseCount('analitico_unimed_lotes', 1);
 
         $lote = AnaliticoUnimedLote::query()->firstOrFail();
-        $this->assertSame('item3.3.xlsx', $lote->arquivo_nome_original);
+        $this->assertSame(self::ARQUIVO, $lote->arquivo_nome_original);
     }
 
     public function test_exibe_detalhe_do_lote_importado(): void
@@ -89,11 +93,11 @@ class AnaliticosApiTest extends TestCase
         $de = now()->startOfMonth()->toDateString();
         $ate = now()->endOfMonth()->toDateString();
 
-        $response = $this->getJson("/api/analiticos?busca=item3.3&status=importado&importado_de={$de}&importado_ate={$ate}");
+        $response = $this->getJson("/api/analiticos?busca=analitico-unimed-exemplo&status=importado&importado_de={$de}&importado_ate={$ate}");
 
         $response->assertOk()
             ->assertJsonCount(1, 'data')
-            ->assertJsonPath('data.0.arquivo_nome_original', 'item3.3.xlsx')
+            ->assertJsonPath('data.0.arquivo_nome_original', self::ARQUIVO)
             ->assertJsonPath('data.0.status', 'importado');
     }
 
@@ -105,10 +109,74 @@ class AnaliticosApiTest extends TestCase
         return $user;
     }
 
+    /**
+     * Duas linhas pagas e uma glosada, montadas em memória.
+     *
+     * A versão anterior lia um `item3.3.xlsx` da raiz do projeto — um arquivo
+     * nunca versionado, que saiu do git em c728b86 e depois sumiu do disco,
+     * levando os três testes junto.
+     */
     private function arquivoModeloAnalitico(): UploadedFile
     {
-        $path = dirname(base_path()).DIRECTORY_SEPARATOR.'item3.3.xlsx';
+        $analitico = array_merge($this->cabecalhoAnaliticoUnimed(), [
+            [4, [
+                'A' => '50137394772',
+                'B' => '50137394772',
+                'C' => '1',
+                'D' => 'BENEFICIARIO DE TESTE',
+                'E' => '20/03/2026',
+                'F' => '06/04/2026',
+                'G' => '50000470',
+                'H' => 'Procedimentos e eventos em saúde',
+                'I' => 'SESSÃO DE PSICOTERAPIA INDIVIDUAL POR PSICÓLOGO',
+                'J' => '1',
+                'K' => '0,00',
+                'L' => '0,00',
+                'M' => '45,00',
+                'N' => '45,00',
+                'O' => '',
+            ]],
+            [5, [
+                'A' => '50137394773',
+                'B' => '50137394773',
+                'C' => '2',
+                'D' => 'OUTRO BENEFICIARIO DE TESTE',
+                'E' => '21/03/2026',
+                'F' => '07/04/2026',
+                'G' => '50000470',
+                'H' => 'Procedimentos e eventos em saúde',
+                'I' => 'SESSÃO DE FISIOTERAPIA',
+                'J' => '2',
+                'K' => '0,00',
+                'L' => '0,00',
+                'M' => '90,00',
+                'N' => '90,00',
+                'O' => '',
+            ]],
+            [6, ['A' => 'TOTAL DO PRESTADOR', 'N' => '135,00']],
+            [7, ['A' => 'TOTAL DO LOTE', 'N' => '135,00']],
+        ]);
 
-        return UploadedFile::fake()->createWithContent('item3.3.xlsx', file_get_contents($path));
+        $glosa = array_merge($this->cabecalhoGlosaUnimed(), [
+            [2, [
+                'A' => '50137394772',
+                'B' => '50137394772',
+                'C' => '1',
+                'D' => 'BENEFICIARIO DE TESTE',
+                'E' => '20/03/2026',
+                'F' => '06/04/2026',
+                'G' => '50000470',
+                'H' => 'Procedimentos e eventos em saúde',
+                'I' => 'SESSÃO DE PSICOTERAPIA INDIVIDUAL POR PSICÓLOGO',
+                'J' => '1',
+                'K' => '1.0',
+                'L' => 'Cobranca de procedimento em duplicidade',
+                'M' => '45,00',
+                'N' => '',
+            ]],
+            [3, ['A' => 'TOTAL:', 'M' => '45,00']],
+        ]);
+
+        return $this->montarArquivoAnaliticoUnimed($analitico, $glosa, self::ARQUIVO);
     }
 }

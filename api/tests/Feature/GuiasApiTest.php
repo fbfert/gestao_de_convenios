@@ -108,6 +108,9 @@ class GuiasApiTest extends TestCase
         $this->autenticar();
 
         $payload = $this->payloadGuia('Unimed');
+        // Número só de dígitos, como o da Unimed — é assim que está a esmagadora
+        // maioria das guias reais, e é o caso que a busca por número precisa cobrir.
+        $payload['numero_guia'] = '50999000111';
         $id = $this->postJson('/api/guias', $payload)
             ->assertCreated()
             ->json('data.id');
@@ -119,6 +122,16 @@ class GuiasApiTest extends TestCase
 
         $outraGuia = $this->payloadGuia('Unimed', 'Fonoaudiologia');
         $outraGuia['paciente_id'] = $outroPaciente->id;
+        // Sem nenhum dígito, de propósito. A busca é livre e casa
+        // `numero_guia LIKE %termo%` — logo, ao buscar por ID (um termo numérico),
+        // qualquer número que contenha aquele dígito entra no resultado, e isso é
+        // o comportamento correto para quem digita parte de um número de guia.
+        // O `uniqid()` do helper gera hexadecimal cheio de dígitos, então esta
+        // guia caía no resultado da busca por ID conforme o sorteio: o teste
+        // reprovava em cerca de 4 de 5 execuções. Fixar um número sem dígitos
+        // isola o que a asserção quer provar — que a busca não traz guia alheia
+        // por outro motivo — sem enfraquecer a busca por número.
+        $outraGuia['numero_guia'] = 'GUIA-OUTRA-SEM-DIGITOS';
         $outraId = $this->postJson('/api/guias', $outraGuia)
             ->assertCreated()
             ->json('data.id');

@@ -494,7 +494,7 @@ export function GuiaDetalheResumo({ guia }: { guia: Guia }) {
           </div>
           <div className="mt-4 space-y-3">
             <div className="rounded-superficie border border-linha bg-fundo p-4 shadow-e1 text-corpo text-slate-200">
-              <p className="font-semibold text-white">
+              <p className="font-semibold text-white" data-testid="guia-resumo-sessoes-contagem">
                 {guia.lancamentos_count ?? 0} lançada(s) · {guia.sessoes_disponiveis} disponível(is)
               </p>
             </div>

@@ -233,6 +233,27 @@ test('fluxo completo de negocio', async ({ page }, testInfo: TestInfo) => {
   await expect(page).toHaveURL(new RegExp(`/guias/${guideId}$`))
   await expect(page.getByTestId('guia-detalhe-page')).toBeVisible()
   await expect(page.getByText('Carteirinha: UNI-2026-0001')).toBeVisible()
+
+  /*
+   * A operadora autorizou uma sessão, e isso precisa estar registrado na guia:
+   * a API só oferece para lançamento as guias em que
+   * `COALESCE(sessoes_autorizadas, sessoes_solicitadas, 0)` supera o total já
+   * lançado. Sem este passo a guia sai com zero e nunca aparece no modal de
+   * busca — antes do refactor a cota vinha do balde da antecipação, então o
+   * fluxo nunca precisou preencher o campo e o furo ficou escondido atrás da
+   * falha anterior, na tela de antecipações.
+   */
+  const salvarGuiaResponsePromise = page.waitForResponse((response) => {
+    return response.request().method() === 'PATCH' && response.url().includes(`/guias/${guideId}`)
+  })
+  await page.goto(`/guias/${guideId}/editar`, { waitUntil: 'domcontentloaded' })
+  await expect(page.getByTestId('guia-editar-page')).toBeVisible()
+  await page.getByTestId('guia-editar-sessoes-autorizadas').fill('1')
+  await page.getByTestId('guia-editar-salvar').click()
+  expect((await salvarGuiaResponsePromise).status()).toBe(200)
+
+  await page.goto(`/guias/${guideId}`, { waitUntil: 'domcontentloaded' })
+  await expect(page.getByTestId('guia-detalhe-page')).toBeVisible()
   await expect(page.getByTestId(`guia-finalizar-${guideId}`)).toHaveText('Finalizar')
   await page.getByTestId(`guia-finalizar-${guideId}`).click()
   await page.getByTestId(`guia-senha-${guideId}`).fill('ABC123')
@@ -264,25 +285,26 @@ test('fluxo completo de negocio', async ({ page }, testInfo: TestInfo) => {
   // comentário em src/lib/statusLabels.ts.
   await expect(page.getByText('Finalizado', { exact: true }).first()).toBeVisible()
 
+  /*
+   * A cota por antecipação deixou de existir (`refactor(antecipacao): Fase 1`):
+   * o balde `qtd_autorizada/qtd_utilizada` saiu junto com a tabela, e a conta de
+   * sessões passou a ser feita ao vivo na própria guia — os Lancamentos contra
+   * `Guia.sessoes_autorizadas`. O que a cota `0/1 → 1/1` provava (a sessão ser
+   * contabilizada contra a guia) agora se lê no resumo da guia, e é lá que este
+   * fluxo confere, antes e depois do lançamento.
+   */
+  await page.goto(`/guias/${guideId}`, { waitUntil: 'domcontentloaded' })
+  await expect(page.getByTestId('guia-resumo-sessoes-contagem')).toContainText(
+    '0 lançada(s) · 1 disponível(is)',
+  )
+
+  // A tela de Antecipações virou fila de elegíveis + histórico: não há mais
+  // filtro de convênio/paciente nem linha com cota. Aqui garantimos que a rota
+  // responde e monta as duas seções — gerar e ignorar têm cobertura na API.
   await page.goto('/antecipacoes', { waitUntil: 'domcontentloaded' })
   await expect(page.getByTestId('antecipacoes-page')).toBeVisible()
-  await selectOption(page, 'antecipacao-filtro-convenio', 'Unimed')
-  await selectOption(page, 'antecipacao-filtro-paciente', 'Ana Paula Ribeiro')
-  await page.getByRole('button', { name: 'Aplicar' }).click()
-  await expect(page.getByTestId('antecipacao-alerta-continuidade')).toContainText(
-    'sem próximos agendamentos',
-  )
-  const antecipacaoRow = page.locator('[data-testid^="antecipacao-row-"]').first()
-  await expect(antecipacaoRow).toBeVisible()
-  const antecipacaoId = Number(
-    (await antecipacaoRow.getAttribute('data-testid'))?.replace('antecipacao-row-', ''),
-  )
-  // toContainText, e nao toHaveText: a celula carrega junto o texto
-  // sr-only do Tooltip, que existe para leitor de tela (ver os comentarios de
-  // components/ui/Tooltip.tsx). Exigir o texto exato reprovaria a acessibilidade.
-  await expect(page.locator(`[data-testid="antecipacao-cota-text-${antecipacaoId}"]`)).toContainText(
-    '0/1',
-  )
+  await expect(page.getByRole('heading', { name: 'Elegíveis' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Histórico' })).toBeVisible()
 
   /*
    * A importação de sessões foi unificada com "Novo" (change
@@ -334,15 +356,11 @@ Sessões
   await page.getByTestId('lancamento-submit').click()
   expect((await confirmImportResponsePromise).status()).toBe(201)
 
-  await page.goto('/antecipacoes', { waitUntil: 'domcontentloaded' })
-  await selectOption(page, 'antecipacao-filtro-convenio', 'Unimed')
-  await selectOption(page, 'antecipacao-filtro-paciente', 'Ana Paula Ribeiro')
-  await page.getByRole('button', { name: 'Aplicar' }).click()
-  // toContainText, e nao toHaveText: a celula carrega junto o texto
-  // sr-only do Tooltip, que existe para leitor de tela (ver os comentarios de
-  // components/ui/Tooltip.tsx). Exigir o texto exato reprovaria a acessibilidade.
-  await expect(page.locator(`[data-testid="antecipacao-cota-text-${antecipacaoId}"]`)).toContainText(
-    '1/1',
+  // A sessão importada acima tem de aparecer contabilizada na guia — o outro
+  // lado do par que a cota `0/1 → 1/1` provava antes do refactor.
+  await page.goto(`/guias/${guideId}`, { waitUntil: 'domcontentloaded' })
+  await expect(page.getByTestId('guia-resumo-sessoes-contagem')).toContainText(
+    '1 lançada(s) · 0 disponível(is)',
   )
 
   const guiasListResponsePromise = page.waitForResponse((response) => {

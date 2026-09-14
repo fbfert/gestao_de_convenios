@@ -108,9 +108,25 @@ class LancamentoService
         return $paginaDeGuias;
     }
 
+    /**
+     * O MESMO escopo de `listar()` — mesma correção feita em
+     * `GuiaService::buscar()`, pela mesma razão.
+     *
+     * `lancamentos.viewOwn` valia só na listagem: o detalhe era `findOrFail`
+     * puro, então quem só podia ver as próprias sessões lia qualquer uma da
+     * clínica incrementando o id. Sessão de outro some pelo filtro e vira 404,
+     * não 403: negar com 403 confirmaria que o id existe.
+     */
     public function buscar(int $id): Lancamento
     {
-        return Lancamento::query()->with(['guia', 'profissional'])->findOrFail($id);
+        $query = $this->aplicarEscopoOwn(
+            Lancamento::query()->with(['guia', 'profissional']),
+            'lancamentos.view',
+            'lancamentos.viewOwn',
+            fn ($query, $user) => $query->where('profissional_id', $user->profissional_id)
+        );
+
+        return $query->findOrFail($id);
     }
 
     public function registrar(Guia $guia, Profissional $profissional, Carbon $data): Lancamento

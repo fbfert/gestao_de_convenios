@@ -514,7 +514,9 @@ export function LerPedidoMedicoPage() {
         observacoes,
         pedido_medico_upload_id: data.upload_id,
         pedido_medico_nome_original: data.arquivo.nome_original,
-        pedido_medico_mime: data.arquivo.mime,
+        // O MIME deixou de ser enviado: a API o deriva do arquivo gravado, e
+        // não do que o cliente declara — ele volta cru no Content-Type do
+        // download.
         pedido_medico_ai_result: data,
       }))
       setPasso(1)

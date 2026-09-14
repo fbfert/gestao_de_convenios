@@ -34,6 +34,28 @@ class EncerrarSessaoExpirada
             return $next($request);
         }
 
+        /*
+         * Conta desativada, ou clínica desativada, derruba o token na hora.
+         *
+         * `ativo` só era conferido no login. Depois disso nada no pipeline
+         * reconsultava o campo, e nenhum ponto do código apagava os tokens ao
+         * desativar alguém — então o crachá continuava abrindo a porta: quem
+         * saiu da clínica seguia lendo paciente, guia e auditoria com o token
+         * que já tinha no navegador. Com `sessao_minutos = 0`, que desliga a
+         * expiração, isso valia para sempre.
+         *
+         * Apaga em vez de só recusar, pelo mesmo motivo que a expiração apaga:
+         * token que continua no banco volta a valer se alguém reativar a conta,
+         * e o certo é obrigar a entrar de novo.
+         */
+        if (! $user->ativo || ! $user->tenant?->ativo) {
+            $user->tokens()->delete();
+
+            return response()->json([
+                'message' => 'Seu acesso foi desativado. Procure o administrador da clínica.',
+            ], 401);
+        }
+
         $minutos = ConfiguracaoGlobal::doTenant((int) $user->tenant_id)->sessao_minutos;
 
         // 0 desliga a expiração — a saída para quem não quer o comportamento.

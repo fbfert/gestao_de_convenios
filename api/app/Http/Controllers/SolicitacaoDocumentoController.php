@@ -53,7 +53,10 @@ class SolicitacaoDocumentoController extends Controller
                 'paciente_id' => $solicitacao->paciente_id,
                 'tipo' => $tipo,
                 'nome_original' => $arquivoUpload->getClientOriginalName(),
-                'mime' => $arquivoUpload->getClientMimeType(),
+                // Do arquivo gravado, e nao de `getClientMimeType()`, que e o
+                // header multipart escolhido por quem envia: o valor volta cru
+                // como Content-Type do download.
+                'mime' => Storage::disk('local')->mimeType($path) ?: 'application/octet-stream',
                 'path' => $path,
             ]);
 
@@ -105,6 +108,12 @@ class SolicitacaoDocumentoController extends Controller
 
         return response()->file(Storage::disk('local')->path($documento->arquivo->path), [
             'Content-Type' => $documento->arquivo->mime ?? 'application/octet-stream',
+            // `nosniff` porque o Content-Type vem do banco, e `attachment` para o
+            // anexo nunca renderizar como pagina: o front abre o download com
+            // `URL.createObjectURL`, e a URL `blob:` herda a origem do SPA — onde
+            // o token de sessao vive no localStorage.
+            'X-Content-Type-Options' => 'nosniff',
+            'Content-Disposition' => 'attachment; filename="'.basename((string) $documento->arquivo->nome_original).'"',
         ]);
     }
 

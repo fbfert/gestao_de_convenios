@@ -179,15 +179,53 @@ class SolicitacaoService
             return null;
         }
 
+        /*
+         * O caminho vem do cliente (é o `upload_id` devolvido por
+         * `analisarPedidoMedico`), então a forma é conferida, e não só o começo
+         * da string.
+         *
+         * Antes a checagem era `str_starts_with($uploadId, $prefix)` sobre a
+         * string crua. Prefixo literal cai com um `../`: o Flysystem colapsa o
+         * `..` ao verificar a existência, enquanto `Storage::path()` entrega a
+         * string sem normalizar na hora de servir — dava para alcançar arquivo
+         * de outra clínica dentro do disco `local`, onde ficam documento de
+         * paciente, carteirinha e os CSV de expurgo da auditoria.
+         *
+         * O que a API gera é sempre `.../{tenant}/{uuid}.{ext}`: um único
+         * segmento de nome. Exigir exatamente isso fecha a porta sem depender
+         * de normalização de caminho.
+         */
         $prefix = "pedidos-medicos/pendentes/{$tenantId}/";
-        if (! str_starts_with($uploadId, $prefix) || ! Storage::disk('local')->exists($uploadId)) {
+
+        if (! str_starts_with($uploadId, $prefix)) {
+            return null;
+        }
+
+        $nomeArquivo = substr($uploadId, strlen($prefix));
+
+        if (preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]*$/', $nomeArquivo) !== 1) {
+            return null;
+        }
+
+        if (! Storage::disk('local')->exists($uploadId)) {
             return null;
         }
 
         $target = str_replace('/pendentes/', '/solicitacoes/', $uploadId);
         Storage::disk('local')->move($uploadId, $target);
-        $nomeOriginal = $dados['pedido_medico_nome_original'] ?? basename($target);
-        $mime = $dados['pedido_medico_mime'] ?? Storage::disk('local')->mimeType($target);
+
+        // `basename` no nome exibido: ele vai para o `Content-Disposition` do
+        // download, e é dado do cliente como qualquer outro.
+        $nomeOriginal = basename((string) ($dados['pedido_medico_nome_original'] ?? $target));
+
+        /*
+         * MIME derivado do arquivo já gravado, nunca o que o cliente mandou.
+         * O valor é devolvido cru como `Content-Type` no download; aceitar
+         * `text/html` do cliente fazia o anexo abrir como página. E o front
+         * abre o download com `URL.createObjectURL`, cuja `blob:` herda a
+         * origem do SPA — onde o token de sessão vive no `localStorage`.
+         */
+        $mime = Storage::disk('local')->mimeType($target) ?: 'application/octet-stream';
 
         return [
             'tipo' => 'pedido_medico',

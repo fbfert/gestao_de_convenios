@@ -113,7 +113,22 @@ class UserController extends Controller
             $usuario->profissional_id = $validated['profissional_id'];
         }
 
+        $desativou = array_key_exists('ativo', $validated) && ! $usuario->ativo;
+        $trocouSenha = array_key_exists('password', $validated) && $validated['password'] !== null;
+
         $usuario->save();
+
+        /*
+         * Desativar ou trocar a senha derruba as sessões abertas.
+         *
+         * O middleware já barra na requisição seguinte, mas revogar aqui fecha
+         * a janela: desativar alguém tem de valer no ato, e trocar a senha de
+         * uma conta comprometida só serve se expulsar quem está dentro — senão
+         * o invasor segue com o token antigo, que a senha nova não invalida.
+         */
+        if ($desativou || $trocouSenha) {
+            $usuario->tokens()->delete();
+        }
 
         if (array_key_exists('role', $validated)) {
             app(PermissionRegistrar::class)->setPermissionsTeamId($usuario->tenant_id);

@@ -187,7 +187,6 @@ export type SolicitacaoForm = {
   observacoes: string
   pedido_medico_upload_id?: string
   pedido_medico_nome_original?: string
-  pedido_medico_mime?: string
   pedido_medico_ai_result?: PedidoMedicoAiResult
   itens: SolicitacaoFormItem[]
 }

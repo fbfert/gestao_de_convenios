@@ -205,8 +205,8 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EncerrarSessaoExpirada::
     Route::post('/usuarios', [UserController::class, 'store'])->middleware('permission:usuarios.manage');
     Route::patch('/usuarios/{usuario}', [UserController::class, 'update'])->middleware('permission:usuarios.manage');
 
-    Route::get('/solicitacoes', [SolicitacaoController::class, 'index']);
-    Route::post('/solicitacoes', [SolicitacaoController::class, 'store']);
+    Route::get('/solicitacoes', [SolicitacaoController::class, 'index'])->middleware('permission:solicitacoes.view');
+    Route::post('/solicitacoes', [SolicitacaoController::class, 'store'])->middleware('permission:solicitacoes.manage');
     Route::get('/solicitacoes/importar/template', [SolicitacaoImportController::class, 'template'])
         ->middleware('permission:solicitacoes.manage');
     Route::post('/solicitacoes/importar', [SolicitacaoImportController::class, 'previsualizar'])
@@ -218,12 +218,12 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EncerrarSessaoExpirada::
     Route::post('/solicitacoes/especialidades-rapido', [SolicitacaoController::class, 'storeEspecialidadeRapida']);
     Route::post('/solicitacoes/medicos-rapido', [SolicitacaoController::class, 'storeMedicoRapido']);
     Route::post('/solicitacoes/cids-rapido', [SolicitacaoController::class, 'storeCidRapido']);
-    Route::get('/solicitacoes/{solicitacao}', [SolicitacaoController::class, 'show']);
+    Route::get('/solicitacoes/{solicitacao}', [SolicitacaoController::class, 'show'])->middleware('permission:solicitacoes.view');
     Route::patch('/solicitacoes/{solicitacao}', [SolicitacaoController::class, 'update'])->middleware('permission:solicitacoes.manage');
-    Route::post('/solicitacoes/{solicitacao}/documentos', [SolicitacaoDocumentoController::class, 'store']);
-    Route::post('/solicitacoes/{solicitacao}/documentos/vincular', [SolicitacaoDocumentoController::class, 'vincular']);
-    Route::get('/solicitacoes/{solicitacao}/documentos/{documento}', [SolicitacaoDocumentoController::class, 'download']);
-    Route::delete('/solicitacoes/{solicitacao}/documentos/{documento}', [SolicitacaoDocumentoController::class, 'destroy']);
+    Route::post('/solicitacoes/{solicitacao}/documentos', [SolicitacaoDocumentoController::class, 'store'])->middleware('permission:solicitacoes.manage');
+    Route::post('/solicitacoes/{solicitacao}/documentos/vincular', [SolicitacaoDocumentoController::class, 'vincular'])->middleware('permission:solicitacoes.manage');
+    Route::get('/solicitacoes/{solicitacao}/documentos/{documento}', [SolicitacaoDocumentoController::class, 'download'])->middleware('permission:solicitacoes.view');
+    Route::delete('/solicitacoes/{solicitacao}/documentos/{documento}', [SolicitacaoDocumentoController::class, 'destroy'])->middleware('permission:solicitacoes.manage');
     // Antes das rotas de {solicitacao}/status por clareza de leitura, não por
     // precedência: os segmentos são literais distintos e não competem.
     Route::get('/solicitacoes/{solicitacao}/contexto-adicao', [SolicitacaoController::class, 'contextoAdicao'])
@@ -232,9 +232,9 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EncerrarSessaoExpirada::
         ->middleware('permission:solicitacoes.manage');
     Route::delete('/solicitacoes/{solicitacao}/itens/{item}', [SolicitacaoController::class, 'destroyItem'])
         ->middleware('permission:solicitacoes.manage');
-    Route::patch('/solicitacoes/{solicitacao}/status', [SolicitacaoController::class, 'updateStatus']);
-    Route::patch('/solicitacoes/{solicitacao}/aprovar', [SolicitacaoController::class, 'aprovar']);
-    Route::patch('/solicitacoes/{solicitacao}/negar', [SolicitacaoController::class, 'negar']);
+    Route::patch('/solicitacoes/{solicitacao}/status', [SolicitacaoController::class, 'updateStatus'])->middleware('permission:solicitacoes.manage');
+    Route::patch('/solicitacoes/{solicitacao}/aprovar', [SolicitacaoController::class, 'aprovar'])->middleware('permission:solicitacoes.manage');
+    Route::patch('/solicitacoes/{solicitacao}/negar', [SolicitacaoController::class, 'negar'])->middleware('permission:solicitacoes.manage');
     Route::post('/solicitacao-itens/{solicitacaoItem}/enviar-unimed', [SolicitacaoController::class, 'enviarItemUnimed']);
     Route::post('/solicitacao-itens/{solicitacaoItem}/verificar-andamento', [SolicitacaoController::class, 'verificarAndamentoItem']);
 
@@ -286,7 +286,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EncerrarSessaoExpirada::
     Route::get('/lancamentos', [LancamentoController::class, 'index']);
     Route::get('/lancamentos/{lancamento}', [LancamentoController::class, 'show']);
     Route::patch('/lancamentos/{lancamento}', [LancamentoController::class, 'update'])->middleware('permission:lancamentos.manage');
-    Route::delete('/lancamentos/{lancamento}', [LancamentoController::class, 'destroy']);
+    Route::delete('/lancamentos/{lancamento}', [LancamentoController::class, 'destroy'])->middleware('permission:lancamentos.manage');
 
     Route::post('/guias/{guia}/conciliacao', [ConciliacaoController::class, 'store']);
     Route::get('/conciliacoes/importar/template', [ConciliacaoImportController::class, 'template'])

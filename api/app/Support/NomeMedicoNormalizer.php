@@ -54,7 +54,11 @@ class NomeMedicoNormalizer
             return 0.0;
         }
 
-        $meioLido = array_slice($tokensLido, 1, -1);
+        // As duas metades precisam do MESMO tratamento de conectores — ver a
+        // mesma correção em worker-unimed/src/portal.js (compararNomes),
+        // achada ao vivo em 14/09/2026 com "Volnei Corrêa da Silva" vs
+        // "VOLNEI CORREA DA SILVA" pontuando 80 em vez de 100 por causa disso.
+        $meioLido = array_values(array_diff(array_slice($tokensLido, 1, -1), self::CONECTORES));
         $meioCandidato = array_values(array_diff(array_slice($tokensCandidato, 1, -1), self::CONECTORES));
 
         if ($meioLido === []) {

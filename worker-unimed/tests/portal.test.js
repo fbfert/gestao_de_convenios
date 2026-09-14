@@ -36,3 +36,10 @@ test('compararNomes: nome do meio nao verificavel fica na faixa ambigua', () => 
 test('compararNomes: sem tokens do meio no nome lido pontua 100 direto', () => {
   assert.equal(compararNomes('Edison Westarb', 'EDISON TEODORO WESTARB'), 100)
 })
+
+test('compararNomes: conector ("da") no meio do nome lido nao derruba o score quando so difere no acento', () => {
+  // Achado ao vivo em 14/09/2026, item 2414: score vinha 80 em vez de 100
+  // porque so o "DA" do candidato era filtrado como conector, nao o do
+  // nome lido — sobrava um "DA" sem par no lado lido.
+  assert.equal(compararNomes('Volnei Corrêa da Silva', 'VOLNEI CORREA DA SILVA'), 100)
+})

@@ -297,7 +297,13 @@ export function compararNomes(nomeLido, nomeCandidato) {
 
   if (!primeiroOk || !ultimoOk) return 0
 
-  const meioLido = tokensLido.slice(1, -1)
+  // As duas metades precisam do MESMO tratamento de conectores. So o
+  // candidato era filtrado (achado ao vivo em 14/09/2026, item 2414: "Volnei
+  // CorrÊa da Silva" pontuou 80, nao 100, contra "VOLNEI CORREA DA SILVA" no
+  // portal — a UNICA diferenca real era o acento, ja removido por normalize()
+  // antes disso) — sobrava "DA" do lado lido pra casar contra um candidato
+  // que ja tinha perdido o "DA" dele, e o conector nunca tinha par.
+  const meioLido = tokensLido.slice(1, -1).filter((token) => !CONECTORES_NOME.has(token))
   const meioCandidato = tokensCandidato.slice(1, -1).filter((token) => !CONECTORES_NOME.has(token))
 
   if (meioLido.length === 0) return 100

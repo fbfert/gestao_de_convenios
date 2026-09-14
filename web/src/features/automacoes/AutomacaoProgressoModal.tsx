@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { LoaderCircle } from 'lucide-react'
 import { useAutomacao } from './useAutomacoes'
+import type { AutomacaoExecucao } from './types'
 
 type AutomacaoProgressoModalProps = {
   execucaoId: number | null
@@ -92,25 +93,107 @@ function etapaAtual(status: string | undefined): number {
   return 2
 }
 
-function resultadoResumo(status: string): { tom: 'sucesso' | 'erro' | 'alerta'; titulo: string; mensagem: string } {
+/**
+ * Rótulo e tom por `guia_status` que o worker devolve no resultado (mesmos
+ * valores usados em ImportarGuiasPage.tsx e statusTone.ts para a Guia em si).
+ * `needs_verification` e `denied` terminam a execução como "succeeded" do
+ * ponto de vista do worker — ele rodou até o fim sem quebrar — mas não são
+ * uma boa notícia pro operador, por isso não usam o tom 'sucesso'.
+ */
+const GUIA_STATUS_ROTULO: Record<string, string> = {
+  approved: 'Autorizado',
+  finalized: 'Finalizado',
+  under_review: 'Em análise',
+  denied: 'Negado',
+  canceled: 'Cancelado',
+  needs_verification: 'Restrição administrativa — verificar',
+}
+
+const GUIA_STATUS_TOM: Record<string, 'sucesso' | 'erro' | 'alerta'> = {
+  approved: 'sucesso',
+  finalized: 'sucesso',
+  under_review: 'alerta',
+  denied: 'erro',
+  canceled: 'erro',
+  needs_verification: 'alerta',
+}
+
+/** Primeiro campo string não-vazio entre as chaves candidatas do resultado bruto do worker. */
+function campoResultado(resultado: Record<string, unknown> | null | undefined, ...chaves: string[]): string | null {
+  for (const chave of chaves) {
+    const valor = resultado?.[chave]
+    if (typeof valor === 'string' && valor.trim()) {
+      return valor
+    }
+  }
+
+  return null
+}
+
+function resultadoSucesso(execucao: AutomacaoExecucao): { tom: 'sucesso' | 'erro' | 'alerta'; titulo: string; mensagem: string; detalhes: string[] } {
+  const resultado = execucao.resultado
+  // guia_status/status_guia/portal_status: nomes diferentes usados pelos 4
+  // tipos de operação (ver GerarGuiaUnimedService, ConfirmarGuiaIncertaUnimedService,
+  // ConsultarStatusUnimedService) pro mesmo conceito.
+  const guiaStatus = campoResultado(resultado, 'guia_status', 'status_guia', 'portal_status') ?? execucao.guia?.status ?? null
+  const numeroGuia = campoResultado(resultado, 'numero_guia') ?? execucao.guia?.numero_guia ?? null
+  const statusOperadora = campoResultado(resultado, 'unimed_status', 'status_operadora', 'situacao_portal')
+  const mensagemResultado = campoResultado(resultado, 'message', 'mensagem')
+  const senha = campoResultado(resultado, 'senha')
+  const validadeSenha = campoResultado(resultado, 'validade_senha')
+
+  const detalhes: string[] = []
+  if (numeroGuia) {
+    detalhes.push(`Guia nº ${numeroGuia}`)
+  }
+  if (statusOperadora && statusOperadora !== mensagemResultado) {
+    detalhes.push(statusOperadora)
+  }
+  if (senha) {
+    detalhes.push(`Senha: ${senha}${validadeSenha ? ` · validade ${validadeSenha}` : ''}`)
+  }
+
+  if (guiaStatus) {
+    const tom = GUIA_STATUS_TOM[guiaStatus] ?? 'sucesso'
+    return {
+      tom,
+      titulo: `Concluído — ${GUIA_STATUS_ROTULO[guiaStatus] ?? guiaStatus}`,
+      mensagem:
+        mensagemResultado ??
+        (tom === 'sucesso' ? 'O robô concluiu a execução.' : 'Confira o motivo abaixo e os próximos passos em Automações.'),
+      detalhes,
+    }
+  }
+
+  return {
+    tom: 'sucesso',
+    titulo: 'Concluído com sucesso',
+    mensagem: mensagemResultado ?? 'O robô concluiu a execução.',
+    detalhes,
+  }
+}
+
+function resultadoResumo(
+  execucao: AutomacaoExecucao,
+): { tom: 'sucesso' | 'erro' | 'alerta'; titulo: string; mensagem: string; detalhes: string[] } {
+  const status = execucao.status
+
   switch (status) {
     case 'succeeded':
-      return {
-        tom: 'sucesso',
-        titulo: 'Concluído com sucesso',
-        mensagem: 'O robô concluiu a execução.',
-      }
+      return resultadoSucesso(execucao)
     case 'failed':
       return {
         tom: 'erro',
         titulo: 'A automação falhou',
         mensagem: 'Confira os detalhes e, se for o caso, tente novamente em Automações.',
+        detalhes: [],
       }
     case 'needs_attention':
       return {
         tom: 'alerta',
         titulo: 'Precisa de atenção',
         mensagem: 'O robô não conseguiu concluir sozinho. Veja os detalhes em Automações.',
+        detalhes: [],
       }
     case 'uncertain':
       return {
@@ -118,12 +201,14 @@ function resultadoResumo(status: string): { tom: 'sucesso' | 'erro' | 'alerta'; 
         titulo: 'Resultado incerto',
         mensagem:
           'Não foi possível confirmar o resultado. Confira em Automações antes de tentar de novo — reenviar sem confirmar pode duplicar a ação.',
+        detalhes: [],
       }
     default:
       return {
         tom: 'alerta',
         titulo: 'Status desconhecido',
         mensagem: 'Veja os detalhes completos em Automações.',
+        detalhes: [],
       }
   }
 }
@@ -177,7 +262,7 @@ export function AutomacaoProgressoModal({
   }, [open, execucaoId])
 
   const passoAtual = etapaAtual(execucao?.status)
-  const resultado = execucao && !emAndamento ? resultadoResumo(execucao.status) : null
+  const resultado = execucao && !emAndamento ? resultadoResumo(execucao) : null
   const contexto = contextoExecucao(execucao?.payload)
   const contextoTexto = [contexto.paciente, contexto.especialidade, contexto.profissional]
     .filter(Boolean)
@@ -279,6 +364,13 @@ export function AutomacaoProgressoModal({
                     >
                       <p className="font-semibold">{resultado.titulo}</p>
                       <p className="mt-1">{resultado.mensagem}</p>
+                      {resultado.detalhes.length > 0 ? (
+                        <ul className="mt-2 space-y-1 text-meta opacity-90" data-testid="automacao-progresso-detalhes">
+                          {resultado.detalhes.map((linha) => (
+                            <li key={linha}>{linha}</li>
+                          ))}
+                        </ul>
+                      ) : null}
                       {execucao.erro_codigo ? (
                         <p className="mt-2 text-meta font-semibold opacity-90">{execucao.erro_codigo}</p>
                       ) : null}

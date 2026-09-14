@@ -167,10 +167,18 @@ export async function atualizarCadastroSeNecessario(page) {
   }
 }
 
+// Cobre singular e plural ("Restrição Administrativa" / "restrições
+// administrativas") e "Pendência(s) Administrativa(s)". Achado ao vivo em
+// 14/09/2026 (item 2448, Larissa de Almeida Pereira): o aviso real da Unimed
+// veio no plural ("Este beneficiário possui restrições administrativas..."),
+// a checagem so cobria o singular, e a automacao quebrou com timeout tecnico
+// varios passos depois em vez de parar aqui com um motivo claro.
+const RESTRICAO_REGEX = /restri[cç][aã]o\s+administrativ|restri[cç][õo]es\s+administrativ|pend[êe]ncias?\s+administrativ/i
+
 export async function textoRestricao(page) {
   const body = await page.locator('body').innerText({ timeout: DEFAULT_TIMEOUT }).catch(() => '')
   const lines = body.split(/\r?\n/).map((line) => line.trim()).filter(Boolean)
-  return lines.find((line) => /Restrição Administrativa|Pendências Administrativas/i.test(line)) ?? null
+  return lines.find((line) => RESTRICAO_REGEX.test(line)) ?? null
 }
 
 export async function fillIfVisible(page, selector, value) {

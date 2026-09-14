@@ -59,22 +59,23 @@ export async function gerarGuia(page, request) {
   page = await abrirBeneficiario(page)
   await preencherCarteirinha(page, card)
 
-  const restriction = await textoRestricao(page)
-  if (restriction) {
-    return {
-      status: 'succeeded',
-      execution_id: request.executionId ?? null,
-      guia_status: 'needs_verification',
-      status_guia: 'needs_verification',
-      numero_guia: null,
-      unimed_status: restriction,
-      status_operadora: restriction,
-      message: 'Beneficiario com restricao administrativa.',
-    }
+  const restricaoNoBeneficiario = await textoRestricao(page)
+  if (restricaoNoBeneficiario) {
+    return resultadoRestricao(restricaoNoBeneficiario, request)
   }
 
   await atualizarCadastroSeNecessario(page)
   page = await abrirSpSadt(page, mainPage)
+
+  // Mesmo aviso pode so aparecer aqui, na tela de digitacao SP/SADT, em vez
+  // de na tela do beneficiario (achado ao vivo em 14/09/2026, item 2448):
+  // sem esta segunda checagem a automacao seguia adiante e quebrava varios
+  // passos depois com timeout tecnico, sem o motivo real.
+  const restricaoNoSpSadt = await textoRestricao(page)
+  if (restricaoNoSpSadt) {
+    return resultadoRestricao(restricaoNoSpSadt, request)
+  }
+
   await selecionarContratado(page, credential.nome_contratado)
   const estrategiaMedico = await selecionarPrestador(page, medico)
   // Preenchido so agora, depois de contratado/prestador: selecionar o
@@ -91,6 +92,19 @@ export async function gerarGuia(page, request) {
   await selecionarProfissionalExecutante(page, payload)
 
   return await finalizar(page, request, estrategiaMedico)
+}
+
+function resultadoRestricao(restriction, request) {
+  return {
+    status: 'succeeded',
+    execution_id: request.executionId ?? null,
+    guia_status: 'needs_verification',
+    status_guia: 'needs_verification',
+    numero_guia: null,
+    unimed_status: restriction,
+    status_operadora: restriction,
+    message: 'Beneficiario com restricao administrativa.',
+  }
 }
 
 /**

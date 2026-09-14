@@ -87,6 +87,15 @@ test('restricao administrativa retorna needs_verification sem numero', async () 
   assert.match(result.unimed_status, /Restrição Administrativa/)
 })
 
+test('restricao administrativa no plural, so visivel na tela SP/SADT, tambem retorna needs_verification', async () => {
+  const result = await runScenario('restriction-sp-sadt')
+
+  assert.equal(result.status, 'succeeded')
+  assert.equal(result.guia_status, 'needs_verification')
+  assert.equal(result.numero_guia, null)
+  assert.match(result.unimed_status, /restrições administrativas/i)
+})
+
 test('atualizacao cadastral segue o fluxo', async () => {
   const result = await runScenario('update')
 

@@ -114,7 +114,16 @@
       })
       document.querySelector('[name="Button_Update"]')?.addEventListener('click', () => processing(showSpSadt))
       document.querySelector('[data-action="sp-sadt"]')?.addEventListener('click', showManual)
-      document.querySelector('[data-action="solicitacao-manual"]')?.addEventListener('click', showForm)
+      document.querySelector('[data-action="solicitacao-manual"]')?.addEventListener('click', () => {
+        if (scenario === 'restriction-sp-sadt') {
+          // Mensagem real vista ao vivo em 14/09/2026 (item 2448): plural, e
+          // so aparece aqui na tela de digitacao SP/SADT, nao logo depois da
+          // verificacao do cartao como no cenario "restriction" acima.
+          html('<h1>Confirmação</h1><p>Este beneficiário possui restrições administrativas e não pode realizar atendimentos. Consulta não liberada pela Unimed Origem. Favor entrar em contato com a Unimed.</p>')
+          return
+        }
+        showForm()
+      })
       document.querySelector('#link_busca_solic')?.addEventListener('click', abrirBuscaPrestador)
       document.querySelector('#link_busca_contrt')?.addEventListener('click', abrirBuscaContratado)
       document.querySelector('[name="CD_ITEM_1"]')?.addEventListener('blur', maybeGenericFields)

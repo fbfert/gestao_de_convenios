@@ -174,3 +174,11 @@ test('campo invalido no Finalizar (ex.: Celular SMS) vira uncertain com o campo 
   assert.equal(campo.name, 'NR_TEL_CELULAR')
   assert.equal(campo.value, '99999999')
 })
+
+test('Celular (SMS) invalido: worker limpa o campo (com blur) e finaliza a guia com sucesso, sinalizando o contorno', async () => {
+  const result = await runScenario('celular-sms-invalido-corrigivel')
+
+  assert.equal(result.status, 'succeeded')
+  assert.equal(result.numero_guia, 'GUIA-8899')
+  assert.equal(result.celular_sms_limpo, true)
+})

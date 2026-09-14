@@ -90,9 +90,9 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EncerrarSessaoExpirada::
     Route::get('/auditoria', [AuditController::class, 'index'])->middleware('permission:dashboard.auditoria');
     Route::get('/auditoria/opcoes', [AuditController::class, 'opcoes'])->middleware('permission:dashboard.auditoria');
     Route::get('/auditoria/exportar', [AuditController::class, 'exportar'])->middleware('permission:dashboard.auditoria');
-    Route::get('/automacoes', [AutomacaoController::class, 'index']);
-    Route::get('/automacoes/{automacaoExecucao}', [AutomacaoController::class, 'show']);
-    Route::post('/automacoes/{automacaoExecucao}/reprocessar', [AutomacaoController::class, 'reprocessar']);
+    Route::get('/automacoes', [AutomacaoController::class, 'index'])->middleware('permission:guias.view');
+    Route::get('/automacoes/{automacaoExecucao}', [AutomacaoController::class, 'show'])->middleware('permission:guias.view');
+    Route::post('/automacoes/{automacaoExecucao}/reprocessar', [AutomacaoController::class, 'reprocessar'])->middleware('permission:guias.view');
 
     // Somente leitura: o manual virou conteúdo do produto, servido do
     // repositório. O PUT saiu junto com a permissão `manual.manage`.
@@ -274,8 +274,8 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EncerrarSessaoExpirada::
     Route::post('/lancamentos/importar-analitico', [LancamentoController::class, 'importarAnalitico']);
     Route::get('/lancamentos/templates/registro-sessoes', [LancamentoPrintTemplateController::class, 'show']);
     Route::put('/lancamentos/templates/registro-sessoes', [LancamentoPrintTemplateController::class, 'update']);
-    Route::get('/analiticos', [AnaliticoController::class, 'index']);
-    Route::get('/analiticos/{analiticoLote}', [AnaliticoController::class, 'show']);
+    Route::get('/analiticos', [AnaliticoController::class, 'index'])->middleware('permission:dashboard.analiticos');
+    Route::get('/analiticos/{analiticoLote}', [AnaliticoController::class, 'show'])->middleware('permission:dashboard.analiticos');
 
     Route::get('/lancamentos/importar/template', [LancamentoImportController::class, 'template'])
         ->middleware('permission:lancamentos.manage');

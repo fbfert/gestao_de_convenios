@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateUsuarioRequest;
 use App\Http\Resources\UserResource;
 use App\Models\ConfiguracaoGlobal;
 use App\Models\User;
+use App\Support\GuardaAdministracao;
 use App\Support\OrdenaListagem;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -88,6 +89,13 @@ class UserController extends Controller
     public function update(UpdateUsuarioRequest $request, User $usuario): UserResource
     {
         $validated = $request->validated();
+
+        if (array_key_exists('role', $validated)) {
+            app(PermissionRegistrar::class)->setPermissionsTeamId($usuario->tenant_id);
+            $usuario->load('roles');
+
+            GuardaAdministracao::aoAtribuirPapel($usuario, $validated['role'], $request->user());
+        }
 
         if (array_key_exists('name', $validated)) {
             $usuario->name = $validated['name'];

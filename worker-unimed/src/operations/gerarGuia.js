@@ -17,6 +17,7 @@ import {
   selectIfVisible,
   splitCarteirinha,
   textoRestricao,
+  waitForPopup,
   waitProcessing,
   normalize,
 } from '../portal.js'
@@ -184,10 +185,11 @@ async function abrirBuscaContratado(page) {
   // item 2362 (Miguel Schweiter Zambom) falhou aqui com o DEFAULT_TIMEOUT
   // de 5s sob carga real do portal.
   const ABRIR_BUSCA_CONTRATADO_TIMEOUT = Math.max(DEFAULT_TIMEOUT, 30000)
-  const [popup] = await Promise.all([
-    page.context().waitForEvent('page', { timeout: ABRIR_BUSCA_CONTRATADO_TIMEOUT }),
-    page.locator('#link_busca_contrt').click({ timeout: ABRIR_BUSCA_CONTRATADO_TIMEOUT }),
-  ])
+  const popup = await waitForPopup(
+    page,
+    () => page.locator('#link_busca_contrt').click({ timeout: ABRIR_BUSCA_CONTRATADO_TIMEOUT }),
+    { timeout: ABRIR_BUSCA_CONTRATADO_TIMEOUT, contexto: 'abrirBuscaContratado' },
+  )
   await popup.waitForLoadState('domcontentloaded', { timeout: DEFAULT_TIMEOUT })
   await popup.waitForTimeout(1000)
   return popup
@@ -571,10 +573,11 @@ async function submeterBusca(page) {
  * mais lento mas nao depende dessa navegacao interna.
  */
 async function abrirBuscaPrestador(page) {
-  const [popup] = await Promise.all([
-    page.context().waitForEvent('page', { timeout: DEFAULT_TIMEOUT }),
-    page.locator('#link_busca_solic').click({ timeout: DEFAULT_TIMEOUT }),
-  ])
+  const popup = await waitForPopup(
+    page,
+    () => page.locator('#link_busca_solic').click({ timeout: DEFAULT_TIMEOUT }),
+    { timeout: DEFAULT_TIMEOUT, contexto: 'abrirBuscaPrestador' },
+  )
   await popup.waitForLoadState('domcontentloaded', { timeout: DEFAULT_TIMEOUT })
   // A popup nasce em about:blank antes de navegar pro formulario de busca de
   // verdade; domcontentloaded sozinho as vezes resolve cedo demais (ainda no
@@ -603,10 +606,11 @@ async function uploadAnexo(page, anexo) {
   // preenchido), que abre uma popup propria com o formulario de upload de
   // verdade — "Anexar" (Button_Insert) grava o arquivo, "Finalizar"
   // (btn_finalizar) fecha a popup e volta pra guia.
-  const [popup] = await Promise.all([
-    page.context().waitForEvent('page', { timeout: DEFAULT_TIMEOUT }),
-    page.locator('#item_anexos_1').click({ timeout: DEFAULT_TIMEOUT, force: true }),
-  ])
+  const popup = await waitForPopup(
+    page,
+    () => page.locator('#item_anexos_1').click({ timeout: DEFAULT_TIMEOUT, force: true }),
+    { timeout: DEFAULT_TIMEOUT, contexto: 'uploadAnexo' },
+  )
   await popup.waitForLoadState('domcontentloaded', { timeout: DEFAULT_TIMEOUT })
   await popup.waitForTimeout(500)
 

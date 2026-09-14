@@ -50,6 +50,47 @@ export async function login(page, credential) {
 }
 
 /**
+ * Espera a popup (window.open) que um clique deveria abrir. Usada nos 4
+ * pontos do fluxo com esse mesmo padrao (aqui, abrirBuscaContratado,
+ * abrirBuscaPrestador, uploadAnexo em gerarGuia.js): quando estoura o
+ * timeout o clique "aconteceu" mas nenhuma popup surgiu, e ate agora (item
+ * 2371 em 10/09, item 2448 em 14/09) nunca sobrou nenhum rastro do motivo.
+ *
+ * Nao muda o comportamento do caminho feliz nem do dialogo nativo (que
+ * continua sendo dispensado — ja era o default do Playwright sem handler
+ * nenhum). So anexa ao erro, quando ele estoura, o que rolou nesse meio
+ * tempo: algum dialogo nativo (ex.: "ja existe um atendimento em andamento,
+ * continuar?", que um dialog.dismiss() silencioso explicaria por completo) e
+ * o texto visivel da pagina onde o clique ficou.
+ */
+export async function waitForPopup(page, trigger, { timeout = DEFAULT_TIMEOUT, contexto } = {}) {
+  const dialogos = []
+  const onDialog = (dialog) => {
+    dialogos.push(`${dialog.type()}: ${dialog.message()}`)
+    dialog.dismiss().catch(() => {})
+  }
+  page.on('dialog', onDialog)
+
+  try {
+    const [popup] = await Promise.all([
+      page.context().waitForEvent('page', { timeout }),
+      trigger(),
+    ])
+    return popup
+  } catch (error) {
+    const textoVisivel = await page.locator('body').innerText({ timeout: 1000 })
+      .then((texto) => texto.replace(/\s+/g, ' ').trim().slice(0, 300))
+      .catch(() => '(nao consegui ler a pagina)')
+
+    error.message = `${error.message} [${contexto}] dialogos=${dialogos.length ? dialogos.join(' | ') : 'nenhum'} `
+      + `pagina="${textoVisivel}"`
+    throw error
+  } finally {
+    page.off('dialog', onDialog)
+  }
+}
+
+/**
  * Clicar em "+ Novo Exame" abre uma janela popup de verdade (window.open) —
  * todo o cadastro do beneficiario e a geracao da guia acontecem dentro dela,
  * nunca na pagina original. Por isso devolvemos a popup: quem chama passa a
@@ -63,11 +104,14 @@ export async function abrirBeneficiario(page) {
   // 10/09/2026 — item 2371 (Miguel Schweiter Zambom) falhou 4 vezes seguidas
   // exatamente nesse waitForEvent, sem nenhuma guia chegando a ser criada
   // (confirmado consultando o historico completo do beneficiario no portal).
+  // Repetiu em 14/09/2026 (item 2448) sem nenhum rastro alem do timeout — daqui
+  // pra frente waitForPopup anexa dialogo nativo + texto da pagina ao erro.
   const ABRIR_BENEFICIARIO_TIMEOUT = Math.max(DEFAULT_TIMEOUT, 30000)
-  const [popup] = await Promise.all([
-    page.context().waitForEvent('page', { timeout: ABRIR_BENEFICIARIO_TIMEOUT }),
-    page.locator(NOVO_EXAME_BOTAO).click({ timeout: ABRIR_BENEFICIARIO_TIMEOUT }),
-  ])
+  const popup = await waitForPopup(
+    page,
+    () => page.locator(NOVO_EXAME_BOTAO).click({ timeout: ABRIR_BENEFICIARIO_TIMEOUT }),
+    { timeout: ABRIR_BENEFICIARIO_TIMEOUT, contexto: 'abrirBeneficiario' },
+  )
   await popup.waitForLoadState('domcontentloaded', { timeout: DEFAULT_TIMEOUT })
 
   // Cada passo daqui pra frente e uma navegacao de pagina real (o dynaHash na

@@ -170,6 +170,29 @@ class PacientesApiTest extends TestCase
             ->assertNotFound();
     }
 
+    /**
+     * O papel `profissional` tem apenas `guias.viewOwn`, `lancamentos.viewOwn`
+     * e `conciliacoes.viewOwn` — por desenho, ele vê só o que é dele. As rotas
+     * de paciente não checavam permissão nenhuma, então bastava o token dele
+     * para varrer a base inteira da clínica: `PacienteResource` devolve CPF,
+     * carteirinha e data de nascimento. Escrita e exclusão de anexo idem.
+     */
+    public function test_profissional_nao_alcanca_a_base_de_pacientes(): void
+    {
+        $user = User::query()->where('email', 'profissional@clinica-exemplo.test')->firstOrFail();
+        Sanctum::actingAs($user);
+
+        $paciente = Paciente::query()->firstOrFail();
+
+        $this->getJson('/api/pacientes')->assertForbidden();
+        $this->getJson('/api/pacientes/recentes')->assertForbidden();
+        $this->getJson("/api/pacientes/{$paciente->id}")->assertForbidden();
+        $this->getJson("/api/pacientes/{$paciente->id}/arquivos")->assertForbidden();
+
+        $this->postJson('/api/pacientes', [])->assertForbidden();
+        $this->patchJson("/api/pacientes/{$paciente->id}", ['nome' => 'Alterado'])->assertForbidden();
+    }
+
     private function autenticar(): void
     {
         $user = User::query()->where('email', 'admin@clinica-exemplo.test')->firstOrFail();

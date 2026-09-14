@@ -242,21 +242,40 @@ class GuiaService
         ]);
     }
 
+    /**
+     * O MESMO escopo de `listar()`, e não só o de tenant.
+     *
+     * Sem isto, `guias.viewOwn` valia apenas na listagem: quem só podia ver as
+     * próprias guias lia qualquer uma da clínica incrementando o id em
+     * `GET /api/guias/{id}` — com paciente, carteirinha, senha da autorização e
+     * validade. O controle existia e era contornado pelo detalhe, que é o
+     * caminho mais fácil de esquecer.
+     *
+     * Guia de outro profissional some pelo filtro e vira 404, não 403: negar
+     * com 403 confirmaria que aquele id existe.
+     */
     public function buscar(int $id): Guia
     {
-        return Guia::query()->with([
-            'solicitacao.medico',
-            'convenio',
-            'paciente',
-            'profissional',
-            'especialidade',
-            'solicitacaoItem.especialidade',
-            'solicitacaoItem.profissional',
-            'automacaoExecucao.eventos',
-            'ultimaAutomacaoUnimed.eventos',
-            'lancamentos',
-            'conciliacoes',
-        ])->findOrFail($id);
+        $query = $this->aplicarEscopoOwn(
+            Guia::query()->with([
+                'solicitacao.medico',
+                'convenio',
+                'paciente',
+                'profissional',
+                'especialidade',
+                'solicitacaoItem.especialidade',
+                'solicitacaoItem.profissional',
+                'automacaoExecucao.eventos',
+                'ultimaAutomacaoUnimed.eventos',
+                'lancamentos',
+                'conciliacoes',
+            ]),
+            'guias.view',
+            'guias.viewOwn',
+            fn ($query, $user) => $query->where('profissional_id', $user->profissional_id)
+        );
+
+        return $query->findOrFail($id);
     }
 
     /**

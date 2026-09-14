@@ -222,13 +222,65 @@ export function splitCarteirinha(value) {
   }
 }
 
+const LOGIN_URL_PADRAO = 'https://rda.unimedsc.com.br/cmagnet/Login.do'
+
+/**
+ * Hosts em que o worker aceita digitar a credencial do portal.
+ *
+ * Allowlist e nao denylist: o passo seguinte ao goto() e preencher login e
+ * senha reais nos campos da pagina. Sem restricao de host, quem consegue
+ * gravar `base_url` (tela de configuracoes da automacao) faz o Playwright
+ * digitar a senha da clinica num formulario que o proprio atacante hospeda —
+ * e a senha e write-only na API justamente para nunca poder ser lida de volta.
+ * Isso contornava essa fronteira sem nunca ler a senha.
+ */
+const HOSTS_PERMITIDOS = ['rda.unimedsc.com.br', 'unimedsc.com.br']
+
+/**
+ * `file:` so com a flag explicita, usada pela suite deste pacote, que serve as
+ * fixtures HTML do disco. Producao nunca define a variavel, entao o desvio nao
+ * existe la.
+ */
+function fixturasLocaisPermitidas() {
+  return process.env.UNIMED_PERMITIR_FIXTURES_LOCAIS === '1'
+}
+
+function hostPermitido(hostname) {
+  const host = hostname.toLowerCase()
+
+  return HOSTS_PERMITIDOS.some((permitido) => host === permitido || host.endsWith(`.${permitido}`))
+}
+
 export function loginUrlFromCredential(credential) {
   const baseUrl = String(credential.base_url ?? '').trim()
   if (!baseUrl) {
-    return 'https://rda.unimedsc.com.br/cmagnet/Login.do'
+    return LOGIN_URL_PADRAO
   }
 
-  if (baseUrl.startsWith('file:') || baseUrl.includes('.html') || baseUrl.includes('/Login.do')) {
+  if (baseUrl.startsWith('file:')) {
+    if (fixturasLocaisPermitidas()) {
+      return baseUrl
+    }
+
+    throw new Error('base_url recusada: esquema file: nao e aceito fora da suite de testes.')
+  }
+
+  let url
+  try {
+    url = new URL(baseUrl)
+  } catch {
+    throw new Error('base_url recusada: nao e uma URL valida.')
+  }
+
+  if (url.protocol !== 'https:') {
+    throw new Error(`base_url recusada: exige https, veio ${url.protocol}`)
+  }
+
+  if (! hostPermitido(url.hostname)) {
+    throw new Error(`base_url recusada: host ${url.hostname} fora da lista permitida.`)
+  }
+
+  if (baseUrl.includes('.html') || baseUrl.includes('/Login.do')) {
     return baseUrl
   }
 

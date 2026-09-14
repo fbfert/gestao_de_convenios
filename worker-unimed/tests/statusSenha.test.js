@@ -5,6 +5,10 @@ import { dirname, resolve } from 'node:path'
 import { chromium } from 'playwright'
 import { executarCapturarAutorizacaoBatch, executarConsultarStatusBatch } from '../src/operations/statusSenha.js'
 
+// As fixtures sao servidas do disco via file://, que `loginUrlFromCredential`
+// so aceita sob esta flag — producao nunca a define.
+process.env.UNIMED_PERMITIR_FIXTURES_LOCAIS = '1'
+
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const fixturePath = resolve(__dirname, 'fixtures/portal-status-senha.html')
 

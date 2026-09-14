@@ -4,11 +4,11 @@ namespace Tests\Feature;
 
 use App\Models\AuditLog;
 use App\Models\AutomacaoExecucao;
-use App\Models\Convenio;
 use App\Models\ConciliacaoFinanceira;
-use App\Models\Lancamento;
+use App\Models\Convenio;
 use App\Models\Especialidade;
 use App\Models\Guia;
+use App\Models\Lancamento;
 use App\Models\Medico;
 use App\Models\Paciente;
 use App\Models\Profissional;
@@ -735,5 +735,44 @@ class GuiasApiTest extends TestCase
             'validade_senha' => null,
             'observacoes' => null,
         ]);
+    }
+
+    /**
+     * `guias.viewOwn` valia só na listagem: `GuiaService::buscar()` era um
+     * `findOrFail` puro, então quem só podia ver as próprias guias lia qualquer
+     * uma da clínica incrementando o id — com paciente, carteirinha, senha da
+     * autorização e validade. O controle existia e o detalhe o contornava.
+     */
+    public function test_profissional_com_view_own_nao_abre_guia_de_outro_pelo_id(): void
+    {
+        $this->autenticar();
+
+        // Guia da Fisioterapia, que é a especialidade da profissional ligada ao
+        // usuário `profissional@` do seed.
+        $minha = $this->postJson('/api/guias', $this->payloadGuia('Unimed'))
+            ->assertCreated()->json('data');
+
+        $outra = $this->postJson('/api/guias', $this->payloadGuia('Unimed', 'Fonoaudiologia'))
+            ->assertCreated()->json('data');
+
+        $profissionalUser = User::query()
+            ->where('email', 'profissional@clinica-exemplo.test')->firstOrFail();
+        Sanctum::actingAs($profissionalUser);
+
+        // Sanidade: a guia "minha" é mesmo a do profissional autenticado, e a
+        // outra não — sem isto a asserção abaixo seria vazia.
+        $this->assertSame($profissionalUser->profissional_id, $minha['profissional_id']);
+        $this->assertNotSame($profissionalUser->profissional_id, $outra['profissional_id']);
+
+        $this->getJson("/api/guias/{$minha['id']}")
+            ->assertOk()
+            ->assertJsonPath('data.id', $minha['id']);
+
+        // 404 e não 403: negar com 403 confirmaria que o id existe.
+        $this->getJson("/api/guias/{$outra['id']}")->assertNotFound();
+
+        $listadas = $this->getJson('/api/guias')->assertOk()->json('data.*.id');
+        $this->assertContains($minha['id'], $listadas);
+        $this->assertNotContains($outra['id'], $listadas);
     }
 }

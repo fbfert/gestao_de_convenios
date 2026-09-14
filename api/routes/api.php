@@ -135,11 +135,11 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EncerrarSessaoExpirada::
     Route::post('/configuracoes/unimed/mapeamentos/profissionais', [ConvenioProfissionalMapeamentoController::class, 'store'])->middleware('permission:configuracoes.unimed.manage');
     Route::patch('/configuracoes/unimed/mapeamentos/profissionais/{profissionalMapeamento}', [ConvenioProfissionalMapeamentoController::class, 'update'])->middleware('permission:configuracoes.unimed.manage');
 
-    Route::get('/pacientes', [PacienteController::class, 'index']);
+    Route::get('/pacientes', [PacienteController::class, 'index'])->middleware('permission:dashboard.pacientes');
     // Antes da rota com {paciente}: sem isso "ler-carteirinha", "importar" e
     // "recentes" seriam lidos como id de paciente.
-    Route::get('/pacientes/recentes', [PacienteController::class, 'recentes']);
-    Route::post('/pacientes/ler-carteirinha', [PacienteController::class, 'lerCarteirinha']);
+    Route::get('/pacientes/recentes', [PacienteController::class, 'recentes'])->middleware('permission:dashboard.pacientes');
+    Route::post('/pacientes/ler-carteirinha', [PacienteController::class, 'lerCarteirinha'])->middleware('permission:dashboard.pacientes');
     Route::get('/pacientes/importar/template', [PacienteImportController::class, 'template'])
         ->middleware('permission:dashboard.pacientes');
     Route::post('/pacientes/importar', [PacienteImportController::class, 'previsualizar'])
@@ -152,14 +152,14 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EncerrarSessaoExpirada::
         ->middleware('permission:dashboard.pacientes');
     Route::post('/pacientes/duplicados/mesclar', [PacienteMergeController::class, 'mesclar'])
         ->middleware('permission:dashboard.pacientes');
-    Route::get('/pacientes/{paciente}', [PacienteController::class, 'show']);
-    Route::post('/pacientes', [PacienteController::class, 'store']);
-    Route::patch('/pacientes/{paciente}', [PacienteController::class, 'update']);
-    Route::get('/pacientes/{paciente}/arquivos', [PacienteArquivoController::class, 'index']);
-    Route::post('/pacientes/{paciente}/arquivos', [PacienteArquivoController::class, 'store']);
-    Route::get('/pacientes/{paciente}/arquivos/{arquivo}', [PacienteArquivoController::class, 'download']);
-    Route::get('/pacientes/{paciente}/arquivos/{arquivo}/contexto', [PacienteArquivoController::class, 'contexto']);
-    Route::delete('/pacientes/{paciente}/arquivos/{arquivo}', [PacienteArquivoController::class, 'destroy']);
+    Route::get('/pacientes/{paciente}', [PacienteController::class, 'show'])->middleware('permission:dashboard.pacientes');
+    Route::post('/pacientes', [PacienteController::class, 'store'])->middleware('permission:dashboard.pacientes');
+    Route::patch('/pacientes/{paciente}', [PacienteController::class, 'update'])->middleware('permission:dashboard.pacientes');
+    Route::get('/pacientes/{paciente}/arquivos', [PacienteArquivoController::class, 'index'])->middleware('permission:dashboard.pacientes');
+    Route::post('/pacientes/{paciente}/arquivos', [PacienteArquivoController::class, 'store'])->middleware('permission:dashboard.pacientes');
+    Route::get('/pacientes/{paciente}/arquivos/{arquivo}', [PacienteArquivoController::class, 'download'])->middleware('permission:dashboard.pacientes');
+    Route::get('/pacientes/{paciente}/arquivos/{arquivo}/contexto', [PacienteArquivoController::class, 'contexto'])->middleware('permission:dashboard.pacientes');
+    Route::delete('/pacientes/{paciente}/arquivos/{arquivo}', [PacienteArquivoController::class, 'destroy'])->middleware('permission:dashboard.pacientes');
     Route::get('/profissionais', [ProfissionalController::class, 'index']);
     Route::post('/profissionais', [ProfissionalController::class, 'store'])->middleware('permission:profissionais.manage');
     Route::patch('/profissionais/{profissional}', [ProfissionalController::class, 'update'])->middleware('permission:profissionais.manage');

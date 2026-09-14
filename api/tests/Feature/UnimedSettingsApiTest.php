@@ -4,6 +4,10 @@ namespace Tests\Feature;
 
 use App\Models\AuditLog;
 use App\Models\Convenio;
+use App\Models\ConvenioEspecialidadeMapeamento;
+use App\Models\ConvenioProfissionalMapeamento;
+use App\Models\Especialidade;
+use App\Models\Profissional;
 use App\Models\Tenant;
 use App\Models\UnimedRdaCredential;
 use App\Models\User;
@@ -117,19 +121,19 @@ class UnimedSettingsApiTest extends TestCase
             'connector_type' => 'manual',
             'ativo' => true,
         ]);
-        $especialidade = \App\Models\Especialidade::query()->create([
+        $especialidade = Especialidade::query()->create([
             'tenant_id' => $user->tenant_id,
             'nome' => 'Especialidade Permissão',
             'ativo' => true,
         ]);
-        $profissional = \App\Models\Profissional::query()->create([
+        $profissional = Profissional::query()->create([
             'tenant_id' => $user->tenant_id,
             'especialidade_id' => $especialidade->id,
             'nome' => 'Profissional Permissão',
             'conselho_registro' => 'CRP-1',
             'ativo' => true,
         ]);
-        $especialidadeMapeamento = \App\Models\ConvenioEspecialidadeMapeamento::query()->create([
+        $especialidadeMapeamento = ConvenioEspecialidadeMapeamento::query()->create([
             'tenant_id' => $user->tenant_id,
             'convenio_id' => $convenio->id,
             'especialidade_id' => $especialidade->id,
@@ -137,7 +141,7 @@ class UnimedSettingsApiTest extends TestCase
             'quantidade_padrao' => 10,
             'ativo' => true,
         ]);
-        $profissionalMapeamento = \App\Models\ConvenioProfissionalMapeamento::query()->create([
+        $profissionalMapeamento = ConvenioProfissionalMapeamento::query()->create([
             'tenant_id' => $user->tenant_id,
             'convenio_id' => $convenio->id,
             'profissional_id' => $profissional->id,
@@ -185,7 +189,7 @@ class UnimedSettingsApiTest extends TestCase
     public function test_healthcheck_do_worker_retorna_status_administrativo(): void
     {
         $this->autenticar();
-        $this->app->instance(UnimedWorkerClient::class, new FakeUnimedWorkerClient());
+        $this->app->instance(UnimedWorkerClient::class, new FakeUnimedWorkerClient);
 
         $this->getJson('/api/configuracoes/unimed/worker-health')
             ->assertOk()
@@ -226,6 +230,48 @@ class UnimedSettingsApiTest extends TestCase
         Sanctum::actingAs($user);
     }
 
+    /**
+     * A senha do portal é write-only nesta API: grava-se, nunca volta na
+     * resposta. Mas `base_url` decide para onde o worker navega ANTES de
+     * preencher login e senha — apontá-la para fora da Unimed faz o Playwright
+     * digitar a senha da clínica num formulário de terceiro, contornando a
+     * fronteira write-only sem nunca ler o valor.
+     */
+    public function test_recusa_base_url_fora_do_dominio_da_unimed(): void
+    {
+        $this->autenticar();
+        $convenio = Convenio::query()->where('nome', 'Unimed')->firstOrFail();
+
+        $payload = $this->payload($convenio->id, 'senha-inicial');
+        $payload['credential']['base_url'] = 'https://evil.tld/cmagnet/Login.do';
+
+        $this->putJson('/api/configuracoes/unimed', $payload)
+            ->assertJsonValidationErrors('credential.base_url');
+    }
+
+    public function test_recusa_base_url_sem_https(): void
+    {
+        $this->autenticar();
+        $convenio = Convenio::query()->where('nome', 'Unimed')->firstOrFail();
+
+        $payload = $this->payload($convenio->id, 'senha-inicial');
+        $payload['credential']['base_url'] = 'http://rda.unimedsc.com.br';
+
+        $this->putJson('/api/configuracoes/unimed', $payload)
+            ->assertJsonValidationErrors('credential.base_url');
+    }
+
+    public function test_aceita_subdominio_da_unimed(): void
+    {
+        $this->autenticar();
+        $convenio = Convenio::query()->where('nome', 'Unimed')->firstOrFail();
+
+        $payload = $this->payload($convenio->id, 'senha-inicial');
+        $payload['credential']['base_url'] = 'https://rda.unimedsc.com.br';
+
+        $this->putJson('/api/configuracoes/unimed', $payload)->assertOk();
+    }
+
     private function payload(?int $convenioId, string $password): array
     {
         return [
@@ -233,7 +279,10 @@ class UnimedSettingsApiTest extends TestCase
             'credential' => [
                 'login' => 'operador-unimed',
                 'password' => $password,
-                'base_url' => 'https://portal.unimed.test',
+                // Host real do portal: `base_url` passou a ser validada contra
+                // allowlist, porque é ela que decide onde o worker digita a
+                // senha da clínica.
+                'base_url' => 'https://rda.unimedsc.com.br',
                 'ativo' => true,
             ],
         ];

@@ -132,6 +132,20 @@
           app.insertAdjacentHTML('beforeend', '<div>Processando, por favor aguarde...</div>')
           return
         }
+        if (scenario === 'uncertain-campo-invalido') {
+          // Achado ao vivo em 14/09/2026 (item 2454): a Unimed barra o
+          // Finalizar com validacao de um campo que o worker nunca preenche
+          // (populado pelo proprio cadastro do beneficiario), mas continua
+          // mostrando o formulario (nao so a mensagem) — mesma estrutura
+          // reproduzida aqui.
+          app.insertAdjacentHTML(
+            'beforeend',
+            '<table><tr><td>O valor do campo Celular (SMS) é inválido. Ex: (00) 0000-0000 ou (00) 00000-0000</td></tr></table>' +
+              '<div>Telefone</div><input id="NR_TEL_RESID" name="NR_TEL_RESID">' +
+              '<div>Celular (SMS)</div><input id="NR_TEL_CELULAR" name="NR_TEL_CELULAR" value="99999999">',
+          )
+          return
+        }
         // Campo real do portal (achado ao vivo em 26/08/2026): sem
         // preencher, o Finalizar barra com erro de validacao e NAO navega
         // pra confirmacao — mesmo comportamento aqui, pra pegar regressao

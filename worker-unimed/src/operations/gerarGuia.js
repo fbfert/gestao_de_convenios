@@ -460,15 +460,76 @@ async function parseResultado(page) {
 // depender de volume/disco compartilhado — o worker so tem acesso de leitura
 // ao storage do gescon-app (deploy/docker-compose.prod.yml), nada gravavel
 // pra salvar screenshot como arquivo.
+// "O valor do campo X é inválido" / "O valor do campo X é obrigatório" — o
+// mesmo padrao de mensagem de validacao ja visto no Finalizar (Nome do
+// Contratado, Liminar judicial). Extrai o ROTULO do campo pra depois achar o
+// input de verdade perto dele — sem isso a mensagem crua ja diz QUE algo
+// falhou, mas nao O QUE preencher nem onde (achado ao vivo em 14/09/2026,
+// item 2454: "Celular (SMS)" invalido bloqueando o Finalizar, campo que o
+// worker nunca preenche — provavelmente populado pelo proprio cadastro do
+// beneficiario na Unimed).
+const REGEX_CAMPO_INVALIDO = /(?:valor do campo|o campo)\s+([^\n.]+?)\s+(?:é inválido|é obrigatório|e invalido|e obrigatorio)/gi
+
+async function capturarCampoPorRotulo(page, rotulo) {
+  return page
+    .evaluate((rotuloTexto) => {
+      // So elementos-folha (sem filhos de elemento) com o texto exatamente
+      // igual ao rotulo — evita casar um container maior que so por acaso
+      // contém o rotulo em algum canto (ex.: a página inteira).
+      const candidatos = Array.from(document.querySelectorAll('body *')).filter(
+        (el) => el.children.length === 0 && (el.textContent?.replace(/\s+/g, ' ').trim() ?? '') === rotuloTexto,
+      )
+
+      for (const alvo of candidatos) {
+        // Layout tipico de tabela: rotulo e campo na MESMA linha — pegar
+        // aqui evita achar o campo de um rotulo vizinho na mesma tela.
+        const linha = alvo.closest('tr')
+        let campo = linha ? linha.querySelector('input, select, textarea') : null
+
+        // Layout sem tabela: campo logo depois do rotulo como irmao direto.
+        if (!campo && alvo.nextElementSibling?.matches('input, select, textarea')) {
+          campo = alvo.nextElementSibling
+        }
+
+        // Ultimo recurso: primeiro campo dentro do mesmo pai do rotulo.
+        if (!campo) {
+          campo = alvo.parentElement?.querySelector('input, select, textarea') ?? null
+        }
+
+        if (campo) {
+          return {
+            tag: campo.tagName,
+            id: campo.id || null,
+            name: campo.getAttribute('name'),
+            value: campo.value,
+            maxlength: campo.getAttribute('maxlength'),
+          }
+        }
+      }
+
+      return null
+    }, rotulo)
+    .catch(() => null)
+}
+
 async function capturarDiagnosticoResultado(page) {
   const bodyText = await page.locator('body').innerText().catch(() => '')
   const tableCount = await page.locator('table').count().catch(() => null)
+
+  const camposComProblema = {}
+  for (const match of bodyText.matchAll(REGEX_CAMPO_INVALIDO)) {
+    const rotulo = match[1].trim()
+    if (!(rotulo in camposComProblema)) {
+      camposComProblema[rotulo] = await capturarCampoPorRotulo(page, rotulo)
+    }
+  }
 
   return {
     url: page.url(),
     title: await page.title().catch(() => null),
     table_count: tableCount,
     body_text_excerpt: bodyText.slice(0, 2000),
+    campos_com_problema: Object.keys(camposComProblema).length > 0 ? camposComProblema : undefined,
   }
 }
 

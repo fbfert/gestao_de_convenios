@@ -161,3 +161,16 @@ test('timeout apos submit retorna uncertain sem retry', async () => {
   assert.equal(result.status, 'uncertain')
   assert.equal(result.error_code, 'UNCERTAIN_AFTER_SUBMIT')
 })
+
+test('campo invalido no Finalizar (ex.: Celular SMS) vira uncertain com o campo real capturado no debug', async () => {
+  const result = await runScenario('uncertain-campo-invalido')
+
+  assert.equal(result.status, 'uncertain')
+  assert.equal(result.error_code, 'UNCERTAIN_AFTER_SUBMIT')
+  assert.match(result.debug.body_text_excerpt, /Celular \(SMS\)/)
+
+  const campo = result.debug.campos_com_problema?.['Celular (SMS)']
+  assert.ok(campo, 'deveria ter capturado o campo real ligado ao rotulo "Celular (SMS)"')
+  assert.equal(campo.name, 'NR_TEL_CELULAR')
+  assert.equal(campo.value, '99999999')
+})

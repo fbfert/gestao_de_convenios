@@ -31,6 +31,11 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->api(append: [
             \App\Http\Middleware\ResolveTenant::class,
+            // Depois do `permission:`, e não no lugar dele: o que este confere é
+            // se ALGUMA guarda foi declarada na rota, não qual. Rota nova nasce
+            // fechada — esquecer o `permission:` passa a dar erro em
+            // desenvolvimento, em vez de porta aberta em produção.
+            \App\Http\Middleware\ExigeAutorizacaoDeclarada::class,
         ]);
 
         $middleware->alias([

@@ -7,13 +7,14 @@ import {
   useAutomacoes,
   useReprocessarAutomacao,
 } from './useAutomacoes'
-import type { AutomacaoExecucao, AutomacaoFilters } from './types'
+import type { AutomacaoFilters } from './types'
 import { Botao } from '../../components/ui/Botao'
 import { Paginacao } from '../../components/ui/Paginacao'
 import { useListaNaUrl } from '../../lib/useListaNaUrl'
 import { Badge, type BadgeProps } from '../../components/ui/Badge'
 import { useConfirm } from '../../components/ui/ConfirmDialog'
 import { AutomacaoProgressoModal } from './AutomacaoProgressoModal'
+import { medicoAmbiguoInfo } from './medicoAmbiguo'
 
 const defaultFilters: AutomacaoFilters = {
   status: '',
@@ -28,32 +29,6 @@ function inputClasses() {
 
 function attention(status: string) {
   return ['failed', 'uncertain', 'needs_attention'].includes(status)
-}
-
-/**
- * O worker nunca decide sozinho um médico que não bateu com confiança — só
- * devolve a melhor sugestão encontrada na Unimed (`buscarPrestadorPorNome`
- * em worker-unimed/src/operations/gerarGuia.js) pro operador confirmar ou
- * corrigir aqui.
- */
-function medicoAmbiguoInfo(execucao: AutomacaoExecucao) {
-  if (execucao.erro_codigo !== 'PRESTADOR_NOME_AMBIGUO') {
-    return null
-  }
-
-  const resultado = execucao.resultado ?? {}
-  const medicoPayload = (execucao.payload?.medico ?? null) as { id?: number; nome?: string } | null
-
-  if (!medicoPayload?.id) {
-    return null
-  }
-
-  return {
-    medicoId: medicoPayload.id,
-    nomeLido: String(resultado.medico_nome_lido ?? medicoPayload.nome ?? ''),
-    sugestaoPortal: String(resultado.medico_sugestao_portal ?? ''),
-    similaridade: Number(resultado.medico_similaridade ?? 0),
-  }
 }
 
 function statusTone(status: string): NonNullable<BadgeProps['tone']> {

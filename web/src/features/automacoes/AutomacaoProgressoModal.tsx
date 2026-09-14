@@ -1,10 +1,17 @@
 import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/react'
 import { useFechamentoExplicito } from '../../lib/useFechamentoExplicito'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { LoaderCircle } from 'lucide-react'
-import { useAutomacao } from './useAutomacoes'
+import {
+  getHttpErrorMessage,
+  useAtualizarNomeMedico,
+  useAutomacao,
+  useReprocessarAutomacao,
+} from './useAutomacoes'
+import { useConfirm } from '../../components/ui/ConfirmDialog'
+import { medicoAmbiguoInfo } from './medicoAmbiguo'
 import type { AutomacaoExecucao } from './types'
 
 type AutomacaoProgressoModalProps = {
@@ -229,10 +236,26 @@ export function AutomacaoProgressoModal({
 }: AutomacaoProgressoModalProps) {
   const open = execucaoId !== null
   const queryClient = useQueryClient()
-  const execucaoQuery = useAutomacao(execucaoId, { acompanharProgresso: open })
+  const confirmar = useConfirm()
+  const reprocessar = useReprocessarAutomacao()
+  const atualizarNomeMedico = useAtualizarNomeMedico()
+
+  // Confirmar o médico (ou "Tentar novamente" direto daqui) reenfileira uma
+  // execução NOVA — o modal passa a acompanhar essa nova execução no lugar
+  // da original, sem fechar/reabrir e sem o chamador (SolicitacoesPage,
+  // GuiasPage...) precisar saber que o id mudou. `execucaoId` (prop) só
+  // marca QUAL execução o chamador queria abrir; `idEfetivo` é a que está
+  // de fato sendo mostrada agora.
+  const [idOverride, setIdOverride] = useState<number | null>(null)
+  const idEfetivo = idOverride ?? execucaoId
+  const [nomeCorrigido, setNomeCorrigido] = useState('')
+  const [erroAcao, setErroAcao] = useState<string | null>(null)
+
+  const execucaoQuery = useAutomacao(idEfetivo, { acompanharProgresso: open })
   const execucao = execucaoQuery.data
   const emAndamento = STATUS_EM_ANDAMENTO.includes(execucao?.status ?? 'queued')
   const statusAnteriorRef = useRef<string | null>(null)
+  const medicoAmbiguo = execucao ? medicoAmbiguoInfo(execucao) : null
 
   useEffect(() => {
     if (!execucao) {
@@ -250,16 +273,75 @@ export function AutomacaoProgressoModal({
       })
     }
     // queryKeysInvalidar é passado inline pelos chamadores — comparar pelo
-    // execucaoId evita reexecutar o efeito a cada render por identidade nova
+    // idEfetivo evita reexecutar o efeito a cada render por identidade nova
     // do array.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [execucao, queryClient, execucaoId])
+  }, [execucao, queryClient, idEfetivo])
 
   useEffect(() => {
     if (open) {
       statusAnteriorRef.current = null
     }
   }, [open, execucaoId])
+
+  // Um novo `execucaoId` do chamador é uma abertura nova do modal — descarta
+  // qualquer retentativa da execução anterior.
+  useEffect(() => {
+    setIdOverride(null)
+    setErroAcao(null)
+  }, [execucaoId])
+
+  // Só assume a sugestão da Unimed como valor inicial do campo editável uma
+  // vez por execução — depois disso, o texto é do operador.
+  useEffect(() => {
+    if (medicoAmbiguo) {
+      setNomeCorrigido(medicoAmbiguo.sugestaoPortal)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [execucao?.id])
+
+  const handleReprocessar = async (execucaoIdAtual: number) => {
+    const ok = await confirmar({
+      titulo: 'Tentar novamente',
+      descricao: `Reenfileira a execução #${execucaoIdAtual} para rodar de novo. Confirma?`,
+      confirmarTexto: 'Tentar novamente',
+      variante: 'primario',
+    })
+
+    if (!ok) {
+      return
+    }
+
+    setErroAcao(null)
+    try {
+      const nova = await reprocessar.mutateAsync(execucaoIdAtual)
+      setIdOverride(nova.id)
+    } catch (error) {
+      setErroAcao(getHttpErrorMessage(error, 'Não foi possível reprocessar a execução.'))
+    }
+  }
+
+  const handleConfirmarNomeMedico = async (execucaoIdAtual: number, medicoId: number, nome: string) => {
+    const ok = await confirmar({
+      titulo: 'Confirmar médico e tentar novamente',
+      descricao: `Atualiza o cadastro do médico para "${nome}" e reenfileira a execução #${execucaoIdAtual}. Confirma?`,
+      confirmarTexto: 'Confirmar e tentar novamente',
+      variante: 'primario',
+    })
+
+    if (!ok) {
+      return
+    }
+
+    setErroAcao(null)
+    try {
+      await atualizarNomeMedico.mutateAsync({ id: medicoId, nome })
+      const nova = await reprocessar.mutateAsync(execucaoIdAtual)
+      setIdOverride(nova.id)
+    } catch (error) {
+      setErroAcao(getHttpErrorMessage(error, 'Não foi possível confirmar o médico e reprocessar.'))
+    }
+  }
 
   const passoAtual = etapaAtual(execucao?.status)
   const resultado = execucao && !emAndamento ? resultadoResumo(execucao) : null
@@ -282,7 +364,7 @@ export function AutomacaoProgressoModal({
               <div>
                 <DialogTitle className="text-titulo font-semibold">
                   {titulo}
-                  {execucaoId ? ` · execução #${execucaoId}` : ''}
+                  {idEfetivo ? ` · execução #${idEfetivo}` : ''}
                 </DialogTitle>
                 {contextoTexto ? (
                   <p
@@ -305,6 +387,15 @@ export function AutomacaoProgressoModal({
             </div>
 
             <div className="mt-6 space-y-6">
+              {erroAcao ? (
+                <p
+                  className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-corpo text-rose-100"
+                  role="alert"
+                  data-testid="automacao-progresso-erro-acao"
+                >
+                  {erroAcao}
+                </p>
+              ) : null}
               {execucaoQuery.isLoading ? (
                 <div className="rounded-superficie border border-linha bg-fundo p-5 shadow-e1 text-corpo text-slate-300">
                   Carregando execução...
@@ -377,14 +468,76 @@ export function AutomacaoProgressoModal({
                       {execucao.erro_mensagem ? (
                         <p className="mt-1 text-meta opacity-90">{execucao.erro_mensagem}</p>
                       ) : null}
-                      {resultado.tom !== 'sucesso' ? (
-                        <Link
-                          to={`/automacoes/${execucao.id}`}
-                          className="mt-3 inline-block text-meta font-semibold underline decoration-current/40 underline-offset-4"
+
+                      {medicoAmbiguo ? (
+                        <div
+                          className="mt-3 space-y-3 rounded-2xl border border-amber-400/30 bg-amber-500/10 p-4 text-amber-100"
+                          data-testid="automacao-progresso-medico-ambiguo"
                         >
-                          Ver detalhes em Automações
-                        </Link>
+                          <p>
+                            Não foi possível confirmar com segurança o médico solicitante na Unimed.
+                            <br />
+                            Nome lido: <strong>{medicoAmbiguo.nomeLido}</strong>
+                            <br />
+                            Sugestão encontrada no portal: <strong>{medicoAmbiguo.sugestaoPortal}</strong>{' '}
+                            ({medicoAmbiguo.similaridade}% de similaridade)
+                          </p>
+
+                          <label className="block space-y-2">
+                            <span className="text-meta uppercase tracking-[0.2em] text-amber-200/80">
+                              Nome correto do médico
+                            </span>
+                            <input
+                              value={nomeCorrigido}
+                              onChange={(event) => setNomeCorrigido(event.target.value)}
+                              className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20"
+                              data-testid="automacao-progresso-medico-ambiguo-nome-input"
+                            />
+                          </label>
+
+                          <button
+                            type="button"
+                            disabled={
+                              atualizarNomeMedico.isPending ||
+                              reprocessar.isPending ||
+                              nomeCorrigido.trim() === ''
+                            }
+                            onClick={() =>
+                              void handleConfirmarNomeMedico(
+                                execucao.id,
+                                medicoAmbiguo.medicoId,
+                                nomeCorrigido.trim(),
+                              )
+                            }
+                            className="inline-flex h-10 items-center justify-center rounded-2xl border border-cyan-400/30 bg-cyan-400/10 px-4 text-corpo font-semibold text-cyan-100 transition hover:bg-cyan-400/20 disabled:cursor-not-allowed disabled:opacity-50"
+                            data-testid="automacao-progresso-medico-ambiguo-confirmar"
+                          >
+                            Confirmar e tentar novamente
+                          </button>
+                        </div>
                       ) : null}
+
+                      <div className="mt-3 flex flex-wrap items-center gap-4">
+                        {!medicoAmbiguo && ['failed', 'needs_attention'].includes(execucao.status) ? (
+                          <button
+                            type="button"
+                            onClick={() => void handleReprocessar(execucao.id)}
+                            disabled={reprocessar.isPending}
+                            className="inline-flex h-10 items-center justify-center rounded-2xl border border-cyan-400/30 bg-cyan-400/10 px-4 text-corpo font-semibold text-cyan-100 transition hover:bg-cyan-400/20 disabled:cursor-not-allowed disabled:opacity-50"
+                            data-testid="automacao-progresso-tentar-novamente"
+                          >
+                            Tentar novamente
+                          </button>
+                        ) : null}
+                        {resultado.tom !== 'sucesso' ? (
+                          <Link
+                            to={`/automacoes/${execucao.id}`}
+                            className="inline-block text-meta font-semibold underline decoration-current/40 underline-offset-4"
+                          >
+                            Ver detalhes em Automações
+                          </Link>
+                        ) : null}
+                      </div>
                     </div>
                   ) : (
                     <div

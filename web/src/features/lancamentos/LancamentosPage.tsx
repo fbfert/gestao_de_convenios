@@ -1,16 +1,17 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
-import { ColunaOrdenavel } from '../../components/ui/ColunaOrdenavel'
-import { useOrdenacao } from '../../lib/useOrdenacao'
+import { Fragment, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { ChevronDown, ChevronRight } from 'lucide-react'
 import { useListaNaUrl } from '../../lib/useListaNaUrl'
 import { Botao } from '../../components/ui/Botao'
 import { Paginacao } from '../../components/ui/Paginacao'
 import { Indicadores } from '../../components/ui/Indicadores'
+import { Badge } from '../../components/ui/Badge'
 import { Link, useMatch, useNavigate, useSearchParams } from 'react-router-dom'
 import { translateStatus } from '../../lib/statusLabels'
 import { Select } from '../../components/ui/Select'
 import { useProfissionais } from '../../lib/queries/useReferenceData'
 import { useGuia } from '../guias/useGuias'
 import type { Guia } from '../guias/types'
+import { statusTone as guiaStatusTone } from '../guias/statusTone'
 import {
   getHttpErrorMessage,
   useConfirmarLancamentosTranscritos,
@@ -36,6 +37,7 @@ import { SelecionarGuiaModal } from './SelecionarGuiaModal'
 const defaultFilters: LancamentoFilters = {
   profissional_id: '',
   data_sessao: '',
+  busca: '',
 }
 
 const LINHA_VAZIA: LancamentoTranscricaoSessao = {
@@ -99,24 +101,35 @@ export function LancamentosPage() {
   const [aviso, setAviso] = useState<string | null>(null)
   const arquivoRef = useRef<HTMLInputElement | null>(null)
 
-  const { ordenacao, ordenarPor } = useOrdenacao({
-    ordenar_por: 'id',
-    direcao: 'desc',
-  })
-
   const profissionaisQuery = useProfissionais()
   const guiaPreSelecionadaQuery = useGuia(initialGuiaId ? Number(initialGuiaId) : null)
-  const lancamentosQuery = useLancamentos({ ...filters, ...ordenacao }, page)
+  const lancamentosQuery = useLancamentos(filters, page)
   const printTemplateQuery = useLancamentoPrintTemplate()
   const lerArquivo = useLerRegistroSessoes()
   const analisarTexto = useImportarLancamentosTranscritos()
   const confirmar = useConfirmarLancamentosTranscritos()
 
   const profissionais = useMemo(() => profissionaisQuery.data ?? [], [profissionaisQuery.data])
-  const lancamentos = lancamentosQuery.data?.data ?? []
+  const grupos = lancamentosQuery.data?.data ?? []
+  const totalSessoesNaPagina = grupos.reduce((soma, grupo) => soma + grupo.lancamentos.length, 0)
   const totalPages = lancamentosQuery.data?.meta?.last_page ?? 1
   const query = paginaSearchParams.toString()
   const fromHref = query ? `/lancamentos?${query}` : '/lancamentos'
+
+  // Fechados por padrão (decisão do usuário) — só quem foi clicado pra abrir
+  // entra aqui.
+  const [guiasAbertas, setGuiasAbertas] = useState<Set<number>>(new Set())
+  const alternarGuia = (guiaId: number) => {
+    setGuiasAbertas((atual) => {
+      const proximo = new Set(atual)
+      if (proximo.has(guiaId)) {
+        proximo.delete(guiaId)
+      } else {
+        proximo.add(guiaId)
+      }
+      return proximo
+    })
+  }
 
   useEffect(() => {
     if (guiaPreSelecionadaQuery.data && !guiaSelecionada) {
@@ -371,7 +384,8 @@ export function LancamentosPage() {
 
           <Indicadores
             itens={[
-              { rotulo: 'Total na página', valor: lancamentos.length },
+              { rotulo: 'Guias na página', valor: grupos.length },
+              { rotulo: 'Sessões na página', valor: totalSessoesNaPagina },
               { rotulo: 'Página', valor: `${page} de ${totalPages}` },
             ]}
           />
@@ -612,7 +626,23 @@ export function LancamentosPage() {
         <section className="space-y-4 rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
           <div className="flex flex-col gap-4 sm:items-start lg:flex-row lg:items-end lg:justify-between">
 
-            <form className="grid gap-3 md:grid-cols-3 xl:grid-cols-3" onSubmit={handleFilterSubmit}>
+            <form className="grid gap-3 md:grid-cols-4 xl:grid-cols-4" onSubmit={handleFilterSubmit}>
+              <label className="space-y-2">
+                <span className="text-meta uppercase tracking-[0.25em] text-slate-400">
+                  Buscar
+                </span>
+                <input
+                  type="text"
+                  value={draftFilters.busca}
+                  onChange={(event) =>
+                    setDraftFilters((current) => ({ ...current, busca: event.target.value }))
+                  }
+                  placeholder="Guia, paciente, médico, profissional ou ID..."
+                  className={selectClasses()}
+                  data-testid="lancamento-filtro-busca"
+                />
+              </label>
+
               <label className="space-y-2">
                 <span className="text-meta uppercase tracking-[0.25em] text-slate-400">
                   Profissional executante
@@ -668,90 +698,103 @@ export function LancamentosPage() {
               <table className="w-full border-collapse text-left text-corpo" data-cartoes="lg">
                 <thead className="bg-fundo text-meta uppercase tracking-[0.25em] text-texto-suave">
                   <tr>
-                    <ColunaOrdenavel
-                    titulo="ID"
-                    coluna="id"
-                    ordenacao={ordenacao}
-                    onOrdenar={ordenarPor}
-                  />
-                    <ColunaOrdenavel
-                    titulo="Guia"
-                    coluna="guia"
-                    ordenacao={ordenacao}
-                    onOrdenar={ordenarPor}
-                  />
-                    <ColunaOrdenavel
-                    titulo="Profissional executante"
-                    coluna="profissional"
-                    ordenacao={ordenacao}
-                    onOrdenar={ordenarPor}
-                  />
-                    <ColunaOrdenavel
-                    titulo="Data / Hora"
-                    coluna="data"
-                    ordenacao={ordenacao}
-                    onOrdenar={ordenarPor}
-                  />
-                    <ColunaOrdenavel
-                    titulo="Acompanhante"
-                    coluna="acompanhante"
-                    ordenacao={ordenacao}
-                    onOrdenar={ordenarPor}
-                  />
-                    <ColunaOrdenavel titulo="Resumo" />
-                    <ColunaOrdenavel
-                    titulo="Status"
-                    coluna="status"
-                    ordenacao={ordenacao}
-                    onOrdenar={ordenarPor}
-                  />
-                    <ColunaOrdenavel titulo="Ações" />
+                    <th className="px-4 py-3">ID</th>
+                    <th className="px-4 py-3">Profissional executante</th>
+                    <th className="px-4 py-3">Data / Hora</th>
+                    <th className="px-4 py-3">Acompanhante</th>
+                    <th className="px-4 py-3">Resumo</th>
+                    <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-linha bg-superficie">
-                  {lancamentos.map((lancamento) => (
-                    <tr key={lancamento.id} data-testid={`lancamento-row-${lancamento.id}`}>
-                      <td data-rotulo="ID" className="px-4 py-4 font-medium text-white">#{lancamento.id}</td>
-                      <td data-rotulo="Guia" className="px-4 py-4 text-slate-200">
-                        {lancamento.guia?.numero_guia ?? `#${lancamento.guia_id}`}
-                      </td>
-                      <td data-rotulo="Profissional executante" className="px-4 py-4 text-slate-200">
-                        {lancamento.profissional?.nome ??
-                          profissionais.find((item) => item.id === lancamento.profissional_id)?.nome ??
-                          lancamento.profissional_id}
-                      </td>
-                      <td data-rotulo="Data / Hora" className="px-4 py-4 text-slate-200">
-                        <div>{lancamento.data_sessao}</div>
-                        <div className="text-meta text-slate-400">
-                          {formatEmpty(lancamento.hora_inicio)} - {formatEmpty(lancamento.hora_fim)}
-                        </div>
-                      </td>
-                      <td data-rotulo="Acompanhante" className="px-4 py-4 text-slate-200">
-                        {formatEmpty(lancamento.acompanhante)}
-                      </td>
-                      <td data-rotulo="Resumo" data-rotulo-bloco className="px-4 py-4 text-slate-200">
-                        <span className="block max-w-xl">{formatEmpty(lancamento.resumo_atividades)}</span>
-                      </td>
-                      <td data-rotulo="Status" className="px-4 py-4 text-slate-200">
-                        {translateStatus('lancamentos', lancamento.status)}
-                      </td>
-                      <td data-rotulo="Ações" data-rotulo-bloco className="px-4 py-4">
-                        {pode('lancamentos.manage') ? (
-                          <Link
-                            to={`/lancamentos/${lancamento.id}/editar`}
-                            state={{ from: fromHref }}
-                            className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-meta font-semibold text-white transition hover:bg-white/10"
-                            data-testid={`lancamento-editar-${lancamento.id}`}
-                          >
-                            Editar
-                          </Link>
-                        ) : null}
-                      </td>
-                    </tr>
-                  ))}
-                  {lancamentos.length === 0 ? (
+                  {grupos.map((grupo) => {
+                    const aberta = guiasAbertas.has(grupo.guia_id)
+
+                    return (
+                      <Fragment key={grupo.guia_id}>
+                        <tr>
+                          <td colSpan={7} className="p-0">
+                            <button
+                              type="button"
+                              onClick={() => alternarGuia(grupo.guia_id)}
+                              className="flex w-full flex-wrap items-center gap-3 px-4 py-3 text-left transition hover:bg-white/5"
+                              data-testid={`lancamento-grupo-guia-${grupo.guia_id}`}
+                              aria-expanded={aberta}
+                            >
+                              {aberta ? (
+                                <ChevronDown className="size-4 shrink-0 text-slate-400" aria-hidden="true" />
+                              ) : (
+                                <ChevronRight className="size-4 shrink-0 text-slate-400" aria-hidden="true" />
+                              )}
+                              <span className="font-semibold text-white">
+                                Guia {grupo.guia?.numero_guia ?? `#${grupo.guia_id}`}
+                              </span>
+                              {grupo.guia?.paciente_nome ? (
+                                <span className="text-slate-300">· {grupo.guia.paciente_nome}</span>
+                              ) : null}
+                              {grupo.guia?.medico_nome ? (
+                                <span className="text-slate-400">· Dr(a). {grupo.guia.medico_nome}</span>
+                              ) : null}
+                              {grupo.guia?.status ? (
+                                <Badge tone={guiaStatusTone(grupo.guia.status)}>
+                                  {translateStatus('guias', grupo.guia.status)}
+                                </Badge>
+                              ) : null}
+                              <span className="ml-auto text-meta font-semibold text-slate-400">
+                                {grupo.lancamentos.length} sessão(ões)
+                              </span>
+                            </button>
+                          </td>
+                        </tr>
+
+                        {aberta
+                          ? grupo.lancamentos.map((lancamento) => (
+                              <tr key={lancamento.id} data-testid={`lancamento-row-${lancamento.id}`}>
+                                <td data-rotulo="ID" className="px-4 py-4 font-medium text-white">
+                                  #{lancamento.id}
+                                </td>
+                                <td data-rotulo="Profissional executante" className="px-4 py-4 text-slate-200">
+                                  {lancamento.profissional?.nome ??
+                                    profissionais.find((item) => item.id === lancamento.profissional_id)?.nome ??
+                                    lancamento.profissional_id}
+                                </td>
+                                <td data-rotulo="Data / Hora" className="px-4 py-4 text-slate-200">
+                                  <div>{lancamento.data_sessao}</div>
+                                  <div className="text-meta text-slate-400">
+                                    {formatEmpty(lancamento.hora_inicio)} - {formatEmpty(lancamento.hora_fim)}
+                                  </div>
+                                </td>
+                                <td data-rotulo="Acompanhante" className="px-4 py-4 text-slate-200">
+                                  {formatEmpty(lancamento.acompanhante)}
+                                </td>
+                                <td data-rotulo="Resumo" data-rotulo-bloco className="px-4 py-4 text-slate-200">
+                                  <span className="block max-w-xl">{formatEmpty(lancamento.resumo_atividades)}</span>
+                                </td>
+                                <td data-rotulo="Status" className="px-4 py-4 text-slate-200">
+                                  {translateStatus('lancamentos', lancamento.status)}
+                                </td>
+                                <td data-rotulo="Ações" data-rotulo-bloco className="px-4 py-4">
+                                  {pode('lancamentos.manage') ? (
+                                    <Link
+                                      to={`/lancamentos/${lancamento.id}/editar`}
+                                      state={{ from: fromHref }}
+                                      className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-meta font-semibold text-white transition hover:bg-white/10"
+                                      data-testid={`lancamento-editar-${lancamento.id}`}
+                                    >
+                                      Editar
+                                    </Link>
+                                  ) : null}
+                                </td>
+                              </tr>
+                            ))
+                          : null}
+                      </Fragment>
+                    )
+                  })}
+                  {grupos.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="px-4 py-8 text-center text-slate-300">
+                      <td colSpan={7} className="px-4 py-8 text-center text-slate-300">
                         Nenhuma sessão encontrada.
                       </td>
                     </tr>

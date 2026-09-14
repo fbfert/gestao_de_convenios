@@ -114,6 +114,19 @@ class SolicitacoesApiTest extends TestCase
             ->assertJsonCount(0, 'data');
     }
 
+    public function test_filtra_solicitacoes_por_id(): void
+    {
+        $this->autenticar();
+        $alvo = $this->postJson('/api/solicitacoes', $this->payloadSolicitacao('Unimed'))
+            ->assertCreated()->json('data.id');
+        $this->postJson('/api/solicitacoes', $this->payloadSolicitacao('Unimed'))->assertCreated();
+
+        $this->getJson('/api/solicitacoes?id='.$alvo)
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $alvo);
+    }
+
     public function test_cria_solicitacao_com_multiplos_itens(): void
     {
         $this->autenticar();

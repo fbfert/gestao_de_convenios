@@ -17,6 +17,7 @@ import { AutomacaoProgressoModal } from './AutomacaoProgressoModal'
 import { medicoAmbiguoInfo } from './medicoAmbiguo'
 
 const defaultFilters: AutomacaoFilters = {
+  id: '',
   status: '',
   operacao: '',
   needs_attention: '',
@@ -209,6 +210,9 @@ export function AutomacoesPage() {
               ) : null}
 
               <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <Info label="Paciente">{execucao.paciente_nome ?? '-'}</Info>
+                <Info label="Médico">{execucao.medico_nome ?? '-'}</Info>
+                <Info label="Profissional executante">{execucao.profissional_executante_nome ?? '-'}</Info>
                 <Info label="Guia">{execucao.guia_id ? `#${execucao.guia_id}` : '-'}</Info>
                 <Info label="Item">{execucao.solicitacao_item_id ? `#${execucao.solicitacao_item_id}` : '-'}</Info>
                 <Info label="Origem">{execucao.parent_id ? `#${execucao.parent_id}` : '-'}</Info>
@@ -285,11 +289,20 @@ export function AutomacoesPage() {
       <section className="grid gap-4 md:grid-cols-3">
         <Summary label="Na página" value={String(automacoes.length)} />
         <Summary label="Atenção" value={String(attentionCount)} tone="attention" />
-        <Summary label="Filtro" value={filters.numero_guia || filters.status || filters.operacao || 'Todos'} />
+        <Summary label="Filtro" value={filters.id || filters.numero_guia || filters.status || filters.operacao || 'Todos'} />
       </section>
 
       <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
-        <form className="grid gap-3 md:grid-cols-5" onSubmit={handleFilterSubmit}>
+        <form className="grid gap-3 md:grid-cols-6" onSubmit={handleFilterSubmit}>
+          <input
+            type="text"
+            inputMode="numeric"
+            value={draftFilters.id}
+            onChange={(event) => setDraftFilters((current) => ({ ...current, id: event.target.value.replace(/\D/g, '') }))}
+            placeholder="Buscar por ID"
+            className={inputClasses()}
+            data-testid="automacao-filtro-id"
+          />
           <input
             type="text"
             value={draftFilters.numero_guia}

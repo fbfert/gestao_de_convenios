@@ -163,6 +163,27 @@ class GuiasApiTest extends TestCase
         $this->assertContains($id, $porNomeProfissional);
     }
 
+    /**
+     * Filtro dedicado da tela de listagem de Guias — diferente do `busca`
+     * livre acima (que também casa nome de paciente/profissional): esse só
+     * bate `numero_guia LIKE`.
+     */
+    public function test_filtra_guias_por_numero_da_guia(): void
+    {
+        $this->autenticar();
+
+        $payload = $this->payloadGuia('Unimed');
+        $payload['numero_guia'] = '50999000222';
+        $id = $this->postJson('/api/guias', $payload)->assertCreated()->json('data.id');
+
+        $this->postJson('/api/guias', $this->payloadGuia('Unimed', 'Fonoaudiologia'))->assertCreated();
+
+        $this->getJson('/api/guias?numero_guia=99000222')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $id);
+    }
+
     public function test_finaliza_via_http_sem_validade_senha_calculando_data_automaticamente(): void
     {
         $this->autenticar();

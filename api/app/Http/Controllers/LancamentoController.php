@@ -17,7 +17,6 @@ use App\Services\LancamentoService;
 use App\Services\RegistroSessoesAiService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -28,11 +27,36 @@ class LancamentoController extends Controller
         private readonly AnaliticoUnimedImportService $analiticoImportService
     ) {}
 
-    public function index(Request $request): AnonymousResourceCollection
+    /**
+     * Agrupada por Guia (uma guia = um grupo com todas as sessões batendo os
+     * filtros dentro) — a paginação é por GUIA, não por lançamento, então o
+     * shape de resposta não é o `AnonymousResourceCollection` padrão.
+     */
+    public function index(Request $request): JsonResponse
     {
-        return LancamentoResource::collection(
-            $this->service->listar($request->only(['profissional_id', 'data_sessao']), $request->integer('per_page') ?: ConfiguracaoGlobal::itensPorPagina())
+        $pagina = $this->service->listarAgrupadoPorGuia(
+            $request->only(['profissional_id', 'data_sessao', 'busca']),
+            $request->integer('per_page') ?: ConfiguracaoGlobal::itensPorPagina(),
         );
+
+        return response()->json([
+            'data' => collect($pagina->items())->map(fn ($grupo) => [
+                'guia_id' => $grupo['guia_id'],
+                'guia' => $grupo['guia'] ? [
+                    'id' => $grupo['guia']->id,
+                    'numero_guia' => $grupo['guia']->numero_guia,
+                    'status' => $grupo['guia']->status,
+                    'paciente_nome' => $grupo['guia']->paciente?->nome,
+                    'medico_nome' => $grupo['guia']->solicitacaoItem?->solicitacao?->medico?->nome,
+                ] : null,
+                'lancamentos' => LancamentoResource::collection($grupo['lancamentos'])->resolve(),
+            ])->values(),
+            'meta' => [
+                'current_page' => $pagina->currentPage(),
+                'last_page' => $pagina->lastPage(),
+                'total' => $pagina->total(),
+            ],
+        ]);
     }
 
     public function show(Lancamento $lancamento): LancamentoResource

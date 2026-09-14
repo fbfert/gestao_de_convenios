@@ -169,6 +169,7 @@ export type PaginatedResponse<T> = {
 }
 
 export type SolicitacaoFilters = {
+  id: string
   status: string
   convenio_id: string
   paciente: string

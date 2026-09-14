@@ -70,6 +70,7 @@ import { statusTone as guiaStatusTone } from '../guias/statusTone'
 const emptyArray: never[] = []
 
 const defaultFilters: SolicitacaoFilters = {
+  id: '',
   status: '',
   convenio_id: '',
   paciente: '',
@@ -851,6 +852,24 @@ export function SolicitacoesPage() {
         <div className="flex flex-col gap-4 sm:items-start lg:flex-row lg:items-end lg:justify-between">
 
           <form className="flex flex-wrap gap-3" onSubmit={handleFilterSubmit}>
+            <label className="min-w-28 flex-1 space-y-2">
+              <span className="text-meta uppercase tracking-[0.25em] text-slate-400">ID</span>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={draftFilters.id}
+                onChange={(event) =>
+                  setDraftFilters((current) => ({
+                    ...current,
+                    id: event.target.value.replace(/\D/g, ''),
+                  }))
+                }
+                placeholder="Buscar por ID"
+                className={selectClasses()}
+                data-testid="solicitacao-filtro-id"
+              />
+            </label>
+
             <label className="min-w-40 flex-1 space-y-2">
               <span className="text-meta uppercase tracking-[0.25em] text-slate-400">Paciente</span>
               <input

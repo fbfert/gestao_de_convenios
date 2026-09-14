@@ -108,6 +108,7 @@ export type GuiaFilters = {
   convenio_id: string
   profissional_id: string
   paciente_nome: string
+  numero_guia: string
   validade_senha_vencendo_em_dias: string
   mostrar_a_definir: string
   mostrar_historico: string

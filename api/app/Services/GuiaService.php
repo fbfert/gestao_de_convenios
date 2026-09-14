@@ -75,6 +75,8 @@ class GuiaService
             ->when(Arr::get($filtros, 'profissional_id'), fn ($query, $profissionalId) => $query->where('profissional_id', $profissionalId))
             ->when(Arr::get($filtros, 'paciente_nome'), fn ($query, $pacienteNome) => $query
                 ->whereHas('paciente', fn ($query) => $query->where('nome', 'like', '%' . $pacienteNome . '%')))
+            ->when(Arr::get($filtros, 'numero_guia'), fn ($query, $numeroGuia) => $query
+                ->where('guias.numero_guia', 'like', '%' . $numeroGuia . '%'))
             // Busca livre do modal de seleção de guia (lançamento de sessão):
             // ID, número da guia, nome do paciente ou do profissional executante,
             // qualquer um batendo já mostra a guia. Distinto do par

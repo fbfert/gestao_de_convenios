@@ -28,9 +28,23 @@ export type PaginatedResponse<T> = {
   }
 }
 
+/** Um grupo por Guia — a listagem agrupa as sessões da mesma guia juntas. */
+export type LancamentoGuiaGrupo = {
+  guia_id: number
+  guia: {
+    id: number
+    numero_guia: string | null
+    status: string
+    paciente_nome: string | null
+    medico_nome: string | null
+  } | null
+  lancamentos: Lancamento[]
+}
+
 export type LancamentoFilters = {
   profissional_id: string
   data_sessao: string
+  busca: string
 }
 
 export type LancamentoImportForm = {

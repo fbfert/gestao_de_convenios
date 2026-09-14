@@ -15,16 +15,27 @@ use Illuminate\Validation\ValidationException;
 
 class AutomacaoController extends Controller
 {
+    /**
+     * Relações que AutomacaoExecucaoResource precisa pra montar
+     * paciente_nome/medico_nome/profissional_executante_nome sem lazy load —
+     * mesma lista nos 3 pontos que devolvem o resource (index/show/reprocessar).
+     */
+    private const RELACOES_PARA_RESOURCE = [
+        'guia.paciente', 'guia.profissional', 'guia.solicitacaoItem.solicitacao.medico',
+        'solicitacaoItem.profissional', 'solicitacaoItem.solicitacao.paciente', 'solicitacaoItem.solicitacao.medico',
+    ];
+
     public function index(Request $request): AnonymousResourceCollection
     {
         $tenantId = (int) $request->user()->tenant_id;
-        $filtros = $request->only(['status', 'operacao', 'guia_id', 'solicitacao_item_id', 'needs_attention', 'numero_guia']);
+        $filtros = $request->only(['id', 'status', 'operacao', 'guia_id', 'solicitacao_item_id', 'needs_attention', 'numero_guia']);
         $ultimoStatusSql = $this->subqueryUltimoStatusDaGuia();
 
         $query = AutomacaoExecucao::query()
             ->where('tenant_id', $tenantId)
-            ->with(['guia', 'solicitacaoItem'])
+            ->with(self::RELACOES_PARA_RESOURCE)
             ->selectRaw("automacao_execucoes.*, ({$ultimoStatusSql}) as guia_ultima_execucao_status")
+            ->when(Arr::get($filtros, 'id'), fn ($query, $id) => $query->where('id', $id))
             ->when(Arr::get($filtros, 'status'), fn ($query, $status) => $query->where('status', $status))
             ->when(Arr::get($filtros, 'operacao'), fn ($query, $operacao) => $query->where('operacao', $operacao))
             ->when(Arr::get($filtros, 'guia_id'), fn ($query, $guiaId) => $query->where('guia_id', $guiaId))
@@ -62,7 +73,7 @@ class AutomacaoController extends Controller
         );
 
         return new AutomacaoExecucaoResource(
-            $automacaoExecucao->load(['guia', 'solicitacaoItem', 'eventos'])
+            $automacaoExecucao->load([...self::RELACOES_PARA_RESOURCE, 'eventos'])
         );
     }
 
@@ -108,7 +119,7 @@ class AutomacaoController extends Controller
         ExecutarAutomacaoUnimedJob::dispatch($nova->id);
 
         return response()->json([
-            'data' => AutomacaoExecucaoResource::make($nova->load(['guia', 'solicitacaoItem']))->resolve(),
+            'data' => AutomacaoExecucaoResource::make($nova->load(self::RELACOES_PARA_RESOURCE))->resolve(),
         ], 202);
     }
 }

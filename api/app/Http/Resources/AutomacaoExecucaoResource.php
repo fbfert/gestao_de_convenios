@@ -21,6 +21,19 @@ class AutomacaoExecucaoResource extends JsonResource
             'solicitacao_item_id' => $this->solicitacao_item_id,
             'guia_id' => $this->guia_id,
             'parent_id' => $this->parent_id,
+            // So no payload (`gerar_guia`) essas 3 informacoes vem prontas — as
+            // outras 3 operacoes (consultar_status, capturar_senha_validade,
+            // confirmar_guia_incerta) nao carregam medico/profissional no
+            // payload. Le direto das relacoes pra funcionar igual pra
+            // qualquer operacao, com a Guia como fallback quando nao ha
+            // solicitacao_item (execucoes que operam sobre uma Guia ja
+            // existente).
+            'paciente_nome' => $this->solicitacaoItem?->solicitacao?->paciente?->nome
+                ?? $this->guia?->paciente?->nome,
+            'medico_nome' => $this->solicitacaoItem?->solicitacao?->medico?->nome
+                ?? $this->guia?->solicitacaoItem?->solicitacao?->medico?->nome,
+            'profissional_executante_nome' => $this->solicitacaoItem?->profissional?->nome
+                ?? $this->guia?->profissional?->nome,
             'erro_codigo' => $this->erro_codigo,
             'erro_mensagem' => $this->erro_mensagem,
             'payload' => $this->payload,

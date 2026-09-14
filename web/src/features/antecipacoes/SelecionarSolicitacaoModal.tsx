@@ -29,6 +29,7 @@ export function SelecionarSolicitacaoModal({ open, onClose, onSelecionar }: Sele
 
   const query = useSolicitacoes(
     {
+      id: '',
       status: '',
       convenio_id: '',
       paciente: debounced,

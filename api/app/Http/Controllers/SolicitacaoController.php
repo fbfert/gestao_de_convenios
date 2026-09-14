@@ -36,7 +36,7 @@ class SolicitacaoController extends Controller
     public function index(Request $request): AnonymousResourceCollection
     {
         return SolicitacaoResource::collection(
-            $this->service->listar($request->only(['status', 'convenio_id', 'medico_id', 'paciente', 'medico', 'profissional', 'mostrar_historico']), $request->integer('per_page') ?: ConfiguracaoGlobal::itensPorPagina())
+            $this->service->listar($request->only(['id', 'status', 'convenio_id', 'medico_id', 'paciente', 'medico', 'profissional', 'mostrar_historico']), $request->integer('per_page') ?: ConfiguracaoGlobal::itensPorPagina())
         );
     }
 

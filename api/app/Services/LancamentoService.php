@@ -24,10 +24,17 @@ class LancamentoService
     ) {
     }
 
-    public function listar(array $filtros = [], int $perPage = 15): LengthAwarePaginator
+    /**
+     * Filtro livre (`busca`): id do lançamento, número da guia, nome do
+     * profissional executante, do paciente ou do médico solicitante — um
+     * campo só, mesmo padrão do `busca` de GuiaService (SelecionarGuiaModal).
+     * Médico só é alcançável via guia -> solicitacaoItem -> solicitacao
+     * (Guia não tem medico_id direto).
+     */
+    private function queryFiltrada(array $filtros)
     {
         $query = $this->aplicarEscopoOwn(
-            Lancamento::query()->with(['guia', 'profissional']),
+            Lancamento::query(),
             'lancamentos.view',
             'lancamentos.viewOwn',
             fn ($query, $user) => $query->where('profissional_id', $user->profissional_id)
@@ -36,24 +43,69 @@ class LancamentoService
         return $query
             ->when(Arr::get($filtros, 'profissional_id'), fn ($query, $profissionalId) => $query->where('profissional_id', $profissionalId))
             ->when(Arr::get($filtros, 'data_sessao'), fn ($query, $dataSessao) => $query->whereDate('data_sessao', $dataSessao))
-            ->tap(fn ($query) => OrdenaListagem::aplicar(
-                $query->select('lancamentos.*'),
-                $filtros,
-                [
-                    'id' => 'lancamentos.id',
-                    'guia' => 'lancamentos.guia_id',
-                    'data' => 'lancamentos.data_sessao',
-                    'acompanhante' => 'lancamentos.acompanhante',
-                    'status' => 'lancamentos.status',
-                    'profissional' => fn ($query, $direcao) => $query
-                        ->leftJoin('profissionais', 'profissionais.id', '=', 'lancamentos.profissional_id')
-                        ->orderBy('profissionais.nome', $direcao),
-                ],
-                padrao: 'lancamentos.id',
-                direcaoPadrao: 'desc',
-                desempate: 'lancamentos.id',
-            ))
-            ->paginate($perPage);
+            ->when(trim((string) Arr::get($filtros, 'busca', '')) !== '', function ($query) use ($filtros) {
+                $busca = trim((string) $filtros['busca']);
+
+                $query->where(function ($nested) use ($busca) {
+                    $nested->whereHas('guia', fn ($q) => $q->where('numero_guia', 'like', '%'.$busca.'%'))
+                        ->orWhereHas('profissional', fn ($q) => $q->where('nome', 'like', '%'.$busca.'%'))
+                        ->orWhereHas('guia.paciente', fn ($q) => $q->where('nome', 'like', '%'.$busca.'%'))
+                        ->orWhereHas(
+                            'guia.solicitacaoItem.solicitacao.medico',
+                            fn ($q) => $q->where('nome', 'like', '%'.$busca.'%'),
+                        );
+
+                    if (ctype_digit($busca)) {
+                        $nested->orWhere('lancamentos.id', (int) $busca);
+                    }
+                });
+            });
+    }
+
+    /**
+     * Cada guia vira um grupo com todas as suas sessões (que baterem os
+     * filtros) dentro — paginado pela GUIA, não pela sessão: uma guia com
+     * muitos lançamentos nunca fica cortada entre duas páginas.
+     *
+     * @return LengthAwarePaginator<int, array{guia_id: int, guia: Guia|null, lancamentos: \Illuminate\Support\Collection<int, Lancamento>}>
+     */
+    public function listarAgrupadoPorGuia(array $filtros = [], int $porPagina = 15): LengthAwarePaginator
+    {
+        // Guias distintas com pelo menos 1 lançamento batendo os filtros,
+        // ordenadas pela sessão mais recente de cada uma — guia mais ativa
+        // primeiro. Clona a base pra essa consulta de agregação não vazar
+        // pra consulta de detalhe logo abaixo.
+        $paginaDeGuias = (clone $this->queryFiltrada($filtros))
+            ->select('lancamentos.guia_id')
+            ->selectRaw('MAX(lancamentos.data_sessao) as ultima_sessao')
+            ->groupBy('lancamentos.guia_id')
+            ->orderByDesc('ultima_sessao')
+            ->orderByDesc('lancamentos.guia_id')
+            ->paginate($porPagina);
+
+        $guiaIds = collect($paginaDeGuias->items())->pluck('guia_id');
+
+        $porGuia = (clone $this->queryFiltrada($filtros))
+            ->whereIn('lancamentos.guia_id', $guiaIds)
+            ->with([
+                'profissional',
+                'guia.paciente',
+                'guia.solicitacaoItem.solicitacao.medico',
+            ])
+            ->orderBy('lancamentos.data_sessao')
+            ->orderBy('lancamentos.id')
+            ->get()
+            ->groupBy('guia_id');
+
+        $paginaDeGuias->setCollection(
+            collect($paginaDeGuias->items())->map(fn ($linha) => [
+                'guia_id' => $linha->guia_id,
+                'guia' => $porGuia->get($linha->guia_id, collect())->first()?->guia,
+                'lancamentos' => $porGuia->get($linha->guia_id, collect())->values(),
+            ])->values()
+        );
+
+        return $paginaDeGuias;
     }
 
     public function buscar(int $id): Lancamento

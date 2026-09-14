@@ -39,6 +39,7 @@ const defaultFilters: GuiaFilters = {
   convenio_id: '',
   profissional_id: '',
   paciente_nome: '',
+  numero_guia: '',
   validade_senha_vencendo_em_dias: '',
   mostrar_a_definir: '',
   mostrar_historico: '',
@@ -651,6 +652,22 @@ export function GuiasPage() {
                 placeholder="Buscar por nome..."
                 className={selectClasses()}
                 data-testid="guia-filtro-paciente-nome"
+              />
+            </div>
+          </label>
+
+          <label className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <span className="text-meta uppercase tracking-[0.25em] text-slate-400">Nº Guia</span>
+            <div className="w-full sm:w-52">
+              <input
+                type="text"
+                value={draftFilters.numero_guia}
+                onChange={(event) =>
+                  setDraftFilters((current) => ({ ...current, numero_guia: event.target.value }))
+                }
+                placeholder="Buscar por número..."
+                className={selectClasses()}
+                data-testid="guia-filtro-numero-guia"
               />
             </div>
           </label>

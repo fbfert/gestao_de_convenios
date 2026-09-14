@@ -10,8 +10,10 @@ use App\Models\Especialidade;
 use App\Models\Guia;
 use App\Models\Lancamento;
 use App\Models\LancamentoPrintTemplate;
+use App\Models\Medico;
 use App\Models\Paciente;
 use App\Models\Profissional;
+use App\Models\Solicitacao;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Services\GuiaService;
@@ -54,9 +56,16 @@ class LancamentosApiTest extends TestCase
             'data_sessao' => today()->copy()->subDay()->toDateString(),
         ])->assertCreated();
 
+        // Resposta agrupada por Guia: as 2 sessões são da MESMA guia, então
+        // só 1 grupo aparece — mas o filtro (profissional_id + data_sessao)
+        // restringe quais lançamentos ficam DENTRO do grupo, não quais
+        // guias aparecem.
         $this->getJson('/api/lancamentos?profissional_id='.$profissionalAlvo->id.'&data_sessao='.today()->toDateString())
             ->assertOk()
-            ->assertJsonPath('data.0.id', $lancamentoId)
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.guia_id', $guia->id)
+            ->assertJsonCount(1, 'data.0.lancamentos')
+            ->assertJsonPath('data.0.lancamentos.0.id', $lancamentoId)
             ->assertJsonMissing(['profissional_id' => $profissionalOutro->id]);
     }
 
@@ -342,9 +351,163 @@ TXT;
         $this->getJson('/api/lancamentos')
             ->assertOk()
             ->assertJsonCount(1, 'data')
-            ->assertJsonPath('data.0.id', $lancamentoProprio->id);
+            ->assertJsonPath('data.0.guia_id', $lancamentoProprio->guia_id)
+            ->assertJsonPath('data.0.lancamentos.0.id', $lancamentoProprio->id);
 
         $this->assertNotSame($lancamentoProprio->id, $lancamentoOutro->id);
+    }
+
+    public function test_listagem_agrupa_sessoes_por_guia_e_busca_por_guia_paciente_profissional_e_id(): void
+    {
+        $this->autenticar();
+        $tenant = Tenant::query()->where('slug', 'clinica-exemplo')->firstOrFail();
+
+        $profissionalA = Profissional::query()->where('nome', 'Dra. Marina Tavares')->firstOrFail();
+        $profissionalB = Profissional::query()->where('id', '!=', $profissionalA->id)->firstOrFail();
+
+        // Sem digito no numero da guia de proposito (mesmo motivo documentado em
+        // GuiasApiTest::test_busca_guias_por_id_numero_paciente_ou_profissional):
+        // uniqid() e hexadecimal cheio de digitos, e a busca por ID abaixo e
+        // LIKE — um numero_guia com digito por coincidencia bate no id numerico
+        // e torna o teste instavel.
+        $lancamentoA1 = $this->criarLancamentoParaProfissional($tenant, $profissionalA, 'Unimed', 'especializada', 'GUIA-BUSCA-A-'.preg_replace('/\d/', '', uniqid()));
+        $guiaA = $lancamentoA1->guia;
+        app(LancamentoService::class)->registrar($guiaA, $profissionalA, today()->subDay());
+
+        $lancamentoB = $this->criarLancamentoParaProfissional($tenant, $profissionalB, 'SC Saúde', 'convencional', 'GUIA-BUSCA-B-'.preg_replace('/\d/', '', uniqid()));
+        $guiaB = $lancamentoB->guia;
+        $pacienteB = Paciente::query()->findOrFail($guiaB->paciente_id);
+
+        // Sem filtro: 2 grupos (1 por guia), cada um com suas próprias sessões.
+        $semFiltro = $this->getJson('/api/lancamentos')->assertOk();
+        $semFiltro->assertJsonCount(2, 'data');
+        $grupoA = collect($semFiltro->json('data'))->firstWhere('guia_id', $guiaA->id);
+        $this->assertNotNull($grupoA);
+        $this->assertCount(2, $grupoA['lancamentos']);
+
+        // Busca por número da guia (parcial).
+        $this->getJson('/api/lancamentos?'.http_build_query(['busca' => $guiaA->numero_guia]))
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.guia_id', $guiaA->id);
+
+        // Busca por nome do paciente.
+        $this->getJson('/api/lancamentos?'.http_build_query(['busca' => $pacienteB->nome]))
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.guia_id', $guiaB->id);
+
+        // Busca por nome do profissional executante.
+        $this->getJson('/api/lancamentos?'.http_build_query(['busca' => $profissionalA->nome]))
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.guia_id', $guiaA->id);
+
+        // Busca por id do lançamento (numérico) — só a sessão certa entra no grupo.
+        $this->getJson('/api/lancamentos?'.http_build_query(['busca' => (string) $lancamentoB->id]))
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.guia_id', $guiaB->id)
+            ->assertJsonCount(1, 'data.0.lancamentos');
+    }
+
+    /** Médico só é alcançável via guia -> solicitacaoItem -> solicitacao -> medico. */
+    public function test_listagem_agrupada_busca_por_medico_solicitante(): void
+    {
+        $this->autenticar();
+        $tenantId = Tenant::query()->where('slug', 'clinica-exemplo')->firstOrFail()->id;
+
+        $convenio = Convenio::query()->where('tenant_id', $tenantId)->firstOrFail();
+        $especialidade = Especialidade::query()->where('tenant_id', $tenantId)->firstOrFail();
+        $profissional = Profissional::query()->where('tenant_id', $tenantId)->where('especialidade_id', $especialidade->id)->firstOrFail();
+        $paciente = Paciente::query()->where('tenant_id', $tenantId)->where('convenio_id', $convenio->id)->firstOrFail();
+        $medico = Medico::query()->where('tenant_id', $tenantId)->firstOrFail();
+
+        $solicitacao = Solicitacao::query()->create([
+            'tenant_id' => $tenantId,
+            'paciente_id' => $paciente->id,
+            'profissional_id' => $profissional->id,
+            'especialidade_id' => $especialidade->id,
+            'convenio_id' => $convenio->id,
+            'medico_id' => $medico->id,
+            'status' => 'ready_for_automation',
+            'solicitado_em' => today(),
+            'observacoes' => null,
+        ]);
+
+        $item = $solicitacao->itens()->create([
+            'tenant_id' => $tenantId,
+            'especialidade_id' => $especialidade->id,
+            'profissional_id' => $profissional->id,
+            'quantidade' => 10,
+            'status_operacional' => 'pending',
+        ]);
+
+        $guia = Guia::query()->create([
+            'tenant_id' => $tenantId,
+            'solicitacao_id' => $solicitacao->id,
+            'solicitacao_item_id' => $item->id,
+            'convenio_id' => $convenio->id,
+            'paciente_id' => $paciente->id,
+            'profissional_id' => $profissional->id,
+            'especialidade_id' => $especialidade->id,
+            'numero_guia' => 'GUIA-MEDICO-'.uniqid(),
+            'tipo_terapia' => 'especializada',
+            'status' => 'under_review',
+            'sessoes_autorizadas' => 10,
+            'data_solicitacao' => today(),
+            'data_finalizacao' => null,
+            'senha' => null,
+            'validade_senha' => null,
+            'observacoes' => null,
+        ]);
+
+        $guiaFinalizada = app(GuiaService::class)->finalizar($guia, ['senha' => 'ABC123']);
+        app(LancamentoService::class)->registrar($guiaFinalizada, $profissional, today());
+
+        $this->getJson('/api/lancamentos?'.http_build_query(['busca' => $medico->nome]))
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.guia_id', $guiaFinalizada->id)
+            ->assertJsonPath('data.0.guia.medico_nome', $medico->nome);
+    }
+
+    public function test_paginacao_da_listagem_agrupada_e_por_guia_nao_por_sessao(): void
+    {
+        $this->autenticar();
+        $tenant = Tenant::query()->where('slug', 'clinica-exemplo')->firstOrFail();
+        $profissional = Profissional::query()->where('nome', 'Dra. Marina Tavares')->firstOrFail();
+
+        $lancamentoA = $this->criarLancamentoParaProfissional($tenant, $profissional, 'Unimed', 'especializada', 'GUIA-PAG-A-'.uniqid());
+        $guiaA = $lancamentoA->guia;
+        app(LancamentoService::class)->registrar($guiaA, $profissional, today()->subDay());
+        app(LancamentoService::class)->registrar($guiaA, $profissional, today()->subDays(2));
+
+        $lancamentoB = $this->criarLancamentoParaProfissional($tenant, $profissional, 'Unimed', 'especializada', 'GUIA-PAG-B-'.uniqid());
+        $lancamentoC = $this->criarLancamentoParaProfissional($tenant, $profissional, 'Unimed', 'especializada', 'GUIA-PAG-C-'.uniqid());
+
+        $pagina1 = $this->getJson('/api/lancamentos?per_page=2')->assertOk();
+        $pagina1->assertJsonCount(2, 'data')
+            ->assertJsonPath('meta.total', 3)
+            ->assertJsonPath('meta.last_page', 2);
+
+        $pagina2 = $this->getJson('/api/lancamentos?per_page=2&page=2')->assertOk();
+        $pagina2->assertJsonCount(1, 'data');
+
+        // guiaA tem 3 sessões — onde quer que apareça, tem que vir inteira,
+        // nunca cortada entre as duas páginas.
+        $grupoA = collect($pagina1->json('data'))->firstWhere('guia_id', $guiaA->id)
+            ?? collect($pagina2->json('data'))->firstWhere('guia_id', $guiaA->id);
+        $this->assertNotNull($grupoA);
+        $this->assertCount(3, $grupoA['lancamentos']);
+
+        // As 3 guias aparecem ao todo, uma vez cada, somando as duas páginas.
+        $todasGuias = collect($pagina1->json('data'))->pluck('guia_id')
+            ->merge(collect($pagina2->json('data'))->pluck('guia_id'));
+        $this->assertEqualsCanonicalizing(
+            [$guiaA->id, $lancamentoB->guia_id, $lancamentoC->guia_id],
+            $todasGuias->all(),
+        );
     }
 
     public function test_consulta_e_atualiza_template_de_impressao_do_registro_de_sessoes(): void

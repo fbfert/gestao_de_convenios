@@ -12,6 +12,9 @@ export type AutomacaoExecucao = {
   solicitacao_item_id: number | null
   guia_id: number | null
   parent_id: number | null
+  paciente_nome: string | null
+  medico_nome: string | null
+  profissional_executante_nome: string | null
   erro_codigo: string | null
   erro_mensagem: string | null
   payload: Record<string, unknown> | null
@@ -43,6 +46,7 @@ export type AutomacaoEvento = {
 }
 
 export type AutomacaoFilters = {
+  id: string
   status: string
   operacao: string
   needs_attention: string

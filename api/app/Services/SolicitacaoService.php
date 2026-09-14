@@ -74,6 +74,7 @@ class SolicitacaoService
                 fn ($query) => $query->where('status', 'historico'),
                 fn ($query) => $query->where('status', '!=', 'historico'),
             )
+            ->when(Arr::get($filtros, 'id'), fn ($query, $id) => $query->where('solicitacoes.id', $id))
             ->when(Arr::get($filtros, 'status'), fn ($query, $status) => $query->where('status', $status))
             ->when(Arr::get($filtros, 'convenio_id'), fn ($query, $convenioId) => $query->where('convenio_id', $convenioId))
             ->when(Arr::get($filtros, 'medico_id'), fn ($query, $medicoId) => $query->where('medico_id', $medicoId))

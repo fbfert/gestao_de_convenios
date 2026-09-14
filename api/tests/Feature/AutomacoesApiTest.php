@@ -118,6 +118,42 @@ class AutomacoesApiTest extends TestCase
             ->assertJsonPath('data.precisa_atencao', true);
     }
 
+    /**
+     * Guia criada direto (sem solicitacao_item) — cobre o fallback via Guia
+     * pra paciente/profissional. Médico só é alcançável via
+     * guia->solicitacaoItem->solicitacao->medico, que não existe aqui: fica
+     * null de propósito, não é um bug deste teste.
+     */
+    public function test_detalhe_traz_paciente_e_profissional_executante_via_guia(): void
+    {
+        $this->autenticar();
+        $guia = $this->criarGuia();
+
+        $execucao = $this->execucao([
+            'guia_id' => $guia->id,
+            'status' => 'succeeded',
+            'operacao' => 'consult_status_batch',
+        ]);
+
+        $this->getJson("/api/automacoes/{$execucao->id}")
+            ->assertOk()
+            ->assertJsonPath('data.paciente_nome', $guia->paciente->nome)
+            ->assertJsonPath('data.profissional_executante_nome', $guia->profissional->nome)
+            ->assertJsonPath('data.medico_nome', null);
+    }
+
+    public function test_filtra_por_id(): void
+    {
+        $this->autenticar();
+        $alvo = $this->execucao(['status' => 'failed']);
+        $this->execucao(['status' => 'failed']);
+
+        $this->getJson('/api/automacoes?id='.$alvo->id)
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $alvo->id);
+    }
+
     public function test_isola_execucoes_por_tenant(): void
     {
         $this->autenticar();

@@ -7,6 +7,7 @@ import type {
   LancamentoConfirmImportForm,
   Lancamento,
   LancamentoFilters,
+  LancamentoGuiaGrupo,
   LancamentoImportForm,
   LancamentoPrintTemplate,
   LancamentoPrintTemplateForm,
@@ -38,14 +39,16 @@ export function useGuiasBusca(params: { busca: string; page: number; enabled?: b
   })
 }
 
+/** Cada item é um grupo por Guia (`LancamentoGuiaGrupo`), não uma sessão solta. */
 export function useLancamentos(filters: LancamentoFilters, page: number) {
   return useQuery({
     queryKey: ['lancamentos', filters, page],
     queryFn: async () => {
-      const { data } = await apiClient.get<PaginatedResponse<Lancamento>>('/lancamentos', {
+      const { data } = await apiClient.get<PaginatedResponse<LancamentoGuiaGrupo>>('/lancamentos', {
         params: {
           ...filters,
-          page,
+          busca: filters.busca.trim() || undefined,
+          page,
         },
       })
 

@@ -146,20 +146,6 @@
           )
           return
         }
-        if (scenario === 'celular-sms-invalido-corrigivel') {
-          // Mesma mensagem real, mas dessa vez o campo (nr_fone, nome real
-          // achado ao vivo em 14/09/2026) segue existindo no formulario —
-          // se o worker limpar ele e clicar Finalizar de novo, o segundo
-          // clique passa direto (cai no fluxo normal abaixo).
-          const celular = document.querySelector('[name="nr_fone"]')
-          if (celular && celular.value) {
-            app.insertAdjacentHTML(
-              'beforeend',
-              '<table><tr><td>O valor do campo Celular (SMS) é inválido. Ex: (00) 0000-0000 ou (00) 00000-0000</td></tr></table>',
-            )
-            return
-          }
-        }
         // Campo real do portal (achado ao vivo em 26/08/2026): sem
         // preencher, o Finalizar barra com erro de validacao e NAO navega
         // pra confirmacao — mesmo comportamento aqui, pra pegar regressao
@@ -227,7 +213,6 @@
           <option value="N">Não</option>
         </select>
         <textarea id="DS_INDIC_CLINICA" name="DS_INDIC_CLINICA"></textarea>
-        \${scenario === 'celular-sms-invalido-corrigivel' ? '<div>Telefone</div><input id="nr_tel_resid" name="nr_tel_resid"><div>Celular (SMS)</div><input id="nr_fone" name="nr_fone" value="(47) 3135-0000">' : ''}
         <input id="NM_CONTRATADO" name="NM_CONTRATADO" readonly>
         <a href="#" id="link_busca_contrt">Buscar contratado</a>
         <a href="#" id="link_busca_solic">Buscar prestador</a>

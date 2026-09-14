@@ -22,4 +22,4 @@
 
 ## 4. Pendências conhecidas
 
-- [ ] 4.1 Convênio em Conciliações e Especialidade em Profissionais ainda não ordenam: exigem `join` que não foi feito.
+- [x] 4.1 Convênio em Conciliações e Especialidade em Profissionais ainda não ordenam: exigem `join` que não foi feito — feito em 13/09/2026. Convênio chega pela guia, daí dois `leftJoin` (`conciliacoes → guias → convenios`). Profissionais ordena pela especialidade **principal**: o profissional atua em várias (pivot `especialidade_profissional`) e um conjunto não tem ordem única. O join tornou `ativo` e `nome` ambíguos na consulta de profissionais, e as colunas do filtro e da busca passaram a ser qualificadas. Provado por `OrdenacaoListagensApiTest::test_ordena_profissionais_pela_especialidade_nos_dois_sentidos`, que confere a ordem de fato, e não só o 200.

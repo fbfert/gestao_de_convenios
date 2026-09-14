@@ -82,6 +82,9 @@ export function AutomacoesPage() {
   const confirmar = useConfirm()
   const [progressoExecucaoId, setProgressoExecucaoId] = useState<number | null>(null)
   const [nomeCorrigido, setNomeCorrigido] = useState('')
+  // Erros de reprocessar e de confirmar médico. Eram `window.alert`, que trava a
+  // aba até alguém clicar OK e some sem deixar rastro para reler.
+  const [erroAcao, setErroAcao] = useState<string | null>(null)
   const automacoes = automacoesQuery.data?.data ?? []
   const totalPages = automacoesQuery.data?.meta?.last_page ?? 1
   const attentionCount = automacoes.filter((item) => item.precisa_atencao).length
@@ -120,7 +123,7 @@ export function AutomacoesPage() {
       const nova = await reprocessar.mutateAsync(execucaoId)
       setProgressoExecucaoId(nova.id)
     } catch (error) {
-      window.alert(getHttpErrorMessage(error, 'Não foi possível reprocessar a execução.'))
+      setErroAcao(getHttpErrorMessage(error, 'Não foi possível reprocessar a execução.'))
     }
   }
 
@@ -141,7 +144,7 @@ export function AutomacoesPage() {
       const nova = await reprocessar.mutateAsync(execucaoId)
       setProgressoExecucaoId(nova.id)
     } catch (error) {
-      window.alert(getHttpErrorMessage(error, 'Não foi possível confirmar o médico e reprocessar.'))
+      setErroAcao(getHttpErrorMessage(error, 'Não foi possível confirmar o médico e reprocessar.'))
     }
   }
 
@@ -290,6 +293,15 @@ export function AutomacoesPage() {
   return (
     <>
     <div className="space-y-6" data-testid="automacoes-page">
+      {erroAcao ? (
+        <p
+          className="rounded-janela border border-perigo/30 bg-perigo-suave px-4 py-3 text-corpo text-perigo-texto"
+          role="alert"
+          data-testid="automacoes-erro-acao"
+        >
+          {erroAcao}
+        </p>
+      ) : null}
       <section>
         <p className="text-meta uppercase tracking-[0.3em] text-cyan-300/80">Automações</p>
         <h2 className="mt-2 text-display font-semibold text-white">Execuções Unimed</h2>

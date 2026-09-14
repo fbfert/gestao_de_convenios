@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { AvisoErro } from '../../components/ui/AvisoErro'
 import { Link, useLocation, useParams } from 'react-router-dom'
 import { GuiaDetalheResumo } from './GuiaDetalheResumo'
 import { GuiaStatusActions } from './GuiaStatusActions'
@@ -24,7 +25,11 @@ export function GuiaDetalhePage() {
   const buscarSenhaValidadeUnimed = useBuscarSenhaValidadeGuiaUnimed()
   const confirmar = useConfirm()
   const [progresso, setProgresso] = useState<{ id: number; tipo: 'status' | 'senha' } | null>(null)
-  const { tratarErroUnimed, modalProps: automacaoUnimedModalProps } = useAutomacaoUnimedGate()
+  const {
+    tratarErroUnimed,
+    modalProps: automacaoUnimedModalProps,
+    avisoProps: automacaoUnimedAvisoProps,
+  } = useAutomacaoUnimedGate()
   const printTemplateQuery = useLancamentoPrintTemplate()
   const clinica = useAuthStore((state) => state.tenant)?.nome ?? ''
 
@@ -194,7 +199,8 @@ export function GuiaDetalhePage() {
       queryKeysInvalidar={[['guias']]}
     />
 
-    <AutomacaoUnimedDesativadaModal {...automacaoUnimedModalProps} />
+    <AvisoErro {...automacaoUnimedAvisoProps} testId="automacao-unimed-erro" />
+      <AutomacaoUnimedDesativadaModal {...automacaoUnimedModalProps} />
     </>
   )
 }

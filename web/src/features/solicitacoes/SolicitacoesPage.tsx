@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { AvisoErro } from '../../components/ui/AvisoErro'
 import { useConfirm } from '../../components/ui/ConfirmDialog'
 import { MoreVertical, Plus, X } from 'lucide-react'
 import { DropdownMenu } from 'radix-ui'
@@ -202,7 +203,11 @@ export function SolicitacoesPage() {
   const removerItem = useRemoverItem()
   const vincularDocumento = useVincularDocumento()
   const verificarAndamentoItem = useVerificarAndamentoItem()
-  const { tratarErroUnimed, modalProps: automacaoUnimedModalProps } = useAutomacaoUnimedGate()
+  const {
+    tratarErroUnimed,
+    modalProps: automacaoUnimedModalProps,
+    avisoProps: automacaoUnimedAvisoProps,
+  } = useAutomacaoUnimedGate()
 
   const convenios = useMemo(() => conveniosQuery.data ?? emptyArray, [conveniosQuery.data])
   const especialidades = useMemo(
@@ -1358,6 +1363,7 @@ export function SolicitacoesPage() {
         queryKeysInvalidar={[['solicitacoes']]}
       />
 
+      <AvisoErro {...automacaoUnimedAvisoProps} testId="automacao-unimed-erro" />
       <AutomacaoUnimedDesativadaModal {...automacaoUnimedModalProps} />
 
       {itemAExcluir ? (

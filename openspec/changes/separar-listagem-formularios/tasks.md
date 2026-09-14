@@ -32,7 +32,7 @@ comportamento antigo em metade do fluxo.
 - [x] 5.1 Rota `/usuarios/:id/editar`, no mesmo padrão já usado em Profissionais.
 - [x] 5.2 Trocar o estado `isFormOpen` pela rota como fonte da decisão de renderizar.
 - [x] 5.3 Hidratar o formulário quando a rota é aberta direto pela URL ou recarregada, casos em que o clique em Editar nunca acontece.
-- [ ] 5.4 `GET /usuarios/{id}`: hoje a hidratação procura o usuário na página carregada da listagem, então um link direto para alguém fora da página atual abre o formulário vazio.
+- [x] 5.4 `GET /usuarios/{id}`: hoje a hidratação procura o usuário na página carregada da listagem, então um link direto para alguém fora da página atual abre o formulário vazio — feito em 13/09/2026. O endpoint não existia, e era essa a raiz: a tela raspava a listagem por não ter de onde buscar. Era pior do que "formulário vazio": sem achar o usuário, `editingId` ficava nulo e a tela abria como **"Novo usuário"**, de modo que salvar criava um usuário em vez de editar o pretendido. Provado por `UsuariosApiTest::test_busca_um_usuario_pelo_id_independente_da_pagina_da_listagem`, com o 404 cross-tenant coberto junto.
 
 ## 6. Mesma pendência em Convênios (2026-08-13)
 
@@ -46,7 +46,7 @@ de criação **e** edição.
 - [x] 6.3 Hidratar o formulário quando a rota é aberta direto pela URL ou recarregada.
 - [x] 6.4 Tirar a listagem da tela enquanto o formulário está aberto, tanto na criação quanto na edição.
 - [x] 6.5 Teste de navegação cobrindo o fluxo de edição em tela própria.
-- [ ] 6.6 `GET /convenios/{id}`: a hidratação lê a listagem, que devolve só convênios ativos. Abrir `/convenios/{id}/editar` de um convênio inativo mostra "não encontrado" em vez do formulário. Mesma raiz da 5.4.
+- [x] 6.6 `GET /convenios/{id}`: a hidratação lê a listagem, que devolve só convênios ativos. Abrir `/convenios/{id}/editar` de um convênio inativo mostra "não encontrado" em vez do formulário. Mesma raiz da 5.4 — feito em 13/09/2026, junto com ela. O endpoint alcança inativo, e reativar um convênio passa justamente por editá-lo. A guarda de "não encontrado" continua, agora só para id inexistente ou de outra clínica, e a mensagem deixou de dizer "entre os convênios ativos". Provado por `ConveniosApiTest::test_busca_convenio_inativo_pelo_id`, que confere as duas metades: o convênio segue fora da listagem e é alcançável pelo id.
 
 ## 7. Auditoria do sistema inteiro (2026-08-14)
 

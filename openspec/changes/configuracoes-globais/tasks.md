@@ -23,5 +23,7 @@
 - [x] 4.2 Teste das faixas de validação.
 - [x] 4.3 Teste da expiração real do token, com o relógio adiantado, e da opção `0`.
 - [x] 4.4 Verificação dos endpoints em produção.
-- [ ] 4.5 Fazer as telas lerem `senha_alerta_dias`, `sessoes_padrao` e `itens_por_pagina` em vez dos valores fixos.
+- [x] 4.5 Fazer as telas lerem `senha_alerta_dias`, `sessoes_padrao` e `itens_por_pagina` em vez dos valores fixos — feito em 13/09/2026. `senha_alerta_dias` já era lido (`SenhaVencendo`, `DashboardGuiasCardService`). `itens_por_pagina` passou a governar o tamanho das listagens via `ConfiguracaoGlobal::itensPorPagina()`: os controllers traziam número fixo (15, 20, 25) **e** o front mandava `per_page` em toda requisição, então o valor escolhido nunca chegava a ter efeito. `sessoes_padrao` virou o fallback do `quantidade_padrao` no mapeamento convênio/especialidade, no lugar de um `?: 10` hardcoded. Provado por `ConfiguracoesGlobaisApiTest::test_itens_por_pagina_governa_o_tamanho_das_listagens` e `test_per_page_explicito_prevalece_sobre_a_configuracao`.
+
+  Ressalva: `sessoes_padrao` vale no caminho de "Adicionar sessões" (que lê `quantidade_padrao` do mapeamento). O formulário de `/solicitacoes/nova` segue usando `convenio.sessoes_por_guia` e ficando vazio sem regra cadastrada — decisão deliberada, documentada em `web/src/features/solicitacoes/solicitacaoItens.ts`, porque a API recusa em vez de arbitrar.
 - [ ] 4.6 Avisar na tela quando a sessão estiver perto de expirar.

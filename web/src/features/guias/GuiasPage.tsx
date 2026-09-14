@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { AvisoErro } from '../../components/ui/AvisoErro'
 import { ColunaOrdenavel } from '../../components/ui/ColunaOrdenavel'
 import { useOrdenacao } from '../../lib/useOrdenacao'
 import { useListaNaUrl } from '../../lib/useListaNaUrl'
@@ -102,7 +103,11 @@ export function GuiasPage() {
   const consultarGuiaUnimed = useConsultarGuiaUnimed()
   const buscarSenhaValidadeUnimed = useBuscarSenhaValidadeGuiaUnimed()
   const confirmar = useConfirm()
-  const { tratarErroUnimed, modalProps: automacaoUnimedModalProps } = useAutomacaoUnimedGate()
+  const {
+    tratarErroUnimed,
+    modalProps: automacaoUnimedModalProps,
+    avisoProps: automacaoUnimedAvisoProps,
+  } = useAutomacaoUnimedGate()
 
   const convenios = useMemo(() => conveniosQuery.data ?? [], [conveniosQuery.data])
   const especialidades = useMemo(() => especialidadesQuery.data ?? [], [especialidadesQuery.data])
@@ -922,6 +927,7 @@ export function GuiasPage() {
         queryKeysInvalidar={[['guias']]}
       />
 
+      <AvisoErro {...automacaoUnimedAvisoProps} testId="automacao-unimed-erro" />
       <AutomacaoUnimedDesativadaModal {...automacaoUnimedModalProps} />
     </div>
   )

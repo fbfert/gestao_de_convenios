@@ -5,14 +5,19 @@ import type { AutomacaoUnimedDesativadaModalProps } from './AutomacaoUnimedDesat
 
 /**
  * Centraliza o "gate" de automação Unimed desativada: qualquer chamador
- * que trate erro de mutation Unimed troca o `window.alert()` cru por este
- * hook — se o erro for especificamente credencial inativa, abre o modal de
- * ativação e guarda `retry` pra refazer a ação sozinho após ativar; senão
- * cai no alert de sempre. `modalProps` é espalhado direto em
- * `<AutomacaoUnimedDesativadaModal {...modalProps} />` no JSX do chamador.
+ * que trate erro de mutation Unimed usa este hook — se o erro for
+ * especificamente credencial inativa, abre o modal de ativação e guarda
+ * `retry` pra refazer a ação sozinho após ativar; senão vira aviso na própria
+ * tela. `modalProps` e `avisoProps` são espalhados direto em
+ * `<AutomacaoUnimedDesativadaModal {...modalProps} />` e `<AvisoErro
+ * {...avisoProps} />` no JSX do chamador.
+ *
+ * O caso "senão" era `window.alert`, que trava a aba até alguém clicar e some
+ * sem deixar a mensagem para reler.
  */
 export function useAutomacaoUnimedGate() {
   const [aberto, setAberto] = useState(false)
+  const [erro, setErro] = useState<string | null>(null)
   const acaoPendenteRef = useRef<(() => void) | null>(null)
 
   const tratarErroUnimed = useCallback(
@@ -23,7 +28,7 @@ export function useAutomacaoUnimedGate() {
         return
       }
 
-      window.alert(getHttpErrorMessage(error, mensagemPadrao))
+      setErro(getHttpErrorMessage(error, mensagemPadrao))
     },
     [],
   )
@@ -42,5 +47,10 @@ export function useAutomacaoUnimedGate() {
     },
   }
 
-  return { tratarErroUnimed, modalProps }
+  const avisoProps = {
+    mensagem: erro,
+    onFechar: () => setErro(null),
+  }
+
+  return { tratarErroUnimed, modalProps, avisoProps }
 }

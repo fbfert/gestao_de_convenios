@@ -15,7 +15,7 @@
 
 - [x] 3.1 Componente `ConfirmarExclusao`, com palavra digitada e cancelamento por Esc.
 - [x] 3.2 Aplicado à exclusão de anexo da solicitação.
-- [ ] 3.3 Avaliar o mesmo padrão em outras exclusões sem volta — excluir perfil ainda usa `window.confirm`.
+- [x] 3.3 Avaliar o mesmo padrão em outras exclusões sem volta — excluir perfil ainda usa `window.confirm` — feito em 13/09/2026. `ConfirmarExclusao` aplicado a excluir perfil e a excluir template de e-mail. A troca de status da solicitação, que também usava `window.confirm`, ficou com o `ConfirmDialog`: muda estado mas não destrói, e exigir digitar a palavra ali seria atrito sem motivo. Não sobrou nenhum `window.confirm` no app — o e2e deixou de tratar diálogo de navegador (`page.once('dialog')`).
 
 ## 4. Validação
 

@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\ConfiguracaoGlobal;
+use App\Models\Convenio;
+use App\Models\Especialidade;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Scopes\TenantScope;
@@ -243,6 +245,29 @@ class ConfiguracoesGlobaisApiTest extends TestCase
         $this->getJson('/api/guias')->assertOk()->assertJsonPath('meta.per_page', 7);
         $this->getJson('/api/solicitacoes')->assertOk()->assertJsonPath('meta.per_page', 7);
         $this->getJson('/api/usuarios')->assertOk()->assertJsonPath('meta.per_page', 7);
+    }
+
+    /**
+     * `sessoes_padrao` também era enfeite: o mapeamento convênio/especialidade
+     * gravava `?: 10`, um número de regra de convênio fixado em código — o que a
+     * regra de ouro do projeto proíbe.
+     */
+    public function test_sessoes_padrao_vira_a_quantidade_do_mapeamento_sem_valor_proprio(): void
+    {
+        $this->autenticarComToken();
+
+        ConfiguracaoGlobal::doTenant((int) $this->usuario()->tenant_id)
+            ->update(['sessoes_padrao' => 33]);
+
+        $convenio = Convenio::query()->where('nome', 'Unimed')->firstOrFail();
+        $especialidade = Especialidade::query()->firstOrFail();
+
+        $this->postJson('/api/configuracoes/unimed/mapeamentos/especialidades', [
+            'convenio_id' => $convenio->id,
+            'especialidade_id' => $especialidade->id,
+            'codigo_procedimento' => '50000470',
+            'ativo' => true,
+        ])->assertCreated()->assertJsonPath('data.quantidade_padrao', 33);
     }
 
     /** Um `per_page` explícito na query continua mandando — é o caso das buscas dirigidas. */

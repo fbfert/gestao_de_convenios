@@ -374,7 +374,29 @@ async function finalizar(page, request, estrategiaMedico) {
   await page.waitForLoadState('domcontentloaded', { timeout: FINALIZAR_TIMEOUT }).catch(() => {})
   await page.waitForTimeout(1500)
 
-  const result = await parseResultado(page)
+  let result = await parseResultado(page)
+
+  if (!result && (await limparCelularSmsSeInvalido(page))) {
+    await selectIfVisible(page, '[name="FG_LIMINAR_JUDICIAL"], #FG_LIMINAR_JUDICIAL', 'N')
+    await finalize.click({ timeout: FINALIZAR_TIMEOUT }).catch(() => {})
+    await waitProcessing(page)
+    await page.waitForLoadState('domcontentloaded', { timeout: FINALIZAR_TIMEOUT }).catch(() => {})
+    await page.waitForTimeout(1500)
+
+    result = await parseResultado(page)
+
+    if (result) {
+      return {
+        status: 'succeeded',
+        execution_id: request.executionId ?? null,
+        ...result,
+        medico_strategy: estrategiaMedico,
+        // Rastro de que essa guia so passou porque o worker limpou um dado
+        // ruim no cadastro da beneficiaria na Unimed — nao e "sucesso limpo".
+        celular_sms_limpo: true,
+      }
+    }
+  }
 
   if (!result) {
     return {
@@ -392,6 +414,37 @@ async function finalizar(page, request, estrategiaMedico) {
     ...result,
     medico_strategy: estrategiaMedico,
   }
+}
+
+/**
+ * "Celular (SMS)" (campo `nr_fone`) vem pre-populado pelo proprio cadastro
+ * do beneficiario na Unimed, nunca preenchido pelo worker — quando esse
+ * numero nao passa na validacao de celular do portal (achado ao vivo em
+ * 14/09/2026, item 2454: "(47) 3135-0000" tem cara de telefone fixo, nao de
+ * celular), o Finalizar trava pra sempre nisso, sem nenhuma automacao poder
+ * resolver sozinha (o numero errado esta cadastrado NA UNIMED, nao em nada
+ * que o worker envia).
+ *
+ * Contorno pedido explicitamente pelo usuario (achado ao vivo em
+ * 14/09/2026): limpa o campo e deixa o Finalizar seguir sem ele. Troca a
+ * beneficiaria deixar de receber SMS de status da Unimed por a guia sair do
+ * papel — decisao consciente, nao default silencioso (por isso o resultado
+ * sinaliza `celular_sms_limpo` quando isso acontece).
+ */
+async function limparCelularSmsSeInvalido(page) {
+  const bodyText = await page.locator('body').innerText().catch(() => '')
+
+  if (!/campo\s+Celular\s*\(SMS\)\s+(?:é inválido|e invalido)/i.test(bodyText)) {
+    return false
+  }
+
+  const campo = page.locator('#nr_fone, [name="nr_fone"]')
+  if ((await campo.count().catch(() => 0)) === 0) {
+    return false
+  }
+
+  await campo.fill('', { timeout: DEFAULT_TIMEOUT }).catch(() => {})
+  return true
 }
 
 /**

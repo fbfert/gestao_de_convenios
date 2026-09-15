@@ -20,7 +20,8 @@ import type { Paciente } from './types'
 
 const ACCEPT = 'application/pdf,image/jpeg,image/png,image/gif'
 
-function GrupoDocumento({
+/** Reusado pela pagina da pasta (/pacientes/:id) — upload e exclusao por tipo. */
+export function GrupoDocumento({
   paciente,
   tipo,
   arquivos,

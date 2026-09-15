@@ -35,6 +35,7 @@ use App\Http\Controllers\ManualController;
 use App\Http\Controllers\NovidadeController;
 use App\Http\Controllers\PacienteArquivoController;
 use App\Http\Controllers\PacienteController;
+use App\Http\Controllers\PacientePastaController;
 use App\Http\Controllers\PacienteMergeController;
 use App\Http\Controllers\PacienteImportController;
 use App\Http\Controllers\UserController;
@@ -152,6 +153,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EncerrarSessaoExpirada::
         ->middleware('permission:dashboard.pacientes');
     Route::post('/pacientes/duplicados/mesclar', [PacienteMergeController::class, 'mesclar'])
         ->middleware('permission:dashboard.pacientes');
+    Route::get('/pacientes/{paciente}/pasta', PacientePastaController::class)->middleware('permission:dashboard.pacientes');
     Route::get('/pacientes/{paciente}', [PacienteController::class, 'show'])->middleware('permission:dashboard.pacientes');
     Route::post('/pacientes', [PacienteController::class, 'store'])->middleware('permission:dashboard.pacientes');
     Route::patch('/pacientes/{paciente}', [PacienteController::class, 'update'])->middleware('permission:dashboard.pacientes');

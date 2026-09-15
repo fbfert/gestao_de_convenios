@@ -8,7 +8,7 @@ import { SolicitacoesPage } from '../features/solicitacoes/SolicitacoesPage'
 import { LerPedidoMedicoPage } from '../features/solicitacoes/LerPedidoMedicoPage'
 import { SolicitacaoEditarPage } from '../features/solicitacoes/SolicitacaoEditarPage'
 import { ImportarSolicitacoesPage } from '../features/solicitacoes/ImportarSolicitacoesPage'
-import { ImportarPacientesPage, PacientesPage } from '../features/pacientes'
+import { ImportarPacientesPage, PacientePastaPage, PacientesPage } from '../features/pacientes'
 import { GuiaDetalhePage, GuiaEditarPage, GuiasPage, ImportarGuiasPage } from '../features/guias'
 import { AntecipacoesPage } from '../features/antecipacoes'
 import { AnaliticosPage, AnaliticoDetalhePage } from '../features/analiticos'
@@ -65,6 +65,7 @@ export function AppRoutes() {
           <Route path="/pacientes/novo" element={<PacientesPage />} />
           <Route path="/pacientes/importar" element={<ImportarPacientesPage />} />
           <Route path="/pacientes/:id/editar" element={<PacientesPage />} />
+          <Route path="/pacientes/:id" element={<PacientePastaPage />} />
           <Route path="/guias" element={<GuiasPage />} />
           <Route path="/guias/nova" element={<GuiasPage />} />
           <Route path="/guias/importar" element={<ImportarGuiasPage />} />

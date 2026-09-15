@@ -22,7 +22,6 @@ import { Tooltip } from '../../components/ui/Tooltip'
 import { Botao } from '../../components/ui/Botao'
 import { Badge } from '../../components/ui/Badge'
 import { usePode } from '../../lib/permissoes'
-import { PastaDoPacienteDrawer } from './PastaDoPacienteDrawer'
 import { PacientesDuplicadosSecao } from './PacientesDuplicadosSecao'
 
 const emptyForm: PacienteForm = {
@@ -105,7 +104,6 @@ export function PacientesPage() {
   // migrarem de bloco assim que um bloco anterior ficava incompleto.
   const [blocosDigitados, setBlocosDigitados] = useState<string[]>([])
   const [formError, setFormError] = useState<string | null>(null)
-  const [pastaAberta, setPastaAberta] = useState<Paciente | null>(null)
   const [duplicadosVisivel, setDuplicadosVisivel] = useState(false)
   const carregadoPacienteRef = useRef<number | null>(null)
 
@@ -760,7 +758,7 @@ export function PacientesPage() {
                     <td data-rotulo="Nome" data-rotulo-bloco className="px-4 py-4 text-slate-100">
                       <button
                         type="button"
-                        onClick={() => setPastaAberta(paciente)}
+                        onClick={() => navigate(`/pacientes/${paciente.id}`)}
                         className="font-semibold text-texto underline-offset-2 hover:underline"
                         data-testid={`paciente-abrir-pasta-${paciente.id}`}
                       >
@@ -839,7 +837,6 @@ export function PacientesPage() {
       </section>
       ) : null}
 
-      <PastaDoPacienteDrawer paciente={pastaAberta} onClose={() => setPastaAberta(null)} />
     </div>
   )
 }

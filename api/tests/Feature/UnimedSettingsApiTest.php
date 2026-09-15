@@ -4,12 +4,12 @@ namespace Tests\Feature;
 
 use App\Models\AuditLog;
 use App\Models\Convenio;
+use App\Models\ConvenioCredencial;
 use App\Models\ConvenioEspecialidadeMapeamento;
 use App\Models\ConvenioProfissionalMapeamento;
 use App\Models\Especialidade;
 use App\Models\Profissional;
 use App\Models\Tenant;
-use App\Models\UnimedRdaCredential;
 use App\Models\User;
 use App\Services\Automation\FakeUnimedWorkerClient;
 use App\Services\Automation\UnimedWorkerClient;
@@ -38,8 +38,11 @@ class UnimedSettingsApiTest extends TestCase
             ->assertJsonPath('data.credential.senha_configurada', true)
             ->assertJsonMissingPath('data.credential.password');
 
-        $credential = UnimedRdaCredential::query()->firstOrFail();
-        $this->assertSame('senha-inicial', $credential->password);
+        // A credencial vive em `convenio_credenciais` desde `credenciais-por-convenio`;
+        // a rota legada so traduz o formato da resposta. A assercao e a mesma.
+        $credential = ConvenioCredencial::query()->firstOrFail();
+        $this->assertSame($convenio->id, $credential->convenio_id);
+        $this->assertSame('senha-inicial', $credential->campo('password'));
 
         $this->assertDatabaseHas('convenios', [
             'id' => $convenio->id,
@@ -72,7 +75,7 @@ class UnimedSettingsApiTest extends TestCase
             ->assertJsonPath('data.credential.login', 'operador-alterado')
             ->assertJsonPath('data.credential.senha_configurada', true);
 
-        $this->assertSame('senha-inicial', UnimedRdaCredential::query()->firstOrFail()->password);
+        $this->assertSame('senha-inicial', ConvenioCredencial::query()->firstOrFail()->campo('password'));
     }
 
     public function test_isola_configuracao_unimed_por_tenant(): void
@@ -205,7 +208,7 @@ class UnimedSettingsApiTest extends TestCase
         $this->putJson('/api/configuracoes/unimed', $this->payload($convenio->id, 'senha-inicial'))
             ->assertOk();
 
-        $credential = UnimedRdaCredential::query()->firstOrFail();
+        $credential = ConvenioCredencial::query()->firstOrFail();
         $credential->forceFill([
             'ativo' => false,
             'automation_paused_at' => now(),

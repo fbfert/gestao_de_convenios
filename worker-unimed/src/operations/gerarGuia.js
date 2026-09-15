@@ -283,7 +283,20 @@ async function preencherProcedimento(page, payload) {
 
   const genericDescription = page.locator('[name="DS_ITEM_GENERICO_1"], #DS_ITEM_GENERICO_1')
   if (await genericDescription.isVisible({ timeout: 500 }).catch(() => false)) {
-    const descricao = payload.valor_generico || payload.descricao_operadora || codigo
+    const descricao = payload.valor_generico || payload.descricao_operadora
+    // O portal só mostra este campo para códigos "item genérico", que EXIGEM
+    // descrição do procedimento por extenso. Sem valor_generico/descricao_operadora
+    // configurados no mapeamento Especialidade x Convênio, cair pro código (ex.:
+    // "2250005286") manda um valor sem sentido pra Unimed — falha explícita aqui,
+    // em vez de mascarar a configuração faltando (ver incidente reportado pela
+    // Unimed em 15/09/2026, código 2250005286/Psicologia ABA).
+    if (!descricao) {
+      throw new WorkerResultError({
+        status: 'failed',
+        error_code: 'CONFIGURATION_INVALID_ITEM',
+        message: `Procedimento ${codigo} exige descrição manual (item genérico) e o mapeamento Especialidade x Convênio está sem "descricao_operadora"/"valor_generico" configurado.`,
+      })
+    }
     await genericDescription.fill(String(descricao), { timeout: DEFAULT_TIMEOUT })
     await fillIfVisible(page, '[name="VL_ITEM_GENERICO_1"], #VL_ITEM_GENERICO_1', '0,01')
   }

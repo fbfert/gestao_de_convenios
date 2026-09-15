@@ -756,6 +756,38 @@ export function ConfiguracoesPage({ aba }: { aba: ConfiguracoesAba }) {
                     className={inputClasses()}
                     data-testid="unimed-mapeamento-quantidade"
                   />
+                  <label className="flex items-center gap-2 text-corpo text-slate-200">
+                    <input
+                      type="checkbox"
+                      checked={especialidadeMapeamentoForm.usa_descricao_generica}
+                      onChange={(event) =>
+                        setEspecialidadeMapeamentoForm((current) => ({
+                          ...current,
+                          usa_descricao_generica: event.target.checked,
+                        }))
+                      }
+                      data-testid="unimed-mapeamento-usa-descricao-generica"
+                    />
+                    Item genérico (a Unimed exige descrição manual do procedimento)
+                  </label>
+                  <input
+                    value={especialidadeMapeamentoForm.descricao_operadora}
+                    onChange={(event) =>
+                      setEspecialidadeMapeamentoForm((current) => ({ ...current, descricao_operadora: event.target.value }))
+                    }
+                    className={inputClasses()}
+                    placeholder="Descrição do procedimento (nunca o código)"
+                    data-testid="unimed-mapeamento-descricao-operadora"
+                  />
+                  <input
+                    value={especialidadeMapeamentoForm.valor_generico}
+                    onChange={(event) =>
+                      setEspecialidadeMapeamentoForm((current) => ({ ...current, valor_generico: event.target.value }))
+                    }
+                    className={inputClasses()}
+                    placeholder="Descrição alternativa (opcional — sobrepõe a de cima)"
+                    data-testid="unimed-mapeamento-valor-generico"
+                  />
                   <Botao
                     type="submit"
                     disabled={!unimedForm.convenio_id || !especialidadeMapeamentoForm.codigo_procedimento}
@@ -785,6 +817,11 @@ export function ConfiguracoesPage({ aba }: { aba: ConfiguracoesAba }) {
                       className="block w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left text-corpo text-slate-200"
                     >
                       {mapeamento.especialidade?.nome ?? mapeamento.especialidade_id} · {mapeamento.codigo_procedimento}
+                      {mapeamento.descricao_operadora || mapeamento.valor_generico
+                        ? ` · ${mapeamento.valor_generico || mapeamento.descricao_operadora}`
+                        : mapeamento.usa_descricao_generica
+                          ? ' · ⚠ sem descrição cadastrada'
+                          : ''}
                     </button>
                   ))}
                 </div>

@@ -152,6 +152,18 @@ test('campos genericos continuam o fluxo', async () => {
   assert.equal(result.guia_status, 'approved')
 })
 
+test('item generico sem descricao_operadora/valor_generico falha em vez de usar o codigo', async () => {
+  const result = await runScenario('generic', {
+    usa_descricao_generica: true,
+    descricao_operadora: undefined,
+    valor_generico: undefined,
+  })
+
+  assert.equal(result.status, 'failed')
+  assert.equal(result.error_code, 'CONFIGURATION_INVALID_ITEM')
+  assert.match(result.message, /descrição manual/)
+})
+
 test('falha no upload obrigatorio interrompe o item', async () => {
   const result = await runScenario('upload-fail')
 

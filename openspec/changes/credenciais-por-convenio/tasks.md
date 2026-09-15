@@ -39,7 +39,11 @@
 - [ ] 3.4 `UpdateConvenioCredencialRequest`: validar as chaves contra o catálogo do driver
       escolhido; rejeitar chave desconhecida; campo `password` em branco preserva o valor gravado.
 - [ ] 3.5 Rotas `/configuracoes/convenios-credenciais`, `.../{convenio}`,
-      `.../{convenio}/worker-health` e `.../{convenio}/reativar`.
+      `.../{convenio}/worker-health` e `.../{convenio}/reativar`. **Cada uma precisa declarar
+      `permission:`** — desde 14/09 o middleware `ExigeAutorizacaoDeclarada` recusa com 403
+      qualquer rota autenticada sem guarda declarada, e a lista de rotas abertas por decisão é
+      curta de propósito. O `{convenio}` do binding já vem isolado por tenant por padrão desde o
+      mesmo dia; não repetir a checagem no controller.
 - [ ] 3.6 Manter `/configuracoes/unimed*` respondendo por um ciclo, delegando ao novo controller,
       com comentário de depreciação e data. **`POST /configuracoes/unimed/reativar` é usado em
       operação** — foi o caminho da reativação manual em 14/09 — então não pode simplesmente sumir.
@@ -72,7 +76,12 @@
       referenciar `convenio_credenciais`.
 - [ ] 5.5 Erro tratado e identificável quando o convênio não tiver credencial ativa — conferir o
       `AutomationErrorCatalog` antes de criar código novo.
-- [ ] 5.6 Sem mudança de comportamento observável na automação Unimed: a suíte existente deve
+- [ ] 5.6 Preservar a separação que já existe em `GerarGuiaUnimedService`:
+      `payloadPersistido()` é o que vai para `automacao_execucoes.payload`, sem credencial;
+      `payloadParaWorker()` monta a credencial na hora do envio. Esse desenho é o que fechou a
+      exfiltração da senha do portal em 14/09 — o repositório novo entra em `payloadParaWorker()`
+      e em nenhum outro lugar.
+- [ ] 5.7 Sem mudança de comportamento observável na automação Unimed: a suíte existente deve
       passar com adaptação só do arranjo dos testes.
 
 ## 6. Guarda do `connector_driver`
@@ -123,6 +132,8 @@
 - [ ] 10.1 `openspec validate credenciais-por-convenio --type change --no-interactive`.
 - [ ] 10.2 Suíte PHP completa; adaptar `UnimedSettingsApiTest`, `GerarGuiaUnimedApiTest` e
       `ConfirmarGuiaIncertaUnimedApiTest`, que instanciam `UnimedRdaCredential` direto.
+- [ ] 10.2.1 Teste de não-vazamento: nenhum campo secreto aparece em
+      `automacao_execucoes.payload`, nos eventos, nem na resposta de `/automacoes/{id}`.
 - [ ] 10.3 `tsc -b`, `oxlint`, `vite build` e os e2e de configurações.
 - [ ] 10.4 Ensaiar a migração sobre uma cópia do banco de produção antes da janela, conferindo
       que a automação da NeuroKids roda com a credencial migrada.

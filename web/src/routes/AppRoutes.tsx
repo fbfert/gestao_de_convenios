@@ -30,6 +30,7 @@ import { CadastrosPage, OperacaoConveniosPage } from '../features/grupos'
 import { AuditoriaPage } from '../features/auditoria'
 import {
   ConfiguracoesClinicaSyncPage,
+  ConfiguracoesConveniosPage,
   ConfiguracoesGeralPage,
   ConfiguracoesGlobaisPage,
   ConfiguracoesIaPage,
@@ -117,6 +118,13 @@ export function AppRoutes() {
           <Route path="/configuracoes/ia/prompts" element={<PromptsOperacionaisPage />} />
           <Route path="/configuracoes/ia/prompts/novo" element={<PromptsOperacionaisPage />} />
           <Route path="/configuracoes/ia/prompts/:id/editar" element={<PromptsOperacionaisPage />} />
+          <Route path="/configuracoes/convenios" element={<ConfiguracoesConveniosPage />} />
+          {/*
+            DEPRECIADA em 15/09/2026, sai no change de limpeza de
+            `credenciais-por-convenio`. Some do menu, mas continua respondendo:
+            e por ela que se liga e desliga a automacao de um convenio ate a
+            tela nova ganhar controle proprio para isso.
+          */}
           <Route path="/configuracoes/unimed" element={<ConfiguracoesPage aba="unimed" />} />
           <Route path="/configuracoes/clinica" element={<ConfiguracoesClinicaSyncPage />} />
           <Route path="/configuracoes/templates-emails" element={<EmailTemplatesPage />} />

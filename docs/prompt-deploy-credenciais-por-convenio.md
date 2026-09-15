@@ -167,9 +167,9 @@ docker exec gescon-db mariadb -u root -p"$DB_ROOT" -e "DROP DATABASE gestao_conv
 /opt/gescon/deploy/redeploy.sh
 ```
 
-O script faz `git pull --ff-only origin main` → build → `up -d` → smoke test. **A branch precisa
-estar na `main`** — se ainda estiver só em `credenciais-por-convenio`, o pull não traz nada; me avise
-antes de tentar.
+O script faz `git pull --ff-only origin main` → build → `up -d` → smoke test. A change já está na
+`main`, no merge `b499f73` — o `git log` do passo 0 deve mostrar um commit anterior a ele, e o pull
+traz os 14 commits da change.
 
 As migrations rodam no `entrypoint.sh`, **antes** do supervisord subir php-fpm e nginx. Isso é
 proposital: nada escreve em `convenio_credenciais` durante a conversão.

@@ -34,6 +34,7 @@ class GuiaController extends Controller
                 'busca',
                 'validade_senha_vencendo_em_dias',
                 'alerta_negacao_pendente',
+                'alerta_restricao_pendente',
                 'mostrar_a_definir',
                 'mostrar_historico',
                 'disponivel_para_lancamento',
@@ -77,6 +78,11 @@ class GuiaController extends Controller
     public function ocultarAlertaNegacao(Guia $guia): GuiaResource
     {
         return new GuiaResource($this->service->ocultarAlertaNegacao($guia));
+    }
+
+    public function ocultarAlertaRestricao(Guia $guia): GuiaResource
+    {
+        return new GuiaResource($this->service->ocultarAlertaRestricao($guia));
     }
 
     public function ocultarAlertaAntecipacao(Guia $guia): GuiaResource

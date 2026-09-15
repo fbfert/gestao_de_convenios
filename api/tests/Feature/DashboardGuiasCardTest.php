@@ -63,14 +63,62 @@ class DashboardGuiasCardTest extends TestCase
         return collect($corpo)->keyBy('key')->all();
     }
 
-    public function test_card_traz_as_quatro_linhas(): void
+    public function test_card_traz_as_cinco_linhas(): void
     {
         $this->autenticar();
 
         $this->assertSame(
-            ['negadas', 'em_analise', 'senha_vencendo', 'prontas_antecipacao'],
+            ['negadas', 'restricao', 'em_analise', 'senha_vencendo', 'prontas_antecipacao'],
             array_keys($this->linhas()),
         );
+    }
+
+    /**
+     * "Verificar Restrição" segue as mesmas regras das negadas: conta pelo
+     * status, some quando o alerta é ocultado, e o detalhe vem da data da
+     * TRANSIÇÃO — não do `created_at` da guia.
+     */
+    public function test_restricao_conta_pela_transicao_e_some_quando_ocultada(): void
+    {
+        $this->autenticar();
+
+        $guia = $this->guia();
+        $guia->forceFill(['created_at' => now()->subDays(14)])->save();
+
+        app(GuiaService::class)->registrarTransicao($guia, GuiaStatus::NEEDS_VERIFICATION);
+
+        $restricao = $this->linhas()['restricao'];
+        $this->assertSame(1, $restricao['value']);
+        $this->assertStringContainsString('1 hoje', $restricao['detail']);
+
+        app(GuiaService::class)->ocultarAlertaRestricao($guia->refresh());
+
+        $this->assertSame(0, $this->linhas()['restricao']['value']);
+    }
+
+    /**
+     * Colunas independentes: uma guia com restrição ocultada não some do card
+     * de negadas se depois for negada, e o inverso também vale. Por isso a
+     * coluna é própria, e não um "alerta ocultado" genérico.
+     *
+     * São duas guias, e não uma: o domínio recusa
+     * `needs_verification -> denied`, então encenar essa transição provaria
+     * algo que não acontece no produto.
+     */
+    public function test_ocultar_restricao_nao_afeta_o_card_de_negadas(): void
+    {
+        $this->autenticar();
+
+        $comRestricao = $this->guia();
+        app(GuiaService::class)->registrarTransicao($comRestricao, GuiaStatus::NEEDS_VERIFICATION);
+        app(GuiaService::class)->ocultarAlertaRestricao($comRestricao->refresh());
+
+        $negada = $this->guia();
+        app(GuiaService::class)->registrarTransicao($negada, GuiaStatus::DENIED);
+
+        $linhas = $this->linhas();
+        $this->assertSame(1, $linhas['negadas']['value']);
+        $this->assertSame(0, $linhas['restricao']['value']);
     }
 
     public function test_guia_antiga_negada_hoje_conta_em_hoje(): void

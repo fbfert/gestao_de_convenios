@@ -6,7 +6,6 @@ use App\Models\ConfiguracaoGlobal;
 use App\Models\Guia;
 use App\Models\GuiaStatusHistorico;
 use App\Support\GuiaStatus;
-use Illuminate\Support\Facades\DB;
 
 /**
  * O card de Guias do dashboard, em DUAS consultas.
@@ -34,6 +33,7 @@ class DashboardGuiasCardService
         $porTransicao = $this->porTransicao($tenantId, $hoje, $inicioDaSemana);
 
         $negadas = $porTransicao[GuiaStatus::DENIED] ?? ['hoje' => 0, 'semana' => 0];
+        $restricao = $porTransicao[GuiaStatus::NEEDS_VERIFICATION] ?? ['hoje' => 0, 'semana' => 0];
         $emAnalise = $porTransicao[GuiaStatus::UNDER_REVIEW] ?? ['hoje' => 0, 'semana' => 0];
 
         return [
@@ -44,6 +44,16 @@ class DashboardGuiasCardService
                 'unidade' => 'pendentes',
                 'detail' => "{$negadas['hoje']} hoje · {$negadas['semana']} na semana",
                 'href' => '/guias?status=denied&pendente=1',
+            ],
+            [
+                // Mesmas regras das negadas: status + alerta nao ocultado +
+                // fora do rastro historico, e o detalhe pela DATA DA TRANSICAO.
+                'key' => 'restricao',
+                'label' => 'Verificar Restrição',
+                'value' => (int) $totais->restricao_pendentes,
+                'unidade' => 'pendentes',
+                'detail' => "{$restricao['hoje']} hoje · {$restricao['semana']} na semana",
+                'href' => '/guias?status=needs_verification&pendente=1',
             ],
             [
                 'key' => 'em_analise',
@@ -90,11 +100,13 @@ class DashboardGuiasCardService
             ->naoHistorica()
             ->selectRaw(
                 'SUM(CASE WHEN status = ? AND alerta_negacao_ocultado_em IS NULL THEN 1 ELSE 0 END) as negadas_pendentes,'
+                .' SUM(CASE WHEN status = ? AND alerta_restricao_ocultado_em IS NULL THEN 1 ELSE 0 END) as restricao_pendentes,'
                 .' SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as em_analise,'
                 .' SUM(CASE WHEN validade_senha IS NOT NULL AND validade_senha >= ? AND validade_senha <= ? THEN 1 ELSE 0 END) as senha_vencendo,'
                 .' SUM(CASE WHEN validade_senha IS NOT NULL AND validade_senha >= ? AND validade_senha <= ? THEN 1 ELSE 0 END) as senha_urgente',
                 [
                     GuiaStatus::DENIED,
+                    GuiaStatus::NEEDS_VERIFICATION,
                     GuiaStatus::UNDER_REVIEW,
                     $hoje->toDateString(), $limite,
                     $hoje->toDateString(), $urgente,
@@ -118,7 +130,7 @@ class DashboardGuiasCardService
 
         return GuiaStatusHistorico::query()
             ->where('tenant_id', $tenantId)
-            ->whereIn('para', [GuiaStatus::DENIED, GuiaStatus::UNDER_REVIEW])
+            ->whereIn('para', [GuiaStatus::DENIED, GuiaStatus::NEEDS_VERIFICATION, GuiaStatus::UNDER_REVIEW])
             ->where('ocorrido_em', '>=', $inicioDaSemana)
             ->groupBy('para')
             ->select('para')

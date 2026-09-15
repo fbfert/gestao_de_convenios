@@ -17,7 +17,7 @@ export function useGuias(filters: GuiaFilters, page: number) {
       const { data } = await apiClient.get<PaginatedResponse<Guia>>('/guias', {
         params: {
           ...filters,
-          page,
+          page,
         },
       })
 
@@ -135,6 +135,35 @@ export function useGuiasAlertaNegacao({ enabled = true }: { enabled?: boolean } 
       return data.data
     },
     enabled,
+  })
+}
+
+/** Guias em "Verificar Restrição" ainda não tratadas — mesmas regras das negadas. */
+export function useGuiasAlertaRestricao({ enabled = true }: { enabled?: boolean } = {}) {
+  return useQuery({
+    queryKey: ['guias', 'alerta-restricao'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<PaginatedResponse<Guia>>('/guias', {
+        params: { alerta_restricao_pendente: 1, per_page: 50 },
+      })
+
+      return data.data
+    },
+    enabled,
+  })
+}
+
+export function useOcultarAlertaRestricaoGuia() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const { data } = await apiClient.patch<{ data: Guia }>(`/guias/${id}/ocultar-alerta-restricao`)
+      return data.data
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['guias'] })
+    },
   })
 }
 

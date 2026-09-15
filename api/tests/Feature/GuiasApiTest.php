@@ -16,6 +16,8 @@ use App\Models\Solicitacao;
 use App\Models\SolicitacaoItem;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Services\GuiaService;
+use App\Support\GuiaStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -253,6 +255,63 @@ class GuiasApiTest extends TestCase
         $this->getJson('/api/guias?alerta_negacao_pendente=1')
             ->assertOk()
             ->assertJsonMissing(['id' => $idNegada]);
+    }
+
+    /**
+     * "Verificar Restrição" (`needs_verification`) segue as mesmas regras das
+     * negadas. A coluna é própria, e não um "alerta ocultado" genérico: uma
+     * guia pode ser negada depois de ter tido a restrição tratada, e aí o
+     * alerta de negação precisa aparecer do mesmo jeito — é o que a última
+     * asserção cobre.
+     */
+    public function test_alerta_restricao_lista_so_pendentes_e_oculta_via_http(): void
+    {
+        $this->autenticar();
+
+        $id = $this->postJson('/api/guias', $this->payloadGuia('Unimed'))->assertCreated()->json('data.id');
+        $outra = $this->postJson('/api/guias', $this->payloadGuia('SC Saúde'))->assertCreated()->json('data.id');
+
+        app(GuiaService::class)->registrarTransicao(Guia::query()->findOrFail($id), GuiaStatus::NEEDS_VERIFICATION);
+
+        $this->getJson('/api/guias?alerta_restricao_pendente=1')
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $id)
+            ->assertJsonMissing(['id' => $outra]);
+
+        $this->patchJson("/api/guias/{$id}/ocultar-alerta-restricao", [])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'needs_verification');
+
+        $this->getJson('/api/guias?alerta_restricao_pendente=1')
+            ->assertOk()
+            ->assertJsonMissing(['id' => $id]);
+
+        // Colunas independentes: ocultar a restrição não pode marcar de tabela
+        // o alerta de negação. (A guia não chega a `denied` vinda de
+        // `needs_verification` — a transição é recusada pelo domínio —, então o
+        // que se afirma aqui é a independência das colunas, não o fluxo.)
+        $guia = Guia::query()->findOrFail($id);
+        $this->assertNotNull($guia->alerta_restricao_ocultado_em);
+        $this->assertNull($guia->alerta_negacao_ocultado_em);
+    }
+
+    /** O card do dashboard manda `status=...&pendente=1`; o filtro traduz para o alerta. */
+    public function test_filtro_do_card_de_restricao_usa_o_alerta_pendente(): void
+    {
+        $this->autenticar();
+
+        $id = $this->postJson('/api/guias', $this->payloadGuia('Unimed'))->assertCreated()->json('data.id');
+        app(GuiaService::class)->registrarTransicao(Guia::query()->findOrFail($id), GuiaStatus::NEEDS_VERIFICATION);
+
+        $this->getJson('/api/guias?status=needs_verification&pendente=1')
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $id);
+
+        app(GuiaService::class)->ocultarAlertaRestricao(Guia::query()->findOrFail($id));
+
+        $this->getJson('/api/guias?status=needs_verification&pendente=1')
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
     }
 
     public function test_alerta_negacao_nao_lista_guia_historica(): void

@@ -33,6 +33,7 @@ class GuiaResource extends JsonResource
             'validade_senha' => $this->validade_senha?->toDateString(),
             'observacoes' => $this->observacoes,
             'alerta_negacao_ocultado_em' => $this->alerta_negacao_ocultado_em?->toISOString(),
+            'alerta_restricao_ocultado_em' => $this->alerta_restricao_ocultado_em?->toISOString(),
             // Override manual (editável na guia) e a data calculada com a regra
             // vigente (convênio > padrão global) — ver Guia::antecipacaoDataAlvo().
             'antecipacao_data_alvo' => $this->antecipacao_data_alvo?->toDateString(),

@@ -264,6 +264,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EncerrarSessaoExpirada::
     Route::patch('/guias/{guia}/finalizar', [GuiaController::class, 'finalizar'])->middleware('permission:guias.view|guias.viewOwn');
     Route::patch('/guias/{guia}/negar', [GuiaController::class, 'negar'])->middleware('permission:guias.view|guias.viewOwn');
     Route::patch('/guias/{guia}/ocultar-alerta-negacao', [GuiaController::class, 'ocultarAlertaNegacao'])->middleware('permission:guias.view|guias.viewOwn');
+    Route::patch('/guias/{guia}/ocultar-alerta-restricao', [GuiaController::class, 'ocultarAlertaRestricao'])->middleware('permission:guias.view|guias.viewOwn');
     Route::patch('/guias/{guia}/ocultar-alerta-antecipacao', [GuiaController::class, 'ocultarAlertaAntecipacao'])->middleware('permission:guias.view|guias.viewOwn');
     Route::post('/guias/{guia}/consultar-unimed', [GuiaController::class, 'consultarUnimed'])->middleware('permission:guias.view|guias.viewOwn');
     Route::post('/guias/{guia}/buscar-senha-validade-unimed', [GuiaController::class, 'buscarSenhaValidadeUnimed'])->middleware('permission:guias.view|guias.viewOwn');

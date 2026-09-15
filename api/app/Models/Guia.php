@@ -8,6 +8,7 @@ use App\Scopes\TenantScope;
 use App\Support\GuiaStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 
 class Guia extends Model
 {
@@ -100,7 +101,7 @@ class Guia extends Model
         'unimed_senha_validade_next_check_at',
         'sessoes_solicitadas', 'sessoes_autorizadas', 'protocolo_operadora',
         'data_solicitacao', 'data_finalizacao', 'senha', 'validade_senha', 'observacoes',
-        'alerta_negacao_ocultado_em', 'alerta_antecipacao_ocultado_em',
+        'alerta_negacao_ocultado_em', 'alerta_restricao_ocultado_em', 'alerta_antecipacao_ocultado_em',
         'antecipacao_data_alvo',
         // Carimbos escritos so por GuiaService::registrarTransicao, junto com o
         // historico. Preenchiveis para o backfill conseguir gravar.
@@ -118,6 +119,7 @@ class Guia extends Model
         'sessoes_solicitadas' => 'integer',
         'sessoes_autorizadas' => 'integer',
         'alerta_negacao_ocultado_em' => 'datetime',
+        'alerta_restricao_ocultado_em' => 'datetime',
         'alerta_antecipacao_ocultado_em' => 'datetime',
         'negada_em' => 'datetime',
         'aprovada_em' => 'datetime',
@@ -210,7 +212,7 @@ class Guia extends Model
      * nesta guia — nesse caso não dá pra calcular, e o avaliador
      * simplesmente pula a guia.
      */
-    public function antecipacaoDataAlvo(): ?\Illuminate\Support\Carbon
+    public function antecipacaoDataAlvo(): ?Carbon
     {
         if ($this->antecipacao_data_alvo) {
             return $this->antecipacao_data_alvo;

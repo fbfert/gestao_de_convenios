@@ -102,6 +102,12 @@ class GuiaService
                 // ver Guia::naoHistorica()) não precisa de "nova solicitação":
                 // já é passado resolvido, não uma negação pendente de ação.
                 ->naoHistorica())
+            // Mesma regra do alerta de negação, para `needs_verification`:
+            // restrição administrativa que alguém precisa conferir no portal.
+            ->when(Arr::get($filtros, 'alerta_restricao_pendente'), fn ($query) => $query
+                ->where('status', GuiaStatus::NEEDS_VERIFICATION)
+                ->whereNull('alerta_restricao_ocultado_em')
+                ->naoHistorica())
             ->when(Arr::get($filtros, 'validade_senha_vencendo_em_dias') !== null, function ($query) use ($filtros) {
                 $dias = (int) $filtros['validade_senha_vencendo_em_dias'];
 
@@ -389,6 +395,14 @@ class GuiaService
         return $guia->refresh();
     }
 
+    /** Dispensa o alerta de restrição desta guia — mesma semântica do de negação. */
+    public function ocultarAlertaRestricao(Guia $guia): Guia
+    {
+        $guia->forceFill(['alerta_restricao_ocultado_em' => now()])->save();
+
+        return $guia->refresh();
+    }
+
     /** Dispensa o alerta de antecipação desta guia — ver App\Services\Alertas\Regras\AntecipacaoDevida. */
     public function ocultarAlertaAntecipacao(Guia $guia): Guia
     {
@@ -431,6 +445,10 @@ class GuiaService
 
         if ($pendente && ($filtros['status'] ?? null) === GuiaStatus::DENIED) {
             $filtros['alerta_negacao_pendente'] = 1;
+        }
+
+        if ($pendente && ($filtros['status'] ?? null) === GuiaStatus::NEEDS_VERIFICATION) {
+            $filtros['alerta_restricao_pendente'] = 1;
         }
 
         if ($senhaVencendo && ! isset($filtros['validade_senha_vencendo_em_dias'])) {

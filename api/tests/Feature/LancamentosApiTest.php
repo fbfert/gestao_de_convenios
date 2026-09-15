@@ -12,6 +12,7 @@ use App\Models\Lancamento;
 use App\Models\LancamentoPrintTemplate;
 use App\Models\Medico;
 use App\Models\Paciente;
+use App\Models\PacienteArquivo;
 use App\Models\Profissional;
 use App\Models\Solicitacao;
 use App\Models\Tenant;
@@ -20,6 +21,7 @@ use App\Services\GuiaService;
 use App\Services\LancamentoService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 use Tests\Support\ConstroiAnaliticoUnimedXlsx;
 use Tests\TestCase;
@@ -863,6 +865,67 @@ TXT;
             ->assertJsonValidationErrors(['pdf_registro_sessoes']);
 
         $this->assertDatabaseCount('lancamentos', 0);
+    }
+
+    /**
+     * A folha de registro passa a ficar guardada na pasta do paciente.
+     *
+     * Antes ela era exigida pela regional 0220, conferida e descartada: a
+     * validacao a cobrava e nada a gravava, entao o comprovante da remessa se
+     * perdia quando a requisicao terminava.
+     */
+    public function test_confirma_sessoes_guarda_o_pdf_na_pasta_do_paciente(): void
+    {
+        Storage::fake('local');
+
+        $this->autenticar();
+
+        $guia = $this->criarGuiaAprovada('Unimed', 'Fisioterapia', 'especializada', sessoesAutorizadas: 8);
+
+        $this->postJson("/api/guias/{$guia->id}/lancamentos/importar-transcricao", [
+            'profissional_id' => $guia->profissional_id,
+            'confirmar_envio' => true,
+            'numero_cartao' => '0220 090000 551.330-8',
+            'sessoes' => [[
+                'data_sessao' => '2026-04-09',
+                'hora_inicio' => '14:50',
+                'hora_fim' => '15:40',
+                'acompanhante' => null,
+                'resumo_atividades' => null,
+            ]],
+            'pdf_registro_sessoes' => UploadedFile::fake()->create('folha-abril.pdf', 64, 'application/pdf'),
+        ])->assertCreated();
+
+        $arquivo = PacienteArquivo::query()->where('tipo', 'registro_sessoes')->sole();
+
+        $this->assertSame($guia->paciente_id, $arquivo->paciente_id);
+        $this->assertSame($guia->tenant_id, $arquivo->tenant_id);
+        $this->assertSame('folha-abril.pdf', $arquivo->nome_original);
+        $this->assertSame($guia->id, $arquivo->metadata['guia_id']);
+        $this->assertSame($guia->numero_guia, $arquivo->metadata['numero_guia']);
+        Storage::disk('local')->assertExists($arquivo->path);
+    }
+
+    /** Sem PDF nao se inventa arquivo: so a regional 0220 o exige. */
+    public function test_confirma_sessoes_sem_pdf_nao_cria_arquivo(): void
+    {
+        $this->autenticar();
+
+        $guia = $this->criarGuiaAprovada('Unimed', 'Fisioterapia', 'especializada');
+
+        $this->postJson("/api/guias/{$guia->id}/lancamentos/importar-transcricao", [
+            'profissional_id' => $guia->profissional_id,
+            'confirmar_envio' => true,
+            'sessoes' => [[
+                'data_sessao' => '2026-04-09',
+                'hora_inicio' => null,
+                'hora_fim' => null,
+                'acompanhante' => null,
+                'resumo_atividades' => null,
+            ]],
+        ])->assertCreated();
+
+        $this->assertDatabaseCount('paciente_arquivos', 0);
     }
 
     public function test_sessoes_da_grade_recusa_mais_de_dez_linhas(): void

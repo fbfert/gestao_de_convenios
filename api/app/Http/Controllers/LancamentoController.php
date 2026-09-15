@@ -11,12 +11,15 @@ use App\Http\Resources\LancamentoResource;
 use App\Models\ConfiguracaoGlobal;
 use App\Models\Guia;
 use App\Models\Lancamento;
+use App\Models\PacienteArquivo;
 use App\Models\Profissional;
 use App\Services\AnaliticoUnimedImportService;
 use App\Services\LancamentoService;
 use App\Services\RegistroSessoesAiService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -164,6 +167,18 @@ class LancamentoController extends Controller
             $dados['sessoes'] ?? []
         );
 
+        /*
+         * A folha de registro entra na pasta do paciente.
+         *
+         * Antes ela era exigida pela regional 0220, conferida e descartada:
+         * nada a gravava, então o comprovante da remessa se perdia assim que a
+         * requisição terminava. Guardar depois de confirmar, e não antes, evita
+         * deixar arquivo órfão quando a confirmação falha.
+         */
+        if ($request->hasFile('pdf_registro_sessoes')) {
+            $this->guardarRegistroDeSessoes($request->file('pdf_registro_sessoes'), $guia);
+        }
+
         return response()->json([
             'data' => [
                 'confirmacao_pendente' => false,
@@ -184,6 +199,34 @@ class LancamentoController extends Controller
     private function resolverProfissional(int $profissionalId): Profissional
     {
         return Profissional::query()->findOrFail($profissionalId);
+    }
+
+    /**
+     * Guarda a folha de registro como arquivo do paciente da guia.
+     *
+     * Mesma pasta e mesmo padrão de nome dos outros anexos (UUID, fora do
+     * docroot). O `metadata` amarra o arquivo à guia que originou a remessa —
+     * é o que permite, na pasta do paciente, dizer de qual guia cada folha veio.
+     */
+    private function guardarRegistroDeSessoes(UploadedFile $arquivo, Guia $guia): void
+    {
+        $path = $arquivo->storeAs(
+            "pacientes/{$guia->paciente_id}/registro-sessoes",
+            Str::uuid()->toString().'.'.$arquivo->getClientOriginalExtension(),
+            'local',
+        );
+
+        PacienteArquivo::query()->create([
+            'tenant_id' => $guia->tenant_id,
+            'paciente_id' => $guia->paciente_id,
+            'tipo' => 'registro_sessoes',
+            'nome_original' => basename($arquivo->getClientOriginalName()),
+            // Do arquivo gravado, nunca do header multipart: o valor volta cru
+            // no Content-Type do download.
+            'mime' => Storage::disk('local')->mimeType($path) ?: 'application/octet-stream',
+            'path' => $path,
+            'metadata' => ['guia_id' => $guia->id, 'numero_guia' => $guia->numero_guia],
+        ]);
     }
 
     private function regiaoExigePdf(?string $numeroCartao): bool

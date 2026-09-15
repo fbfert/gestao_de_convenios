@@ -24,11 +24,21 @@ class PacienteArquivo extends Model
     /** Anexos que existem por especialidade, ou seja, por item da solicitação. */
     public const TIPOS_POR_ITEM = ['plano_individualizado', 'relatorio_evolucao'];
 
+    /**
+     * Folha de registro de sessões, anexada ao confirmar o lançamento.
+     *
+     * Não pertence à solicitação nem ao item: é o comprovante daquela remessa
+     * de sessões, e por isso fica fora dos dois grupos acima. Era exigido pela
+     * regional 0220 e descartado depois da validação — nada o gravava.
+     */
+    public const TIPOS_DA_SESSAO = ['registro_sessoes'];
+
     public const TIPOS = [
         'pedido_medico',
         'laudo_medico',
         'plano_individualizado',
         'relatorio_evolucao',
+        'registro_sessoes',
     ];
 
     protected $table = 'paciente_arquivos';

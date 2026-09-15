@@ -55,6 +55,7 @@ class RoleCatalog
             'alertas.manage',
             'configuracoes.manage',
             'configuracoes.unimed.manage',
+            'configuracoes.convenios.manage',
             'configuracoes.clinica.manage',
         ],
         // As permissoes solicitacoes.manage/guias.manage/lancamentos.manage

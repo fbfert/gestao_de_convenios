@@ -8,7 +8,7 @@ use App\Models\AutomacaoExecucao;
 use App\Models\ConfiguracaoGlobal;
 use App\Models\Guia;
 use App\Models\GuiaStatusHistorico;
-use App\Models\UnimedRdaCredential;
+use App\Repositories\ConvenioCredencialRepository;
 use App\Services\GuiaService;
 use App\Services\SolicitacaoService;
 use Illuminate\Validation\ValidationException;
@@ -16,14 +16,15 @@ use Illuminate\Validation\ValidationException;
 class ConsultarStatusUnimedService
 {
     private const ACTIVE_STATUSES = ['queued', 'running'];
+
     public const OPERATION = 'consult_status_batch';
 
     public function __construct(
         private readonly AutomacaoService $automacoes,
         private readonly GuiaService $guiaService,
         private readonly SolicitacaoService $solicitacoes,
-    ) {
-    }
+        private readonly ConvenioCredencialRepository $credenciais,
+    ) {}
 
     public function enviar(Guia $guia, bool $dispatch = true): AutomacaoExecucao
     {
@@ -64,10 +65,7 @@ class ConsultarStatusUnimedService
     {
         $guia->loadMissing(['convenio', 'automacaoExecucao', 'solicitacaoItem']);
         $motivos = [];
-        $credential = UnimedRdaCredential::query()
-            ->where('tenant_id', $guia->tenant_id)
-            ->where('ativo', true)
-            ->first();
+        $credential = $this->credenciais->ativa((int) $guia->tenant_id, $guia->convenio_id);
 
         if ($guia->convenio?->connector_driver !== 'unimed_rda') {
             $motivos[] = 'A Guia não pertence a Convênio Unimed RDA.';
@@ -89,7 +87,8 @@ class ConsultarStatusUnimedService
             $motivos[] = 'A Guia não possui status elegível para consulta.';
         }
 
-        if (! $credential || blank($credential->password)) {
+        // A credencial e a DO CONVENIO da guia, nao a do tenant.
+        if (! $credential) {
             $motivos[] = 'A credencial Unimed ativa não está configurada.';
         }
 
@@ -113,16 +112,13 @@ class ConsultarStatusUnimedService
     public function payloadParaWorker(AutomacaoExecucao $execucao): array
     {
         $execucao->loadMissing('guia');
-        $credential = UnimedRdaCredential::query()
-            ->where('tenant_id', $execucao->tenant_id)
-            ->where('ativo', true)
-            ->firstOrFail();
+        $credential = $this->credenciais->ativaParaExecucao($execucao);
 
         return ($execucao->payload ?? []) + [
             'credential' => [
-                'login' => $credential->login,
-                'password' => $credential->password,
-                'base_url' => $credential->base_url,
+                'login' => $credential->campo('login'),
+                'password' => $credential->campo('password'),
+                'base_url' => $credential->campo('base_url'),
             ],
         ];
     }

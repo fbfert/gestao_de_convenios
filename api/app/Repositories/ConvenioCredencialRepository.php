@@ -2,6 +2,8 @@
 
 namespace App\Repositories;
 
+use App\Exceptions\CredencialDeConvenioIndisponivelException;
+use App\Models\AutomacaoExecucao;
 use App\Models\ConvenioCredencial;
 use App\Support\ConvenioDriverCatalog;
 
@@ -44,6 +46,50 @@ class ConvenioCredencialRepository
         $credencial = $this->paraConvenio($tenantId, $convenioId);
 
         return $credencial?->pronta() ? $credencial : null;
+    }
+
+    /**
+     * O convênio de uma execução de automação.
+     *
+     * Vem do que a execução alcança — a guia, ou a solicitação do item —, e não
+     * de `connector_driver = 'unimed_rda'`. Procurar pelo driver só funcionava
+     * enquanto houvesse um convênio automatizado por tenant; com dois, a busca
+     * devolveria o primeiro que aparecesse.
+     */
+    public function convenioDaExecucao(AutomacaoExecucao $execucao): ?int
+    {
+        $execucao->loadMissing(['guia', 'solicitacaoItem.solicitacao']);
+
+        return $execucao->guia?->convenio_id
+            ?? $execucao->solicitacaoItem?->solicitacao?->convenio_id
+            // Último recurso: execuções antigas guardam `convenio_id` no payload
+            // persistido, e a guia pode ter sido apagada desde então.
+            ?? (($execucao->payload['convenio_id'] ?? null) !== null
+                ? (int) $execucao->payload['convenio_id']
+                : null);
+    }
+
+    /**
+     * A credencial utilizável da execução, ou falha com erro tratado.
+     *
+     * É o ponto por onde os services montam o payload do worker. Falhar aqui,
+     * com código do `AutomationErrorCatalog`, é melhor do que mandar o worker
+     * tentar login sem credencial e classificar a resposta do portal.
+     */
+    public function ativaParaExecucao(AutomacaoExecucao $execucao): ConvenioCredencial
+    {
+        $credencial = $this->ativa(
+            (int) $execucao->tenant_id,
+            $this->convenioDaExecucao($execucao),
+        );
+
+        if (! $credencial) {
+            throw new CredencialDeConvenioIndisponivelException(
+                'O convênio desta execução não tem credencial de automação ativa.'
+            );
+        }
+
+        return $credencial;
     }
 
     /**

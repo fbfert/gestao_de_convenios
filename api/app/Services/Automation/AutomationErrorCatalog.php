@@ -5,11 +5,26 @@ namespace App\Services\Automation;
 class AutomationErrorCatalog
 {
     public const PORTAL_STRUCTURE_CHANGED = 'PORTAL_STRUCTURE_CHANGED';
+
     public const LOGIN_ERROR = 'LOGIN_ERROR';
+
     public const PORTAL_UNAVAILABLE = 'PORTAL_UNAVAILABLE';
+
     public const SESSION_LOST_UNRECOVERABLE = 'SESSION_LOST_UNRECOVERABLE';
+
     public const WORKER_INTERNAL_FATAL = 'WORKER_INTERNAL_FATAL';
+
     public const CONFIGURATION_INVALID_GLOBAL = 'CONFIGURATION_INVALID_GLOBAL';
+
+    /**
+     * O convênio da execução não tem credencial de automação ativa.
+     *
+     * Fica FORA de STRUCTURAL_CODES de propósito: código estrutural manda o
+     * disjuntor pausar a credencial, e pausar o que não existe — ou o que já
+     * está pausado — seria circular. Isto é falta de configuração, e quem
+     * resolve é o operador na tela de credenciais, não uma pausa automática.
+     */
+    public const CREDENTIAL_MISSING = 'CREDENTIAL_MISSING';
 
     private const STRUCTURAL_CODES = [
         self::PORTAL_STRUCTURE_CHANGED,
@@ -44,6 +59,7 @@ class AutomationErrorCatalog
             self::SESSION_LOST_UNRECOVERABLE => 'Sessão Unimed perdida sem recuperação',
             self::WORKER_INTERNAL_FATAL => 'Falha fatal interna do worker',
             self::CONFIGURATION_INVALID_GLOBAL => 'Configuração global inválida',
+            self::CREDENTIAL_MISSING => 'Convênio sem credencial de automação ativa',
             'WORKER_UNAVAILABLE' => 'Worker indisponível',
             'TENANT_LOCK_UNAVAILABLE' => 'Automação concorrente bloqueada',
             default => $code ?: 'Erro não classificado',

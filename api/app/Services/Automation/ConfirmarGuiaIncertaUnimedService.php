@@ -5,10 +5,10 @@ namespace App\Services\Automation;
 use App\Jobs\ExecutarAutomacaoUnimedJob;
 use App\Models\AutomacaoExecucao;
 use App\Models\Guia;
-use App\Services\GuiaService;
 use App\Models\GuiaStatusHistorico;
 use App\Models\SolicitacaoItem;
-use App\Models\UnimedRdaCredential;
+use App\Repositories\ConvenioCredencialRepository;
+use App\Services\GuiaService;
 use App\Services\SolicitacaoService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -27,8 +27,8 @@ class ConfirmarGuiaIncertaUnimedService
     public function __construct(
         private readonly AutomacaoService $automacoes,
         private readonly SolicitacaoService $solicitacoes,
-    ) {
-    }
+        private readonly ConvenioCredencialRepository $credenciais,
+    ) {}
 
     public function avaliar(SolicitacaoItem $item): array
     {
@@ -44,12 +44,10 @@ class ConfirmarGuiaIncertaUnimedService
             $motivos[] = 'O item não possui execução de geração de Guia incerta pendente de confirmação.';
         }
 
-        $credential = UnimedRdaCredential::query()
-            ->where('tenant_id', $item->tenant_id)
-            ->where('ativo', true)
-            ->first();
+        $credential = $this->credenciais->ativa((int) $item->tenant_id, $item->solicitacao?->convenio_id);
 
-        if (! $credential || blank($credential->password)) {
+        // A credencial e a DO CONVENIO do item, nao a do tenant.
+        if (! $credential) {
             $motivos[] = 'A credencial Unimed ativa não está configurada.';
         }
 
@@ -86,16 +84,13 @@ class ConfirmarGuiaIncertaUnimedService
 
     public function payloadParaWorker(AutomacaoExecucao $execucao): array
     {
-        $credential = UnimedRdaCredential::query()
-            ->where('tenant_id', $execucao->tenant_id)
-            ->where('ativo', true)
-            ->firstOrFail();
+        $credential = $this->credenciais->ativaParaExecucao($execucao);
 
         return ($execucao->payload ?? []) + [
             'credential' => [
-                'login' => $credential->login,
-                'password' => $credential->password,
-                'base_url' => $credential->base_url,
+                'login' => $credential->campo('login'),
+                'password' => $credential->campo('password'),
+                'base_url' => $credential->campo('base_url'),
             ],
         ];
     }

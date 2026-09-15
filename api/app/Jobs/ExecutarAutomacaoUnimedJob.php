@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\AutomacaoExecucao;
+use App\Models\SaudeComponente;
 use App\Services\Automation\AutomacaoService;
 use App\Services\Automation\CapturarSenhaValidadeUnimedService;
 use App\Services\Automation\ConfirmarGuiaIncertaUnimedService;
@@ -11,7 +12,6 @@ use App\Services\Automation\GerarGuiaUnimedService;
 use App\Services\Automation\UnimedCircuitBreakerService;
 use App\Services\Automation\UnimedWorkerClient;
 use App\Services\SaudeService;
-use App\Models\SaudeComponente;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -61,7 +61,9 @@ class ExecutarAutomacaoUnimedJob implements ShouldQueue
                 default => $execucao->payload ?? [],
             };
             $resultado = $worker->executar($execucao, $payload);
-            $circuitBreaker->handleResult((int) $execucao->tenant_id, $resultado);
+            // A execucao inteira, e nao so o tenant: o disjuntor precisa saber de
+            // qual convenio veio a falha para pausar so a credencial dele.
+            $circuitBreaker->handleResult($execucao, $resultado);
 
             // Heartbeat aqui, e nao no fim do handle: o que prova que o worker
             // esta vivo e ele ter respondido, nao o resultado de negocio ter

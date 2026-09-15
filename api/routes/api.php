@@ -1,51 +1,53 @@
 <?php
 
+use App\Http\Controllers\AiPromptTemplateController;
+use App\Http\Controllers\AiSettingsController;
 use App\Http\Controllers\AlertaController;
 use App\Http\Controllers\AlertaDestinatarioController;
+use App\Http\Controllers\AnaliticoController;
 use App\Http\Controllers\AntecipacaoController;
+use App\Http\Controllers\AuditController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AutomacaoController;
-use App\Http\Controllers\AuditController;
+use App\Http\Controllers\CidController;
+use App\Http\Controllers\ClinicaSyncController;
+use App\Http\Controllers\ConciliacaoController;
+use App\Http\Controllers\ConciliacaoImportController;
+use App\Http\Controllers\ConfiguracaoGlobalController;
+use App\Http\Controllers\ConvenioController;
+use App\Http\Controllers\ConvenioCredenciaisController;
+use App\Http\Controllers\ConvenioEspecialidadeMapeamentoController;
+use App\Http\Controllers\ConvenioProfissionalMapeamentoController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmailSettingsController;
 use App\Http\Controllers\EmailTemplateController;
-use App\Http\Controllers\ConvenioController;
-use App\Http\Controllers\ConvenioEspecialidadeMapeamentoController;
-use App\Http\Controllers\ConvenioProfissionalMapeamentoController;
-use App\Http\Controllers\PermissionController;
-use App\Http\Controllers\RoleController;
-use App\Http\Controllers\RolePermissionController;
-use App\Http\Controllers\CidController;
 use App\Http\Controllers\EspecialidadeController;
-use App\Http\Controllers\ConciliacaoController;
-use App\Http\Controllers\ConciliacaoImportController;
 use App\Http\Controllers\GuiaController;
 use App\Http\Controllers\GuiaImportController;
 use App\Http\Controllers\HealthController;
-use App\Http\Controllers\MedicoController;
 use App\Http\Controllers\LancamentoController;
 use App\Http\Controllers\LancamentoImportController;
 use App\Http\Controllers\LancamentoPrintTemplateController;
-use App\Http\Controllers\AnaliticoController;
-use App\Http\Controllers\AiPromptTemplateController;
-use App\Http\Controllers\AiSettingsController;
-use App\Http\Controllers\ClinicaSyncController;
-use App\Http\Controllers\ConfiguracaoGlobalController;
 use App\Http\Controllers\ManualController;
+use App\Http\Controllers\MedicoController;
 use App\Http\Controllers\NovidadeController;
 use App\Http\Controllers\PacienteArquivoController;
 use App\Http\Controllers\PacienteController;
-use App\Http\Controllers\PacientePastaController;
-use App\Http\Controllers\PacienteMergeController;
 use App\Http\Controllers\PacienteImportController;
-use App\Http\Controllers\UserController;
+use App\Http\Controllers\PacienteMergeController;
+use App\Http\Controllers\PacientePastaController;
+use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\ProfissionalController;
+use App\Http\Controllers\RoleController;
+use App\Http\Controllers\RolePermissionController;
+use App\Http\Controllers\SaudeController;
 use App\Http\Controllers\SolicitacaoController;
+use App\Http\Controllers\SolicitacaoDocumentoController;
 use App\Http\Controllers\SolicitacaoImportController;
 use App\Http\Controllers\TenantController;
-use App\Http\Controllers\ProfissionalController;
-use App\Http\Controllers\SaudeController;
-use App\Http\Controllers\SolicitacaoDocumentoController;
 use App\Http\Controllers\UnimedSettingsController;
+use App\Http\Controllers\UserController;
+use App\Http\Middleware\EncerrarSessaoExpirada;
 use App\Support\AuthPayload;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -63,7 +65,7 @@ Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:lo
 
 // EncerrarSessaoExpirada vem logo apos o auth: precisa do usuario resolvido
 // para saber o prazo do tenant, e tem que barrar antes de qualquer rota.
-Route::middleware(['auth:sanctum', \App\Http\Middleware\EncerrarSessaoExpirada::class])->group(function () {
+Route::middleware(['auth:sanctum', EncerrarSessaoExpirada::class])->group(function () {
     // Mesmo formato do bloco `user` do login, e nao o model cru: e por aqui
     // que o frontend redescobre, a cada abertura, que as permissoes do papel
     // mudaram desde o login.
@@ -124,6 +126,44 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EncerrarSessaoExpirada::
     Route::post('/configuracoes/clinica-sync/pendencias/{pendencia}/rejeitar', [ClinicaSyncController::class, 'rejeitarPendencia'])->middleware('permission:configuracoes.clinica.manage');
     Route::get('/configuracoes/clinica-sync/push-pendencias', [ClinicaSyncController::class, 'pushPendencias'])->middleware('permission:configuracoes.clinica.manage');
     Route::post('/configuracoes/clinica-sync/push-pendencias/{pendencia}/confirmar', [ClinicaSyncController::class, 'confirmarPushPendencia'])->middleware('permission:configuracoes.clinica.manage');
+
+    /*
+     * Credenciais de automação por convênio.
+     *
+     * As duas permissões são aceitas por um ciclo (`a|b` é OU no middleware do
+     * Spatie): quem só tem `configuracoes.unimed.manage` não pode perder acesso
+     * na virada da tela. A antiga sai no change de limpeza.
+     *
+     * Toda rota declara guarda porque o `ExigeAutorizacaoDeclarada` recusa com
+     * 403 rota autenticada sem `permission:` — e a lista de abertas por decisão
+     * é curta de propósito. O `{convenio}` já chega isolado por tenant pelo
+     * binding.
+     */
+    Route::get('/configuracoes/convenios-credenciais', [ConvenioCredenciaisController::class, 'index'])->middleware('permission:configuracoes.convenios.manage|configuracoes.unimed.manage');
+    Route::put('/configuracoes/convenios-credenciais/{convenio}', [ConvenioCredenciaisController::class, 'update'])->middleware('permission:configuracoes.convenios.manage|configuracoes.unimed.manage');
+    Route::get('/configuracoes/convenios-credenciais/{convenio}/worker-health', [ConvenioCredenciaisController::class, 'health'])->middleware('permission:configuracoes.convenios.manage|configuracoes.unimed.manage');
+    Route::post('/configuracoes/convenios-credenciais/{convenio}/reativar', [ConvenioCredenciaisController::class, 'reativar'])->middleware('permission:configuracoes.convenios.manage|configuracoes.unimed.manage');
+    Route::get('/configuracoes/convenios-credenciais/{convenio}/mapeamentos/especialidades', [ConvenioEspecialidadeMapeamentoController::class, 'indexDoConvenio'])->middleware('permission:configuracoes.convenios.manage|configuracoes.unimed.manage');
+    Route::post('/configuracoes/convenios-credenciais/{convenio}/mapeamentos/especialidades', [ConvenioEspecialidadeMapeamentoController::class, 'storeDoConvenio'])->middleware('permission:configuracoes.convenios.manage|configuracoes.unimed.manage');
+    Route::patch('/configuracoes/convenios-credenciais/{convenio}/mapeamentos/especialidades/{especialidadeMapeamento}', [ConvenioEspecialidadeMapeamentoController::class, 'updateDoConvenio'])->middleware('permission:configuracoes.convenios.manage|configuracoes.unimed.manage');
+    Route::get('/configuracoes/convenios-credenciais/{convenio}/mapeamentos/profissionais', [ConvenioProfissionalMapeamentoController::class, 'indexDoConvenio'])->middleware('permission:configuracoes.convenios.manage|configuracoes.unimed.manage');
+    Route::post('/configuracoes/convenios-credenciais/{convenio}/mapeamentos/profissionais', [ConvenioProfissionalMapeamentoController::class, 'storeDoConvenio'])->middleware('permission:configuracoes.convenios.manage|configuracoes.unimed.manage');
+    Route::patch('/configuracoes/convenios-credenciais/{convenio}/mapeamentos/profissionais/{profissionalMapeamento}', [ConvenioProfissionalMapeamentoController::class, 'updateDoConvenio'])->middleware('permission:configuracoes.convenios.manage|configuracoes.unimed.manage');
+
+    /*
+     * DEPRECIADO em 15/09/2026, sai no change de limpeza de
+     * `credenciais-por-convenio` depois de um ciclo em produção.
+     *
+     * Continua respondendo de propósito: `POST /configuracoes/unimed/reativar`
+     * é usado em operação — foi o caminho da reativação manual no incidente de
+     * 14/09 — e enquanto estas rotas responderem, reverter o change é voltar o
+     * deploy do front.
+     *
+     * `PUT /configuracoes/unimed` é o ÚNICO lugar que escreve
+     * `convenios.connector_driver`, o interruptor da automação. Por isso ele
+     * NÃO delega essa parte: delegar faria a capacidade sumir sem aviso. A
+     * credencial, essa sim, já é gravada na estrutura nova.
+     */
     Route::post('/configuracoes/clinica-sync/push-pendencias/{pendencia}/rejeitar', [ClinicaSyncController::class, 'rejeitarPushPendencia'])->middleware('permission:configuracoes.clinica.manage');
     Route::get('/configuracoes/unimed', [UnimedSettingsController::class, 'show'])->middleware('permission:configuracoes.unimed.manage');
     Route::put('/configuracoes/unimed', [UnimedSettingsController::class, 'update'])->middleware('permission:configuracoes.unimed.manage');

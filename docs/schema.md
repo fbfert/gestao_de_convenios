@@ -192,3 +192,33 @@ financeiro_lancamentos
 O `guia_id` nullable em `agendamentos` é o ponto de fusão: a sessão agendada
 passa a consumir a `antecipacao` diretamente, eliminando o lançamento duplicado
 que existe hoje entre agenda e controle de convênio.
+
+---
+
+## Credenciais de automação por convênio (change `credenciais-por-convenio`)
+
+```
+convenio_credenciais
+  id, tenant_id (FK), convenio_id (FK),
+  driver,                        -- chave do ConvenioDriverCatalog (unimed_rda|scsaude).
+                                 -- NÃO é convenios.connector_driver: aquele é o
+                                 -- interruptor da automação; este só diz quais
+                                 -- campos esta credencial tem. Ver ADR-29.
+  credenciais (text),            -- JSON cifrado INTEIRO (cast encrypted:array).
+                                 -- As chaves saem do catálogo do driver; campo
+                                 -- do tipo password nunca volta em resposta.
+  ativo (bool, default true),
+  automation_paused_at (timestamp, nullable),
+  automation_paused_reason (nullable),
+  created_at, updated_at
+
+  unique (tenant_id, convenio_id)   -- o defeito que a change corrigiu: antes era
+                                    -- unique(tenant_id), e a pausa do disjuntor
+                                    -- alcançava o tenant inteiro (14/09/2026).
+  index  (tenant_id, driver)
+```
+
+`unimed_rda_credentials` **continua existindo**, com os dados, e sai num change
+de limpeza depois de um ciclo em produção. A migração copia, não move: enquanto
+a tabela antiga existir e as rotas `/configuracoes/unimed*` responderem,
+reverter a change é voltar o deploy do front.

@@ -53,6 +53,7 @@ class PermissionCatalog
         'alertas.manage' => 'Configurar as regras de alerta',
         'configuracoes.manage' => 'Alterar configurações do sistema',
         'configuracoes.unimed.manage' => 'Configurar a automação da Unimed',
+        'configuracoes.convenios.manage' => 'Configurar credenciais de automação dos convênios',
         'configuracoes.clinica.manage' => 'Configurar a sincronização com o clinica',
     ];
 

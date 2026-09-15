@@ -66,6 +66,11 @@ na auditoria.
 - **THEN** o sistema SHALL indicar que o campo secreto está preenchido
 - **AND** SHALL NOT devolver o valor do campo
 
+#### Scenario: Segredo fora do registro de execução
+- **WHEN** uma execução de automação for registrada
+- **THEN** o sistema SHALL montar a credencial apenas no envio ao worker
+- **AND** SHALL NOT persistir campo secreto no payload da execução nem nos seus eventos
+
 #### Scenario: Auditoria de alteração de credencial
 - **WHEN** uma credencial for alterada
 - **THEN** o sistema SHALL registrar na auditoria que houve alteração

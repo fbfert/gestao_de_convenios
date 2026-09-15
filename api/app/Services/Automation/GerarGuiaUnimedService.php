@@ -8,10 +8,10 @@ use App\Models\AutomacaoExecucao;
 use App\Models\ConvenioEspecialidadeMapeamento;
 use App\Models\ConvenioProfissionalMapeamento;
 use App\Models\Guia;
-use App\Services\GuiaService;
 use App\Models\GuiaStatusHistorico;
 use App\Models\SolicitacaoItem;
-use App\Models\UnimedRdaCredential;
+use App\Repositories\ConvenioCredencialRepository;
+use App\Services\GuiaService;
 use App\Services\SolicitacaoService;
 use App\Support\SolicitacaoStatus;
 use Illuminate\Support\Facades\DB;
@@ -25,8 +25,8 @@ class GerarGuiaUnimedService
     public function __construct(
         private readonly AutomacaoService $automacoes,
         private readonly SolicitacaoService $solicitacoes,
-    ) {
-    }
+        private readonly ConvenioCredencialRepository $credenciais,
+    ) {}
 
     public function avaliar(SolicitacaoItem $item): array
     {
@@ -42,10 +42,7 @@ class GerarGuiaUnimedService
 
         $motivos = [];
         $solicitacao = $item->solicitacao;
-        $credential = UnimedRdaCredential::query()
-            ->where('tenant_id', $item->tenant_id)
-            ->where('ativo', true)
-            ->first();
+        $credential = $this->credenciais->ativa((int) $item->tenant_id, $solicitacao?->convenio_id);
 
         // O gate é do ITEM, não da solicitação inteira: uma solicitação já
         // aprovada pode receber um item novo (caso de uso de "Adicionar
@@ -61,7 +58,10 @@ class GerarGuiaUnimedService
             $motivos[] = 'O Convênio não está configurado como Unimed RDA.';
         }
 
-        if (! $credential || blank($credential->password)) {
+        // A credencial e a DO CONVENIO do item, nao a do tenant. `ativa()` ja
+        // cobre os tres casos que dao no mesmo aqui: nao existe, esta pausada,
+        // ou falta campo obrigatorio.
+        if (! $credential) {
             $motivos[] = 'A credencial Unimed ativa não está configurada.';
         }
 
@@ -124,17 +124,14 @@ class GerarGuiaUnimedService
     public function payloadParaWorker(AutomacaoExecucao $execucao): array
     {
         $execucao->loadMissing('solicitacaoItem.solicitacao');
-        $credential = UnimedRdaCredential::query()
-            ->where('tenant_id', $execucao->tenant_id)
-            ->where('ativo', true)
-            ->firstOrFail();
+        $credential = $this->credenciais->ativaParaExecucao($execucao);
 
         return ($execucao->payload ?? []) + [
             'credential' => [
-                'login' => $credential->login,
-                'password' => $credential->password,
-                'base_url' => $credential->base_url,
-                'nome_contratado' => $credential->nome_contratado,
+                'login' => $credential->campo('login'),
+                'password' => $credential->campo('password'),
+                'base_url' => $credential->campo('base_url'),
+                'nome_contratado' => $credential->campo('nome_contratado'),
             ],
         ];
     }

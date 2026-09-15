@@ -188,11 +188,14 @@ export const configuracoesItems: NavLeaf[] = [
     permissao: 'configuracoes.manage',
   },
   {
-    to: '/configuracoes/unimed',
-    label: 'Unimed RDA',
+    to: '/configuracoes/convenios',
+    label: 'Convênios e credenciais',
     descricao:
-      'Credenciais do portal da Unimed e o de-para de especialidades e profissionais que a automação usa para gerar guias.',
-    permissao: 'configuracoes.unimed.manage',
+      'Credencial de automação de cada convênio, e o de-para de especialidades e profissionais que a automação usa para gerar guias.',
+    // A permissão nova basta no menu: a migration de sincronização a concedeu a
+    // todo papel que tinha `configuracoes.unimed.manage`, então ninguém perde o
+    // item na virada. A rota ainda aceita as duas, por um ciclo.
+    permissao: 'configuracoes.convenios.manage',
   },
   {
     to: '/configuracoes/clinica',

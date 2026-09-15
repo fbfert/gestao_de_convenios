@@ -7,6 +7,7 @@ use App\Jobs\ExecutarAutomacaoUnimedJob;
 use App\Models\AutomacaoExecucao;
 use App\Models\ConfiguracaoGlobal;
 use App\Models\Convenio;
+use App\Models\ConvenioCredencial;
 use App\Models\ConvenioEspecialidadeMapeamento;
 use App\Models\ConvenioProfissionalMapeamento;
 use App\Models\Especialidade;
@@ -17,7 +18,6 @@ use App\Models\PacienteArquivo;
 use App\Models\Profissional;
 use App\Models\Solicitacao;
 use App\Models\SolicitacaoItem;
-use App\Models\UnimedRdaCredential;
 use App\Models\User;
 use App\Services\Automation\AutomacaoService;
 use App\Services\Automation\CapturarSenhaValidadeUnimedService;
@@ -165,7 +165,7 @@ class ConfirmarGuiaIncertaUnimedApiTest extends TestCase
 
     private function rodarScheduler(): void
     {
-        (new EnfileirarConsultasUnimedDueJob())->handle(
+        (new EnfileirarConsultasUnimedDueJob)->handle(
             app(ConsultarStatusUnimedService::class),
             app(CapturarSenhaValidadeUnimedService::class),
             app(ConfirmarGuiaIncertaUnimedService::class),
@@ -229,12 +229,18 @@ class ConfirmarGuiaIncertaUnimedApiTest extends TestCase
         ]);
         $tenantId = (int) $convenio->tenant_id;
 
-        UnimedRdaCredential::query()->updateOrCreate([
+        // A credencial e do CONVENIO desde `credenciais-por-convenio`; antes era
+        // uma so por tenant, e era esse o defeito que derrubava a automacao toda.
+        ConvenioCredencial::query()->updateOrCreate([
             'tenant_id' => $tenantId,
+            'convenio_id' => $convenio->id,
         ], [
-            'login' => 'operador-unimed',
-            'password' => 'senha-unimed',
-            'base_url' => 'https://portal.unimed.test',
+            'driver' => 'unimed_rda',
+            'credenciais' => [
+                'login' => 'operador-unimed',
+                'password' => 'senha-unimed',
+                'base_url' => 'https://portal.unimed.test',
+            ],
             'ativo' => true,
         ]);
 

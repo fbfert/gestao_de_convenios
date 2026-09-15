@@ -7,8 +7,13 @@ import { Botao } from '../components/ui/Botao'
 export function LoginPage() {
   const navigate = useNavigate()
   const login = useLogin()
-  const [email, setEmail] = useState('admin@clinica-exemplo.test')
-  const [password, setPassword] = useState('password')
+  // Campos vazios, e os placeholders sem exemplo real. A tela nasceu no
+  // ambiente local, onde vinha com o usuário do seed já preenchido para
+  // encurtar o teste do fluxo de autenticação. Em produção isso virou uma tela
+  // pública anunciando um e-mail válido e a senha dele — não é o login da
+  // clínica, mas é um palpite pronto para quem chegar na URL.
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -39,8 +44,7 @@ export function LoginPage() {
             Entrar no sistema
           </h1>
           <p className="mt-2 text-corpo leading-6 text-texto-suave">
-            Use o usuário seedado do ambiente local para testar o fluxo real de
-            autenticação.
+            Entre com o e-mail e a senha da sua conta.
           </p>
         </div>
 
@@ -52,7 +56,7 @@ export function LoginPage() {
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               className="w-full rounded-campo border border-borda-campo bg-superficie px-4 py-3 text-texto outline-none transition placeholder:text-texto-desativado focus-visible:border-foco focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foco"
-              placeholder="admin@clinica-exemplo.test"
+              placeholder="voce@suaclinica.com.br"
               autoComplete="email"
               data-testid="login-email"
             />
@@ -65,7 +69,7 @@ export function LoginPage() {
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               className="w-full rounded-campo border border-borda-campo bg-superficie px-4 py-3 text-texto outline-none transition placeholder:text-texto-desativado focus-visible:border-foco focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foco"
-              placeholder="password"
+              placeholder="••••••••"
               autoComplete="current-password"
               data-testid="login-password"
             />

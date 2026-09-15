@@ -2,13 +2,14 @@
 
 namespace Tests\Feature;
 
-use App\Jobs\ExecutarAutomacaoUnimedJob;
 use App\Jobs\EnfileirarConsultasUnimedDueJob;
+use App\Jobs\ExecutarAutomacaoUnimedJob;
 use App\Models\AuditLog;
-use App\Models\AutomacaoExecucao;
 use App\Models\AutomacaoEvento;
+use App\Models\AutomacaoExecucao;
 use App\Models\ConfiguracaoGlobal;
 use App\Models\Convenio;
+use App\Models\ConvenioCredencial;
 use App\Models\ConvenioEspecialidadeMapeamento;
 use App\Models\ConvenioProfissionalMapeamento;
 use App\Models\Especialidade;
@@ -19,13 +20,14 @@ use App\Models\PacienteArquivo;
 use App\Models\Profissional;
 use App\Models\Solicitacao;
 use App\Models\SolicitacaoItem;
-use App\Models\UnimedRdaCredential;
 use App\Models\User;
 use App\Services\Automation\AutomacaoService;
 use App\Services\Automation\CapturarSenhaValidadeUnimedService;
+use App\Services\Automation\ConfirmarGuiaIncertaUnimedService;
 use App\Services\Automation\ConsultarStatusUnimedService;
 use App\Services\Automation\FakeUnimedWorkerClient;
 use App\Services\Automation\GerarGuiaUnimedService;
+use App\Services\Automation\UnimedCircuitBreakerService;
 use App\Services\Automation\UnimedWorkerClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
@@ -86,8 +88,8 @@ class GerarGuiaUnimedApiTest extends TestCase
             app(AutomacaoService::class),
             app(UnimedWorkerClient::class),
             app(GerarGuiaUnimedService::class),
-            app(\App\Services\Automation\ConsultarStatusUnimedService::class),
-            app(\App\Services\Automation\UnimedCircuitBreakerService::class),
+            app(ConsultarStatusUnimedService::class),
+            app(UnimedCircuitBreakerService::class),
         );
 
         $guia = Guia::query()->where('solicitacao_item_id', $item->id)->firstOrFail();
@@ -179,8 +181,8 @@ class GerarGuiaUnimedApiTest extends TestCase
             app(AutomacaoService::class),
             app(UnimedWorkerClient::class),
             app(GerarGuiaUnimedService::class),
-            app(\App\Services\Automation\ConsultarStatusUnimedService::class),
-            app(\App\Services\Automation\UnimedCircuitBreakerService::class),
+            app(ConsultarStatusUnimedService::class),
+            app(UnimedCircuitBreakerService::class),
         );
 
         $guia = Guia::query()->where('solicitacao_item_id', $item->id)->firstOrFail();
@@ -209,8 +211,8 @@ class GerarGuiaUnimedApiTest extends TestCase
             app(AutomacaoService::class),
             app(UnimedWorkerClient::class),
             app(GerarGuiaUnimedService::class),
-            app(\App\Services\Automation\ConsultarStatusUnimedService::class),
-            app(\App\Services\Automation\UnimedCircuitBreakerService::class),
+            app(ConsultarStatusUnimedService::class),
+            app(UnimedCircuitBreakerService::class),
         );
 
         $guia = Guia::query()->where('solicitacao_item_id', $item->id)->firstOrFail();
@@ -259,8 +261,8 @@ class GerarGuiaUnimedApiTest extends TestCase
             app(AutomacaoService::class),
             app(UnimedWorkerClient::class),
             app(GerarGuiaUnimedService::class),
-            app(\App\Services\Automation\ConsultarStatusUnimedService::class),
-            app(\App\Services\Automation\UnimedCircuitBreakerService::class),
+            app(ConsultarStatusUnimedService::class),
+            app(UnimedCircuitBreakerService::class),
         );
 
         $this->assertSame('uncertain', $execucao->refresh()->status);
@@ -309,7 +311,7 @@ class GerarGuiaUnimedApiTest extends TestCase
             app(UnimedWorkerClient::class),
             app(GerarGuiaUnimedService::class),
             app(ConsultarStatusUnimedService::class),
-            app(\App\Services\Automation\UnimedCircuitBreakerService::class),
+            app(UnimedCircuitBreakerService::class),
         );
 
         $guia->refresh();
@@ -340,7 +342,7 @@ class GerarGuiaUnimedApiTest extends TestCase
                 app(UnimedWorkerClient::class),
                 app(GerarGuiaUnimedService::class),
                 app(ConsultarStatusUnimedService::class),
-                app(\App\Services\Automation\UnimedCircuitBreakerService::class),
+                app(UnimedCircuitBreakerService::class),
             );
 
             $execucao->forceFill(['idempotency_key' => 'reconsulta-'.uniqid()])->save();
@@ -394,7 +396,7 @@ class GerarGuiaUnimedApiTest extends TestCase
             app(UnimedWorkerClient::class),
             app(GerarGuiaUnimedService::class),
             app(ConsultarStatusUnimedService::class),
-            app(\App\Services\Automation\UnimedCircuitBreakerService::class),
+            app(UnimedCircuitBreakerService::class),
         );
 
         $guia->refresh();
@@ -419,7 +421,7 @@ class GerarGuiaUnimedApiTest extends TestCase
             app(UnimedWorkerClient::class),
             app(GerarGuiaUnimedService::class),
             app(ConsultarStatusUnimedService::class),
-            app(\App\Services\Automation\UnimedCircuitBreakerService::class),
+            app(UnimedCircuitBreakerService::class),
         );
 
         $guia->refresh();
@@ -441,10 +443,10 @@ class GerarGuiaUnimedApiTest extends TestCase
         $due = $this->criarGuiaUnimedPendente(['unimed_next_check_at' => now()->subMinute()]);
         $future = $this->criarGuiaUnimedPendente(['unimed_next_check_at' => now()->addDay()]);
 
-        (new EnfileirarConsultasUnimedDueJob())->handle(
+        (new EnfileirarConsultasUnimedDueJob)->handle(
             app(ConsultarStatusUnimedService::class),
             app(CapturarSenhaValidadeUnimedService::class),
-            app(\App\Services\Automation\ConfirmarGuiaIncertaUnimedService::class),
+            app(ConfirmarGuiaIncertaUnimedService::class),
         );
 
         $this->assertSame(1, AutomacaoExecucao::query()->where('operacao', 'consult_status_batch')->count());
@@ -494,10 +496,10 @@ class GerarGuiaUnimedApiTest extends TestCase
             'unimed_senha_validade_next_check_at' => now()->addHours(3),
         ]);
 
-        (new EnfileirarConsultasUnimedDueJob())->handle(
+        (new EnfileirarConsultasUnimedDueJob)->handle(
             app(ConsultarStatusUnimedService::class),
             app(CapturarSenhaValidadeUnimedService::class),
-            app(\App\Services\Automation\ConfirmarGuiaIncertaUnimedService::class),
+            app(ConfirmarGuiaIncertaUnimedService::class),
         );
 
         $this->assertSame(1, AutomacaoExecucao::query()->where('operacao', 'capture_authorization_data_batch')->count());
@@ -520,10 +522,10 @@ class GerarGuiaUnimedApiTest extends TestCase
         $historica = $this->criarGuiaUnimedPendente(['unimed_next_check_at' => now()->subMinute()]);
         $historica->solicitacaoItem->solicitacao->update(['status' => 'historico']);
 
-        (new EnfileirarConsultasUnimedDueJob())->handle(
+        (new EnfileirarConsultasUnimedDueJob)->handle(
             app(ConsultarStatusUnimedService::class),
             app(CapturarSenhaValidadeUnimedService::class),
-            app(\App\Services\Automation\ConfirmarGuiaIncertaUnimedService::class),
+            app(ConfirmarGuiaIncertaUnimedService::class),
         );
 
         $this->assertDatabaseHas('automacao_execucoes', [
@@ -575,10 +577,10 @@ class GerarGuiaUnimedApiTest extends TestCase
             app(UnimedWorkerClient::class),
             app(GerarGuiaUnimedService::class),
             app(ConsultarStatusUnimedService::class),
-            app(\App\Services\Automation\UnimedCircuitBreakerService::class),
+            app(UnimedCircuitBreakerService::class),
         );
 
-        $credential = UnimedRdaCredential::query()->where('tenant_id', $item->tenant_id)->firstOrFail();
+        $credential = ConvenioCredencial::query()->where('tenant_id', $item->tenant_id)->firstOrFail();
 
         $this->assertFalse($credential->ativo);
         $this->assertSame('PORTAL_STRUCTURE_CHANGED', $credential->automation_paused_reason);
@@ -613,10 +615,10 @@ class GerarGuiaUnimedApiTest extends TestCase
                 app(UnimedWorkerClient::class),
                 app(GerarGuiaUnimedService::class),
                 app(ConsultarStatusUnimedService::class),
-                app(\App\Services\Automation\UnimedCircuitBreakerService::class),
+                app(UnimedCircuitBreakerService::class),
             );
 
-            $credential = UnimedRdaCredential::query()->where('tenant_id', $item->tenant_id)->firstOrFail();
+            $credential = ConvenioCredencial::query()->where('tenant_id', $item->tenant_id)->firstOrFail();
             $this->assertFalse($credential->ativo);
             $this->assertSame($code, $credential->automation_paused_reason);
 
@@ -646,10 +648,10 @@ class GerarGuiaUnimedApiTest extends TestCase
             app(UnimedWorkerClient::class),
             app(GerarGuiaUnimedService::class),
             app(ConsultarStatusUnimedService::class),
-            app(\App\Services\Automation\UnimedCircuitBreakerService::class),
+            app(UnimedCircuitBreakerService::class),
         );
 
-        $credential = UnimedRdaCredential::query()->where('tenant_id', $item->tenant_id)->firstOrFail();
+        $credential = ConvenioCredencial::query()->where('tenant_id', $item->tenant_id)->firstOrFail();
         $this->assertTrue($credential->ativo);
 
         AutomacaoExecucao::query()->delete();
@@ -666,7 +668,7 @@ class GerarGuiaUnimedApiTest extends TestCase
             app(UnimedWorkerClient::class),
             app(GerarGuiaUnimedService::class),
             app(ConsultarStatusUnimedService::class),
-            app(\App\Services\Automation\UnimedCircuitBreakerService::class),
+            app(UnimedCircuitBreakerService::class),
         );
 
         $credential->refresh();
@@ -723,12 +725,18 @@ class GerarGuiaUnimedApiTest extends TestCase
         ]);
         $tenantId = (int) $convenio->tenant_id;
 
-        UnimedRdaCredential::query()->updateOrCreate([
+        // A credencial e do CONVENIO desde `credenciais-por-convenio`; antes era
+        // uma so por tenant, e era esse o defeito que derrubava a automacao toda.
+        ConvenioCredencial::query()->updateOrCreate([
             'tenant_id' => $tenantId,
+            'convenio_id' => $convenio->id,
         ], [
-            'login' => 'operador-unimed',
-            'password' => 'senha-unimed',
-            'base_url' => 'https://portal.unimed.test',
+            'driver' => 'unimed_rda',
+            'credenciais' => [
+                'login' => 'operador-unimed',
+                'password' => 'senha-unimed',
+                'base_url' => 'https://portal.unimed.test',
+            ],
             'ativo' => true,
         ]);
 

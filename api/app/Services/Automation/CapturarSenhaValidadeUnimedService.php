@@ -7,17 +7,19 @@ use App\Jobs\ExecutarAutomacaoUnimedJob;
 use App\Models\AutomacaoExecucao;
 use App\Models\ConfiguracaoGlobal;
 use App\Models\Guia;
-use App\Models\UnimedRdaCredential;
+use App\Repositories\ConvenioCredencialRepository;
 use Illuminate\Validation\ValidationException;
 
 class CapturarSenhaValidadeUnimedService
 {
     private const ACTIVE_STATUSES = ['queued', 'running'];
+
     public const OPERATION = 'capture_authorization_data_batch';
 
-    public function __construct(private readonly AutomacaoService $automacoes)
-    {
-    }
+    public function __construct(
+        private readonly AutomacaoService $automacoes,
+        private readonly ConvenioCredencialRepository $credenciais,
+    ) {}
 
     public function enviar(Guia $guia, bool $dispatch = true): AutomacaoExecucao
     {
@@ -75,10 +77,7 @@ class CapturarSenhaValidadeUnimedService
     {
         $guia->loadMissing(['convenio']);
         $motivos = [];
-        $credential = UnimedRdaCredential::query()
-            ->where('tenant_id', $guia->tenant_id)
-            ->where('ativo', true)
-            ->first();
+        $credential = $this->credenciais->ativa((int) $guia->tenant_id, $guia->convenio_id);
 
         if ($guia->convenio?->connector_driver !== 'unimed_rda') {
             $motivos[] = 'A Guia não pertence a Convênio Unimed RDA.';
@@ -92,7 +91,8 @@ class CapturarSenhaValidadeUnimedService
             $motivos[] = 'A Guia pertence a uma Solicitação histórica e não entra em automação.';
         }
 
-        if (! $credential || blank($credential->password)) {
+        // A credencial e a DO CONVENIO da guia, nao a do tenant.
+        if (! $credential) {
             $motivos[] = 'A credencial Unimed ativa não está configurada.';
         }
 
@@ -127,16 +127,13 @@ class CapturarSenhaValidadeUnimedService
 
     public function payloadParaWorker(AutomacaoExecucao $execucao): array
     {
-        $credential = UnimedRdaCredential::query()
-            ->where('tenant_id', $execucao->tenant_id)
-            ->where('ativo', true)
-            ->firstOrFail();
+        $credential = $this->credenciais->ativaParaExecucao($execucao);
 
         return ($execucao->payload ?? []) + [
             'credential' => [
-                'login' => $credential->login,
-                'password' => $credential->password,
-                'base_url' => $credential->base_url,
+                'login' => $credential->campo('login'),
+                'password' => $credential->campo('password'),
+                'base_url' => $credential->campo('base_url'),
             ],
         ];
     }

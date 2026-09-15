@@ -26,6 +26,49 @@ class ConvenioEspecialidadeMapeamentoController extends Controller
         );
     }
 
+    /**
+     * Listagem da rota aninhada `.../{convenio}/mapeamentos/especialidades`.
+     *
+     * Método próprio porque o `index` acima filtra pelo `convenio_id` da QUERY
+     * STRING, e a rota aninhada não manda esse parâmetro — o convênio está no
+     * caminho. Chamar o `index` ali devolvia os de-para de TODOS os convênios do
+     * tenant, e a tela mostrava a mesma lista para a Unimed e para o SC Saúde.
+     */
+    public function indexDoConvenio(Convenio $convenio): AnonymousResourceCollection
+    {
+        return ConvenioEspecialidadeMapeamentoResource::collection(
+            ConvenioEspecialidadeMapeamento::query()
+                ->where('convenio_id', $convenio->id)
+                ->with(['convenio', 'especialidade'])
+                ->orderBy('id')
+                ->get()
+        );
+    }
+
+    /**
+     * Criação pela rota aninhada: o convênio vem do caminho, não do corpo.
+     *
+     * Ignorar o `convenio_id` enviado no corpo é proposital — dois convênios na
+     * mesma requisição só poderiam divergir, e o da URL é o que a tela escolheu.
+     */
+    public function storeDoConvenio(
+        StoreConvenioEspecialidadeMapeamentoRequest $request,
+        Convenio $convenio
+    ): JsonResponse {
+        $mapeamento = ConvenioEspecialidadeMapeamento::query()->create([
+            ...$request->validated(),
+            'convenio_id' => $convenio->id,
+            'tenant_id' => $request->user()->tenant_id,
+            'quantidade_padrao' => $request->integer('quantidade_padrao') ?: ConfiguracaoGlobal::doTenant((int) $request->user()->tenant_id)->sessoes_padrao,
+            'usa_descricao_generica' => $request->boolean('usa_descricao_generica'),
+            'ativo' => $request->boolean('ativo', true),
+        ]);
+
+        return (new ConvenioEspecialidadeMapeamentoResource($mapeamento->load(['convenio', 'especialidade'])))
+            ->response()
+            ->setStatusCode(201);
+    }
+
     public function store(StoreConvenioEspecialidadeMapeamentoRequest $request): JsonResponse
     {
         $mapeamento = ConvenioEspecialidadeMapeamento::query()->create([

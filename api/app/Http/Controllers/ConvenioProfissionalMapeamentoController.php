@@ -25,6 +25,47 @@ class ConvenioProfissionalMapeamentoController extends Controller
         );
     }
 
+    /**
+     * Listagem da rota aninhada `.../{convenio}/mapeamentos/profissionais`.
+     *
+     * Método próprio porque o `index` acima filtra pelo `convenio_id` da QUERY
+     * STRING, e a rota aninhada não manda esse parâmetro — o convênio está no
+     * caminho. Chamar o `index` ali devolvia os de-para de TODOS os convênios do
+     * tenant, e a tela mostrava a mesma lista para a Unimed e para o SC Saúde.
+     */
+    public function indexDoConvenio(Convenio $convenio): AnonymousResourceCollection
+    {
+        return ConvenioProfissionalMapeamentoResource::collection(
+            ConvenioProfissionalMapeamento::query()
+                ->where('convenio_id', $convenio->id)
+                ->with(['convenio', 'profissional'])
+                ->orderBy('id')
+                ->get()
+        );
+    }
+
+    /**
+     * Criação pela rota aninhada: o convênio vem do caminho, não do corpo.
+     *
+     * Ignorar o `convenio_id` enviado no corpo é proposital — dois convênios na
+     * mesma requisição só poderiam divergir, e o da URL é o que a tela escolheu.
+     */
+    public function storeDoConvenio(
+        StoreConvenioProfissionalMapeamentoRequest $request,
+        Convenio $convenio
+    ): JsonResponse {
+        $mapeamento = ConvenioProfissionalMapeamento::query()->create([
+            ...$request->validated(),
+            'convenio_id' => $convenio->id,
+            'tenant_id' => $request->user()->tenant_id,
+            'ativo' => $request->boolean('ativo', true),
+        ]);
+
+        return (new ConvenioProfissionalMapeamentoResource($mapeamento->load(['convenio', 'profissional'])))
+            ->response()
+            ->setStatusCode(201);
+    }
+
     public function store(StoreConvenioProfissionalMapeamentoRequest $request): JsonResponse
     {
         $mapeamento = ConvenioProfissionalMapeamento::query()->create([

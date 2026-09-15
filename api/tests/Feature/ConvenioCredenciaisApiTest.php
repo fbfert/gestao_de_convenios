@@ -280,25 +280,71 @@ class ConvenioCredenciaisApiTest extends TestCase
      * convênio, e tê-lo como campo do formulário deixava salvá-lo apontando
      * para um convênio diferente do que estava sendo editado.
      */
-    public function test_de_para_de_especialidade_pelo_caminho_do_convenio(): void
+    /**
+     * A listagem tem que trazer SÓ o convênio do caminho.
+     *
+     * A primeira versão deste teste procurava um item dentro da lista, sem
+     * conferir o que mais vinha junto — e passava com a listagem devolvendo os
+     * de-para do tenant inteiro. O defeito foi visto na tela: Unimed e SC Saúde
+     * mostravam exatamente as mesmas linhas. Agora cada convênio recebe um
+     * código diferente para a MESMA especialidade, que é o caso que o filtro
+     * quebrado não separa.
+     */
+    public function test_de_para_de_especialidade_lista_so_o_convenio_do_caminho(): void
     {
         $this->autenticar();
-        $convenio = Convenio::query()->where('nome', 'Unimed')->firstOrFail();
-        $especialidade = Especialidade::query()->where('tenant_id', $convenio->tenant_id)->firstOrFail();
+        $unimed = Convenio::query()->where('nome', 'Unimed')->firstOrFail();
+        $scsaude = Convenio::query()->where('nome', 'SC Saúde')->firstOrFail();
+        $especialidade = Especialidade::query()->where('tenant_id', $unimed->tenant_id)->firstOrFail();
 
-        $this->postJson(self::ROTA."/{$convenio->id}/mapeamentos/especialidades", [
-            'convenio_id' => $convenio->id,
+        $this->postJson(self::ROTA."/{$unimed->id}/mapeamentos/especialidades", [
+            'convenio_id' => $unimed->id,
             'especialidade_id' => $especialidade->id,
-            'codigo_procedimento' => '50000470',
+            'codigo_procedimento' => '2250005286',
             'quantidade_padrao' => 10,
             'ativo' => true,
         ])->assertCreated();
 
-        $listagem = $this->getJson(self::ROTA."/{$convenio->id}/mapeamentos/especialidades")
-            ->assertOk()
-            ->json('data');
+        $this->postJson(self::ROTA."/{$scsaude->id}/mapeamentos/especialidades", [
+            'convenio_id' => $scsaude->id,
+            'especialidade_id' => $especialidade->id,
+            'codigo_procedimento' => '13107208',
+            'quantidade_padrao' => 10,
+            'ativo' => true,
+        ])->assertCreated();
 
-        $this->assertSame('50000470', collect($listagem)->firstWhere('especialidade_id', $especialidade->id)['codigo_procedimento']);
+        $daUnimed = $this->getJson(self::ROTA."/{$unimed->id}/mapeamentos/especialidades")
+            ->assertOk()->json('data');
+        $doScSaude = $this->getJson(self::ROTA."/{$scsaude->id}/mapeamentos/especialidades")
+            ->assertOk()->json('data');
+
+        $this->assertSame(['2250005286'], array_column($daUnimed, 'codigo_procedimento'));
+        $this->assertSame(['13107208'], array_column($doScSaude, 'codigo_procedimento'));
+        $this->assertSame([$unimed->id], array_unique(array_column($daUnimed, 'convenio_id')));
+        $this->assertSame([$scsaude->id], array_unique(array_column($doScSaude, 'convenio_id')));
+    }
+
+    /** O convênio do caminho manda: um `convenio_id` divergente no corpo é ignorado. */
+    public function test_convenio_do_caminho_vence_o_do_corpo(): void
+    {
+        $this->autenticar();
+        $unimed = Convenio::query()->where('nome', 'Unimed')->firstOrFail();
+        $scsaude = Convenio::query()->where('nome', 'SC Saúde')->firstOrFail();
+        $especialidade = Especialidade::query()->where('tenant_id', $unimed->tenant_id)->firstOrFail();
+
+        $this->postJson(self::ROTA."/{$unimed->id}/mapeamentos/especialidades", [
+            // Corpo aponta para o outro convênio de propósito.
+            'convenio_id' => $scsaude->id,
+            'especialidade_id' => $especialidade->id,
+            'codigo_procedimento' => '2250005286',
+            'quantidade_padrao' => 10,
+            'ativo' => true,
+        ])->assertCreated()->assertJsonPath('data.convenio_id', $unimed->id);
+
+        $this->assertCount(
+            0,
+            $this->getJson(self::ROTA."/{$scsaude->id}/mapeamentos/especialidades")->json('data'),
+        );
     }
 
     public function test_de_para_de_profissional_pelo_caminho_do_convenio(): void
@@ -306,6 +352,14 @@ class ConvenioCredenciaisApiTest extends TestCase
         $this->autenticar();
         $convenio = Convenio::query()->where('nome', 'Unimed')->firstOrFail();
         $profissional = Profissional::query()->where('tenant_id', $convenio->tenant_id)->firstOrFail();
+
+        $outro = Convenio::query()->where('nome', 'SC Saúde')->firstOrFail();
+        $this->postJson(self::ROTA."/{$outro->id}/mapeamentos/profissionais", [
+            'convenio_id' => $outro->id,
+            'profissional_id' => $profissional->id,
+            'codigo_operadora' => '9999',
+            'ativo' => true,
+        ])->assertCreated();
 
         $criado = $this->postJson(self::ROTA."/{$convenio->id}/mapeamentos/profissionais", [
             'convenio_id' => $convenio->id,
@@ -320,6 +374,12 @@ class ConvenioCredenciaisApiTest extends TestCase
             'codigo_operadora' => '4321',
             'ativo' => true,
         ])->assertOk()->assertJsonPath('data.codigo_operadora', '4321');
+
+        // A listagem do convênio não pode trazer o de-para do outro.
+        $this->assertSame(
+            ['4321'],
+            array_column($this->getJson(self::ROTA."/{$convenio->id}/mapeamentos/profissionais")->json('data'), 'codigo_operadora'),
+        );
     }
 
     /** As rotas antigas, com `convenio_id` em query, seguem respondendo. */

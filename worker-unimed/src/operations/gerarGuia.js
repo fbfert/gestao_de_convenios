@@ -214,7 +214,7 @@ async function abrirBuscaContratado(page) {
  * profissional solicitante (com `s_nr_crm`/`Button_DoSearch` dentro dela,
  * nao na pagina da guia). Toda a busca daqui pra frente roda nessa popup.
  */
-async function selecionarPrestador(page, medico) {
+export async function selecionarPrestador(page, medico) {
   const crm = String(medico.crm ?? '').trim()
   if (crm) {
     const popup = await abrirBuscaPrestador(page)

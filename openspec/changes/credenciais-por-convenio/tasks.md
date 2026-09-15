@@ -108,10 +108,10 @@
       chaves de cache do TanStack Query.
 - [x] 7.5 `navigation.ts`: item `Convênios e credenciais` em `/configuracoes/convenios`; remover
       o item `Unimed RDA`.
-- [ ] 7.6 Passar o convênio selecionado para os de-para de especialidade e profissional.
-      > PENDENTE. As rotas `.../{convenio}/mapeamentos/*` existem e respondem, mas a
-      > tela nova ainda não renderiza os editores de de-para — eles continuam só na
-      > aba antiga, que segue funcional. Falta portar ~400 linhas de UI.
+- [x] 7.6 Passar o convênio selecionado para os de-para de especialidade e profissional.
+      > O `convenio_id` saiu do formulário: vai no caminho da rota. A troca expôs
+      > um defeito nas rotas PATCH aninhadas — ver o comentário em
+      > `updateDoConvenio` nos dois controllers.
 - [x] 7.7 Rodar `npm run ds:check` — o contrato de design reprova valor mágico e classe fora do
       token.
 

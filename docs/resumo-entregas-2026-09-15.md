@@ -44,6 +44,7 @@ convênio automatizado, teria derrubado também o que não tinha problema nenhum
 | 5. Services | `eaeb020` | Disjuntor e credencial por convênio; `CREDENTIAL_MISSING` |
 | 6. Guarda | `eb2fd08` | Testes de que credencial não liga automação |
 | 7. Frontend | `bd6456f` | `ConfiguracoesConveniosPage`, formulário vindo do catálogo |
+| 7. De-para | (este) | Editores de especialidade e profissional na tela nova; defeito nas rotas PATCH |
 
 ### As três decisões que mais custam se forem esquecidas
 
@@ -72,6 +73,12 @@ existir e as rotas `/configuracoes/unimed*` responderem, reverter é voltar o de
   execução` disparava a falha no **primeiro** convênio — e passava com o código antigo, porque
   `where('tenant_id')->first()` devolvia justamente esse. Disparando no segundo, o comportamento
   antigo pausa o errado e três testes o pegam. O comentário no teste registra o porquê.
+- **Rotas PATCH aninhadas quebradas.** As seis rotas de de-para sob `.../{convenio}/` entraram na
+  seção 3 sem teste. Com dois parâmetros na URL e só um model na assinatura, o Laravel injetava o
+  **primeiro** — o `{convenio}` chegava no lugar do mapeamento e o PATCH estourava com TypeError.
+  Só apareceu quando escrevi o teste da seção 7. Corrigido com `updateDoConvenio` nos dois
+  controllers, que declara os dois models e ainda confere o convênio da URL contra o do registro.
+  Lição repetida: rota registrada sem teste é rota não verificada.
 - **Pint reformatando arquivos não tocados.** Em dois commits ele mexeu em arquivos fora do escopo
   (`AutomacaoService`, `AutomationPayloadRedactor`, `FakeUnimedWorkerClient`, `LancamentosApiTest`);
   revertidos, porque num commit que mexe em automação de produção a revisibilidade vale mais.
@@ -91,10 +98,6 @@ existir e as rotas `/configuracoes/unimed*` responderem, reverter é voltar o de
 
 ## 3. O que ficou pendente
 
-**Tarefa 7.6 — de-para na tela nova.** As rotas `.../{convenio}/mapeamentos/*` existem e respondem,
-mas a tela nova ainda não renderiza os editores de especialidade e profissional. Eles continuam na
-aba antiga, que segue funcional. Falta portar cerca de 400 linhas de UI.
-
 **Seção 8 — cadastro do SC Saúde.** É entrada de dados em produção, não código. Depois do deploy,
 pela tela de Convênios: cadastrar **sem `connector_driver`** e preencher `carteirinha_blocos` com a
 máscara de 17 dígitos (`0306XXXXXXXXXXXXX`). Conferir então que ele aparece com o aviso de
@@ -112,7 +115,7 @@ Baseline antes de começar, e depois de cada seção:
 
 | Suíte | Antes | Depois |
 |---|---|---|
-| `php artisan test` | 612 passaram | 658 passaram (2499 asserções) |
+| `php artisan test` | 612 passaram | 662 passaram (2509 asserções) |
 | `tsc -b` | limpo | limpo |
 | `oxlint` | sem erro | sem erro |
 | `npm run ds:check` | as quatro guardas da §11 | as quatro guardas da §11 |

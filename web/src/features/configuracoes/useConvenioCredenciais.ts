@@ -146,4 +146,161 @@ export function segredoPreenchido(
   return campo !== undefined && 'preenchido' in campo && campo.preenchido
 }
 
+
+
+// ── De-para do convênio ──────────────────────────────────────────────────────
+//
+// O convênio agora vai no CAMINHO (`.../{convenio}/mapeamentos/*`), e não como
+// campo do formulário: quem escolhe é o seletor do topo da tela, e um de-para
+// não existe fora de um convênio. As rotas antigas, com `convenio_id` em query,
+// continuam respondendo por um ciclo para a aba depreciada.
+
+export type EspecialidadeMapeamento = {
+  id: number
+  convenio_id: number
+  especialidade_id: number
+  codigo_procedimento: string
+  descricao_operadora: string | null
+  quantidade_padrao: number
+  usa_descricao_generica: boolean
+  valor_generico: string | null
+  ativo: boolean
+  especialidade?: { id: number; nome: string }
+}
+
+export type ProfissionalMapeamento = {
+  id: number
+  convenio_id: number
+  profissional_id: number
+  codigo_operadora: string
+  nome_operadora: string | null
+  ativo: boolean
+  profissional?: { id: number; nome: string }
+}
+
+export type EspecialidadeMapeamentoForm = {
+  especialidade_id: string
+  codigo_procedimento: string
+  descricao_operadora: string
+  quantidade_padrao: string
+  usa_descricao_generica: boolean
+  valor_generico: string
+  ativo: boolean
+}
+
+export type ProfissionalMapeamentoForm = {
+  profissional_id: string
+  codigo_operadora: string
+  nome_operadora: string
+  ativo: boolean
+}
+
+const CHAVE_MAPEAMENTOS = [...CHAVE, 'mapeamentos']
+
+export function useEspecialidadeMapeamentos(convenioId: number | null) {
+  return useQuery({
+    queryKey: [...CHAVE_MAPEAMENTOS, 'especialidades', convenioId ?? ''],
+    enabled: convenioId !== null,
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ data: EspecialidadeMapeamento[] }>(
+        `${BASE}/${convenioId}/mapeamentos/especialidades`,
+      )
+      return data.data
+    },
+  })
+}
+
+export function useSalvarEspecialidadeMapeamento() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      convenioId,
+      id,
+      payload,
+    }: {
+      convenioId: number
+      id?: number
+      payload: EspecialidadeMapeamentoForm
+    }) => {
+      const body = {
+        // O convênio segue no corpo porque a request da API o valida; o do
+        // caminho é quem manda, e os dois são sempre o mesmo.
+        convenio_id: convenioId,
+        especialidade_id: Number(payload.especialidade_id),
+        codigo_procedimento: payload.codigo_procedimento,
+        descricao_operadora: payload.descricao_operadora.trim() || null,
+        quantidade_padrao: payload.quantidade_padrao ? Number(payload.quantidade_padrao) : 10,
+        usa_descricao_generica: payload.usa_descricao_generica,
+        valor_generico: payload.valor_generico.trim() || null,
+        ativo: payload.ativo,
+      }
+      const base = `${BASE}/${convenioId}/mapeamentos/especialidades`
+      const { data } = id
+        ? await apiClient.patch<{ data: EspecialidadeMapeamento }>(`${base}/${id}`, body)
+        : await apiClient.post<{ data: EspecialidadeMapeamento }>(base, body)
+
+      return data.data
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: [...CHAVE_MAPEAMENTOS, 'especialidades'] })
+      // O de-para decide se um item é elegível para automação: sem isto a tela
+      // de Solicitações seguiria dizendo "mapeamento não configurado".
+      await queryClient.invalidateQueries({ queryKey: ['solicitacoes'] })
+      await queryClient.invalidateQueries({
+        queryKey: ['configuracoes', 'unimed', 'mapeamentos', 'especialidades'],
+      })
+    },
+  })
+}
+
+export function useProfissionalMapeamentos(convenioId: number | null) {
+  return useQuery({
+    queryKey: [...CHAVE_MAPEAMENTOS, 'profissionais', convenioId ?? ''],
+    enabled: convenioId !== null,
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ data: ProfissionalMapeamento[] }>(
+        `${BASE}/${convenioId}/mapeamentos/profissionais`,
+      )
+      return data.data
+    },
+  })
+}
+
+export function useSalvarProfissionalMapeamento() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      convenioId,
+      id,
+      payload,
+    }: {
+      convenioId: number
+      id?: number
+      payload: ProfissionalMapeamentoForm
+    }) => {
+      const body = {
+        convenio_id: convenioId,
+        profissional_id: Number(payload.profissional_id),
+        codigo_operadora: payload.codigo_operadora,
+        nome_operadora: payload.nome_operadora.trim() || null,
+        ativo: payload.ativo,
+      }
+      const base = `${BASE}/${convenioId}/mapeamentos/profissionais`
+      const { data } = id
+        ? await apiClient.patch<{ data: ProfissionalMapeamento }>(`${base}/${id}`, body)
+        : await apiClient.post<{ data: ProfissionalMapeamento }>(base, body)
+
+      return data.data
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: [...CHAVE_MAPEAMENTOS, 'profissionais'] })
+      await queryClient.invalidateQueries({
+        queryKey: ['configuracoes', 'unimed', 'mapeamentos', 'profissionais'],
+      })
+    },
+  })
+}
+
 export { getHttpErrorMessage }

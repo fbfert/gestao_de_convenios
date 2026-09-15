@@ -145,10 +145,10 @@ Route::middleware(['auth:sanctum', EncerrarSessaoExpirada::class])->group(functi
     Route::post('/configuracoes/convenios-credenciais/{convenio}/reativar', [ConvenioCredenciaisController::class, 'reativar'])->middleware('permission:configuracoes.convenios.manage|configuracoes.unimed.manage');
     Route::get('/configuracoes/convenios-credenciais/{convenio}/mapeamentos/especialidades', [ConvenioEspecialidadeMapeamentoController::class, 'index'])->middleware('permission:configuracoes.convenios.manage|configuracoes.unimed.manage');
     Route::post('/configuracoes/convenios-credenciais/{convenio}/mapeamentos/especialidades', [ConvenioEspecialidadeMapeamentoController::class, 'store'])->middleware('permission:configuracoes.convenios.manage|configuracoes.unimed.manage');
-    Route::patch('/configuracoes/convenios-credenciais/{convenio}/mapeamentos/especialidades/{especialidadeMapeamento}', [ConvenioEspecialidadeMapeamentoController::class, 'update'])->middleware('permission:configuracoes.convenios.manage|configuracoes.unimed.manage');
+    Route::patch('/configuracoes/convenios-credenciais/{convenio}/mapeamentos/especialidades/{especialidadeMapeamento}', [ConvenioEspecialidadeMapeamentoController::class, 'updateDoConvenio'])->middleware('permission:configuracoes.convenios.manage|configuracoes.unimed.manage');
     Route::get('/configuracoes/convenios-credenciais/{convenio}/mapeamentos/profissionais', [ConvenioProfissionalMapeamentoController::class, 'index'])->middleware('permission:configuracoes.convenios.manage|configuracoes.unimed.manage');
     Route::post('/configuracoes/convenios-credenciais/{convenio}/mapeamentos/profissionais', [ConvenioProfissionalMapeamentoController::class, 'store'])->middleware('permission:configuracoes.convenios.manage|configuracoes.unimed.manage');
-    Route::patch('/configuracoes/convenios-credenciais/{convenio}/mapeamentos/profissionais/{profissionalMapeamento}', [ConvenioProfissionalMapeamentoController::class, 'update'])->middleware('permission:configuracoes.convenios.manage|configuracoes.unimed.manage');
+    Route::patch('/configuracoes/convenios-credenciais/{convenio}/mapeamentos/profissionais/{profissionalMapeamento}', [ConvenioProfissionalMapeamentoController::class, 'updateDoConvenio'])->middleware('permission:configuracoes.convenios.manage|configuracoes.unimed.manage');
 
     /*
      * DEPRECIADO em 15/09/2026, sai no change de limpeza de

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreConvenioEspecialidadeMapeamentoRequest;
 use App\Http\Resources\ConvenioEspecialidadeMapeamentoResource;
 use App\Models\ConfiguracaoGlobal;
+use App\Models\Convenio;
 use App\Models\ConvenioEspecialidadeMapeamento;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -41,6 +42,32 @@ class ConvenioEspecialidadeMapeamentoController extends Controller
     }
 
     public function update(
+        StoreConvenioEspecialidadeMapeamentoRequest $request,
+        ConvenioEspecialidadeMapeamento $especialidadeMapeamento
+    ): ConvenioEspecialidadeMapeamentoResource {
+        return $this->gravar($request, $especialidadeMapeamento);
+    }
+
+    /**
+     * Mesma edição, na rota aninhada `.../{convenio}/mapeamentos/especialidades/{id}`.
+     *
+     * Método próprio, e não o `update` acima, por causa de como o Laravel
+     * resolve dependências: com dois parâmetros na rota e só um model na
+     * assinatura, ele injeta o PRIMEIRO da URL — o `{convenio}` chegava no lugar
+     * do mapeamento e a chamada estourava com TypeError. Declarar os dois
+     * resolve, e ainda deixa o convênio da URL conferido contra o do registro.
+     */
+    public function updateDoConvenio(
+        StoreConvenioEspecialidadeMapeamentoRequest $request,
+        Convenio $convenio,
+        ConvenioEspecialidadeMapeamento $especialidadeMapeamento
+    ): ConvenioEspecialidadeMapeamentoResource {
+        abort_if((int) $especialidadeMapeamento->convenio_id !== (int) $convenio->id, 404);
+
+        return $this->gravar($request, $especialidadeMapeamento);
+    }
+
+    private function gravar(
         StoreConvenioEspecialidadeMapeamentoRequest $request,
         ConvenioEspecialidadeMapeamento $especialidadeMapeamento
     ): ConvenioEspecialidadeMapeamentoResource {

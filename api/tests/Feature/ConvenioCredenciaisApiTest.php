@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Models\AuditLog;
 use App\Models\Convenio;
 use App\Models\ConvenioCredencial;
+use App\Models\Especialidade;
+use App\Models\Profissional;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Support\ConvenioDriverCatalog;
@@ -269,6 +271,85 @@ class ConvenioCredenciaisApiTest extends TestCase
         Sanctum::actingAs($user);
 
         $this->getJson(self::ROTA)->assertOk();
+    }
+
+    /**
+     * Os de-para passam a levar o convênio no CAMINHO, e não em query.
+     *
+     * A tela nova escolhe o convênio no topo; um de-para não existe fora de um
+     * convênio, e tê-lo como campo do formulário deixava salvá-lo apontando
+     * para um convênio diferente do que estava sendo editado.
+     */
+    public function test_de_para_de_especialidade_pelo_caminho_do_convenio(): void
+    {
+        $this->autenticar();
+        $convenio = Convenio::query()->where('nome', 'Unimed')->firstOrFail();
+        $especialidade = Especialidade::query()->where('tenant_id', $convenio->tenant_id)->firstOrFail();
+
+        $this->postJson(self::ROTA."/{$convenio->id}/mapeamentos/especialidades", [
+            'convenio_id' => $convenio->id,
+            'especialidade_id' => $especialidade->id,
+            'codigo_procedimento' => '50000470',
+            'quantidade_padrao' => 10,
+            'ativo' => true,
+        ])->assertCreated();
+
+        $listagem = $this->getJson(self::ROTA."/{$convenio->id}/mapeamentos/especialidades")
+            ->assertOk()
+            ->json('data');
+
+        $this->assertSame('50000470', collect($listagem)->firstWhere('especialidade_id', $especialidade->id)['codigo_procedimento']);
+    }
+
+    public function test_de_para_de_profissional_pelo_caminho_do_convenio(): void
+    {
+        $this->autenticar();
+        $convenio = Convenio::query()->where('nome', 'Unimed')->firstOrFail();
+        $profissional = Profissional::query()->where('tenant_id', $convenio->tenant_id)->firstOrFail();
+
+        $criado = $this->postJson(self::ROTA."/{$convenio->id}/mapeamentos/profissionais", [
+            'convenio_id' => $convenio->id,
+            'profissional_id' => $profissional->id,
+            'codigo_operadora' => '1234',
+            'ativo' => true,
+        ])->assertCreated()->json('data.id');
+
+        $this->patchJson(self::ROTA."/{$convenio->id}/mapeamentos/profissionais/{$criado}", [
+            'convenio_id' => $convenio->id,
+            'profissional_id' => $profissional->id,
+            'codigo_operadora' => '4321',
+            'ativo' => true,
+        ])->assertOk()->assertJsonPath('data.codigo_operadora', '4321');
+    }
+
+    /** As rotas antigas, com `convenio_id` em query, seguem respondendo. */
+    public function test_rotas_antigas_de_de_para_continuam_respondendo(): void
+    {
+        $this->autenticar();
+
+        $this->getJson('/api/configuracoes/unimed/mapeamentos/especialidades')->assertOk();
+        $this->getJson('/api/configuracoes/unimed/mapeamentos/profissionais')->assertOk();
+    }
+
+    public function test_de_para_de_convenio_alheio_retorna_404(): void
+    {
+        $this->autenticar();
+
+        $tenant = Tenant::query()->create([
+            'nome' => 'Clínica De-Para Externa',
+            'slug' => 'clinica-de-para-externa',
+            'cnpj' => '77.777.777/0001-77',
+            'ativo' => true,
+        ]);
+        $alheio = Convenio::query()->create([
+            'tenant_id' => $tenant->id,
+            'nome' => 'Convênio De-Para Alheio',
+            'connector_type' => 'manual',
+            'ativo' => true,
+        ]);
+
+        $this->getJson(self::ROTA."/{$alheio->id}/mapeamentos/especialidades")->assertNotFound();
+        $this->getJson(self::ROTA."/{$alheio->id}/mapeamentos/profissionais")->assertNotFound();
     }
 
     /** @return array<string, mixed> */

@@ -1,16 +1,13 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getHttpErrorMessage, useLerCarteirinha } from './usePacientes'
 import type { LeituraCarteirinha } from './types'
 import { Botao } from '../../components/ui/Botao'
+import { CapturaWebcam, webcamDisponivel } from '../../components/ui/CapturaWebcam'
 import { Tooltip } from '../../components/ui/Tooltip'
 
 /** Largura máxima da foto enviada. Acima disso só cresce o upload. */
 const LARGURA_MAXIMA = 1600
-
-function webcamDisponivel() {
-  return typeof navigator !== 'undefined' && Boolean(navigator.mediaDevices?.getUserMedia)
-}
 
 /**
  * Leitura da carteirinha, por arquivo, câmera do celular ou webcam.
@@ -18,7 +15,13 @@ function webcamDisponivel() {
  * São dois caminhos de propósito. No celular, `capture` abre a câmera do
  * sistema, que já é a melhor experiência. No computador esse atributo é
  * ignorado e o clique vira seletor de arquivo — daí a webcam, que captura o
- * quadro na própria página.
+ * quadro na própria página (ver `CapturaWebcam`, compartilhado com a leitura
+ * do registro de sessões).
+ *
+ * Aqui a foto vai direto para a IA, sem conferência: a carteirinha é um cartão
+ * pequeno e nítido, e o resultado lido já volta em campos editáveis na tela. O
+ * registro de sessões usa o mesmo componente com `conferirAntesDeEnviar`,
+ * porque lá o alvo é uma folha A4 manuscrita.
  *
  * Nada é gravado aqui: a leitura preenche o formulário e quem confere é o
  * operador, com a carteirinha na mão.
@@ -31,80 +34,16 @@ export function LerCarteirinha({
   onEscolherConvenio: (convenioId: number) => void
 }) {
   const inputRef = useRef<HTMLInputElement | null>(null)
-  const videoRef = useRef<HTMLVideoElement | null>(null)
-  const streamRef = useRef<MediaStream | null>(null)
   const [camera, setCamera] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
   const [convenioLido, setConvenioLido] = useState<LeituraCarteirinha['convenio'] | null>(null)
   const ler = useLerCarteirinha()
 
-  const fecharCamera = () => {
-    // Parar as trilhas é o que apaga a luz da webcam. Sem isso ela fica ligada
-    // até a aba ser fechada, o que assusta com razão.
-    streamRef.current?.getTracks().forEach((track) => track.stop())
-    streamRef.current = null
-    setCamera(false)
-  }
-
-  useEffect(() => fecharCamera, [])
-
-  const abrirCamera = async () => {
+  const abrirCamera = () => {
     setErro(null)
     setAviso(null)
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        // `ideal` e não `exact`: no celular pega a câmera traseira, no
-        // computador aceita a única que existe em vez de falhar.
-        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 } },
-        audio: false,
-      })
-
-      streamRef.current = stream
-      setCamera(true)
-    } catch {
-      setErro(
-        'Não foi possível acessar a webcam. Verifique a permissão da câmera no navegador ou use "Escolher arquivo".',
-      )
-    }
-  }
-
-  // O stream entra por propriedade, não por atributo: só dá para ligá-lo
-  // depois que o <video> existe na tela.
-  useEffect(() => {
-    if (camera && videoRef.current && streamRef.current) {
-      videoRef.current.srcObject = streamRef.current
-    }
-  }, [camera])
-
-  const capturar = () => {
-    const video = videoRef.current
-
-    if (!video || !video.videoWidth) {
-      return
-    }
-
-    const escala = Math.min(1, LARGURA_MAXIMA / video.videoWidth)
-    const canvas = document.createElement('canvas')
-    canvas.width = Math.round(video.videoWidth * escala)
-    canvas.height = Math.round(video.videoHeight * escala)
-    canvas.getContext('2d')?.drawImage(video, 0, 0, canvas.width, canvas.height)
-
-    canvas.toBlob(
-      (blob) => {
-        if (!blob) {
-          setErro('Não foi possível capturar a imagem da webcam.')
-
-          return
-        }
-
-        fecharCamera()
-        void enviar(new File([blob], 'carteirinha.jpg', { type: 'image/jpeg' }))
-      },
-      'image/jpeg',
-      0.9,
-    )
+    setCamera(true)
   }
 
   const enviar = async (arquivo: File | undefined) => {
@@ -173,7 +112,7 @@ export function LerCarteirinha({
           <Botao
             type="button"
             variante="secundario"
-            onClick={camera ? fecharCamera : abrirCamera}
+            onClick={camera ? () => setCamera(false) : abrirCamera}
             disabled={ler.isPending}
             data-testid="paciente-webcam"
           >
@@ -213,28 +152,16 @@ export function LerCarteirinha({
       />
 
       {camera ? (
-        <div className="space-y-3 rounded-2xl border border-white/10 bg-slate-950/60 p-3">
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            muted
-            className="max-h-80 w-full rounded-xl bg-black object-contain"
-            data-testid="paciente-webcam-preview"
-          />
-
-          <div className="flex flex-wrap items-center gap-3">
-            <Botao variante="primario" onClick={capturar} data-testid="paciente-webcam-capturar">
-              Tirar foto e ler
-            </Botao>
-            <button type="button" onClick={fecharCamera} className="inline-flex min-h-6 items-center text-corpo text-slate-300">
-              Cancelar
-            </button>
-            <span className="text-meta text-slate-400">
-              Encoste o cartão no quadro, sem reflexo, e mantenha o número legível.
-            </span>
-          </div>
-        </div>
+        <CapturaWebcam
+          onCapturar={(arquivo) => void enviar(arquivo)}
+          onFechar={() => setCamera(false)}
+          onErro={setErro}
+          nomeArquivo="carteirinha.jpg"
+          larguraMaxima={LARGURA_MAXIMA}
+          rotuloCapturar="Tirar foto e ler"
+          dica="Encoste o cartão no quadro, sem reflexo, e mantenha o número legível."
+          testIdPrefixo="paciente-webcam"
+        />
       ) : null}
 
       {/*

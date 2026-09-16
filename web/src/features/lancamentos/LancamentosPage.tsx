@@ -2,6 +2,7 @@ import { Fragment, useEffect, useMemo, useRef, useState, type FormEvent } from '
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { useListaNaUrl } from '../../lib/useListaNaUrl'
 import { Botao } from '../../components/ui/Botao'
+import { CapturaWebcam, webcamDisponivel } from '../../components/ui/CapturaWebcam'
 import { Paginacao } from '../../components/ui/Paginacao'
 import { Indicadores } from '../../components/ui/Indicadores'
 import { Badge } from '../../components/ui/Badge'
@@ -99,6 +100,7 @@ export function LancamentosPage() {
   const [pdf, setPdf] = useState<File | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
+  const [webcamAberta, setWebcamAberta] = useState(false)
   const arquivoRef = useRef<HTMLInputElement | null>(null)
 
   const profissionaisQuery = useProfissionais()
@@ -450,11 +452,33 @@ export function LancamentosPage() {
               <Botao
                 variante="primario"
                 onClick={() => arquivoRef.current?.click()}
-                disabled={!prontoParaLer || lendo}
+                disabled={!prontoParaLer || lendo || webcamAberta}
                 data-testid="lancamento-anexo-botao"
               >
                 {lerArquivo.isPending ? 'Lendo registro...' : 'Ler foto ou PDF do registro'}
               </Botao>
+
+              {/*
+                O `capture` do input acima só vale no celular: no computador o
+                atributo é ignorado e o clique vira seletor de arquivo. Daí a
+                webcam — sem ela, quem trabalha no computador fotografa no
+                celular, manda para si mesmo e baixa, com a câmera na mesa.
+              */}
+              {webcamDisponivel() ? (
+                <Botao
+                  type="button"
+                  variante="secundario"
+                  onClick={() => {
+                    setFormError(null)
+                    setAviso(null)
+                    setWebcamAberta((aberta) => !aberta)
+                  }}
+                  disabled={!prontoParaLer || lendo}
+                  data-testid="lancamento-webcam-botao"
+                >
+                  {webcamAberta ? 'Fechar webcam' : 'Usar webcam'}
+                </Botao>
+              ) : null}
 
               <input
                 ref={arquivoRef}
@@ -472,6 +496,24 @@ export function LancamentosPage() {
                   : 'Escolha a guia e o executante para começar.'}
               </span>
             </div>
+
+            {webcamAberta ? (
+              <CapturaWebcam
+                onCapturar={(arquivo) => void ler(arquivo)}
+                onFechar={() => setWebcamAberta(false)}
+                onErro={setFormError}
+                nomeArquivo="registro-sessoes.jpg"
+                // A folha traz até 10 linhas de letra manuscrita, com data e
+                // dois horários cada: nos 1600px que bastam para um cartão o
+                // texto fica no limite do legível.
+                larguraMaxima={2400}
+                // Uma foto tremida custa a chamada de IA e a espera até
+                // alguém descobrir que não deu.
+                conferirAntesDeEnviar
+                dica="Enquadre a folha inteira, sem sombra, com as linhas na horizontal."
+                testIdPrefixo="lancamento-webcam"
+              />
+            ) : null}
 
             {lendo ? (
               <div

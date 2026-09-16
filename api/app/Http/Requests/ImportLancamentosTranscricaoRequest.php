@@ -22,6 +22,20 @@ class ImportLancamentosTranscricaoRequest extends FormRequest
             'numero_cartao' => ['nullable', 'string'],
             'confirmar_envio' => ['sometimes', 'boolean'],
             'pdf_registro_sessoes' => ['nullable', 'file', 'mimes:pdf'],
+            /*
+             * O paciente da folha lida contradiz o da guia escolhida.
+             *
+             * Declarado pelo cliente, e não recalculado aqui: o servidor não
+             * viu a folha — o que a IA leu vive na tela até a confirmação. A
+             * API registra a decisão na auditoria; a guarda é de operação,
+             * para a escolha não passar calada, não controle de acesso.
+             *
+             * A justificativa é obrigatória quando há divergência declarada:
+             * é ela que diz, meses depois, por que a cota daquela guia foi
+             * consumida assim.
+             */
+            'divergencia' => ['nullable', 'string', 'max:500'],
+            'divergencia_justificativa' => ['required_with:divergencia', 'nullable', 'string', 'min:10', 'max:1000'],
             // Grade fixa de até 10 linhas (o máximo físico da folha); linhas em
             // branco podem vir no payload e são ignoradas na gravação.
             'sessoes' => ['required_if:confirmar_envio,true', 'array', 'max:10'],

@@ -1005,4 +1005,118 @@ TXT;
             ->assertStatus(422)
             ->assertJsonValidationErrors(['sessoes']);
     }
+
+    /**
+     * Lançar apesar de a folha contradizer a guia fica registrado.
+     *
+     * A divergência é DECLARADA pelo cliente, e não recalculada aqui: o
+     * servidor não viu a folha — o que a IA leu vive na tela até a
+     * confirmação. Por isso a API registra a decisão em vez de julgá-la; é
+     * guarda de operação, para a escolha não passar calada, não controle de
+     * acesso.
+     *
+     * O evento vai contra a GUIA porque é a cota dela que foi consumida: é
+     * olhando o histórico dela que alguém pergunta, meses depois, por que
+     * essas sessões estão ali.
+     */
+    public function test_confirmar_sob_divergencia_registra_quem_decidiu_e_por_que(): void
+    {
+        $this->autenticar();
+        $user = User::query()->where('email', 'admin@clinica-exemplo.test')->firstOrFail();
+        $guia = $this->criarGuiaAprovada('SC Saúde', 'Fonoaudiologia', 'convencional', sessoesAutorizadas: 5);
+
+        $this->postJson("/api/guias/{$guia->id}/lancamentos/importar-transcricao", [
+            'profissional_id' => $guia->profissional_id,
+            'confirmar_envio' => true,
+            'numero_cartao' => '9999 999999 999.999-9',
+            'sessoes' => [[
+                'data_sessao' => today()->toDateString(),
+                'hora_inicio' => '14:50',
+                'hora_fim' => '15:40',
+            ]],
+            'divergencia' => 'Nome do paciente: a folha diz "Zoroastro Silva" e a guia é de "Ana Paula Ribeiro"',
+            'divergencia_justificativa' => 'Paciente trocou de nome apos casamento; conferido na recepcao.',
+        ])->assertCreated();
+
+        $evento = AuditLog::query()
+            ->where('entidade', 'guias')
+            ->where('entidade_id', $guia->id)
+            ->where('acao', 'lancamento_divergencia_confirmada')
+            ->latest('id')
+            ->firstOrFail();
+
+        $this->assertSame($user->id, $evento->user_id);
+        $this->assertStringContainsString('Zoroastro Silva', $evento->payload['divergencia']);
+        $this->assertStringContainsString('conferido na recepcao', $evento->payload['justificativa']);
+        $this->assertSame(1, $evento->payload['sessoes_gravadas']);
+
+        // E as sessões foram gravadas: divergir avisa, não bloqueia.
+        $this->assertSame(1, $guia->lancamentos()->count());
+    }
+
+    /**
+     * Declarar divergência sem justificar não passa.
+     *
+     * Sem esta regra, um cliente poderia mandar a bandeira e deixar o motivo
+     * em branco — e a auditoria guardaria um evento que não explica nada, que
+     * é o mesmo que não ter evento.
+     */
+    public function test_divergencia_sem_justificativa_e_recusada(): void
+    {
+        $this->autenticar();
+        $guia = $this->criarGuiaAprovada('SC Saúde', 'Fonoaudiologia', 'convencional', sessoesAutorizadas: 5);
+
+        $this->postJson("/api/guias/{$guia->id}/lancamentos/importar-transcricao", [
+            'profissional_id' => $guia->profissional_id,
+            'confirmar_envio' => true,
+            'sessoes' => [[
+                'data_sessao' => today()->toDateString(),
+                'hora_inicio' => '14:50',
+                'hora_fim' => '15:40',
+            ]],
+            'divergencia' => 'Nome do paciente: a folha diz "Zoroastro" e a guia é de "Ana"',
+        ])->assertStatus(422)->assertJsonValidationErrors('divergencia_justificativa');
+
+        $this->assertSame(0, $guia->lancamentos()->count());
+    }
+
+    /** Justificativa de uma palavra é o que alguém digita para passar da tela. */
+    public function test_divergencia_com_justificativa_curta_e_recusada(): void
+    {
+        $this->autenticar();
+        $guia = $this->criarGuiaAprovada('SC Saúde', 'Fonoaudiologia', 'convencional', sessoesAutorizadas: 5);
+
+        $this->postJson("/api/guias/{$guia->id}/lancamentos/importar-transcricao", [
+            'profissional_id' => $guia->profissional_id,
+            'confirmar_envio' => true,
+            'sessoes' => [[
+                'data_sessao' => today()->toDateString(),
+                'hora_inicio' => '14:50',
+                'hora_fim' => '15:40',
+            ]],
+            'divergencia' => 'Nome do paciente: a folha diz "Zoroastro" e a guia é de "Ana"',
+            'divergencia_justificativa' => 'ok',
+        ])->assertStatus(422)->assertJsonValidationErrors('divergencia_justificativa');
+    }
+
+    /** Sem divergência declarada, nada é registrado — o caso normal não vira ruído na trilha. */
+    public function test_confirmacao_sem_divergencia_nao_registra_evento(): void
+    {
+        $this->autenticar();
+        $guia = $this->criarGuiaAprovada('SC Saúde', 'Fonoaudiologia', 'convencional', sessoesAutorizadas: 5);
+
+        $this->postJson("/api/guias/{$guia->id}/lancamentos/importar-transcricao", [
+            'profissional_id' => $guia->profissional_id,
+            'confirmar_envio' => true,
+            'sessoes' => [[
+                'data_sessao' => today()->toDateString(),
+                'hora_inicio' => '14:50',
+                'hora_fim' => '15:40',
+            ]],
+        ])->assertCreated();
+
+        $this->assertSame(0, AuditLog::query()
+            ->where('acao', 'lancamento_divergencia_confirmada')
+            ->count());
+    }
 }

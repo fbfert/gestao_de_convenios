@@ -133,6 +133,13 @@ export function useConfirmarLancamentosTranscritos() {
       formData.append('numero_cartao', payload.numero_cartao ?? '')
       formData.append('confirmar_envio', '1')
 
+      // Só vão quando há divergência: a API exige a justificativa junto
+      // (`required_with`), então mandar a chave vazia reprovaria a validação.
+      if (payload.divergencia && payload.divergencia_justificativa) {
+        formData.append('divergencia', payload.divergencia)
+        formData.append('divergencia_justificativa', payload.divergencia_justificativa)
+      }
+
       payload.sessoes.forEach((sessao, index) => {
         formData.append(`sessoes[${index}][data_sessao]`, sessao.data_sessao ?? '')
         formData.append(`sessoes[${index}][hora_inicio]`, sessao.hora_inicio ?? '')

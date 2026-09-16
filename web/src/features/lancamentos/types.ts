@@ -57,6 +57,16 @@ export type LancamentoConfirmImportForm = LancamentoImportForm & {
   sessoes: LancamentoTranscricaoSessao[]
   pdf_registro_sessoes: File | null
   numero_cartao: string | null
+  /**
+   * O paciente da folha lida contradiz o da guia escolhida.
+   *
+   * Preenchidos só quando o operador decidiu lançar assim mesmo. Vão juntos —
+   * a API exige a justificativa quando a divergência é declarada — e acabam na
+   * trilha de auditoria da guia, que é onde alguém vai procurar depois por que
+   * a cota dela foi consumida assim.
+   */
+  divergencia?: string | null
+  divergencia_justificativa?: string | null
 }
 
 export type LancamentoTranscricaoSessao = {

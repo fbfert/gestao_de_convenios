@@ -35,6 +35,12 @@ import { Tooltip } from '../../components/ui/Tooltip'
 import { usePode } from '../../lib/permissoes'
 import { HtmlIsolado } from '../../components/ui/HtmlIsolado'
 import { SelecionarGuiaModal } from './SelecionarGuiaModal'
+import { ConfirmarDivergenciaModal } from './ConfirmarDivergenciaModal'
+import {
+  conferirPacienteDaFolha,
+  descreverDivergencia,
+  type ConferenciaDaFolha,
+} from './conferenciaDaFolha'
 
 const defaultFilters: LancamentoFilters = {
   profissional_id: '',
@@ -106,7 +112,9 @@ export function LancamentosPage() {
   // escolha; o executante fica só como informação de conferência.
   const [guiaVeioDaLeitura, setGuiaVeioDaLeitura] = useState<string | null>(null)
   const [executanteLido, setExecutanteLido] = useState<string | null>(null)
+  const [pacienteLido, setPacienteLido] = useState<string | null>(null)
   const [termoInicialGuia, setTermoInicialGuia] = useState('')
+  const [divergenciaAConfirmar, setDivergenciaAConfirmar] = useState<ConferenciaDaFolha | null>(null)
   const arquivoRef = useRef<HTMLInputElement | null>(null)
 
   const profissionaisQuery = useProfissionais()
@@ -199,7 +207,9 @@ export function LancamentosPage() {
     setAviso(null)
     setGuiaVeioDaLeitura(null)
     setExecutanteLido(null)
+    setPacienteLido(null)
     setTermoInicialGuia('')
+    setDivergenciaAConfirmar(null)
   }
 
   const handleNew = () => {
@@ -216,6 +226,22 @@ export function LancamentosPage() {
     setIsFormOpen(false)
   }
 
+  /*
+    A folha lida bate com a guia escolhida?
+    Recalculado a cada render, e não guardado: depende de duas coisas que mudam
+    por caminhos independentes — a leitura e a escolha da guia. Guardar num
+    estado exigiria lembrar de recalcular nos dois, e um esquecimento deixaria
+    o aviso desatualizado sem nada acusar.
+  */
+  const conferencia = useMemo(
+    () =>
+      conferirPacienteDaFolha(
+        { paciente: pacienteLido, numero_cartao: numeroCartao },
+        guiaSelecionada,
+      ),
+    [pacienteLido, numeroCartao, guiaSelecionada],
+  )
+
   // Só o caminho do texto colado exige os dois: ele posta em
   // `/guias/{id}/lancamentos/importar-transcricao`, que recebe guia e
   // executante no corpo. A leitura por foto/PDF/webcam não exige nada, porque
@@ -226,12 +252,18 @@ export function LancamentosPage() {
   const sessoesPreenchidas = useMemo(() => sessoes.filter((sessao) => Boolean(sessao.data_sessao)).length, [sessoes])
 
   const aplicarResultado = (resultado: {
-    cabecalho: { numero_cartao: string | null }
+    cabecalho: { numero_cartao: string | null; paciente?: string | null }
     sessoes: LancamentoTranscricaoSessao[]
   }) => {
     const normalizadas = normalizarDezLinhas(resultado.sessoes)
     setSessoes(normalizadas)
     setNumeroCartao(resultado.cabecalho.numero_cartao ?? null)
+    // Os DOIS identificadores da folha entram por aqui, e não só no caminho da
+    // IA: o texto colado também traz "Paciente:" no cabeçalho, e guardar o
+    // cartão sem o nome deixaria a conferência com um lado só — o que acusa
+    // divergência sempre que a carteirinha do cadastro estiver em formato
+    // diferente do impresso na folha.
+    setPacienteLido(resultado.cabecalho.paciente ?? null)
     setPdf(null)
     setAviso(normalizadas.every((sessao) => !sessao.data_sessao) ? 'Nenhuma sessão foi reconhecida no documento.' : null)
   }
@@ -244,7 +276,10 @@ export function LancamentosPage() {
    * acabou de ler. Sem número lido não faz nada — cair para o nome do paciente
    * casaria com várias guias dele e escolheria a errada em silêncio.
    */
-  const resolverGuiaLida = async (numeroLido: string | null) => {
+  const resolverGuiaLida = async (
+    numeroLido: string | null,
+    folha: { paciente: string | null; numero_cartao: string | null },
+  ) => {
     if (!numeroLido || guiaSelecionada) {
       return
     }
@@ -255,11 +290,29 @@ export function LancamentosPage() {
       const encontradas = await buscarGuiasDisponiveis(numeroLido)
 
       if (encontradas.length === 1) {
-        setGuiaSelecionada(encontradas[0])
-        setProfissionalId('')
-        setGuiaVeioDaLeitura(numeroLido)
+        /*
+          Escolher sozinho exige que o SEGUNDO identificador da folha também
+          feche. Um dígito lido errado raramente cai no vazio — cai numa guia
+          real de outro paciente, e é só o paciente que denuncia isso. Sem esta
+          conferência, esse caso seria indistinguível de um acerto.
 
-        return
+          Divergindo, não escolhe: abre a busca. Não é bloqueio — o operador
+          pode escolher esta mesma guia à mão e seguir pela justificativa; o que
+          não acontece é a escolha errada entrar calada.
+        */
+        const confere = conferirPacienteDaFolha(folha, encontradas[0])
+
+        if (confere.confere) {
+          setGuiaSelecionada(encontradas[0])
+          setProfissionalId('')
+          setGuiaVeioDaLeitura(numeroLido)
+
+          return
+        }
+
+        setAviso(
+          `A guia ${numeroLido} foi encontrada, mas é de outro paciente. ${descreverDivergencia(confere)}. Confira antes de escolher.`,
+        )
       }
 
       setGuiaModalAberto(true)
@@ -279,6 +332,7 @@ export function LancamentosPage() {
     setAviso(null)
     setGuiaVeioDaLeitura(null)
     setExecutanteLido(null)
+    setPacienteLido(null)
 
     try {
       // Sem guia: a folha é que diz de qual guia ela é, e é por isso que a
@@ -286,7 +340,10 @@ export function LancamentosPage() {
       const resultado = await lerArquivo.mutateAsync(arquivo)
       aplicarResultado(resultado)
       setExecutanteLido(resultado.cabecalho.profissional_executante ?? null)
-      await resolverGuiaLida(resultado.cabecalho.guia_numero ?? null)
+      await resolverGuiaLida(resultado.cabecalho.guia_numero ?? null, {
+        paciente: resultado.cabecalho.paciente ?? null,
+        numero_cartao: resultado.cabecalho.numero_cartao ?? null,
+      })
     } catch (error) {
       setFormError(getHttpErrorMessage(error, 'Não foi possível ler o registro de sessões.'))
     } finally {
@@ -326,6 +383,33 @@ export function LancamentosPage() {
     setSessoes((atual) => atual.map((sessao, i) => (i === indice ? { ...sessao, [campo]: valor || null } : sessao)))
   }
 
+  const gravar = async (justificativa?: string) => {
+    try {
+      const payload: LancamentoConfirmImportForm = {
+        guia_id: String(guiaSelecionada!.id),
+        profissional_id: profissionalId,
+        transcricao: transcricaoTexto,
+        numero_cartao: numeroCartao,
+        sessoes,
+        pdf_registro_sessoes: pdf,
+        divergencia: justificativa ? descreverDivergencia(conferencia) : null,
+        divergencia_justificativa: justificativa ?? null,
+      }
+
+      await confirmar.mutateAsync(payload)
+      setDivergenciaAConfirmar(null)
+
+      if (isCreateRoute) {
+        navigate({ pathname: '/lancamentos', search: query })
+      } else {
+        setIsFormOpen(false)
+      }
+    } catch (error) {
+      setDivergenciaAConfirmar(null)
+      setFormError(getHttpErrorMessage(error, 'Não foi possível registrar as sessões.'))
+    }
+  }
+
   const enviar = async () => {
     setFormError(null)
 
@@ -344,26 +428,15 @@ export function LancamentosPage() {
       return
     }
 
-    try {
-      const payload: LancamentoConfirmImportForm = {
-        guia_id: String(guiaSelecionada.id),
-        profissional_id: profissionalId,
-        transcricao: transcricaoTexto,
-        numero_cartao: numeroCartao,
-        sessoes,
-        pdf_registro_sessoes: pdf,
-      }
-
-      await confirmar.mutateAsync(payload)
-
-      if (isCreateRoute) {
-        navigate({ pathname: '/lancamentos', search: query })
-      } else {
-        setIsFormOpen(false)
-      }
-    } catch (error) {
-      setFormError(getHttpErrorMessage(error, 'Não foi possível registrar as sessões.'))
+    // A trava fica AQUI, e não na escolha da guia: gravar é o passo
+    // irreversível, e é o único ponto por onde passam a escolha automática, a
+    // manual, e o caso de escolher a guia antes de ler a folha.
+    if (!conferencia.confere) {
+      setDivergenciaAConfirmar(conferencia)
+      return
     }
+
+    await gravar()
   }
 
   const printHtml = useMemo(
@@ -491,8 +564,26 @@ export function LancamentosPage() {
                   className="text-meta text-emerald-200"
                   data-testid="lancamento-guia-da-leitura"
                 >
-                  Escolhida pela leitura: a folha traz a guia {guiaVeioDaLeitura}. Confira antes de
-                  confirmar.
+                  Escolhida pela leitura: a folha traz a guia {guiaVeioDaLeitura}, e o paciente
+                  confere. Confira antes de confirmar.
+                </p>
+              ) : null}
+
+              {/*
+                Aviso permanente, e não um alerta que passa: enquanto a guia
+                escolhida contradisser a folha, a contradição fica na tela,
+                nomeando os dois lados. Vale para a escolha manual também — o
+                perigo é o mesmo, venha de onde vier.
+              */}
+              {!conferencia.confere ? (
+                <p
+                  className="rounded-2xl border border-amber-300/30 bg-amber-400/10 px-4 py-3 text-corpo text-amber-100"
+                  role="alert"
+                  data-testid="lancamento-divergencia-aviso"
+                >
+                  <strong className="font-semibold">A folha não confere com esta guia.</strong>{' '}
+                  {descreverDivergencia(conferencia)}. Lançar assim consome a cota desta guia — vai
+                  pedir justificativa na confirmação.
                 </p>
               ) : null}
             </div>
@@ -941,9 +1032,19 @@ export function LancamentosPage() {
         onSelecionar={(guia) => {
           setGuiaSelecionada(guia)
           setProfissionalId('')
-          // Escolha manual: o rótulo "veio da leitura" deixa de valer.
+          // Escolha manual: o rótulo "veio da leitura" deixa de valer. O aviso
+          // de divergência, não — ele se recalcula e continua valendo para a
+          // guia que acabou de ser escolhida à mão.
           setGuiaVeioDaLeitura(null)
         }}
+      />
+
+      <ConfirmarDivergenciaModal
+        conferencia={divergenciaAConfirmar}
+        descricao={divergenciaAConfirmar ? descreverDivergencia(divergenciaAConfirmar) : ''}
+        enviando={confirmar.isPending}
+        onCancelar={() => setDivergenciaAConfirmar(null)}
+        onConfirmar={(justificativa) => void gravar(justificativa)}
       />
 
       <HtmlIsolado

@@ -52,10 +52,17 @@ function hoje(): string {
   return new Date().toISOString().slice(0, 10)
 }
 
-/** Guia aprovada com saldo, que é o que a tela de lançamento aceita. */
+/**
+ * Guia aprovada com saldo, que é o que a tela de lançamento aceita.
+ *
+ * Devolve também o paciente dela: desde a conferência cruzada, uma folha falsa
+ * que declare paciente ou cartão diferentes do da guia é tratada como
+ * divergência — e com razão. Quem monta um cenário de "tudo confere" precisa
+ * dos dados reais da guia para escrever a folha.
+ */
 async function guiaParaLancamento(
   api: APIRequestContext,
-): Promise<{ id: number; numero: string }> {
+): Promise<{ id: number; numero: string; pacienteNome: string; carteirinha: string }> {
   const convenios = (await (await api.get('/api/convenios')).json()).data as Array<{
     id: number
     connector_driver: string | null
@@ -119,7 +126,12 @@ async function guiaParaLancamento(
   })
   expect(finalizada.status(), await finalizada.text()).toBe(200)
 
-  return { id: guia.id, numero: numeroGuia }
+  return {
+    id: guia.id,
+    numero: numeroGuia,
+    pacienteNome: paciente.nome,
+    carteirinha: paciente.carteirinha,
+  }
 }
 
 async function login(page: Page) {
@@ -252,9 +264,13 @@ test('o numero de guia lido escolhe a guia, sem ninguem ter escolhido antes', as
   await login(page)
   await page.goto('/lancamentos/novo', { waitUntil: 'domcontentloaded' })
 
+  // Folha coerente com a guia: mesmo paciente e mesmo cartão. Declarar um
+  // cartão de outro paciente aqui seria, corretamente, tratado como
+  // divergência — é o que a conferência cruzada existe para pegar.
   const leitura = await interceptarLeitura(page, {
     guia_numero: guia.numero,
-    numero_cartao: '0155 090000 551.330-8',
+    paciente: guia.pacienteNome,
+    numero_cartao: guia.carteirinha,
     profissional_executante: 'Mariana',
   })
 
@@ -324,4 +340,123 @@ test('registro sem numero de guia legivel nao abre nada nem escolhe por outro da
   // ...e a escolha da guia continua com o operador.
   await expect(page.getByTestId('selecionar-guia-modal')).toHaveCount(0)
   await expect(page.getByTestId('lancamento-guia')).toContainText('Selecione uma guia')
+})
+
+/** Cabeçalho de uma folha que é claramente de OUTRO paciente. */
+const FOLHA_DE_OUTRO_PACIENTE = {
+  paciente: 'Zoroastro Buarque de Holanda',
+  numero_cartao: '9999 999999 999.999-9',
+}
+
+test('numero que cai numa guia de outro paciente nao e escolhido sozinho', async ({ page }) => {
+  const api = await apiAutenticada()
+  const guia = await guiaParaLancamento(api)
+  await api.dispose()
+
+  await login(page)
+  await page.goto('/lancamentos/novo', { waitUntil: 'domcontentloaded' })
+
+  // O número resolve para uma guia existente — mas o paciente da folha é
+  // outro. É a assinatura de um dígito lido errado, e o único caso que antes
+  // passaria como acerto.
+  await interceptarLeitura(page, { guia_numero: guia.numero, ...FOLHA_DE_OUTRO_PACIENTE })
+
+  await capturarEConfirmar(page)
+
+  // Não escolheu: abriu a busca e disse o que não fechou.
+  await expect(page.getByTestId('selecionar-guia-modal')).toBeVisible()
+  await page.getByTestId('selecionar-guia-modal').getByLabel('Fechar').click()
+  await expect(page.getByTestId('lancamento-guia')).toContainText('Selecione uma guia')
+  await expect(page.getByTestId('lancamento-guia-da-leitura')).toHaveCount(0)
+})
+
+test('escolher a guia divergente a mao avisa e exige justificativa para lancar', async ({
+  page,
+}) => {
+  const api = await apiAutenticada()
+  const guia = await guiaParaLancamento(api)
+  await api.dispose()
+
+  await login(page)
+  await page.goto('/lancamentos/novo', { waitUntil: 'domcontentloaded' })
+
+  await interceptarLeitura(page, { guia_numero: guia.numero, ...FOLHA_DE_OUTRO_PACIENTE })
+  await capturarEConfirmar(page)
+
+  // A busca abriu com o número lido. Escolher esta guia à mão é permitido — o
+  // sistema avisa, não bloqueia.
+  await expect(page.getByTestId('selecionar-guia-modal')).toBeVisible()
+  await page.getByTestId('selecionar-guia-item').first().click()
+
+  // Aviso permanente, nomeando os dois lados.
+  const aviso = page.getByTestId('lancamento-divergencia-aviso')
+  await expect(aviso).toBeVisible()
+  await expect(aviso).toContainText('9999')
+
+  // Executante é escolha manual, sempre.
+  const executante = page.getByTestId('lancamento-profissional')
+  await expect(executante).toBeEnabled({ timeout: 30000 })
+  await executante.click()
+  await page.getByRole('option').nth(1).click()
+
+  // Confirmar não grava direto: abre a justificativa.
+  await page.getByTestId('lancamento-submit').click()
+  await expect(page.getByTestId('confirmar-divergencia-modal')).toBeVisible()
+  await expect(page.getByTestId('confirmar-divergencia-descricao')).toContainText('9999')
+
+  // Justificativa curta é recusada — é o que alguém digita só para passar.
+  await page.getByTestId('confirmar-divergencia-justificativa').fill('ok')
+  await page.getByTestId('confirmar-divergencia-confirmar').click()
+  await expect(page.getByTestId('confirmar-divergencia-erro')).toBeVisible()
+  await expect(page.getByTestId('confirmar-divergencia-modal')).toBeVisible()
+
+  // Cancelar não grava nada e devolve a tela.
+  await page.getByTestId('confirmar-divergencia-cancelar').click()
+  await expect(page.getByTestId('confirmar-divergencia-modal')).toHaveCount(0)
+  await expect(aviso).toBeVisible()
+
+  // Com motivo de verdade, grava.
+  await page.getByTestId('lancamento-submit').click()
+  await page
+    .getByTestId('confirmar-divergencia-justificativa')
+    .fill('Cartao reemitido em agosto; conferido na recepcao com o documento.')
+  await page.getByTestId('confirmar-divergencia-confirmar').click()
+
+  await expect(page).toHaveURL(/\/lancamentos(\?|$)/)
+  await expect(page.getByTestId('confirmar-divergencia-modal')).toHaveCount(0)
+})
+
+test('folha que confere com a guia nao pede justificativa', async ({ page }) => {
+  const api = await apiAutenticada()
+  const guia = await guiaParaLancamento(api)
+  await api.dispose()
+
+  await login(page)
+  await page.goto('/lancamentos/novo', { waitUntil: 'domcontentloaded' })
+
+  // Mesmo paciente da guia (o primeiro da semente), escrito de forma diferente
+  // — abreviado e sem acento. Variação de escrita não é contradição.
+  await interceptarLeitura(page, {
+    guia_numero: guia.numero,
+    paciente: 'ANA P. RIBEIRO',
+    numero_cartao: null,
+  })
+
+  await capturarEConfirmar(page)
+
+  // Escolheu sozinho, sem aviso.
+  await expect(page.getByTestId('lancamento-guia')).toContainText(guia.numero)
+  await expect(page.getByTestId('lancamento-guia-da-leitura')).toBeVisible()
+  await expect(page.getByTestId('lancamento-divergencia-aviso')).toHaveCount(0)
+
+  const executante = page.getByTestId('lancamento-profissional')
+  await expect(executante).toBeEnabled({ timeout: 30000 })
+  await executante.click()
+  await page.getByRole('option').nth(1).click()
+
+  await page.getByTestId('lancamento-submit').click()
+
+  // Direto, sem passar pela justificativa.
+  await expect(page.getByTestId('confirmar-divergencia-modal')).toHaveCount(0)
+  await expect(page).toHaveURL(/\/lancamentos(\?|$)/)
 })

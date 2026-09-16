@@ -16,6 +16,7 @@ use App\Models\Profissional;
 use App\Services\AnaliticoUnimedImportService;
 use App\Services\LancamentoService;
 use App\Services\RegistroSessoesAiService;
+use App\Support\Auditoria;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -182,6 +183,31 @@ class LancamentoController extends Controller
          */
         if ($request->hasFile('pdf_registro_sessoes')) {
             $this->guardarRegistroDeSessoes($request->file('pdf_registro_sessoes'), $guia);
+        }
+
+        /*
+         * Lançou apesar de a folha contradizer a guia.
+         *
+         * Registrado depois de gravar, e contra a GUIA: é a cota dela que foi
+         * consumida, e é olhando o histórico dela que alguém vai perguntar,
+         * meses depois, por que essas sessões estão aqui. O evento responde
+         * isso com quem decidiu, o que não fechava e o motivo dado.
+         *
+         * Sem tabela nova: uma decisão pontual é exatamente o que a trilha de
+         * auditoria guarda.
+         */
+        if (filled($dados['divergencia'] ?? null)) {
+            Auditoria::registrar(
+                acao: 'lancamento_divergencia_confirmada',
+                entidade: 'guias',
+                entidadeId: $guia->id,
+                payload: [
+                    'divergencia' => $dados['divergencia'],
+                    'justificativa' => $dados['divergencia_justificativa'],
+                    'sessoes_gravadas' => count($resultado['registros']),
+                ],
+                comOrigem: true,
+            );
         }
 
         return response()->json([

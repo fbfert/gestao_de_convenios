@@ -19,4 +19,6 @@
 - [x] 3.1 Teste da leitura por IA, com resposta simulada, cobrindo descarte de linha ruidosa e ausência de gravação.
 - [x] 3.2 Teste do recurso de antecipação expondo nome e especialidade.
 - [x] 3.3 `openspec validate`, `tsc -b`, `oxlint`, `vite build` e `php artisan test`.
-- [ ] 3.4 Conferir no navegador uma leitura real, com a chave OpenAI de produção — os testes usam resposta simulada e provam o caminho do código, não a qualidade da extração.
+- [x] 3.4 Conferir no navegador uma leitura real, com a chave OpenAI de produção — os testes usam resposta simulada e provam o caminho do código, não a qualidade da extração.
+
+  **Conferido em 16/09/2026**, em produção, após o deploy dos commits `caec649`…`542c5a9`. A leitura de folha real foi aprovada pelo responsável do produto ("a leitura está ok"). É o que esta tarefa pedia: a qualidade da extração não é provável por teste automatizado, e dependia de olho humano sobre uma folha de verdade.

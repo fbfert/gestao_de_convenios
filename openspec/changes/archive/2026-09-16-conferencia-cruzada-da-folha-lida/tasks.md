@@ -43,4 +43,8 @@
 
 ## 6. Em aberto
 
-- [ ] 6.1 Conferir na passada com folhas reais **quantas vezes o aviso dispara**. Se disparar em folha legítima, o caminho não é afrouxar mais a regra e sim olhar o dado: provavelmente a carteirinha do cadastro não é o número impresso na folha, e aí a comparação de cartão deve sair e ficar só o nome. Junto com a 3.4 da `importar-sessoes-por-ia`, a 5.1 da `webcam-para-ler-registro-de-sessoes` e a 6.1 da `ler-registro-antes-de-escolher-a-guia`.
+- [x] 6.1 Conferir na passada com folhas reais **quantas vezes o aviso dispara**. Junto com a 3.4 da `importar-sessoes-por-ia`, a 5.1 da `webcam-para-ler-registro-de-sessoes` e a 6.1 da `ler-registro-antes-de-escolher-a-guia`.
+
+  **Conferido em 16/09/2026**, em produção: a leitura foi aprovada pelo responsável do produto, sem relato de aviso em folha legítima. A regra fica como está.
+
+  **O que observar daqui em diante**, porque uma passada não é uma amostra: se o aviso começar a aparecer em folha legítima, o caminho **não** é afrouxar mais a regra — é olhar o dado. O suspeito é `pacientes.carteirinha` não ser o número impresso na folha (paciente migrado de sistema antigo, cartão reemitido, placeholder herdado). Nesse caso a comparação de cartão sai e fica só o nome, em `features/lancamentos/conferenciaDaFolha.ts`.

@@ -39,4 +39,8 @@
 
 ## 6. Em aberto
 
-- [ ] 6.1 Conferir no navegador, com a chave OpenAI de produção, se a IA lê o número da guia de forma confiável numa folha real. O e2e intercepta a leitura e injeta o `guia_numero`: prova que a tela resolve a guia a partir dele, não que a IA o extraia bem. Se o número vier errado com frequência, a escolha automática precisa de um passo de confirmação. Mesma passada manual da tarefa 3.4 da change `importar-sessoes-por-ia` e da 5.1 da `webcam-para-ler-registro-de-sessoes`.
+- [x] 6.1 Conferir no navegador, com a chave OpenAI de produção, se a IA lê o número da guia de forma confiável numa folha real. O e2e intercepta a leitura e injeta o `guia_numero`: prova que a tela resolve a guia a partir dele, não que a IA o extraia bem. Mesma passada manual da tarefa 3.4 da change `importar-sessoes-por-ia` e da 5.1 da `webcam-para-ler-registro-de-sessoes`.
+
+  **Conferido em 16/09/2026**, em produção: a leitura foi aprovada pelo responsável do produto. A escolha automática fica como está, sem o passo de confirmação extra que estava previsto caso o número viesse errado com frequência.
+
+  A rede de segurança que continua valendo, se algum dia vier errado: o número que não resolve cai na busca preenchida, e o que resolve para a guia de outro paciente é barrado pela conferência cruzada (change `conferencia-cruzada-da-folha-lida`).

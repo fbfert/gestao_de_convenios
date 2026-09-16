@@ -33,4 +33,6 @@
 
 ## 5. Em aberto
 
-- [ ] 5.1 Conferir no navegador uma captura real, com webcam de verdade e a chave OpenAI de produção. O vídeo falso do Chromium é um padrão colorido, não uma folha de sessões: o e2e prova o caminho, não a qualidade da extração a partir de foto de webcam (foco, reflexo, distância, letra manuscrita). Mesma limitação da tarefa 3.4 da change `importar-sessoes-por-ia`.
+- [x] 5.1 Conferir no navegador uma captura real, com webcam de verdade e a chave OpenAI de produção. O vídeo falso do Chromium é um padrão colorido, não uma folha de sessões: o e2e prova o caminho, não a qualidade da extração a partir de foto de webcam (foco, reflexo, distância, letra manuscrita). Mesma limitação da tarefa 3.4 da change `importar-sessoes-por-ia`.
+
+  **Conferido em 16/09/2026**, em produção. A leitura a partir de foto real foi aprovada pelo responsável do produto. Os parâmetros ficaram como estão — 2400px de largura e JPEG 0.92, em `components/ui/CapturaWebcam.tsx` — e são o primeiro lugar a mexer se a qualidade cair com outra câmera ou outra iluminação.

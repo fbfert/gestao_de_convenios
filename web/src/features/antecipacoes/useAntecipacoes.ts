@@ -93,15 +93,5 @@ export function useAtualizarAntecipacao() {
   })
 }
 
-export function useRemoverAntecipacao() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: async (id: number) => {
-      await apiClient.delete(`/antecipacoes/${id}`)
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['antecipacoes'] })
-    },
-  })
-}
+// `useRemoverAntecipacao` saiu em 16/09/2026, junto com a rota DELETE: ela
+// apagava o registro do histórico sem desfazer o item nem a guia gerados.

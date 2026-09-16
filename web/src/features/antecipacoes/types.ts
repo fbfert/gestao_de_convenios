@@ -9,11 +9,26 @@ export type AntecipacaoItemSelecionado = {
   guia_gerada_id?: number | null
 }
 
+/**
+ * Item gerado com a guia resolvida NO MOMENTO DA CONSULTA.
+ *
+ * Diferente do `guia_gerada_id` de `itens_selecionados`, que é o retrato de
+ * quando se gerou: em convênio automatizado a guia chega depois do item, então
+ * aquele campo nasce nulo e nunca mais muda. Aqui `guia` vem nula só enquanto a
+ * operadora não respondeu de fato.
+ */
+export type AntecipacaoItemGerado = {
+  especialidade: string | null
+  item_gerado_id: number | null
+  guia: { id: number; numero: string | null; status: string } | null
+}
+
 export type Antecipacao = {
   id: number
   status: AntecipacaoStatus
   data_alvo: string | null
   itens_selecionados: AntecipacaoItemSelecionado[] | null
+  itens_gerados?: AntecipacaoItemGerado[]
   observacoes: string | null
   gerado_em: string | null
   ignorado_em: string | null

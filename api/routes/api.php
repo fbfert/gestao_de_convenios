@@ -290,8 +290,6 @@ Route::middleware(['auth:sanctum', EncerrarSessaoExpirada::class])->group(functi
         ->middleware('permission:antecipacoes.manage');
     Route::patch('/antecipacoes/{antecipacao}', [AntecipacaoController::class, 'update'])
         ->middleware('permission:antecipacoes.manage');
-    Route::delete('/antecipacoes/{antecipacao}', [AntecipacaoController::class, 'destroy'])
-        ->middleware('permission:antecipacoes.manage');
 
     Route::get('/guias', [GuiaController::class, 'index']);
     Route::post('/guias', [GuiaController::class, 'store'])->middleware('permission:guias.view|guias.viewOwn');

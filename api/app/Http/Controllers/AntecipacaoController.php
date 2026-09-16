@@ -55,11 +55,4 @@ class AntecipacaoController extends Controller
     {
         return new AntecipacaoResource($this->service->atualizar($antecipacao, $request->validated()));
     }
-
-    public function destroy(Antecipacao $antecipacao): JsonResponse
-    {
-        $this->service->remover($antecipacao);
-
-        return response()->json(null, 204);
-    }
 }

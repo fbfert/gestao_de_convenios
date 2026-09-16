@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Antecipacao;
 use App\Models\Guia;
 use App\Models\Solicitacao;
+use App\Models\SolicitacaoItem;
 use App\Support\TenantContext;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Validation\ValidationException;
@@ -31,8 +32,7 @@ class AntecipacaoService
 {
     public function __construct(
         private readonly SolicitacaoService $solicitacoes
-    ) {
-    }
+    ) {}
 
     /**
      * Guias elegíveis agrupadas por solicitação de origem, excluindo as que
@@ -91,7 +91,59 @@ class AntecipacaoService
             $query->where('status', $filtros['status']);
         }
 
-        return $query->paginate($perPage);
+        $pagina = $query->paginate($perPage);
+
+        $this->resolverItensGerados($pagina->getCollection());
+
+        return $pagina;
+    }
+
+    /**
+     * Anexa a cada antecipação os itens gerados com a guia de cada um.
+     *
+     * `itens_selecionados` é um retrato do momento da geração, e nele o
+     * `guia_gerada_id` nasce NULO sempre que o convênio é automatizado: ali a
+     * guia não existe junto com o item — chega depois, quando a operadora
+     * responde. Confiar no campo gravado deixaria essas antecipações sem guia
+     * para sempre, então a resolução é pelo `item_gerado_id`, que não muda.
+     *
+     * Uma consulta para a página inteira, e não uma por linha: o histórico
+     * pagina de 20 em 20.
+     *
+     * @param  iterable<int, Antecipacao>  $antecipacoes
+     */
+    public function resolverItensGerados(iterable $antecipacoes): void
+    {
+        $antecipacoes = collect($antecipacoes);
+
+        $ids = $antecipacoes
+            ->flatMap(fn (Antecipacao $a) => collect($a->itens_selecionados ?? [])->pluck('item_gerado_id'))
+            ->filter()
+            ->unique()
+            ->all();
+
+        $itens = $ids === []
+            ? collect()
+            : SolicitacaoItem::query()->whereIn('id', $ids)->with(['guia', 'especialidade'])->get()->keyBy('id');
+
+        foreach ($antecipacoes as $antecipacao) {
+            $antecipacao->setAttribute('itens_gerados', collect($antecipacao->itens_selecionados ?? [])
+                ->map(function (array $escolha) use ($itens) {
+                    $item = $itens->get($escolha['item_gerado_id'] ?? null);
+                    $guia = $item?->guia;
+
+                    return [
+                        'especialidade' => $item?->especialidade?->nome,
+                        'item_gerado_id' => $escolha['item_gerado_id'] ?? null,
+                        'guia' => $guia ? [
+                            'id' => $guia->id,
+                            'numero' => $guia->numero_guia,
+                            'status' => $guia->status,
+                        ] : null,
+                    ];
+                })
+                ->all());
+        }
     }
 
     /** @return string[] */
@@ -140,7 +192,7 @@ class AntecipacaoService
             ];
         }
 
-        return Antecipacao::create([
+        $antecipacao = Antecipacao::create([
             'solicitacao_origem_id' => $solicitacao->id,
             'itens_selecionados' => $itensGerados,
             'data_alvo' => $dados['data_alvo'] ?? null,
@@ -150,6 +202,12 @@ class AntecipacaoService
             'criado_por_id' => auth()->id(),
             'tenant_id' => TenantContext::get() ?? auth()->user()?->tenant_id,
         ])->load($this->relacoesPadrao());
+
+        // A resposta do POST já sai com as guias resolvidas, para a tela não
+        // precisar de uma segunda requisição só para mostrá-las.
+        $this->resolverItensGerados([$antecipacao]);
+
+        return $antecipacao;
     }
 
     /** Dispensa uma solicitação elegível sem gerar nada — some da fila sem virar histórico de geração. */
@@ -174,10 +232,5 @@ class AntecipacaoService
         }
 
         return $antecipacao->load($this->relacoesPadrao());
-    }
-
-    public function remover(Antecipacao $antecipacao): void
-    {
-        $antecipacao->delete();
     }
 }

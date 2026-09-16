@@ -14,6 +14,10 @@ class AntecipacaoResource extends JsonResource
             'status' => $this->status,
             'data_alvo' => $this->data_alvo?->toDateString(),
             'itens_selecionados' => $this->itens_selecionados,
+            // Resolvido pelo service para a página inteira. O
+            // `itens_selecionados` acima continua sendo o retrato do momento
+            // da geração; este traz a guia como ela está agora.
+            'itens_gerados' => $this->whenNotNull($this->itens_gerados),
             'observacoes' => $this->observacoes,
             'gerado_em' => $this->gerado_em?->toISOString(),
             'ignorado_em' => $this->ignorado_em?->toISOString(),

@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
-import { useLocation } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { Badge } from '../../components/ui/Badge'
 import { Botao } from '../../components/ui/Botao'
-import { ConfirmarExclusao } from '../../components/ui/ConfirmarExclusao'
 import { Select } from '../../components/ui/Select'
 import { formatarData } from '../solicitacoes/datas'
 import { useSolicitacao } from '../solicitacoes/useSolicitacoes'
@@ -14,9 +13,8 @@ import {
   useAntecipacoes,
   useAntecipacoesElegiveis,
   useIgnorarAntecipacao,
-  useRemoverAntecipacao,
 } from './useAntecipacoes'
-import type { Antecipacao, AntecipacaoStatus } from './types'
+import type { AntecipacaoStatus } from './types'
 
 function statusTone(status: AntecipacaoStatus): 'neutro' | 'sucesso' {
   return status === 'gerada' ? 'sucesso' : 'neutro'
@@ -41,12 +39,9 @@ export function AntecipacoesPage() {
   const [manualModalAberto, setManualModalAberto] = useState(false)
   const [manualSolicitacao, setManualSolicitacao] = useState<Solicitacao | null>(null)
 
-  const [antecipacaoAExcluir, setAntecipacaoAExcluir] = useState<Antecipacao | null>(null)
-
   const elegiveisQuery = useAntecipacoesElegiveis(pode('antecipacoes.view'))
   const historicoQuery = useAntecipacoes({ status: historicoStatus }, page)
   const ignorar = useIgnorarAntecipacao()
-  const remover = useRemoverAntecipacao()
 
   const podeGerenciar = pode('antecipacoes.manage')
 
@@ -172,7 +167,7 @@ export function AntecipacoesPage() {
               className="flex flex-col gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
               data-testid={`antecipacao-historico-item-${antecipacao.id}`}
             >
-              <div>
+              <div className="space-y-1">
                 <p className="text-corpo font-medium text-white">
                   {antecipacao.solicitacao_origem?.paciente?.nome ?? 'Paciente não informado'} ·{' '}
                   {antecipacao.solicitacao_origem?.convenio?.nome ?? 'Convênio não informado'}
@@ -185,19 +180,45 @@ export function AntecipacoesPage() {
                   {antecipacao.criado_por ? ` por ${antecipacao.criado_por.nome}` : ''}
                   {antecipacao.observacoes ? ` · ${antecipacao.observacoes}` : ''}
                 </p>
+
+                {/*
+                  As guias que a antecipação gerou, com link para cada uma —
+                  era a pergunta que a tela não respondia: "gerou o quê?".
+
+                  Item sem guia não é erro: em convênio automatizado a guia
+                  chega depois, quando a operadora responde. Por isso o texto
+                  diz o que está acontecendo, em vez de deixar um espaço vazio.
+                */}
+                {antecipacao.status === 'gerada' && (antecipacao.itens_gerados?.length ?? 0) > 0 ? (
+                  <p
+                    className="text-meta text-slate-400"
+                    data-testid={`antecipacao-guias-${antecipacao.id}`}
+                  >
+                    Guias:{' '}
+                    {antecipacao.itens_gerados?.map((item, indice) => (
+                      <span key={item.item_gerado_id ?? indice}>
+                        {indice > 0 ? ' · ' : ''}
+                        {item.guia ? (
+                          <Link
+                            to={`/guias/${item.guia.id}`}
+                            className="font-medium text-acento underline-offset-2 hover:underline"
+                            title={item.especialidade ?? undefined}
+                          >
+                            {item.guia.numero ?? `#${item.guia.id}`}
+                          </Link>
+                        ) : (
+                          <span title={item.especialidade ?? undefined}>
+                            {item.especialidade ? `${item.especialidade}: ` : ''}aguardando a
+                            operadora
+                          </span>
+                        )}
+                      </span>
+                    ))}
+                  </p>
+                ) : null}
               </div>
               <div className="flex items-center gap-2">
                 <Badge tone={statusTone(antecipacao.status)}>{statusLabel(antecipacao.status)}</Badge>
-                {podeGerenciar ? (
-                  <Botao
-                    type="button"
-                    variante="secundario"
-                    onClick={() => setAntecipacaoAExcluir(antecipacao)}
-                    data-testid={`antecipacao-excluir-${antecipacao.id}`}
-                  >
-                    Excluir
-                  </Botao>
-                ) : null}
               </div>
             </div>
           ))}
@@ -240,20 +261,6 @@ export function AntecipacoesPage() {
         onClose={fecharModalSelecao}
       />
 
-      {antecipacaoAExcluir ? (
-        <ConfirmarExclusao
-          titulo="Excluir antecipação"
-          descricao="Remove só o registro de acompanhamento — não afeta nenhum item ou guia já gerados."
-          alvo={`Antecipação #${antecipacaoAExcluir.id}`}
-          confirmando={remover.isPending}
-          onConfirmar={() => {
-            remover.mutate(antecipacaoAExcluir.id, {
-              onSuccess: () => setAntecipacaoAExcluir(null),
-            })
-          }}
-          onCancelar={() => setAntecipacaoAExcluir(null)}
-        />
-      ) : null}
     </div>
   )
 }

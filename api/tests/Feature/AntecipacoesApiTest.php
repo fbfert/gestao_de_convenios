@@ -161,10 +161,11 @@ class AntecipacoesApiTest extends TestCase
         // Já gerada: some da fila de elegíveis.
         $this->getJson('/api/antecipacoes/elegiveis')->assertOk()->assertJsonCount(0, 'data');
 
-        $this->deleteJson("/api/antecipacoes/{$criada['id']}")->assertNoContent();
-        $this->assertNull(Antecipacao::query()->find($criada['id']));
-        // Excluir o registro de acompanhamento não desfaz o item/guia gerados.
-        $this->assertNotNull($solicitacao->itens()->find($itemGeradoId));
+        // A resposta ja traz a guia de cada item gerado, resolvida agora e nao
+        // pelo `guia_gerada_id` do retrato: em convenio automatizado a guia
+        // chega depois do item, e o campo gravado nasce nulo.
+        $this->assertSame($itemGerado->guia->numero_guia, $criada['itens_gerados'][0]['guia']['numero']);
+        $this->assertSame($itemGerado->guia->id, $criada['itens_gerados'][0]['guia']['id']);
     }
 
     public function test_criar_recusa_item_que_nao_pertence_a_solicitacao(): void
@@ -239,13 +240,17 @@ class AntecipacoesApiTest extends TestCase
     }
 
     /**
-     * O registro de antecipação é só acompanhamento: apagá-lo não pode
-     * derrubar o que foi gerado. `test_criar_gera_item_e_guia_...` já exclui no
-     * final, mas só confere o item sobreviver — a guia, que é o que de fato
-     * vai para a operadora, ficava sem ninguém olhando. Aqui num teste próprio,
-     * pra falha apontar a exclusão e não a criação.
+     * Não há mais como apagar do histórico.
+     *
+     * A rota DELETE existia e fazia só `$antecipacao->delete()`: sumia com o
+     * registro — quem gerou, quando, e quais itens — e deixava no sistema o
+     * item e a guia que ele criou. Numa tela chamada Histórico, apagava a prova
+     * e preservava os efeitos, que é o avesso do que o nome promete.
+     *
+     * Este teste guarda as duas metades: a rota recusa, e o que foi gerado
+     * continua de pé.
      */
-    public function test_excluir_do_historico_preserva_item_e_guia_gerados(): void
+    public function test_historico_nao_pode_ser_apagado(): void
     {
         $this->autenticar();
         $solicitacao = $this->solicitacaoComGuiaAprovada();
@@ -263,11 +268,85 @@ class AntecipacoesApiTest extends TestCase
         $guiaGeradaId = (int) $criada['itens_selecionados'][0]['guia_gerada_id'];
         $this->assertNotNull(Guia::query()->find($guiaGeradaId));
 
-        $this->deleteJson("/api/antecipacoes/{$criada['id']}")->assertNoContent();
+        // O historico nao apaga: a rota DELETE saiu porque apagava o registro
+        // sem desfazer o item nem a guia — some a prova, ficam os efeitos.
+        $this->deleteJson("/api/antecipacoes/{$criada['id']}")->assertStatus(405);
 
-        $this->assertNull(Antecipacao::query()->find($criada['id']));
+        $this->assertNotNull(Antecipacao::query()->find($criada['id']));
         $this->assertNotNull($solicitacao->itens()->find($itemGeradoId));
         $this->assertNotNull(Guia::query()->find($guiaGeradaId));
+    }
+
+    /**
+     * A guia que chega DEPOIS do item também aparece.
+     *
+     * `itens_selecionados.guia_gerada_id` é o retrato do momento da geração, e
+     * nele o valor nasce nulo sempre que o convênio é automatizado: ali a guia
+     * não existe junto com o item — chega quando a operadora responde. Se a
+     * tela lesse aquele campo, essas antecipações ficariam sem guia para
+     * sempre. Por isso a resolução é pelo `item_gerado_id`.
+     */
+    public function test_guia_criada_depois_do_item_aparece_no_historico(): void
+    {
+        $this->autenticar();
+        $solicitacao = $this->solicitacaoComGuiaAprovada();
+        $itemOrigem = $solicitacao->itens()->firstOrFail();
+
+        $criada = $this->postJson('/api/antecipacoes', [
+            'solicitacao_origem_id' => $solicitacao->id,
+            'itens_selecionados' => [[
+                'especialidade_id' => $itemOrigem->especialidade_id,
+                'profissional_id' => $itemOrigem->profissional_id,
+            ]],
+        ])->assertCreated()->json('data');
+
+        $itemGeradoId = (int) $criada['itens_selecionados'][0]['item_gerado_id'];
+        $item = $solicitacao->itens()->findOrFail($itemGeradoId);
+
+        // Encena o convênio automatizado: o retrato fica sem guia, e a guia
+        // real só passa a existir agora.
+        Antecipacao::query()->findOrFail($criada['id'])->forceFill([
+            'itens_selecionados' => [[
+                'especialidade_id' => $item->especialidade_id,
+                'profissional_id' => $item->profissional_id,
+                'item_gerado_id' => $itemGeradoId,
+                'guia_gerada_id' => null,
+            ]],
+        ])->save();
+
+        $item->guia->forceFill(['numero_guia' => '521381566206'])->save();
+
+        $historico = $this->getJson('/api/antecipacoes')->assertOk()->json('data');
+        $linha = collect($historico)->firstWhere('id', $criada['id']);
+
+        $this->assertNull($linha['itens_selecionados'][0]['guia_gerada_id'], 'o retrato segue sem guia');
+        $this->assertSame('521381566206', $linha['itens_gerados'][0]['guia']['numero']);
+        $this->assertSame($item->especialidade->nome, $linha['itens_gerados'][0]['especialidade']);
+    }
+
+    /** Item ainda sem guia nenhuma volta com `guia: null` — a tela diz "aguardando a operadora". */
+    public function test_item_sem_guia_volta_nulo_em_vez_de_sumir(): void
+    {
+        $this->autenticar();
+        $solicitacao = $this->solicitacaoComGuiaAprovada();
+        $itemOrigem = $solicitacao->itens()->firstOrFail();
+
+        $criada = $this->postJson('/api/antecipacoes', [
+            'solicitacao_origem_id' => $solicitacao->id,
+            'itens_selecionados' => [[
+                'especialidade_id' => $itemOrigem->especialidade_id,
+                'profissional_id' => $itemOrigem->profissional_id,
+            ]],
+        ])->assertCreated()->json('data');
+
+        $item = $solicitacao->itens()->findOrFail((int) $criada['itens_selecionados'][0]['item_gerado_id']);
+        $item->guia->delete();
+
+        $linha = collect($this->getJson('/api/antecipacoes')->assertOk()->json('data'))
+            ->firstWhere('id', $criada['id']);
+
+        $this->assertCount(1, $linha['itens_gerados']);
+        $this->assertNull($linha['itens_gerados'][0]['guia']);
     }
 
     public function test_historico_filtra_por_status(): void

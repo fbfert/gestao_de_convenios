@@ -20,6 +20,7 @@ import {
   useLancamentoPrintTemplate,
   useLancamentos,
   useLerRegistroSessoes,
+  buscarGuiasDisponiveis,
 } from './useLancamentos'
 import type {
   LancamentoConfirmImportForm,
@@ -101,6 +102,11 @@ export function LancamentosPage() {
   const [formError, setFormError] = useState<string | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
   const [webcamAberta, setWebcamAberta] = useState(false)
+  // O que a folha disse sobre a guia e sobre quem executou. A guia vira
+  // escolha; o executante fica só como informação de conferência.
+  const [guiaVeioDaLeitura, setGuiaVeioDaLeitura] = useState<string | null>(null)
+  const [executanteLido, setExecutanteLido] = useState<string | null>(null)
+  const [termoInicialGuia, setTermoInicialGuia] = useState('')
   const arquivoRef = useRef<HTMLInputElement | null>(null)
 
   const profissionaisQuery = useProfissionais()
@@ -191,6 +197,9 @@ export function LancamentosPage() {
     setPdf(null)
     setFormError(null)
     setAviso(null)
+    setGuiaVeioDaLeitura(null)
+    setExecutanteLido(null)
+    setTermoInicialGuia('')
   }
 
   const handleNew = () => {
@@ -207,7 +216,11 @@ export function LancamentosPage() {
     setIsFormOpen(false)
   }
 
-  const prontoParaLer = Boolean(guiaSelecionada) && profissionalId !== ''
+  // Só o caminho do texto colado exige os dois: ele posta em
+  // `/guias/{id}/lancamentos/importar-transcricao`, que recebe guia e
+  // executante no corpo. A leitura por foto/PDF/webcam não exige nada, porque
+  // é ela que descobre a guia.
+  const prontoParaAnalisarTexto = Boolean(guiaSelecionada) && profissionalId !== ''
   const lendo = analisarTexto.isPending || lerArquivo.isPending
   const exigePdf = numeroCartao?.replace(/\D+/g, '').startsWith('0220') ?? false
   const sessoesPreenchidas = useMemo(() => sessoes.filter((sessao) => Boolean(sessao.data_sessao)).length, [sessoes])
@@ -223,16 +236,57 @@ export function LancamentosPage() {
     setAviso(normalizadas.every((sessao) => !sessao.data_sessao) ? 'Nenhuma sessão foi reconhecida no documento.' : null)
   }
 
+  /**
+   * Usa o número de guia da folha para escolher a guia.
+   *
+   * Uma só, disponível para lançamento: escolhe e diz de onde veio. Nenhuma ou
+   * várias: abre a busca já preenchida, para ninguém redigitar o que a IA
+   * acabou de ler. Sem número lido não faz nada — cair para o nome do paciente
+   * casaria com várias guias dele e escolheria a errada em silêncio.
+   */
+  const resolverGuiaLida = async (numeroLido: string | null) => {
+    if (!numeroLido || guiaSelecionada) {
+      return
+    }
+
+    setTermoInicialGuia(numeroLido)
+
+    try {
+      const encontradas = await buscarGuiasDisponiveis(numeroLido)
+
+      if (encontradas.length === 1) {
+        setGuiaSelecionada(encontradas[0])
+        setProfissionalId('')
+        setGuiaVeioDaLeitura(numeroLido)
+
+        return
+      }
+
+      setGuiaModalAberto(true)
+    } catch {
+      // Falhar a busca não pode derrubar a leitura, que é a parte cara: a
+      // grade já está preenchida, e a guia continua escolhível à mão.
+      setGuiaModalAberto(true)
+    }
+  }
+
   const ler = async (arquivo: File | undefined) => {
-    if (!arquivo || !guiaSelecionada) {
+    if (!arquivo) {
       return
     }
 
     setFormError(null)
     setAviso(null)
+    setGuiaVeioDaLeitura(null)
+    setExecutanteLido(null)
 
     try {
-      aplicarResultado(await lerArquivo.mutateAsync({ guiaId: String(guiaSelecionada.id), arquivo }))
+      // Sem guia: a folha é que diz de qual guia ela é, e é por isso que a
+      // leitura pode vir ANTES da escolha.
+      const resultado = await lerArquivo.mutateAsync(arquivo)
+      aplicarResultado(resultado)
+      setExecutanteLido(resultado.cabecalho.profissional_executante ?? null)
+      await resolverGuiaLida(resultado.cabecalho.guia_numero ?? null)
     } catch (error) {
       setFormError(getHttpErrorMessage(error, 'Não foi possível ler o registro de sessões.'))
     } finally {
@@ -428,6 +482,19 @@ export function LancamentosPage() {
                   {guiaSelecionada.sessoes_disponiveis} sessão(ões) disponível(is)
                 </p>
               ) : null}
+
+              {/* De onde veio a escolha. Uma guia que se preenche sozinha sem
+                  dizer por quê é pior do que uma em branco: ninguém confere o
+                  que não sabe que foi decidido por outro. */}
+              {guiaVeioDaLeitura ? (
+                <p
+                  className="text-meta text-emerald-200"
+                  data-testid="lancamento-guia-da-leitura"
+                >
+                  Escolhida pela leitura: a folha traz a guia {guiaVeioDaLeitura}. Confira antes de
+                  confirmar.
+                </p>
+              ) : null}
             </div>
 
             <label className="block space-y-2">
@@ -446,13 +513,30 @@ export function LancamentosPage() {
                   </option>
                 ))}
               </Select>
+
+              {/* Mostrado, nunca preenchido. A folha é manuscrita, e lançar
+                  contra executante que não atende a especialidade gera glosa
+                  na conciliação — um palpite errado aqui só aparece lá. */}
+              {executanteLido ? (
+                <span className="block text-meta text-slate-400" data-testid="lancamento-executante-lido">
+                  A folha diz: <strong className="font-semibold text-slate-200">{executanteLido}</strong>.
+                  Confirme quem executou — o campo não é preenchido pela leitura.
+                </span>
+              ) : null}
             </label>
 
             <div className="flex flex-wrap items-center gap-3">
+              {/*
+                Ler NÃO depende de guia nem de executante: é a folha que traz
+                o número da guia, o paciente e o cartão. Exigir a escolha antes
+                era pedir que alguém procurasse à mão exatamente o que a IA
+                leria em seguida. Confirmar as sessões continua exigindo os
+                dois — muda a ordem de descobrir, não o que é obrigatório.
+              */}
               <Botao
                 variante="primario"
                 onClick={() => arquivoRef.current?.click()}
-                disabled={!prontoParaLer || lendo || webcamAberta}
+                disabled={lendo || webcamAberta}
                 data-testid="lancamento-anexo-botao"
               >
                 {lerArquivo.isPending ? 'Lendo registro...' : 'Ler foto ou PDF do registro'}
@@ -473,7 +557,7 @@ export function LancamentosPage() {
                     setAviso(null)
                     setWebcamAberta((aberta) => !aberta)
                   }}
-                  disabled={!prontoParaLer || lendo}
+                  disabled={lendo}
                   data-testid="lancamento-webcam-botao"
                 >
                   {webcamAberta ? 'Fechar webcam' : 'Usar webcam'}
@@ -491,9 +575,8 @@ export function LancamentosPage() {
               />
 
               <span className="text-meta text-slate-400">
-                {prontoParaLer
-                  ? 'A IA lê o documento e traz até 10 sessões para conferência.'
-                  : 'Escolha a guia e o executante para começar.'}
+                A IA lê o documento e traz até 10 sessões para conferência. Se a folha tiver o
+                número da guia, ela já vem escolhida.
               </span>
             </div>
 
@@ -546,7 +629,7 @@ export function LancamentosPage() {
 
                 <button
                   type="submit"
-                  disabled={!prontoParaLer || lendo || transcricaoTexto.trim() === ''}
+                  disabled={!prontoParaAnalisarTexto || lendo || transcricaoTexto.trim() === ''}
                   className="rounded-2xl border border-cyan-300/30 bg-cyan-400/10 px-4 py-2 text-corpo font-semibold text-cyan-100 transition hover:bg-cyan-400/20 disabled:opacity-60"
                   data-testid="lancamento-analisar-texto"
                 >
@@ -854,9 +937,12 @@ export function LancamentosPage() {
       <SelecionarGuiaModal
         open={guiaModalAberto}
         onClose={() => setGuiaModalAberto(false)}
+        termoInicial={termoInicialGuia}
         onSelecionar={(guia) => {
           setGuiaSelecionada(guia)
           setProfissionalId('')
+          // Escolha manual: o rótulo "veio da leitura" deixa de valer.
+          setGuiaVeioDaLeitura(null)
         }}
       />
 

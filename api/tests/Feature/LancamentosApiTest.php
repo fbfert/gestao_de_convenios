@@ -2,9 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Models\AiOpenaiSetting;
+use App\Models\AiPromptTemplate;
 use App\Models\AnaliticoUnimedLinha;
-use App\Models\AuditLog;
 use App\Models\AnaliticoUnimedLote;
+use App\Models\AuditLog;
 use App\Models\Convenio;
 use App\Models\Especialidade;
 use App\Models\Guia;
@@ -21,6 +23,7 @@ use App\Services\GuiaService;
 use App\Services\LancamentoService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 use Tests\Support\ConstroiAnaliticoUnimedXlsx;
@@ -739,15 +742,15 @@ TXT;
         $this->autenticar();
         $tenantId = (int) $guia->tenant_id;
 
-        \App\Models\AiPromptTemplate::garantirPadroes($tenantId);
-        \App\Models\AiOpenaiSetting::query()->updateOrCreate(
+        AiPromptTemplate::garantirPadroes($tenantId);
+        AiOpenaiSetting::query()->updateOrCreate(
             ['tenant_id' => $tenantId],
             ['api_key' => 'sk-teste', 'base_url' => 'https://api.openai.com/v1', 'ativo' => true],
         );
 
-        \Illuminate\Support\Facades\Storage::fake('local');
-        \Illuminate\Support\Facades\Http::fake([
-            '*/responses' => \Illuminate\Support\Facades\Http::response([
+        Storage::fake('local');
+        Http::fake([
+            '*/responses' => Http::response([
                 'output_text' => json_encode([
                     'cabecalho' => [
                         'paciente' => 'Ana Ribeiro',
@@ -770,8 +773,9 @@ TXT;
             ]),
         ]);
 
-        $this->postJson("/api/guias/{$guia->id}/lancamentos/ler-registro", [
-            'arquivo' => \Illuminate\Http\UploadedFile::fake()->image('registro.jpg'),
+        // Sem guia no caminho: a folha é que diz de qual guia ela é.
+        $this->postJson('/api/lancamentos/ler-registro', [
+            'arquivo' => UploadedFile::fake()->image('registro.jpg'),
         ])
             ->assertOk()
             ->assertJsonPath('data.confirmacao_pendente', true)
@@ -787,6 +791,57 @@ TXT;
 
         // A leitura nao grava nada: a confirmacao continua sendo outro passo.
         $this->assertSame(0, $guia->lancamentos()->count());
+
+        // O caminho antigo, com guia, continua respondendo: a API e o bundle
+        // web nao sobem no mesmo instante, e um front em cache chamando uma
+        // rota removida daria 404 na unica acao da tela. A guia do caminho e
+        // ignorada — sempre foi, `analisar()` nunca a recebeu.
+        $this->postJson("/api/guias/{$guia->id}/lancamentos/ler-registro", [
+            'arquivo' => UploadedFile::fake()->image('registro.jpg'),
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.cabecalho.paciente', 'Ana Ribeiro');
+    }
+
+    /**
+     * O numero da guia lido volta para a tela.
+     *
+     * E o campo que passou a decidir QUAL guia recebe as sessoes, agora que a
+     * leitura acontece antes da escolha. Sem ele no payload, a tela nao teria
+     * como resolver a guia e o fluxo novo viraria a escolha manual de sempre.
+     */
+    public function test_leitura_devolve_o_numero_da_guia_para_a_tela_resolver(): void
+    {
+        $guia = $this->criarGuiaAprovada('SC Saúde', 'Fonoaudiologia', 'convencional');
+        $this->autenticar();
+        $tenantId = (int) $guia->tenant_id;
+
+        AiPromptTemplate::garantirPadroes($tenantId);
+        AiOpenaiSetting::query()->updateOrCreate(
+            ['tenant_id' => $tenantId],
+            ['api_key' => 'sk-teste', 'base_url' => 'https://api.openai.com/v1', 'ativo' => true],
+        );
+
+        Storage::fake('local');
+        Http::fake([
+            '*/responses' => Http::response([
+                'output_text' => json_encode([
+                    'cabecalho' => [
+                        'guia_numero' => $guia->numero_guia,
+                        'paciente' => 'Ana Ribeiro',
+                        'profissional_executante' => 'Mariana',
+                    ],
+                    'sessoes' => [],
+                ]),
+            ]),
+        ]);
+
+        $this->postJson('/api/lancamentos/ler-registro', [
+            'arquivo' => UploadedFile::fake()->image('registro.jpg'),
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.cabecalho.guia_numero', $guia->numero_guia)
+            ->assertJsonPath('data.cabecalho.profissional_executante', 'Mariana');
     }
 
     public function test_confirma_sessoes_da_grade_sem_transcricao_ignorando_linhas_em_branco(): void

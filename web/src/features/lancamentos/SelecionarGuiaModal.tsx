@@ -10,6 +10,14 @@ type SelecionarGuiaModalProps = {
   open: boolean
   onClose: () => void
   onSelecionar: (guia: Guia) => void
+  /**
+   * Termo já digitado ao abrir.
+   *
+   * Serve ao número de guia que veio da leitura da folha e não resolveu para
+   * uma guia só: o operador escolhe em um clique, em vez de redigitar o que a
+   * IA acabou de ler.
+   */
+  termoInicial?: string
 }
 
 function fieldClasses() {
@@ -21,8 +29,13 @@ function fieldClasses() {
  * executante — substitui o `<select>` que só listava a primeira página de
  * guias disponíveis. Sem cadastro rápido: guia não se cria a partir daqui.
  */
-export function SelecionarGuiaModal({ open, onClose, onSelecionar }: SelecionarGuiaModalProps) {
-  const [termo, setTermo] = useState('')
+export function SelecionarGuiaModal({
+  open,
+  onClose,
+  onSelecionar,
+  termoInicial = '',
+}: SelecionarGuiaModalProps) {
+  const [termo, setTermo] = useState(termoInicial)
   const [page, setPage] = useState(1)
   const [acumuladas, setAcumuladas] = useState<Guia[]>([])
   const inputRef = useRef<HTMLInputElement>(null)
@@ -33,12 +46,12 @@ export function SelecionarGuiaModal({ open, onClose, onSelecionar }: SelecionarG
 
   useEffect(() => {
     if (!open) return
-    setTermo('')
+    setTermo(termoInicial)
     setPage(1)
     setAcumuladas([])
     const timer = setTimeout(() => inputRef.current?.focus(), 0)
     return () => clearTimeout(timer)
-  }, [open])
+  }, [open, termoInicial])
 
   useEffect(() => {
     setPage(1)

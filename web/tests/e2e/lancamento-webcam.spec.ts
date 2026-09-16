@@ -53,7 +53,9 @@ function hoje(): string {
 }
 
 /** Guia aprovada com saldo, que é o que a tela de lançamento aceita. */
-async function guiaParaLancamento(api: APIRequestContext): Promise<number> {
+async function guiaParaLancamento(
+  api: APIRequestContext,
+): Promise<{ id: number; numero: string }> {
   const convenios = (await (await api.get('/api/convenios')).json()).data as Array<{
     id: number
     connector_driver: string | null
@@ -87,6 +89,9 @@ async function guiaParaLancamento(api: APIRequestContext): Promise<number> {
   const solicitacao = (await criada.json()).data
   const item = solicitacao.itens[0]
 
+  // Número único: a resolução da guia pelo número lido busca em
+  // `/guias?busca=…`, e um número repetido entre specs traria mais de uma.
+  const numeroGuia = `E2E-CAM-${Date.now()}`
   const guiaCriada = await api.post('/api/guias', {
     data: {
       solicitacao_id: solicitacao.id,
@@ -95,9 +100,14 @@ async function guiaParaLancamento(api: APIRequestContext): Promise<number> {
       paciente_id: paciente.id,
       profissional_id: item.profissional_id,
       especialidade_id: item.especialidade_id,
-      numero_guia: `E2E-CAM-${Date.now()}`,
+      numero_guia: numeroGuia,
       tipo_terapia: 'especializada',
       data_solicitacao: hoje(),
+      // Sem quantidade a guia NUNCA é "disponível para lançamento": o filtro é
+      // COALESCE(autorizadas, solicitadas, 0) > lançadas, e nulo vira zero.
+      // É por esse filtro que a leitura resolve o número lido.
+      sessoes_solicitadas: 10,
+      sessoes_autorizadas: 10,
     },
   })
   expect(guiaCriada.status(), await guiaCriada.text()).toBe(201)
@@ -109,7 +119,7 @@ async function guiaParaLancamento(api: APIRequestContext): Promise<number> {
   })
   expect(finalizada.status(), await finalizada.text()).toBe(200)
 
-  return guia.id
+  return { id: guia.id, numero: numeroGuia }
 }
 
 async function login(page: Page) {
@@ -120,49 +130,25 @@ async function login(page: Page) {
   await expect(page).toHaveURL(/\/dashboard$/)
 }
 
-/**
- * Abre a tela já com a guia escolhida e o executante selecionado.
- *
- * O executante não é um `<select>` nativo — é o `Select` do projeto, um
- * listbox do Headless UI —, então o `selectOption` do Playwright não serve:
- * abre o botão e clica na opção, como o `mvp-flow` já faz.
- */
-async function abrirPronta(page: Page, guiaId: number) {
-  await page.goto(`/lancamentos/novo?guia_id=${guiaId}`, { waitUntil: 'domcontentloaded' })
-
-  const executante = page.getByTestId('lancamento-profissional')
-  await expect(executante).toBeEnabled({ timeout: 30000 })
-  await executante.click()
-  // A primeira opção real; a de índice 0 é o "Selecione" vazio.
-  await page.getByRole('option').nth(1).click()
-  await expect(page.getByTestId('lancamento-anexo-botao')).toBeEnabled()
-}
-
-test('a webcam so libera com guia e executante escolhidos', async ({ page }) => {
-  const api = await apiAutenticada()
-  const guiaId = await guiaParaLancamento(api)
-  await api.dispose()
-
+test('a leitura libera antes de escolher guia e executante', async ({ page }) => {
   await login(page)
   await page.goto('/lancamentos/novo', { waitUntil: 'domcontentloaded' })
 
-  // Sem guia não há para onde mandar a leitura — mesma condição do botão de
-  // arquivo, e não uma regra própria da webcam.
-  const botao = page.getByTestId('lancamento-webcam-botao')
-  await expect(botao).toBeVisible()
-  await expect(botao).toBeDisabled()
-
-  await abrirPronta(page, guiaId)
+  // O ponto do fluxo: é a folha que traz o número da guia, então exigir a
+  // escolha antes era pedir que alguém procurasse à mão o que a IA leria em
+  // seguida. Os dois caminhos de leitura liberam com a tela recém-aberta.
   await expect(page.getByTestId('lancamento-webcam-botao')).toBeEnabled()
+  await expect(page.getByTestId('lancamento-anexo-botao')).toBeEnabled()
+
+  // O que continua exigindo os dois é o texto colado, que posta numa rota com
+  // guia no caminho e executante no corpo.
+  await expect(page.getByTestId('lancamento-analisar-texto')).toBeDisabled()
 })
 
 test('capturar congela a foto para conferencia, e tirar outra volta ao vivo', async ({ page }) => {
-  const api = await apiAutenticada()
-  const guiaId = await guiaParaLancamento(api)
-  await api.dispose()
-
   await login(page)
-  await abrirPronta(page, guiaId)
+  // Sem guia escolhida de propósito: capturar não depende dela.
+  await page.goto('/lancamentos/novo', { waitUntil: 'domcontentloaded' })
 
   await page.getByTestId('lancamento-webcam-botao').click()
 
@@ -198,22 +184,23 @@ test('capturar congela a foto para conferencia, e tirar outra volta ao vivo', as
   await expect(page.getByTestId('lancamento-anexo-botao')).toBeEnabled()
 })
 
-test('a foto confirmada entra na mesma leitura do arquivo escolhido', async ({ page }) => {
-  const api = await apiAutenticada()
-  const guiaId = await guiaParaLancamento(api)
-  await api.dispose()
 
-  await login(page)
-  await abrirPronta(page, guiaId)
-
-  // A leitura é interceptada: o objeto aqui é provar que a foto confirmada cai
-  // em `POST /guias/{id}/lancamentos/ler-registro` com um JPEG anexado — a
-  // extração de verdade depende da chave OpenAI e de uma folha real.
+/**
+ * Responde a leitura sem chamar a IA, com o cabeçalho pedido.
+ *
+ * Só a leitura é interceptada: a busca que resolve a guia pelo número vai à
+ * API de verdade, que é o que prova a integração entre as duas.
+ */
+async function interceptarLeitura(
+  page: Page,
+  cabecalho: Record<string, string | null>,
+): Promise<{ chamadas: () => number; corpo: () => string }> {
   let chamadas = 0
-  let corpoDaChamada = ''
-  await page.route(`**/api/guias/${guiaId}/lancamentos/ler-registro`, async (route) => {
+  let corpo = ''
+
+  await page.route('**/api/lancamentos/ler-registro', async (route) => {
     chamadas += 1
-    corpoDaChamada = route.request().postData() ?? ''
+    corpo = route.request().postData() ?? ''
 
     await route.fulfill({
       status: 200,
@@ -221,14 +208,22 @@ test('a foto confirmada entra na mesma leitura do arquivo escolhido', async ({ p
       body: JSON.stringify({
         data: {
           confirmacao_pendente: true,
-          cabecalho: { numero_cartao: '0155 090000 551.330-8' },
+          cabecalho: {
+            guia_numero: null,
+            clinica: null,
+            paciente: null,
+            numero_cartao: null,
+            profissional_executante: null,
+            terapia_aplicada: null,
+            ...cabecalho,
+          },
           sessoes: [
             {
               data_sessao: '2026-04-08',
               hora_inicio: '14:50',
               hora_fim: '15:40',
-              profissional_nome: 'Bruno Marinho',
-              procedimento: 'Aplicação de testes',
+              acompanhante: 'Bruno Marinho',
+              resumo_atividades: 'Aplicação de testes',
             },
           ],
           registros: [],
@@ -237,24 +232,96 @@ test('a foto confirmada entra na mesma leitura do arquivo escolhido', async ({ p
     })
   })
 
+  return { chamadas: () => chamadas, corpo: () => corpo }
+}
+
+/** Abre a webcam, captura e confirma a foto. */
+async function capturarEConfirmar(page: Page) {
   await page.getByTestId('lancamento-webcam-botao').click()
   await expect(page.getByTestId('lancamento-webcam-capturar')).toBeEnabled()
   await page.getByTestId('lancamento-webcam-capturar').click()
   await expect(page.getByTestId('lancamento-webcam-previa')).toBeVisible()
-
-  // Só agora a leitura dispara.
-  expect(chamadas).toBe(0)
   await page.getByTestId('lancamento-webcam-usar').click()
+}
 
-  await expect.poll(() => chamadas).toBe(1)
+test('o numero de guia lido escolhe a guia, sem ninguem ter escolhido antes', async ({ page }) => {
+  const api = await apiAutenticada()
+  const guia = await guiaParaLancamento(api)
+  await api.dispose()
 
-  // A câmera fecha ao confirmar, e o resultado cai na MESMA grade de
-  // conferência que a leitura por arquivo preenche.
-  await expect(page.getByTestId('lancamento-webcam-preview')).toHaveCount(0)
-  await expect(page.getByTestId('lancamento-webcam-previa')).toHaveCount(0)
+  await login(page)
+  await page.goto('/lancamentos/novo', { waitUntil: 'domcontentloaded' })
 
-  // O anexo vai com nome e tipo que `LerRegistroSessoesRequest` aceita
-  // (`mimes:pdf,jpg,jpeg,png`), e não como um blob sem extensão.
-  expect(corpoDaChamada).toContain('registro-sessoes.jpg')
-  expect(corpoDaChamada).toContain('image/jpeg')
+  const leitura = await interceptarLeitura(page, {
+    guia_numero: guia.numero,
+    numero_cartao: '0155 090000 551.330-8',
+    profissional_executante: 'Mariana',
+  })
+
+  // Nenhuma guia escolhida ao capturar — é a folha que vai dizer qual é.
+  await expect(page.getByTestId('lancamento-guia')).toContainText('Selecione uma guia')
+
+  // A leitura só dispara ao confirmar a foto.
+  expect(leitura.chamadas()).toBe(0)
+  await capturarEConfirmar(page)
+  await expect.poll(leitura.chamadas).toBe(1)
+
+  // O número lido resolveu para uma guia só, e ela foi escolhida.
+  await expect(page.getByTestId('lancamento-guia')).toContainText(guia.numero)
+  await expect(page.getByTestId('lancamento-guia-da-leitura')).toContainText(guia.numero)
+
+  // O executante lido aparece, mas NÃO preenche o campo: a folha é manuscrita
+  // e executante errado só aparece como glosa na conciliação.
+  await expect(page.getByTestId('lancamento-executante-lido')).toContainText('Mariana')
+
+  // E o anexo continua indo com nome e tipo que a API aceita.
+  expect(leitura.corpo()).toContain('registro-sessoes.jpg')
+  expect(leitura.corpo()).toContain('image/jpeg')
+})
+
+test('numero de guia que nao resolve abre a busca ja preenchida', async ({ page }) => {
+  await login(page)
+  await page.goto('/lancamentos/novo', { waitUntil: 'domcontentloaded' })
+
+  // Número que não existe: nenhuma guia bate.
+  const inexistente = 'GUIA-QUE-NAO-EXISTE-9999'
+  await interceptarLeitura(page, { guia_numero: inexistente })
+
+  await capturarEConfirmar(page)
+
+  // Abre a busca com o número já digitado, em vez de deixar o operador
+  // redigitar o que a IA acabou de ler.
+  await expect(page.getByTestId('selecionar-guia-modal')).toBeVisible()
+  await expect(page.getByTestId('selecionar-guia-busca')).toHaveValue(inexistente)
+
+  // E nenhuma guia foi escolhida por conta própria.
+  await page.getByTestId('selecionar-guia-modal').getByLabel('Fechar').click()
+  await expect(page.getByTestId('lancamento-guia')).toContainText('Selecione uma guia')
+  await expect(page.getByTestId('lancamento-guia-da-leitura')).toHaveCount(0)
+})
+
+test('registro sem numero de guia legivel nao abre nada nem escolhe por outro dado', async ({
+  page,
+}) => {
+  const api = await apiAutenticada()
+  // Existe uma guia disponível, mas o número não foi lido — cair para o nome
+  // do paciente casaria com várias guias dele e escolheria a errada calada.
+  await guiaParaLancamento(api)
+  await api.dispose()
+
+  await login(page)
+  await page.goto('/lancamentos/novo', { waitUntil: 'domcontentloaded' })
+
+  await interceptarLeitura(page, { guia_numero: null, paciente: 'Ana Paula Ribeiro' })
+
+  await capturarEConfirmar(page)
+
+  // A grade foi preenchida pela leitura...
+  await expect(
+    page.getByTestId('lancamento-linha-1').locator('input[type="date"]'),
+  ).toHaveValue('2026-04-08')
+
+  // ...e a escolha da guia continua com o operador.
+  await expect(page.getByTestId('selecionar-guia-modal')).toHaveCount(0)
+  await expect(page.getByTestId('lancamento-guia')).toContainText('Selecione uma guia')
 })

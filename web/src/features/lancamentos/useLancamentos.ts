@@ -39,6 +39,22 @@ export function useGuiasBusca(params: { busca: string; page: number; enabled?: b
   })
 }
 
+/**
+ * Guias disponíveis para lançamento que casam com um termo.
+ *
+ * Função, e não hook: é chamada DEPOIS de uma leitura terminar, para resolver
+ * o número de guia que veio da folha — um evento, não um estado de render.
+ * Mesma consulta que o `SelecionarGuiaModal` usa, então "disponível para
+ * lançamento" quer dizer o mesmo nos dois lugares.
+ */
+export async function buscarGuiasDisponiveis(termo: string): Promise<Guia[]> {
+  const { data } = await apiClient.get<GuiaPaginatedResponse<Guia>>('/guias', {
+    params: { busca: termo.trim(), disponivel_para_lancamento: '1' },
+  })
+
+  return data.data
+}
+
 /** Cada item é um grupo por Guia (`LancamentoGuiaGrupo`), não uma sessão solta. */
 export function useLancamentos(filters: LancamentoFilters, page: number) {
   return useQuery({
@@ -84,15 +100,19 @@ export function useImportarLancamentosTranscritos() {
  *
  * Devolve o mesmo formato da transcrição colada, então a tela de revisão e a
  * confirmação seguem iguais — muda só de onde o dado veio.
+ *
+ * Sem guia: a folha é que diz de qual guia ela é (`cabecalho.guia_numero`), e
+ * é isso que permite ler ANTES de escolher. A rota antiga levava a guia no
+ * caminho, mas o serviço de IA nunca a recebeu.
  */
 export function useLerRegistroSessoes() {
   return useMutation({
-    mutationFn: async ({ guiaId, arquivo }: { guiaId: string; arquivo: File }) => {
+    mutationFn: async (arquivo: File) => {
       const body = new FormData()
       body.append('arquivo', arquivo)
 
       const { data } = await apiClient.post<{ data: LancamentoTranscricaoImportResult }>(
-        `/guias/${Number(guiaId)}/lancamentos/ler-registro`,
+        '/lancamentos/ler-registro',
         body,
         { headers: { 'Content-Type': 'multipart/form-data' } },
       )

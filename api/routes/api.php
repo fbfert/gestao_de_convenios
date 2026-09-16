@@ -317,6 +317,12 @@ Route::middleware(['auth:sanctum', EncerrarSessaoExpirada::class])->group(functi
 
     Route::post('/guias/{guia}/lancamentos', [LancamentoController::class, 'store'])->middleware('permission:lancamentos.view|lancamentos.viewOwn');
     Route::post('/guias/{guia}/lancamentos/importar-transcricao', [LancamentoController::class, 'importarTranscricao'])->middleware('permission:lancamentos.view|lancamentos.viewOwn');
+    // Sem guia: a folha é que diz de qual guia ela é, e exigir a guia antes
+    // obrigava a procurar à mão o que a IA leria em seguida.
+    Route::post('/lancamentos/ler-registro', [LancamentoController::class, 'lerRegistroSessoes'])->middleware('permission:lancamentos.view|lancamentos.viewOwn');
+    // Alias da rota antiga, por uma versão. A API e o bundle web não sobem no
+    // mesmo instante: um front ainda em cache chamando a rota removida daria
+    // 404 na única ação da tela. A guia do caminho é ignorada — sempre foi.
     Route::post('/guias/{guia}/lancamentos/ler-registro', [LancamentoController::class, 'lerRegistroSessoes'])->middleware('permission:lancamentos.view|lancamentos.viewOwn');
     Route::post('/lancamentos/importar-analitico', [LancamentoController::class, 'importarAnalitico'])->middleware('permission:lancamentos.view|lancamentos.viewOwn');
     Route::get('/lancamentos/templates/registro-sessoes', [LancamentoPrintTemplateController::class, 'show'])->middleware('permission:lancamentos.view|lancamentos.viewOwn');

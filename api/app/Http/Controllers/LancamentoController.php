@@ -98,10 +98,15 @@ class LancamentoController extends Controller
      *
      * A confirmação continua sendo a rota de sempre: o operador revisa datas e
      * horários na tabela antes de qualquer lançamento existir.
+     *
+     * Não recebe guia, de propósito. A folha é que diz de qual guia ela é — o
+     * cabeçalho lido traz `guia_numero` —, e exigir a guia antes obrigaria o
+     * operador a procurar à mão exatamente o que a IA leria em seguida. O
+     * parâmetro existia na rota antiga sem nunca chegar ao serviço: era route
+     * binding e nada mais.
      */
     public function lerRegistroSessoes(
         LerRegistroSessoesRequest $request,
-        Guia $guia,
         RegistroSessoesAiService $registroAi,
     ): JsonResponse {
         $tenantId = (int) $request->user()->tenant_id;

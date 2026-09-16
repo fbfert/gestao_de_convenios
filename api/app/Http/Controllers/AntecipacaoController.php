@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\IgnorarAntecipacaoRequest;
+use App\Http\Requests\ListarAntecipacoesRequest;
 use App\Http\Requests\StoreAntecipacaoRequest;
 use App\Http\Requests\UpdateAntecipacaoRequest;
 use App\Http\Resources\AntecipacaoResource;
@@ -29,10 +30,15 @@ class AntecipacaoController extends Controller
         ]);
     }
 
-    public function index(Request $request): AnonymousResourceCollection
+    public function index(ListarAntecipacoesRequest $request): AnonymousResourceCollection
     {
+        $filtros = $request->validated();
+
         return AntecipacaoResource::collection(
-            $this->service->listar($request->only(['status']), $request->integer('per_page') ?: ConfiguracaoGlobal::itensPorPagina())
+            $this->service->listar(
+                $filtros,
+                (int) ($filtros['per_page'] ?? 0) ?: ConfiguracaoGlobal::itensPorPagina()
+            )
         );
     }
 
@@ -54,5 +60,17 @@ class AntecipacaoController extends Controller
     public function update(UpdateAntecipacaoRequest $request, Antecipacao $antecipacao): AntecipacaoResource
     {
         return new AntecipacaoResource($this->service->atualizar($antecipacao, $request->validated()));
+    }
+
+    /**
+     * Desfaz uma dispensa. Rota própria, e não o `DELETE` do recurso: aquele
+     * apagaria também uma antecipação `gerada`, sem desfazer o item nem a
+     * guia criados — foi por isso que saiu, e continua fora (405).
+     */
+    public function desfazer(Antecipacao $antecipacao): JsonResponse
+    {
+        $this->service->desfazerIgnorada($antecipacao);
+
+        return response()->json(null, 204);
     }
 }

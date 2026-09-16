@@ -28,8 +28,15 @@ export function useAntecipacoes(filters: AntecipacaoFilters, page: number) {
   return useQuery({
     queryKey: ['antecipacoes', filters, page],
     queryFn: async () => {
+      // Filtro vazio não vai na query string: `convenio_id=''` chegaria como
+      // string vazia numa regra `integer` e reprovaria a validação.
+      const params: Record<string, string | number> = { page }
+      for (const [chave, valor] of Object.entries(filters)) {
+        if (valor) params[chave] = valor
+      }
+
       const { data } = await apiClient.get<PaginatedResponse<Antecipacao>>('/antecipacoes', {
-        params: { ...filters, page },
+        params,
       })
 
       return data
@@ -95,3 +102,22 @@ export function useAtualizarAntecipacao() {
 
 // `useRemoverAntecipacao` saiu em 16/09/2026, junto com a rota DELETE: ela
 // apagava o registro do histórico sem desfazer o item nem a guia gerados.
+
+/**
+ * Desfaz uma dispensa — só funciona em registro `ignorada`, e a API recusa o
+ * resto (ver AntecipacaoService::desfazerIgnorada). Invalida 'antecipacoes'
+ * inteiro porque o efeito aparece nos DOIS lados da tela: o registro some do
+ * histórico e a solicitação volta para a fila de elegíveis.
+ */
+export function useDesfazerAntecipacaoIgnorada() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (id: number) => {
+      await apiClient.delete(`/antecipacoes/${id}/ignorada`)
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['antecipacoes'] })
+    },
+  })
+}

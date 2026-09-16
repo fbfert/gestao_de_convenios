@@ -116,19 +116,19 @@ O sistema SHALL permitir dispensar uma solicitação elegível sem gerar nada, r
 
 ### Requirement: Histórico de antecipações
 
-O sistema SHALL manter o histórico das antecipações geradas e ignoradas, permitindo filtrar por status, e SHALL permitir excluir um registro do histórico sem afetar os itens e guias já gerados.
+O sistema SHALL manter o histórico das antecipações geradas e ignoradas, permitindo filtrar por status, e SHALL NOT permitir excluir um registro do histórico.
 
 #### Scenario: Filtrar por status
 - **WHEN** o operador filtrar o histórico por gerada ou ignorada
 - **THEN** o sistema SHALL listar somente os registros daquele status
 
-#### Scenario: Excluir registro não desfaz a geração
-- **WHEN** o operador excluir um registro de antecipação que havia gerado itens
-- **THEN** o sistema SHALL remover apenas o registro de acompanhamento, preservando os itens e guias criados
+#### Scenario: Registro do histórico não é excluído
+- **WHEN** o operador tentar excluir um registro de antecipação
+- **THEN** o sistema SHALL recusar, preservando o registro e os itens e guias que ele tenha criado
 
 ### Requirement: Permissões separadas para ver e operar
 
-O sistema SHALL exigir permissão de visualização para consultar a fila de elegíveis e o histórico, e permissão de gestão para gerar, dispensar, alterar ou excluir antecipações.
+O sistema SHALL exigir permissão de visualização para consultar a fila de elegíveis e o histórico, e permissão de gestão para gerar, dispensar ou alterar antecipações.
 
 #### Scenario: Sem permissão de visualização
 - **WHEN** um usuário sem a permissão de visualizar antecipações consultar a fila ou o histórico
@@ -136,7 +136,7 @@ O sistema SHALL exigir permissão de visualização para consultar a fila de ele
 
 #### Scenario: Somente visualização
 - **WHEN** um usuário tiver apenas a permissão de visualizar
-- **THEN** o sistema SHALL exibir a fila e o histórico, e SHALL negar gerar, dispensar, alterar e excluir
+- **THEN** o sistema SHALL exibir a fila e o histórico, e SHALL negar gerar, dispensar e alterar
 
 ### Requirement: Disponibilidade de sessões contada ao vivo na guia
 

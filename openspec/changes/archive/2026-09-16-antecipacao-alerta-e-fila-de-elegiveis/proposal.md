@@ -34,7 +34,7 @@ Isso contradiz o código atual, onde nenhuma antecipação define quantidade de 
 - `app/Models/Antecipacao.php`, `app/Models/Guia.php` (`elegiveisParaAntecipacao`, `countElegiveisParaAntecipacao`, `antecipacaoDataAlvo`)
 - `app/Services/AntecipacaoService.php`, `app/Services/Alertas/Regras/AntecipacaoDevida.php`
 - `app/Http/Controllers/AntecipacaoController.php`, `GuiaController::ocultarAlertaAntecipacao`
-- Rotas `GET /antecipacoes/elegiveis`, `GET|POST /antecipacoes`, `POST /antecipacoes/ignorar`, `PATCH|DELETE /antecipacoes/{antecipacao}`, `PATCH /guias/{guia}/ocultar-alerta-antecipacao`
+- Rotas `GET /antecipacoes/elegiveis`, `GET|POST /antecipacoes`, `POST /antecipacoes/ignorar`, `PATCH /antecipacoes/{antecipacao}`, `PATCH /guias/{guia}/ocultar-alerta-antecipacao`
 - Permissões `antecipacoes.view` e `antecipacoes.manage`
 - Configuração: `antecipacao_dias` e `antecipacao_referencia` em `configuracoes_globais` e o override em `convenios`; `antecipacao_data_alvo`, `antecipacao_proxima_em` e `alerta_antecipacao_ocultado_em` em `guias`
 

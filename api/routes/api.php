@@ -290,6 +290,12 @@ Route::middleware(['auth:sanctum', EncerrarSessaoExpirada::class])->group(functi
         ->middleware('permission:antecipacoes.manage');
     Route::patch('/antecipacoes/{antecipacao}', [AntecipacaoController::class, 'update'])
         ->middleware('permission:antecipacoes.manage');
+    // Desfazer a dispensa. Propositalmente NÃO é `DELETE /antecipacoes/{id}`:
+    // aquela rota saiu em 16/09/2026 porque apagava o histórico de uma
+    // antecipação `gerada` sem desfazer o item nem a guia criados. Esta só
+    // aceita `ignorada` (ver AntecipacaoService::desfazerIgnorada).
+    Route::delete('/antecipacoes/{antecipacao}/ignorada', [AntecipacaoController::class, 'desfazer'])
+        ->middleware('permission:antecipacoes.manage');
 
     Route::get('/guias', [GuiaController::class, 'index']);
     Route::post('/guias', [GuiaController::class, 'store'])->middleware('permission:guias.view|guias.viewOwn');

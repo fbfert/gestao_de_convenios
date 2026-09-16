@@ -41,8 +41,21 @@ export type Antecipacao = {
   criado_por?: { id: number; nome: string } | null
 }
 
+/**
+ * Filtros do histórico. Todos `string` porque vivem na query string da URL
+ * (ver `useListaNaUrl`), que é o que faz a busca sobreviver a abrir uma guia
+ * e voltar.
+ *
+ * `data_de`/`data_ate` são sobre a data da AÇÃO (quando se gerou ou ignorou),
+ * não sobre a data prevista da antecipação — ver ListarAntecipacoesRequest.
+ */
 export type AntecipacaoFilters = {
   status: '' | AntecipacaoStatus
+  paciente_nome: string
+  numero_guia: string
+  convenio_id: string
+  data_de: string
+  data_ate: string
 }
 
 /** Uma linha da fila "Elegíveis" — GET /antecipacoes/elegiveis, agrupada por solicitação. */

@@ -488,4 +488,227 @@ class AntecipacoesApiTest extends TestCase
 
         return $solicitacao;
     }
+
+    public function test_desfazer_ignorada_apaga_e_devolve_a_solicitacao_a_fila(): void
+    {
+        $this->autenticar();
+        $solicitacao = $this->solicitacaoComGuiaAprovada();
+
+        $ignorada = $this->postJson('/api/antecipacoes/ignorar', [
+            'solicitacao_origem_id' => $solicitacao->id,
+            'observacoes' => 'Paciente em alta.',
+        ])->assertCreated()->json('data');
+
+        $this->assertCount(0, $this->getJson('/api/antecipacoes/elegiveis')->assertOk()->json('data'));
+
+        $this->deleteJson("/api/antecipacoes/{$ignorada['id']}/ignorada")->assertNoContent();
+
+        $this->assertNull(Antecipacao::query()->find($ignorada['id']));
+
+        // O desfazer inteiro é tirar o registro: `listarElegiveis()` exclui
+        // pela EXISTÊNCIA dele, então sem registro a solicitação reaparece.
+        $ids = array_column(
+            $this->getJson('/api/antecipacoes/elegiveis')->assertOk()->json('data'),
+            'solicitacao_id',
+        );
+        $this->assertContains($solicitacao->id, $ids);
+    }
+
+    /**
+     * Desfazer é só para a dispensa.
+     *
+     * Uma `gerada` já criou item e guia na solicitação de origem; apagar o
+     * registro sumiria com a prova e deixaria os efeitos — o mesmo defeito que
+     * tirou o `DELETE /antecipacoes/{id}` de circulação em 16/09/2026.
+     */
+    public function test_desfazer_recusa_antecipacao_gerada(): void
+    {
+        $this->autenticar();
+        $solicitacao = $this->solicitacaoComGuiaAprovada();
+        $itemOrigem = $solicitacao->itens()->firstOrFail();
+
+        $criada = $this->postJson('/api/antecipacoes', [
+            'solicitacao_origem_id' => $solicitacao->id,
+            'itens_selecionados' => [[
+                'especialidade_id' => $itemOrigem->especialidade_id,
+                'profissional_id' => $itemOrigem->profissional_id,
+            ]],
+        ])->assertCreated()->json('data');
+
+        $itemGeradoId = (int) $criada['itens_selecionados'][0]['item_gerado_id'];
+        $guiaGeradaId = (int) $criada['itens_selecionados'][0]['guia_gerada_id'];
+
+        $this->deleteJson("/api/antecipacoes/{$criada['id']}/ignorada")
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('status');
+
+        $this->assertNotNull(Antecipacao::query()->find($criada['id']));
+        $this->assertNotNull($solicitacao->itens()->find($itemGeradoId));
+        $this->assertNotNull(Guia::query()->find($guiaGeradaId));
+    }
+
+    public function test_desfazer_sem_permissao_de_gerir_recusa(): void
+    {
+        $user = $this->autenticar();
+        $solicitacao = $this->solicitacaoComGuiaAprovada();
+
+        $ignorada = Antecipacao::query()->create([
+            'tenant_id' => $user->tenant_id,
+            'solicitacao_origem_id' => $solicitacao->id,
+            'status' => Antecipacao::STATUS_IGNORADA,
+            'ignorado_em' => now(),
+        ]);
+
+        Role::query()->where('name', 'admin')->where('tenant_id', $user->tenant_id)
+            ->firstOrFail()->revokePermissionTo('antecipacoes.manage');
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        $this->deleteJson("/api/antecipacoes/{$ignorada->id}/ignorada")->assertForbidden();
+
+        $this->assertNotNull(Antecipacao::query()->find($ignorada->id));
+    }
+
+    /**
+     * A data prevista vem da fila, calculada ao vivo. Gravá-la no registro é o
+     * que deixa o histórico dizer "era pra ter sido em tal dia" depois que a
+     * guia mudar de estado e o cálculo não valer mais.
+     */
+    public function test_ignorar_grava_data_alvo_e_motivo(): void
+    {
+        $this->autenticar();
+        $solicitacao = $this->solicitacaoComGuiaAprovada();
+
+        $data = $this->postJson('/api/antecipacoes/ignorar', [
+            'solicitacao_origem_id' => $solicitacao->id,
+            'data_alvo' => today()->subDays(10)->toDateString(),
+            'observacoes' => 'Tratamento encerrado.',
+        ])->assertCreated()->json('data');
+
+        $this->assertSame(today()->subDays(10)->toDateString(), $data['data_alvo']);
+        $this->assertSame('Tratamento encerrado.', $data['observacoes']);
+    }
+
+    public function test_historico_filtra_por_paciente_convenio_guia_e_periodo(): void
+    {
+        $user = $this->autenticar();
+        $solicitacao = $this->solicitacaoComGuiaAprovada();
+        $guia = $solicitacao->guias()->firstOrFail();
+        $paciente = $solicitacao->paciente;
+
+        $daBusca = Antecipacao::query()->create([
+            'tenant_id' => $user->tenant_id,
+            'solicitacao_origem_id' => $solicitacao->id,
+            'status' => Antecipacao::STATUS_IGNORADA,
+            'ignorado_em' => now(),
+        ]);
+
+        // Uma segunda antecipação, de outro paciente e outro convênio, para
+        // cada filtro ter o que descartar — sem ela o teste passaria igual se
+        // o filtro fosse simplesmente ignorado.
+        $outra = $this->solicitacaoDeOutroPaciente();
+        $aDescartar = Antecipacao::query()->create([
+            'tenant_id' => $user->tenant_id,
+            'solicitacao_origem_id' => $outra->id,
+            'status' => Antecipacao::STATUS_IGNORADA,
+            'ignorado_em' => now(),
+        ]);
+
+        $porPaciente = $this->getJson(
+            '/api/antecipacoes?paciente_nome='.urlencode(mb_substr($paciente->nome, 0, 6))
+        )->assertOk()->json('data.*.id');
+        $this->assertContains($daBusca->id, $porPaciente);
+        $this->assertNotContains($aDescartar->id, $porPaciente);
+
+        $porConvenio = $this->getJson('/api/antecipacoes?convenio_id='.$solicitacao->convenio_id)
+            ->assertOk()->json('data.*.id');
+        $this->assertContains($daBusca->id, $porConvenio);
+        $this->assertNotContains($aDescartar->id, $porConvenio);
+
+        // A busca por guia acha um registro `ignorada`, que não gerou guia
+        // nenhuma: ela casa com as guias da solicitação de ORIGEM.
+        $porGuia = $this->getJson('/api/antecipacoes?numero_guia='.urlencode($guia->numero_guia))
+            ->assertOk()->json('data.*.id');
+        $this->assertSame([$daBusca->id], $porGuia);
+
+        // Período que termina ontem não pode conter uma ação de hoje.
+        $foraDoPeriodo = $this->getJson('/api/antecipacoes?data_ate='.today()->subDay()->toDateString())
+            ->assertOk()->json('data.*.id');
+        $this->assertSame([], $foraDoPeriodo);
+
+        // O intervalo inclui os dias das pontas: hoje a hoje pega as duas.
+        $noPeriodo = $this->getJson(
+            '/api/antecipacoes?data_de='.today()->toDateString().'&data_ate='.today()->toDateString()
+        )->assertOk()->json('data.*.id');
+        $this->assertCount(2, $noPeriodo);
+    }
+
+    public function test_historico_combina_criterios(): void
+    {
+        $user = $this->autenticar();
+        $solicitacao = $this->solicitacaoComGuiaAprovada();
+        $paciente = $solicitacao->paciente;
+
+        $gerada = Antecipacao::query()->create([
+            'tenant_id' => $user->tenant_id,
+            'solicitacao_origem_id' => $solicitacao->id,
+            'status' => Antecipacao::STATUS_GERADA,
+            'gerado_em' => now(),
+        ]);
+        $ignorada = Antecipacao::query()->create([
+            'tenant_id' => $user->tenant_id,
+            'solicitacao_origem_id' => $solicitacao->id,
+            'status' => Antecipacao::STATUS_IGNORADA,
+            'ignorado_em' => now(),
+        ]);
+
+        // Mesmo paciente nas duas: só o status separa, então o resultado prova
+        // que os dois critérios foram aplicados juntos.
+        $resultado = $this->getJson(
+            '/api/antecipacoes?status=ignorada&paciente_nome='.urlencode(mb_substr($paciente->nome, 0, 6))
+        )->assertOk()->json('data.*.id');
+
+        $this->assertSame([$ignorada->id], $resultado);
+        $this->assertNotContains($gerada->id, $resultado);
+    }
+
+    public function test_historico_recusa_periodo_invertido(): void
+    {
+        $this->autenticar();
+
+        $this->getJson(
+            '/api/antecipacoes?data_de='.today()->toDateString().'&data_ate='.today()->subDays(5)->toDateString()
+        )->assertStatus(422)->assertJsonValidationErrors('data_ate');
+    }
+
+    /** Solicitação de um paciente e de um convênio diferentes dos de `solicitacaoComGuiaAprovada()`. */
+    private function solicitacaoDeOutroPaciente(): Solicitacao
+    {
+        $user = User::query()->where('email', 'admin@clinica-exemplo.test')->firstOrFail();
+        $tenantId = (int) $user->tenant_id;
+
+        $convenio = Convenio::query()->where('tenant_id', $tenantId)
+            ->where('nome', '!=', 'Unimed')->firstOrFail();
+        $especialidade = Especialidade::query()->where('nome', 'Fisioterapia')->firstOrFail();
+        $profissional = Profissional::query()->where('especialidade_id', $especialidade->id)->firstOrFail();
+        $medico = Medico::query()->firstOrFail();
+
+        $paciente = Paciente::query()->create([
+            'tenant_id' => $tenantId,
+            'convenio_id' => $convenio->id,
+            'nome' => 'Zoroastro Filtragem de Antecipacao',
+            'carteirinha' => 'FILTRO-2026-0001',
+            'ativo' => true,
+        ]);
+
+        return Solicitacao::query()->create([
+            'tenant_id' => $tenantId,
+            'paciente_id' => $paciente->id,
+            'profissional_id' => $profissional->id,
+            'especialidade_id' => $especialidade->id,
+            'convenio_id' => $convenio->id,
+            'medico_id' => $medico->id,
+            'status' => 'guia_gerada',
+            'solicitado_em' => today()->subDays(30)->toDateString(),
+        ]);
+    }
 }

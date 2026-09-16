@@ -81,6 +81,19 @@ class AntecipacaoService
             ->all();
     }
 
+    /**
+     * Histórico filtrado.
+     *
+     * `numero_guia` procura em QUALQUER guia da solicitação de origem, e não
+     * só nas que a antecipação gerou. Não é frouxidão: antecipar cria itens
+     * na MESMA solicitação, então a guia gerada é uma guia da origem — a
+     * mesma condição cobre as duas. E cobre também o caso que importa achar,
+     * o registro `ignorada`, que não gerou guia nenhuma e só é pesquisável
+     * pelo número da guia que motivou o aviso.
+     *
+     * O período recai sobre `created_at` — quando alguém agiu —, não sobre
+     * `data_alvo`, que é quando a antecipação era devida.
+     */
     public function listar(array $filtros, int $perPage = 20): LengthAwarePaginator
     {
         $query = Antecipacao::query()
@@ -89,6 +102,32 @@ class AntecipacaoService
 
         if (! empty($filtros['status'])) {
             $query->where('status', $filtros['status']);
+        }
+
+        if (! empty($filtros['paciente_nome'])) {
+            $nome = $filtros['paciente_nome'];
+            $query->whereHas('solicitacaoOrigem.paciente', fn ($origem) => $origem
+                ->where('nome', 'like', '%'.$nome.'%'));
+        }
+
+        if (! empty($filtros['convenio_id'])) {
+            $convenioId = (int) $filtros['convenio_id'];
+            $query->whereHas('solicitacaoOrigem', fn ($origem) => $origem
+                ->where('convenio_id', $convenioId));
+        }
+
+        if (! empty($filtros['numero_guia'])) {
+            $numero = $filtros['numero_guia'];
+            $query->whereHas('solicitacaoOrigem.guias', fn ($guias) => $guias
+                ->where('numero_guia', 'like', '%'.$numero.'%'));
+        }
+
+        if (! empty($filtros['data_de'])) {
+            $query->whereDate('created_at', '>=', $filtros['data_de']);
+        }
+
+        if (! empty($filtros['data_ate'])) {
+            $query->whereDate('created_at', '<=', $filtros['data_ate']);
         }
 
         $pagina = $query->paginate($perPage);
@@ -222,6 +261,30 @@ class AntecipacaoService
             'criado_por_id' => auth()->id(),
             'tenant_id' => TenantContext::get() ?? auth()->user()?->tenant_id,
         ])->load($this->relacoesPadrao());
+    }
+
+    /**
+     * Desfaz uma dispensa: apaga o registro `ignorada` e, com isso, devolve a
+     * solicitação à fila de elegíveis — `listarElegiveis()` exclui pela
+     * EXISTÊNCIA de um registro, então tirar o registro é o desfazer inteiro.
+     * Se a solicitação não for mais elegível por outro motivo (guia vencida,
+     * alerta ocultado na guia), ela simplesmente não reaparece; o desfazer
+     * não força nada de volta.
+     *
+     * Só vale para `ignorada`. Desfazer uma `gerada` teria de apagar itens e
+     * guias já criados, e foi exatamente por apagar o registro sem desfazer
+     * os efeitos que o `DELETE /antecipacoes/{id}` genérico saiu em
+     * 16/09/2026 — a rota continua inexistente (405), de propósito.
+     */
+    public function desfazerIgnorada(Antecipacao $antecipacao): void
+    {
+        if ($antecipacao->status !== Antecipacao::STATUS_IGNORADA) {
+            throw ValidationException::withMessages([
+                'status' => ['Só é possível desfazer uma antecipação ignorada.'],
+            ]);
+        }
+
+        $antecipacao->delete();
     }
 
     public function atualizar(Antecipacao $antecipacao, array $dados): Antecipacao

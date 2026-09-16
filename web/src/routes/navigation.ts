@@ -293,13 +293,10 @@ export const navEntries: NavEntry[] = [
   automacoesGroup,
   configuracoesGroup,
   { to: '/manual', label: 'Manual', descricao: 'Documentação de uso do sistema.' },
-  // Sem `permissao`: novidade é do produto e vale para todo mundo, como o
-  // Manual e o Dashboard.
-  {
-    to: '/novidades',
-    label: 'Novidades',
-    descricao: 'O que mudou no sistema, da mais recente para a mais antiga.',
-  },
+  // Novidades saiu do menu em 16/09/2026: quem chega nelas vem do card do
+  // painel, que já mostra as últimas e marca as não lidas. Um item fixo no
+  // topo, para um conteúdo que se lê uma vez por deploy, competia por espaço
+  // com o que se usa todo dia. A rota `/novidades` continua existindo.
 ]
 
 /** Item visível apenas para quem administra clínicas. */

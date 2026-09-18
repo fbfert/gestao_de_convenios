@@ -51,11 +51,11 @@
 
 ## 6. Fechamento
 
-- [ ] 6.1 Revisar a spec contra o código: cada requisito tem teste? O que ficou de fora vai para Non-goals com o motivo.
-- [ ] 6.2 Seção "Relatórios" no manual do produto e uma novidade em `api/resources/novidades/` anunciando a tela.
-- [ ] 6.3 `docs/resumo-entregas-<data>.md` no formato dos anteriores, com os comandos de deploy: `composer install` (openspout), `migrate` (permissões e `saude_componente_eventos`), `npm ci`/build.
-- [ ] 6.4 ADR em `docs/decisoes-arquitetura.md` para o grupo novo no menu e para o `withoutGlobalScope` restrito aos relatórios.
-- [ ] 6.5 `php artisan test`, `npm run lint`, `npm run build`, e2e, `openspec validate`, e então `openspec archive relatorios-de-uso`.
+- [x] 6.1 Revisar a spec contra o código: cada requisito tem teste? O que ficou de fora vai para Non-goals com o motivo.
+- [x] 6.2 Seção "Relatórios" no manual do produto e uma novidade em `api/resources/novidades/` anunciando a tela.
+- [x] 6.3 `docs/resumo-entregas-<data>.md` no formato dos anteriores, com os comandos de deploy: `composer install` (openspout), `migrate` (permissões e `saude_componente_eventos`), `npm ci`/build.
+- [x] 6.4 ADR em `docs/decisoes-arquitetura.md` para o grupo novo no menu e para o `withoutGlobalScope` restrito aos relatórios.
+- [x] 6.5 `php artisan test`, `npm run lint`, `npm run build`, e2e, `openspec validate`, e então `openspec archive relatorios-de-uso`.
 
 ## 7. Em aberto
 

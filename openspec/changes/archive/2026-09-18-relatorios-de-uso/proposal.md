@@ -53,3 +53,13 @@ O plano em `docs/plano-relatorios.md` marcava seis pontos como "verificar". Veri
 - **Métrica de e-mails enviados.** Não há registro de envio: existem `EmailSmtpSetting` e `EmailTemplate`, nenhuma tabela de envio. Fora do escopo até existir o que medir.
 - **Comparação entre clínicas para o super admin.** A visão "todas" soma; comparar lado a lado é v2.
 - **Retroagir o histórico de saúde.** A tabela nasce vazia e só registra do deploy em diante.
+- **Pago e glosa por convênio ou por profissional.** Descoberto na implementação: o analítico da
+  operadora chega agregado por LOTE (`analitico_unimed_lotes.total_pago`/`total_glosado`), e a linha
+  (`analitico_unimed_linhas`) não carrega convênio nem profissional — só número de guia e texto do
+  procedimento. Ratear esses valores por profissional seria estimativa apresentada como medição, e é
+  um número que alguém usaria para pagar alguém. As tabelas por convênio e por profissional trazem
+  executado e repasse; a glosa tem tabela própria, agrupada por motivo, que é o recorte que o dado
+  sustenta.
+- **Documentos lidos por IA.** O plano previa o KPI. Não há registro de que a leitura aconteceu:
+  `solicitacao_documentos` e `paciente_documentos` guardam o arquivo e um `metadata` livre, sem
+  marca de processamento. Fora do escopo até existir o que contar.

@@ -135,6 +135,26 @@ test('quem não tem a permissão do financeiro não enxerga a aba', async ({ pag
 })
 
 /**
+ * Sem nenhuma das quatro permissões, a página não existe para a pessoa.
+ *
+ * O papel `profissional` não recebe relatório nenhum. O menu esconde a entrada
+ * e o endereço direto devolve ao painel — uma tela de abas vazias seria pior do
+ * que tela nenhuma, porque parece defeito.
+ */
+test('quem não tem permissão de relatório nenhuma não chega à página', async ({ page }) => {
+  await login(page, 'profissional@clinica-exemplo.test')
+
+  await page.goto('/inicio', { waitUntil: 'domcontentloaded' })
+
+  const grupo = page.getByTestId('gestao-convenios-page')
+  await expect(grupo.getByTestId('gestao-convenios-page-card-painel')).toBeVisible()
+  await expect(grupo.getByTestId('gestao-convenios-page-card-relatórios')).toHaveCount(0)
+
+  await page.goto('/relatorios', { waitUntil: 'domcontentloaded' })
+  await expect(page).toHaveURL(/\/dashboard$/)
+})
+
+/**
  * O gráfico precisa trocar de cor com o tema.
  *
  * Gráfico não tem teste de contraste: uma paleta cravada em hex continuaria

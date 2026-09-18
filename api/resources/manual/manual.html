@@ -154,7 +154,8 @@
     <li><a href="#conceitos">1. Conceitos gerais</a></li>
     <li><a href="#fluxo-geral">2. Fluxo geral do sistema</a></li>
     <li><a href="#login">3. Login</a></li>
-    <li><a href="#dashboard">4. Gestão de Convênios (tela inicial)</a></li>
+    <li><a href="#dashboard">4. Gestão de Convênios (Painel e Relatórios)</a></li>
+    <li><a href="#relatorios">4.1 Relatórios</a></li>
     <li><a href="#pacientes">5. Pacientes</a></li>
     <li><a href="#solicitacoes">6. Solicitações</a></li>
     <li><a href="#guias">7. Guias</a></li>
@@ -297,8 +298,14 @@
 </table>
 <div class="dica">Se você errar a senha várias vezes seguidas em pouco tempo, o sistema bloqueia novas tentativas por alguns instantes (proteção contra ataques). Basta aguardar e tentar de novo.</div>
 
-<h2 class="secao" id="dashboard">4. Gestão de Convênios <span class="rota">/dashboard</span></h2>
-<div class="objetivo">Objetivo: visão geral do dia a dia da clínica, com números resumidos e atalhos para as demais telas. É a tela inicial — o menu chamava-se "Dashboard" e passou a se chamar Gestão de Convênios.</div>
+<h2 class="secao" id="dashboard">4. Gestão de Convênios <span class="rota">/inicio</span></h2>
+<div class="objetivo">Objetivo: agrupa as duas telas que olham a clínica inteira. O <strong>Painel</strong> (<span class="rota">/dashboard</span>) responde o que precisa de você <em>agora</em>; os <a href="#relatorios"><strong>Relatórios</strong></a> (<span class="rota">/relatorios</span>) respondem como foi o <em>período</em>.</div>
+<div class="nota">
+  O menu chamava-se "Dashboard", passou a "Gestão de Convênios" e, em 18/09/2026, virou um <strong>grupo</strong>
+  com dois cartões — no mesmo padrão de Cadastros e Operação. Clicar no menu abre a página de escolha; o Painel
+  ficou a um clique de distância, e continua sendo para onde o sistema leva logo após o login.
+</div>
+<h3>4.0 Painel <span class="rota">/dashboard</span></h3>
 <p>Os cartões de número que aparecem <strong>dependem das suas permissões</strong> — cada cartão só é exibido para quem tem acesso àquela área:</p>
 <table>
   <tr><th>Cartão</th><th>O que mostra</th></tr>
@@ -328,6 +335,104 @@
   <tr><th>Botão</th><th>O que faz</th></tr>
   <tr><td><span class="btn">Ver auditoria</span></td><td>Único link do sistema que leva à tela de <a href="#auditoria">Auditoria</a>.</td></tr>
 </table>
+
+<h3 id="relatorios">4.1 Relatórios <span class="rota">/relatorios</span></h3>
+<div class="objetivo">Objetivo: responder perguntas que o Painel não responde — "a taxa de negação piorou?", "qual convênio glosa mais?", "a automação está mais lenta que mês passado?", "quem usa o sistema, e quando?". O Painel conta o que está aberto hoje; aqui você olha um período e compara com o anterior.</div>
+
+<h4>Os filtros valem para as quatro abas</h4>
+<p>
+  No topo há os atalhos de período — <strong>Hoje</strong>, <strong>7 dias</strong>, <strong>30 dias</strong>,
+  <strong>Mês atual</strong>, <strong>Mês anterior</strong> e <strong>Personalizado</strong> (que abre as duas
+  datas). Abaixo, os filtros de <strong>convênio</strong>, <strong>especialidade</strong> e
+  <strong>profissional</strong>, e a caixa <strong>"Comparar com o período anterior"</strong>.
+</p>
+<p>
+  Os filtros continuam valendo ao trocar de aba, de propósito: investigar um número quase sempre passa por olhar
+  o mesmo mês sob outro ângulo ("a negação subiu — o que a automação fez nesse mês?"). Refiltrar a cada aba
+  quebraria a investigação.
+</p>
+<div class="nota">
+  <strong>O endereço da página guarda o recorte.</strong> Período, filtros, aba aberta e comparação ficam na URL —
+  copie e mande para alguém, e a pessoa abre exatamente o mesmo relatório. É por isso que o link traz as datas, e
+  não só o nome do atalho: "30 dias" mudaria de significado amanhã.
+</div>
+<p>Um período não pode passar de <strong>366 dias</strong>, e a data final não pode ser anterior à inicial.</p>
+
+<h4>Comparação: o número de antes, e a cor</h4>
+<p>
+  Marcando "Comparar", cada indicador ganha o valor do <strong>período imediatamente anterior, de mesmo tamanho</strong>
+  — 30 dias comparam com os 30 dias anteriores, e não com "o mês passado". A seta e a cor dizem se
+  <em>melhorou</em>, não se subiu: taxa de negação caindo fica verde; sessões realizadas caindo fica vermelho.
+  Indicador que não tem lado bom (execuções, ações por dia) aparece sem cor.
+</p>
+<div class="nota">
+  <strong>Travessão (—) não é zero.</strong> Onde aparece "—", o sistema não tinha base para calcular: taxa de
+  aprovação sem nenhuma guia decidida no período é uma pergunta sem resposta, e não uma clínica que não aprovou
+  nada. Vale o mesmo para "Sem dados no período" nos gráficos.
+</div>
+
+<h4>As quatro abas</h4>
+<table>
+  <tr><th>Aba</th><th>Responde</th><th>Permissão</th></tr>
+  <tr>
+    <td>Operação</td>
+    <td>Solicitações e guias criadas, taxa de aprovação e negação, tempo até a decisão, sessões e faltas, senhas a vencer e antecipações dispensadas.</td>
+    <td><code>relatorios.operacao</code></td>
+  </tr>
+  <tr>
+    <td>Financeiro</td>
+    <td>Valor executado pela clínica, valor apresentado, pago e glosado pela operadora, % de glosa, situação das conciliações e repasse estimado.</td>
+    <td><code>relatorios.financeiro</code></td>
+  </tr>
+  <tr>
+    <td>Automações</td>
+    <td>Execuções do robô, taxa de sucesso, duração média e no percentil 95, tempo em fila, erros por código e horas fora do ar.</td>
+    <td><code>relatorios.automacoes</code></td>
+  </tr>
+  <tr>
+    <td>Uso do sistema</td>
+    <td>Usuários ativos, acessos, ações por dia e por hora do dia, importações confirmadas e alertas reconhecidos.</td>
+    <td><code>relatorios.uso</code></td>
+  </tr>
+</table>
+<p>
+  A permissão é <strong>por aba</strong>: quem não tem a do Financeiro simplesmente não vê essa aba — nem
+  digitando o endereço dela. Quem não tem nenhuma das quatro não vê a entrada de Relatórios no menu.
+  Ajuste em <a href="#permissoes">Perfis e Permissões</a>.
+</p>
+
+<h4>Três regras de cálculo que explicam números "estranhos"</h4>
+<table>
+  <tr><th>Regra</th><th>Por quê</th></tr>
+  <tr>
+    <td>Aprovação, negação e tempo saem da <strong>data da decisão</strong>, não da data em que a guia foi criada.</td>
+    <td>Uma guia aberta em agosto e negada em setembro é negação de <strong>setembro</strong>. Contar pela criação jogaria o número no mês errado.</td>
+  </tr>
+  <tr>
+    <td>"Valor apresentado" é <strong>pago + glosado</strong> dos analíticos importados no período.</td>
+    <td>A operadora não manda um campo "apresentado". Sem analítico importado, os três indicadores dela aparecem como "—", e não como zero — zero diria que a operadora não pagou nada.</td>
+  </tr>
+  <tr>
+    <td>"Horas fora do ar" só enxerga a partir de 18/09/2026.</td>
+    <td>O sistema passou a registrar as quedas de componente nessa data. Período anterior aparece como "—": não há registro, o que é diferente de "esteve no ar o tempo todo".</td>
+  </tr>
+</table>
+
+<h4>Exportar</h4>
+<p>
+  Toda tabela tem <span class="btn">Exportar CSV</span> e <span class="btn">Exportar XLSX</span>, com
+  <strong>os mesmos filtros da tela</strong>. O CSV já vem formatado em português (vírgula decimal, data
+  dd/mm/aaaa) para abrir direto no Excel; o XLSX traz os números como número, para somar e ordenar na planilha.
+</p>
+<div class="nota">
+  Toda exportação fica registrada em <a href="#auditoria">Logs de Auditoria</a>, com quem exportou, de qual aba,
+  qual tabela e sob quais filtros. O arquivo sai do sistema para um lugar onde nenhuma permissão alcança — o
+  registro é o que permite responder depois.
+</div>
+<p>
+  O resultado de uma consulta é reaproveitado por <strong>5 minutos</strong>. Repetir o mesmo recorte dentro
+  desse prazo devolve o número já calculado — o rodapé da tela avisa quando isso acontece.
+</p>
 
 <h2 class="secao" id="pacientes">5. Pacientes <span class="rota">/pacientes</span></h2>
 <div class="objetivo">Objetivo: cadastro central dos pacientes atendidos. É a referência usada por Solicitações e Guias — cadastre o paciente aqui antes de abrir uma solicitação para ele.</div>

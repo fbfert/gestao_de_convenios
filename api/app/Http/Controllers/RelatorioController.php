@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\RelatorioFiltrosRequest;
 use App\Services\Relatorios\RelatorioAba;
+use App\Services\Relatorios\RelatorioExportService;
 use App\Services\Relatorios\RelatorioFiltros;
 use Illuminate\Http\JsonResponse;
-use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
+use Illuminate\Validation\Rule;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
@@ -30,28 +32,34 @@ class RelatorioController extends Controller
     /**
      * Exporta uma das tabelas da aba, com os mesmos filtros da consulta.
      *
-     * O arquivo em si é o bloco 3 do tasks.md. O que já vale aqui é a checagem
-     * que não pode nascer depois: a tabela pedida precisa ser uma das que a aba
-     * devolve. Sem ela, `?tabela=` viraria um nome livre entrando no serviço de
-     * exportação.
+     * A tabela sai do MESMO `montar()` que alimenta a tela — inclusive do mesmo
+     * cache. Reconsultar aqui abriria espaço para o arquivo divergir do que a
+     * pessoa viu antes de clicar em exportar.
+     *
+     * A tabela pedida precisa ser uma das que a aba devolve: sem essa checagem,
+     * `?tabela=` seria um nome livre entrando no serviço de exportação.
      */
-    public function export(RelatorioFiltrosRequest $request, string $aba): JsonResponse
+    public function export(RelatorioFiltrosRequest $request, string $aba): StreamedResponse
     {
         $request->validate([
             'tabela' => ['required', 'string'],
-            'formato' => ['required', 'in:csv,xlsx'],
+            'formato' => ['required', Rule::in(RelatorioExportService::FORMATOS)],
         ]);
 
-        $relatorio = RelatorioAba::servico($aba)->montar(RelatorioFiltros::doRequest($request));
+        $filtros = RelatorioFiltros::doRequest($request);
+        $relatorio = RelatorioAba::servico($aba)->montar($filtros);
 
-        if (! collect($relatorio['tabelas'])->firstWhere('key', $request->string('tabela')->toString())) {
+        $tabela = collect($relatorio['tabelas'])->firstWhere('key', $request->string('tabela')->toString());
+
+        if (! $tabela) {
             throw new NotFoundHttpException('Tabela de relatório desconhecida.');
         }
 
-        // 501, e não um arquivo vazio: um CSV com cabeçalho e nenhuma linha é
-        // indistinguível de "não houve nada no período", e é assim que uma
-        // exportação incompleta vira relatório impresso. O
-        // RelatorioExportService entra aqui no bloco 3, em streaming.
-        abort(SymfonyResponse::HTTP_NOT_IMPLEMENTED, 'A exportação de relatórios ainda não está disponível.');
+        return app(RelatorioExportService::class)->exportar(
+            $aba,
+            $request->string('formato')->toString(),
+            $tabela,
+            $filtros,
+        );
     }
 }

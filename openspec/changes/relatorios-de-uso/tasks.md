@@ -26,10 +26,10 @@
 
 ## 3. Export e seed com histórico
 
-- [ ] 3.1 `RelatorioExportService`: CSV nativo (UTF-8 com BOM, separador `;`, data dd/mm/aaaa, decimal com vírgula) e XLSX em streaming via `openspout/openspout`. Nome `relatorio-{aba}-{tabela}-{de}-{ate}.{ext}`.
-- [ ] 3.2 Mesma permissão da aba, e registro em `audit_logs` com ação `relatorio.exportado`.
-- [ ] 3.3 `DemoDataSeeder` com ~90 dias determinísticos (seed fixo): transições em `guia_status_historico`, lançamentos com faltas, execuções de automação ok/erro com durações variadas, `audit_logs` em horários variados de vários usuários, analíticos com glosa. Só acrescenta — os cenários existentes ficam.
-- [ ] 3.4 Testes: conteúdo e cabeçalho do CSV; XLSX abre e tem as linhas; 403 sem permissão; auditoria gravada; `migrate:fresh --seed` sem erro.
+- [x] 3.1 `RelatorioExportService`: CSV nativo (UTF-8 com BOM, separador `;`, data dd/mm/aaaa, decimal com vírgula) e XLSX em streaming via `openspout/openspout`. Nome `relatorio-{aba}-{tabela}-{de}-{ate}.{ext}`.
+- [x] 3.2 Mesma permissão da aba, e registro em `audit_logs` com ação `relatorio.exportado`.
+- [x] 3.3 `DemoDataSeeder` com ~90 dias determinísticos (seed fixo): transições em `guia_status_historico`, lançamentos com faltas, execuções de automação ok/erro com durações variadas, `audit_logs` em horários variados de vários usuários, analíticos com glosa. Só acrescenta — os cenários existentes ficam.
+- [x] 3.4 Testes: conteúdo e cabeçalho do CSV; XLSX abre e tem as linhas; 403 sem permissão; auditoria gravada; `migrate:fresh --seed` sem erro.
 
 ## 4. Menu em grupo, filtros e aba Operação
 

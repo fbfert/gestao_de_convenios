@@ -35,6 +35,7 @@ class AuditoriaCatalogo
         'papel.permissoes_alteradas' => 'Permissões do papel alteradas',
         'analitico.importado' => 'Analítico importado',
         'auditoria.expurgada' => 'Auditoria expurgada',
+        'relatorio.exportado' => 'Relatório exportado',
         'unimed_rda_settings.updated' => 'Configuração da Unimed alterada',
         'unimed_rda.automation_paused' => 'Automação da Unimed pausada',
         'unimed_rda.automation_reactivated' => 'Automação da Unimed reativada',
@@ -61,6 +62,7 @@ class AuditoriaCatalogo
         'movimentos_financeiros' => 'Movimentos financeiros',
         'pacientes' => 'Pacientes',
         'profissionais' => 'Profissionais',
+        'relatorios' => 'Relatórios',
         'roles' => 'Papéis',
         'solicitacoes' => 'Solicitações',
         'solicitacao_itens' => 'Itens da solicitação',
@@ -79,6 +81,9 @@ class AuditoriaCatalogo
         return match (true) {
             str_starts_with($acao, 'acesso.') => 'acesso',
             str_starts_with($acao, 'auditoria.') => 'manutencao',
+            // Exportar e ler sao o mesmo tipo de evento para quem audita: o
+            // dado saiu do sistema, e o que importa e quem o levou.
+            str_starts_with($acao, 'relatorio.') => 'acesso',
             $acao === 'created', str_ends_with($acao, '.criado') => 'criacao',
             $acao === 'deleted', str_ends_with($acao, '.excluido') => 'exclusao',
             str_ends_with($acao, '.importado') => 'importacao',

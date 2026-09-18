@@ -15,6 +15,7 @@ use App\Models\Convenio;
 use App\Models\ConvenioRegra;
 use App\Models\Especialidade;
 use App\Models\Guia;
+use App\Models\GuiaStatusHistorico;
 use App\Models\Lancamento;
 use App\Models\LancamentoPrintTemplate;
 use App\Models\Medico;
@@ -22,6 +23,8 @@ use App\Models\MovimentoFinanceiro;
 use App\Models\Paciente;
 use App\Models\PacienteTelefone;
 use App\Models\Profissional;
+use App\Models\SaudeComponente;
+use App\Models\SaudeComponenteEvento;
 use App\Models\Solicitacao;
 use App\Models\SolicitacaoItem;
 use App\Models\TabelaValor;
@@ -30,6 +33,7 @@ use App\Models\User;
 use App\Support\Auditoria;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Spatie\Permission\PermissionRegistrar;
 
 /**
@@ -45,6 +49,34 @@ use Spatie\Permission\PermissionRegistrar;
 class DemoDataSeeder extends Seeder
 {
     private const SEMENTE = 20260825;
+
+    /**
+     * Quanto histórico o seed produz, em dias.
+     *
+     * Noventa é o mínimo para a tela de Relatórios ser avaliável: dá série com
+     * forma, comparação com um período anterior de mesmo tamanho, e um mês
+     * fechado para trás. Com menos que isso os gráficos nascem vazios e não há
+     * como julgar o desenho nem escrever e2e com número conhecido.
+     */
+    private const DIAS_DE_HISTORICO = 90;
+
+    /** Texto livre, como a operadora manda — o relatório agrupa pelo que veio. */
+    private const MOTIVOS_DE_GLOSA = [
+        'Procedimento não coberto para a data informada',
+        'Guia sem autorização prévia',
+        'Quantidade acima do autorizado',
+        'Senha vencida na data de realização',
+        'Profissional não credenciado para o procedimento',
+    ];
+
+    /** Códigos que a automação devolve quando falha. */
+    private const ERROS_DE_AUTOMACAO = [
+        'PORTAL_TIMEOUT',
+        'LOGIN_RECUSADO',
+        'CARTEIRINHA_INVALIDA',
+        'PORTAL_INDISPONIVEL',
+        'CAPTCHA_NAO_RESOLVIDO',
+    ];
 
     private Tenant $tenant;
 
@@ -87,6 +119,12 @@ class DemoDataSeeder extends Seeder
             $this->criarAnalitico();
             $this->criarUsuariosDeDemonstracao();
             $this->criarConteudoConfiguravel();
+            // Depois de tudo: reescreve o histórico de status das guias e
+            // acrescenta o que só a tela de Relatórios consome.
+            $this->criarHistoricoDeStatus();
+            $this->criarFilaDeAntecipacoes();
+            $this->criarLotesDeImportacao();
+            $this->criarHistoricoDeSaude();
         });
 
         $this->criarTrilhaAuditoria();
@@ -515,7 +553,18 @@ class DemoDataSeeder extends Seeder
             default => 'running',
         };
 
-        $enfileiradoEm = Carbon::now()->subDays(mt_rand(1, 60))->subMinutes(mt_rand(0, 600));
+        $enfileiradoEm = Carbon::now()
+            ->subDays(mt_rand(1, self::DIAS_DE_HISTORICO))
+            ->setTime(mt_rand(6, 22), mt_rand(0, 59));
+
+        // Espera em fila e duração separadas, e com dispersão larga: são elas
+        // que dão sentido ao p95 e ao histograma da aba de Automações. Um valor
+        // estreito faria média e percentil coincidirem, e os dois indicadores
+        // pareceriam redundantes.
+        $esperaSegundos = mt_rand(0, 100) < 80 ? mt_rand(2, 90) : mt_rand(120, 1800);
+        $duracaoSegundos = mt_rand(0, 100) < 85 ? mt_rand(20, 240) : mt_rand(300, 1500);
+
+        $iniciadoEm = $enfileiradoEm->copy()->addSeconds($esperaSegundos);
 
         $execucao = AutomacaoExecucao::query()->create([
             'tenant_id' => $this->tenant->id,
@@ -528,11 +577,15 @@ class DemoDataSeeder extends Seeder
             'resultado' => $statusExecucao === 'succeeded'
                 ? ['numero_guia' => $guia->numero_guia, 'status_guia' => $guia->status]
                 : null,
-            'erro_codigo' => $statusExecucao === 'failed' ? 'PORTAL_TIMEOUT' : null,
+            'erro_codigo' => $statusExecucao === 'failed'
+                ? self::ERROS_DE_AUTOMACAO[mt_rand(0, count(self::ERROS_DE_AUTOMACAO) - 1)]
+                : null,
             'erro_mensagem' => $statusExecucao === 'failed' ? 'O portal da operadora não respondeu em 90s.' : null,
             'queued_at' => $enfileiradoEm,
-            'started_at' => $enfileiradoEm->copy()->addSeconds(mt_rand(2, 40)),
-            'finished_at' => $statusExecucao === 'running' ? null : $enfileiradoEm->copy()->addMinutes(mt_rand(1, 9)),
+            'started_at' => $iniciadoEm,
+            // Execução em curso não tem fim, e é assim que o relatório a deixa
+            // de fora dos dois períodos até ela terminar.
+            'finished_at' => $statusExecucao === 'running' ? null : $iniciadoEm->copy()->addSeconds($duracaoSegundos),
         ]);
 
         foreach ([
@@ -679,7 +732,11 @@ class DemoDataSeeder extends Seeder
             return;
         }
 
+        // Três competências, uma por mês: com um lote só, a série "executado ×
+        // pago" da aba Financeira teria um ponto e não mostraria tendência
+        // nenhuma.
         foreach ([
+            ['ANALITICO_UNIMED_2026_06.xlsx', 'conferido', 2],
             ['ANALITICO_UNIMED_2026_07.xlsx', 'conferido', 1],
             ['ANALITICO_UNIMED_2026_08.xlsx', 'importado', 0],
         ] as [$arquivo, $status, $mesesAtras]) {
@@ -709,8 +766,13 @@ class DemoDataSeeder extends Seeder
                     'tenant_id' => $this->tenant->id,
                     'analitico_unimed_lote_id' => $lote->id,
                     'linha' => $n + 2,
-                    'origem' => $glosa ? 'Glosas' : 'Analítico',
-                    'natureza' => $glosa ? 'glosa' : 'pagamento',
+                    // Os mesmos valores que o AnaliticoUnimedImportService grava
+                    // ao ler a planilha de verdade. O seeder escrevia "Glosas"
+                    // e "pagamento", que não casam com nada — e o pareto de
+                    // motivos da aba Financeira, que filtra por `origem`,
+                    // nascia vazio sobre o seed.
+                    'origem' => $glosa ? 'glosa' : 'analitico',
+                    'natureza' => $glosa ? 'glosado' : 'pago',
                     'processavel' => true,
                     'numero_guia_operadora' => $guia->numero_guia,
                     'numero_guia_prestador' => 'P'.$guia->id,
@@ -723,7 +785,9 @@ class DemoDataSeeder extends Seeder
                     'qtd' => (string) $qtd,
                     'qtd_normalizada' => $qtd,
                     'tipo' => $glosa ? 'GLOSA' : 'PAGO',
-                    'motivo' => $glosa ? 'Procedimento não coberto para a data informada' : null,
+                    // Motivos variados: com um só, o pareto de glosa vira uma
+                    // barra e não ensina nada sobre onde a clínica perde.
+                    'motivo' => $glosa ? self::MOTIVOS_DE_GLOSA[mt_rand(0, count(self::MOTIVOS_DE_GLOSA) - 1)] : null,
                     'valor' => number_format($valorLinha, 2, ',', '.'),
                     'valor_normalizado' => $valorLinha,
                     'local_realizacao' => 'Clínica Exemplo — Unidade Centro',
@@ -844,6 +908,217 @@ class DemoDataSeeder extends Seeder
      * os usuários seedados. Substitui os milhares de "created" que a carga em
      * massa geraria — a tela de auditoria fica legível e ainda tem o que filtrar.
      */
+    /**
+     * O histórico de transição de cada guia, espalhado no tempo.
+     *
+     * Reescreve o que a criação da guia gravou sozinha: o hook de `Guia` registra
+     * a primeira transição com a hora de AGORA, então, sem isto, todas as guias
+     * do seed apareceriam decididas hoje — e a aba de Operação, que conta pela
+     * data da transição, mostraria um pico único no dia em que alguém rodou o
+     * seeder. É o defeito mais fácil de não notar: os números existem, só estão
+     * todos na data errada.
+     */
+    private function criarHistoricoDeStatus(): void
+    {
+        $guias = Guia::query()->where('tenant_id', $this->tenant->id)->get();
+
+        GuiaStatusHistorico::query()->where('tenant_id', $this->tenant->id)->delete();
+
+        $linhas = [];
+
+        foreach ($guias as $guia) {
+            $entrouEm = Carbon::parse($guia->data_solicitacao)
+                ->setTime(mt_rand(8, 17), mt_rand(0, 59));
+
+            $linhas[] = $this->transicao($guia, null, 'under_review', $entrouEm);
+
+            if ($guia->status === 'under_review') {
+                continue;
+            }
+
+            // Da entrada em análise à decisão: de duas horas a cinco dias. É a
+            // dispersão que dá forma ao KPI de tempo médio e à diferença entre
+            // média e mediana.
+            $decididoEm = $entrouEm->copy()->addMinutes(mt_rand(120, 7200));
+
+            if ($decididoEm->isFuture()) {
+                $decididoEm = Carbon::now()->subHours(mt_rand(1, 48));
+            }
+
+            $intermediario = $guia->status === 'finalized' ? 'approved' : $guia->status;
+
+            $linhas[] = $this->transicao($guia, 'under_review', $intermediario, $decididoEm);
+
+            if ($guia->status !== 'finalized') {
+                continue;
+            }
+
+            $aprovadoEm = $decididoEm->copy()->addDays(mt_rand(1, 20));
+
+            $linhas[] = $this->transicao(
+                $guia,
+                'approved',
+                'finalized',
+                $aprovadoEm->isFuture() ? Carbon::now()->subHours(mt_rand(1, 24)) : $aprovadoEm,
+            );
+        }
+
+        foreach (array_chunk($linhas, 500) as $lote) {
+            GuiaStatusHistorico::query()->insert($lote);
+        }
+    }
+
+    /** @return array<string, mixed> */
+    private function transicao(Guia $guia, ?string $de, string $para, Carbon $quando): array
+    {
+        return [
+            'tenant_id' => $this->tenant->id,
+            'guia_id' => $guia->id,
+            'de' => $de,
+            'para' => $para,
+            'ocorrido_em' => $quando,
+            'origem' => GuiaStatusHistorico::ORIGEM_MIGRACAO,
+            'motivo' => null,
+            'created_at' => $quando,
+        ];
+    }
+
+    /**
+     * A fila de elegíveis: antecipações geradas e dispensadas ao longo do
+     * período.
+     *
+     * Sem as duas, o KPI de dispensa nasce sem denominador e a aba de Operação
+     * mostra "—" onde deveria mostrar a decisão do operador.
+     */
+    private function criarFilaDeAntecipacoes(): void
+    {
+        $solicitacoes = Solicitacao::query()
+            ->where('tenant_id', $this->tenant->id)
+            ->whereIn('status', ['guia_gerada', 'approved'])
+            ->limit(40)
+            ->get();
+
+        foreach ($solicitacoes as $i => $solicitacao) {
+            $quando = Carbon::today()
+                ->subDays(mt_rand(0, self::DIAS_DE_HISTORICO))
+                ->setTime(mt_rand(8, 17), mt_rand(0, 59));
+
+            // Cerca de um terço é dispensado — o número que o KPI de dispensa
+            // existe para acompanhar.
+            $ignorada = $i % 3 === 0;
+
+            Antecipacao::query()->create([
+                'tenant_id' => $this->tenant->id,
+                'solicitacao_origem_id' => $solicitacao->id,
+                'status' => $ignorada ? Antecipacao::STATUS_IGNORADA : Antecipacao::STATUS_GERADA,
+                'data_alvo' => $quando->copy()->addDays(mt_rand(3, 15))->toDateString(),
+                'itens_selecionados' => [],
+                'observacoes' => $ignorada ? 'Paciente em férias no período.' : null,
+                'gerado_em' => $ignorada ? null : $quando,
+                'ignorado_em' => $ignorada ? $quando : null,
+            ]);
+        }
+    }
+
+    /**
+     * Lotes de importação confirmados, para a aba de Uso ter o que contar.
+     *
+     * Só o cabeçalho do lote: as linhas importadas já viraram cadastro pelos
+     * outros métodos deste seeder, e duplicá-las aqui criaria paciente e guia
+     * fantasma para alimentar um KPI.
+     */
+    private function criarLotesDeImportacao(): void
+    {
+        $tipos = [
+            'paciente_import_lotes' => 'pacientes-marco.xlsx',
+            'solicitacao_import_lotes' => 'solicitacoes-marco.xlsx',
+            'guia_import_lotes' => 'guias-marco.xlsx',
+            'lancamento_import_lotes' => 'sessoes-marco.xlsx',
+            'conciliacao_import_lotes' => 'conciliacoes-marco.xlsx',
+        ];
+
+        foreach ($tipos as $tabela => $arquivo) {
+            foreach (range(1, mt_rand(2, 4)) as $n) {
+                $quando = Carbon::today()
+                    ->subDays(mt_rand(0, self::DIAS_DE_HISTORICO))
+                    ->setTime(mt_rand(9, 17), mt_rand(0, 59));
+
+                $linhas = mt_rand(20, 180);
+                // Planilha de clínica sempre traz alguma linha ruim; sem
+                // nenhuma, a taxa de erro da aba de Uso seria sempre zero e o
+                // indicador não serviria para nada.
+                $invalidas = mt_rand(0, (int) round($linhas * 0.2));
+
+                DB::table($tabela)->insert([
+                    'tenant_id' => $this->tenant->id,
+                    'arquivo_nome_original' => $n.'-'.$arquivo,
+                    'arquivo_path' => 'importacoes/'.$n.'-'.$arquivo,
+                    'status' => 'confirmado',
+                    'confirmado_em' => $quando,
+                    'total_linhas' => $linhas,
+                    'total_validas' => $linhas - $invalidas,
+                    'total_invalidas' => $invalidas,
+                    'total_importados' => $linhas - $invalidas,
+                    'total_atualizados' => 0,
+                    'total_ignorados' => 0,
+                    'created_at' => $quando,
+                    'updated_at' => $quando,
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Algumas quedas e voltas dos componentes monitorados.
+     *
+     * A tabela de eventos nasce vazia em produção e só enxerga do deploy em
+     * diante — mas no ambiente de demonstração ela precisa ter conteúdo, senão
+     * o KPI de horas fora do ar aparece como ausente e não dá para avaliar o
+     * desenho da aba.
+     */
+    private function criarHistoricoDeSaude(): void
+    {
+        $componentes = SaudeComponente::query()->where('tenant_id', $this->tenant->id)->get();
+
+        foreach ($componentes as $i => $componente) {
+            $eventos = [[
+                'estado' => SaudeComponente::ESTADO_SAUDAVEL,
+                'quando' => Carbon::today()->subDays(self::DIAS_DE_HISTORICO)->setTime(0, 0),
+            ]];
+
+            // Nem todo componente cai: um deles fica no ar o período inteiro,
+            // para a tabela ter a linha de zero hora fora e provar a diferença
+            // entre "não caiu" e "não tenho registro".
+            $quedas = $i === 0 ? 0 : mt_rand(1, 3);
+
+            for ($n = 0; $n < $quedas; $n++) {
+                $caiuEm = Carbon::today()
+                    ->subDays(mt_rand(1, self::DIAS_DE_HISTORICO - 1))
+                    ->setTime(mt_rand(0, 23), mt_rand(0, 59));
+
+                $eventos[] = ['estado' => SaudeComponente::ESTADO_FORA, 'quando' => $caiuEm];
+                $eventos[] = [
+                    'estado' => SaudeComponente::ESTADO_SAUDAVEL,
+                    'quando' => $caiuEm->copy()->addMinutes(mt_rand(15, 480)),
+                ];
+            }
+
+            usort($eventos, fn (array $a, array $b) => $a['quando'] <=> $b['quando']);
+
+            foreach ($eventos as $evento) {
+                SaudeComponenteEvento::query()->create([
+                    'tenant_id' => $this->tenant->id,
+                    'saude_componente_id' => $componente->id,
+                    'estado' => $evento['estado'],
+                    'ocorrido_em' => $evento['quando'],
+                    'mensagem' => $evento['estado'] === SaudeComponente::ESTADO_FORA
+                        ? 'Sem sinal de vida além do intervalo esperado.'
+                        : null,
+                ]);
+            }
+        }
+    }
+
     private function criarTrilhaAuditoria(): void
     {
         $usuarios = User::query()->where('tenant_id', $this->tenant->id)->get();
@@ -853,43 +1128,93 @@ class DemoDataSeeder extends Seeder
         }
 
         $acoes = [
-            ['solicitacao.criada', 'solicitacoes'],
-            ['solicitacao.atualizada', 'solicitacoes'],
-            ['guia.gerada', 'guias'],
-            ['guia.senha_capturada', 'guias'],
-            ['guia.status_sincronizado', 'guias'],
-            ['antecipacao.aberta', 'antecipacoes'],
-            ['antecipacao.fechada', 'antecipacoes'],
-            ['lancamento.registrado', 'lancamentos'],
-            ['conciliacao.conferida', 'conciliacoes_financeiras'],
-            ['paciente.atualizado', 'pacientes'],
-            ['usuario.papel_alterado', 'users'],
+            ['created', 'solicitacoes'],
+            ['updated', 'solicitacoes'],
+            ['created', 'guias'],
+            ['updated', 'guias'],
+            ['updated', 'guias'],
+            ['created', 'antecipacoes'],
+            ['updated', 'antecipacoes'],
+            ['created', 'lancamentos'],
+            ['updated', 'conciliacoes_financeiras'],
+            ['updated', 'pacientes'],
+            ['updated', 'users'],
             ['acesso.negado', 'users'],
-            ['login.sucesso', 'users'],
         ];
 
         $linhas = [];
 
-        for ($i = 0; $i < 220; $i++) {
-            [$acao, $entidade] = $acoes[$i % count($acoes)];
-            $usuario = $usuarios[$i % $usuarios->count()];
-            $quando = Carbon::now()->subDays(mt_rand(0, 45))->subMinutes(mt_rand(0, 1439));
+        // Noventa dias, e não quarenta e cinco: é o recorte que a aba de Uso
+        // precisa para ter série, comparação com o período anterior e um mês
+        // fechado para trás.
+        for ($dia = 0; $dia < self::DIAS_DE_HISTORICO; $dia++) {
+            $data = Carbon::today()->subDays($dia);
 
-            $linhas[] = [
-                'tenant_id' => $this->tenant->id,
-                'user_id' => $usuario->id,
-                'acao' => $acao,
-                'entidade' => $entidade,
-                'entidade_id' => mt_rand(1, 120),
-                'payload' => json_encode(['origem' => 'demo', 'ip_interno' => true]),
-                'ip' => '192.168.0.'.mt_rand(2, 250),
-                'user_agent' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-                // audit_logs so tem created_at: a trilha e imutavel por desenho.
-                'created_at' => $quando,
-            ];
+            // Fim de semana movimenta pouco. Sem isso, o gráfico de uso por dia
+            // vira uma reta e não mostra nada sobre como a clínica trabalha.
+            $quantas = $data->isWeekend() ? mt_rand(0, 3) : mt_rand(6, 18);
+
+            for ($i = 0; $i < $quantas; $i++) {
+                [$acao, $entidade] = $acoes[mt_rand(0, count($acoes) - 1)];
+                $usuario = $usuarios[mt_rand(0, $usuarios->count() - 1)];
+
+                $linhas[] = $this->linhaDeTrilha(
+                    $usuario->id,
+                    $acao,
+                    $entidade,
+                    $this->emHorarioDeExpediente($data),
+                );
+            }
+
+            // Um login por pessoa que trabalhou no dia, logo cedo. A aba de Uso
+            // conta acessos por `acesso.login`, que é o que o AuthController
+            // grava de verdade — usar outro nome aqui faria o KPI nascer zerado.
+            if ($quantas > 0) {
+                foreach ($usuarios->take(mt_rand(1, $usuarios->count())) as $usuario) {
+                    $linhas[] = $this->linhaDeTrilha(
+                        $usuario->id,
+                        'acesso.login',
+                        'users',
+                        $data->copy()->setTime(mt_rand(7, 9), mt_rand(0, 59)),
+                    );
+                }
+            }
         }
 
-        AuditLog::query()->insert($linhas);
+        foreach (array_chunk($linhas, 500) as $lote) {
+            AuditLog::query()->insert($lote);
+        }
+    }
+
+    /** @return array<string, mixed> */
+    private function linhaDeTrilha(int $usuarioId, string $acao, string $entidade, Carbon $quando): array
+    {
+        return [
+            'tenant_id' => $this->tenant->id,
+            'user_id' => $usuarioId,
+            'acao' => $acao,
+            'entidade' => $entidade,
+            'entidade_id' => mt_rand(1, 120),
+            'payload' => json_encode(['origem' => 'demo', 'ip_interno' => true]),
+            'ip' => '192.168.0.'.mt_rand(2, 250),
+            'user_agent' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+            // audit_logs so tem created_at: a trilha e imutavel por desenho.
+            'created_at' => $quando,
+        ];
+    }
+
+    /**
+     * Um instante dentro do expediente, com os dois picos que uma clínica tem:
+     * a manhã, quando se organiza o dia, e o fim da tarde, quando se lança o
+     * que foi feito.
+     */
+    private function emHorarioDeExpediente(Carbon $data): Carbon
+    {
+        $hora = mt_rand(0, 100) < 55
+            ? mt_rand(8, 11)
+            : mt_rand(14, 18);
+
+        return $data->copy()->setTime($hora, mt_rand(0, 59), mt_rand(0, 59));
     }
 
     private function profissionalDaEspecialidade(int $especialidadeId): Profissional

@@ -440,21 +440,29 @@ class RelatoriosApiTest extends TestCase
                 return RelatorioAba::OPERACAO;
             }
 
-            protected function calcular(RelatorioFiltros $filtros): array
+            protected function kpisDeclarados(): array
             {
-                return [
-                    'kpis' => [[
-                        'key' => 'especialidades',
-                        'label' => 'Especialidades',
-                        'valor' => $this->naClinica(Especialidade::query(), $filtros)->count(),
-                        'anterior' => null,
-                        'formato' => 'inteiro',
-                        'hint' => null,
-                    ]],
-                    'series' => [],
-                    'tabelas' => [],
-                    'filtros_aplicados' => [],
-                ];
+                return ['especialidades' => ['label' => 'Especialidades', 'formato' => self::FORMATO_INTEIRO]];
+            }
+
+            protected function metricas(RelatorioFiltros $filtros, bool $ehComparacao = false): array
+            {
+                return ['especialidades' => $this->naClinica(Especialidade::query(), $filtros)->count()];
+            }
+
+            protected function series(RelatorioFiltros $filtros): array
+            {
+                return [];
+            }
+
+            protected function tabelas(RelatorioFiltros $filtros): array
+            {
+                return [];
+            }
+
+            protected function filtrosAplicados(RelatorioFiltros $filtros): array
+            {
+                return [];
             }
         };
     }

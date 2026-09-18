@@ -88,6 +88,14 @@ Schedule::call(function () {
     // tenant explicito de proposito — o agendador e um processo so servindo
     // todos, entao o heartbeat vale para a linha de cada tenant.
     app(SaudeService::class)->registrarHeartbeat(SaudeComponente::CHAVE_SCHEDULER);
+
+    // E a varredura que enxerga a QUEDA. O heartbeat so acontece com o
+    // componente vivo, entao ele registra a volta ao ar e nunca a saida: um
+    // worker que morre para de mandar sinal, e ausencia de sinal nao chama
+    // codigo nenhum. Sem esta linha, o historico de saude teria as recuperacoes
+    // e nenhuma das quedas — e o relatorio de Automacoes responderia "sempre no
+    // ar" para um periodo em que ninguem estava.
+    app(SaudeService::class)->sincronizarEstados();
 })->everyMinute()->name('carimbo-scheduler')->withoutOverlapping();
 
 // A central de alertas so vale se for reavaliada sozinha: 15 minutos e curto o

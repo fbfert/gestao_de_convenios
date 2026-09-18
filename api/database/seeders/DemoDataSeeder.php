@@ -502,7 +502,7 @@ class DemoDataSeeder extends Seeder
         $this->criarAutomacao($item, $guia, $statusGuia);
 
         if ($aprovada) {
-            $this->criarAntecipacaoELancamentos($guia, $dataSolicitacao);
+            $this->criarLancamentos($guia, $dataSolicitacao);
         }
     }
 
@@ -554,25 +554,23 @@ class DemoDataSeeder extends Seeder
         $guia->update(['automacao_execucao_id' => $execucao->id]);
     }
 
-    private function criarAntecipacaoELancamentos(Guia $guia, Carbon $dataSolicitacao): void
+    /**
+     * As sessões de uma guia.
+     *
+     * Já foi "antecipação e lançamentos": o seeder abria um ciclo de cota em
+     * `antecipacoes` e pendurava as sessões nele. Esse modelo foi derrubado na
+     * change `antecipacao-alerta-e-fila-de-elegiveis` — `antecipacoes` virou a
+     * fila de elegíveis, sem `guia_id` nem `ciclo_*`, e a sessão passou a
+     * apontar direto para a guia. O seeder continuou escrevendo nas colunas
+     * antigas e parou de rodar; isto o realinha com o schema atual.
+     */
+    private function criarLancamentos(Guia $guia, Carbon $dataSolicitacao): void
     {
         $cicloInicio = $dataSolicitacao->copy()->addDays(mt_rand(1, 7))->startOfWeek();
         $autorizada = $guia->sessoes_autorizadas ?? 8;
-        $fechada = mt_rand(0, 100) < 45;
+        $cicloCompleto = mt_rand(0, 100) < 45;
 
-        $antecipacao = Antecipacao::query()->create([
-            'tenant_id' => $this->tenant->id,
-            'guia_id' => $guia->id,
-            'paciente_id' => $guia->paciente_id,
-            'convenio_id' => $guia->convenio_id,
-            'ciclo_inicio' => $cicloInicio->toDateString(),
-            'ciclo_fim' => $cicloInicio->copy()->addDays(27)->toDateString(),
-            'qtd_autorizada' => $autorizada,
-            'qtd_utilizada' => 0,
-            'status' => $fechada ? 'closed' : 'open',
-        ]);
-
-        $quantosLancamentos = $fechada ? $autorizada : mt_rand(1, max(1, $autorizada - 2));
+        $quantosLancamentos = $cicloCompleto ? $autorizada : mt_rand(1, max(1, $autorizada - 2));
         $utilizadas = 0;
 
         for ($n = 0; $n < $quantosLancamentos; $n++) {
@@ -587,7 +585,7 @@ class DemoDataSeeder extends Seeder
 
             Lancamento::query()->create([
                 'tenant_id' => $this->tenant->id,
-                'antecipacao_id' => $antecipacao->id,
+                'guia_id' => $guia->id,
                 'profissional_id' => $guia->profissional_id,
                 'data_sessao' => $dataSessao->toDateString(),
                 'hora_inicio' => $horaInicio,
@@ -604,8 +602,6 @@ class DemoDataSeeder extends Seeder
                 $utilizadas++;
             }
         }
-
-        $antecipacao->update(['qtd_utilizada' => $utilizadas]);
 
         if ($utilizadas > 0) {
             $this->criarConciliacao($guia, $utilizadas);

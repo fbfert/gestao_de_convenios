@@ -14,15 +14,15 @@
 
 ## 2. Cálculo das quatro abas
 
-- [ ] 2.1 Helper de truncamento de data por dia/semana/mês que funcione em SQLite e MariaDB — é o defeito mais fácil de deixar passar, porque a suíte roda no primeiro e a produção no segundo.
-- [ ] 2.2 `RelatorioOperacaoService`, reaproveitando de `DashboardGuiasCardService` o cálculo por transição. Antecipações entram como geradas × ignoradas com % de dispensa (o KPI de cota saiu — ver proposal).
-- [ ] 2.3 `RelatorioFinanceiroService`. Apresentado = `total_pago + total_glosado` dos lotes; valores em centavos inteiros; sem lote no período, indicador ausente e não zero.
-- [ ] 2.4 `RelatorioAutomacoesService`, incluindo o tempo fora do ar a partir do histórico do bloco 2.6.
-- [ ] 2.5 `RelatorioUsoService`. Acessos saem de `acesso.login` em `audit_logs`, que **já é gravado** por `AuthController`.
-- [ ] 2.6 Tabela `saude_componente_eventos` e gravação em `SaudeService::registrarHeartbeat`, só na MUDANÇA de estado.
-- [ ] 2.7 Agregação em SQL (`groupBy`/`selectRaw`), uma query por série — nunca uma por ponto, nunca agregação em coleção PHP.
-- [ ] 2.8 Todo KPI devolve `anterior` quando a comparação for pedida.
-- [ ] 2.9 Testes: um arquivo por service, com números conhecidos por factory (ex.: 3 aprovadas + 1 negada ⇒ 75%); período anterior; isolamento de tenant; e cada aba rodando contra o `DemoDataSeeder` sem erro.
+- [x] 2.1 Helper de truncamento de data por dia/semana/mês que funcione em SQLite e MariaDB — é o defeito mais fácil de deixar passar, porque a suíte roda no primeiro e a produção no segundo.
+- [x] 2.2 `RelatorioOperacaoService`, reaproveitando de `DashboardGuiasCardService` o cálculo por transição. Antecipações entram como geradas × ignoradas com % de dispensa (o KPI de cota saiu — ver proposal).
+- [x] 2.3 `RelatorioFinanceiroService`. Apresentado = `total_pago + total_glosado` dos lotes; valores em centavos inteiros; sem lote no período, indicador ausente e não zero.
+- [x] 2.4 `RelatorioAutomacoesService`, incluindo o tempo fora do ar a partir do histórico do bloco 2.6.
+- [x] 2.5 `RelatorioUsoService`. Acessos saem de `acesso.login` em `audit_logs`, que **já é gravado** por `AuthController`.
+- [x] 2.6 Tabela `saude_componente_eventos` e gravação em `SaudeService::registrarHeartbeat`, só na MUDANÇA de estado.
+- [x] 2.7 Agregação em SQL (`groupBy`/`selectRaw`), uma query por série — nunca uma por ponto, nunca agregação em coleção PHP.
+- [x] 2.8 Todo KPI devolve `anterior` quando a comparação for pedida.
+- [x] 2.9 Testes: um arquivo por service, com números conhecidos por factory (ex.: 3 aprovadas + 1 negada ⇒ 75%); período anterior; isolamento de tenant; e cada aba rodando contra o `DemoDataSeeder` sem erro.
 
 ## 3. Export e seed com histórico
 

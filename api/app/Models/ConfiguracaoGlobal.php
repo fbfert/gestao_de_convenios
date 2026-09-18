@@ -19,6 +19,17 @@ class ConfiguracaoGlobal extends Model
 
     public const ITENS_POR_PAGINA_PADRAO = 15;
 
+    /**
+     * Espelha o `default(7)` da coluna `senha_alerta_dias`.
+     *
+     * Existe porque a linha de configuração é criada sob demanda
+     * (`doTenant()` usa `firstOrCreate`): uma clínica que nunca abriu a tela de
+     * configurações não tem linha, e uma consulta que dependa dela por `join`
+     * some com a clínica inteira em silêncio. Quem consulta em SQL usa este
+     * valor como piso, em vez de repetir o número.
+     */
+    public const SENHA_ALERTA_DIAS_PADRAO = 7;
+
     protected $table = 'configuracoes_globais';
 
     protected $fillable = [

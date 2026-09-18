@@ -3,9 +3,11 @@
 namespace App\Services;
 
 use App\Models\SaudeComponente;
+use App\Models\SaudeComponenteEvento;
 use App\Scopes\TenantScope;
 use App\Support\Auditoria;
 use App\Support\TenantContext;
+use DateTimeInterface;
 use Illuminate\Support\Collection;
 
 /**
@@ -72,9 +74,87 @@ class SaudeService
                     'ultima_mensagem' => $mensagem,
                 ])->save();
             });
+
+            // Quem manda sinal de vida esta, por definicao, no ar. Se o ultimo
+            // evento ja dizia isso, nada e gravado — e este e o caminho comum,
+            // um por minuto por componente.
+            $this->registrarMudancaDeEstado($componente, SaudeComponente::ESTADO_SAUDAVEL, now(), $mensagem);
         }
 
         return $componentes->count();
+    }
+
+    /**
+     * Passa os componentes em revista e registra quem MUDOU de estado.
+     *
+     * Existe porque a queda nao tem quem a observe. O heartbeat so acontece
+     * quando o componente esta vivo, entao ele enxerga a VOLTA ao ar, nunca a
+     * saida — um worker que morre para de mandar sinal, e a ausencia de sinal
+     * nao chama codigo nenhum. E a passagem do tempo que derruba o estado, e so
+     * uma varredura periodica percebe isso.
+     *
+     * Roda a cada minuto, junto do carimbo do agendador (ver routes/console.php).
+     * Uma consulta sobre uma tabela de poucas dezenas de linhas, e escrita so
+     * quando algo muda.
+     *
+     * @return int quantas mudancas foram registradas
+     */
+    public function sincronizarEstados(): int
+    {
+        $componentes = SaudeComponente::query()
+            ->withoutGlobalScope(TenantScope::class)
+            ->get();
+
+        $registradas = 0;
+
+        foreach ($componentes as $componente) {
+            $registradas += $this->registrarMudancaDeEstado(
+                $componente,
+                $this->estadoDe($componente),
+                now(),
+                $componente->ultima_mensagem,
+            ) ? 1 : 0;
+        }
+
+        return $registradas;
+    }
+
+    /**
+     * Grava o evento SE o estado for diferente do ultimo registrado.
+     *
+     * O primeiro evento de um componente e sempre gravado, qualquer que seja o
+     * estado: e ele que marca onde o historico comeca. Sem essa linha, um
+     * componente que sempre esteve no ar nao teria evento algum, e o relatorio
+     * nao saberia distinguir "esteve no ar o periodo todo" de "nao tenho
+     * registro deste periodo" — que e justamente a distincao que a tabela existe
+     * para preservar.
+     */
+    private function registrarMudancaDeEstado(
+        SaudeComponente $componente,
+        string $estado,
+        DateTimeInterface $ocorridoEm,
+        ?string $mensagem = null,
+    ): bool {
+        $ultimo = SaudeComponenteEvento::query()
+            ->withoutGlobalScope(TenantScope::class)
+            ->where('saude_componente_id', $componente->id)
+            ->orderByDesc('ocorrido_em')
+            ->orderByDesc('id')
+            ->first();
+
+        if ($ultimo !== null && $ultimo->estado === $estado) {
+            return false;
+        }
+
+        SaudeComponenteEvento::query()->create([
+            'tenant_id' => $componente->tenant_id,
+            'saude_componente_id' => $componente->id,
+            'estado' => $estado,
+            'ocorrido_em' => $ocorridoEm,
+            'mensagem' => $mensagem,
+        ]);
+
+        return true;
     }
 
     /**

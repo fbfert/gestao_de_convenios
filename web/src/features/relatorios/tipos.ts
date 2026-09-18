@@ -25,7 +25,15 @@ export const PERMISSAO_DA_ABA: Record<Aba, string> = {
   uso: 'relatorios.uso',
 }
 
-export type Formato = 'inteiro' | 'percentual' | 'moeda' | 'horas' | 'data_hora' | 'texto'
+export type Formato =
+  | 'inteiro'
+  | 'percentual'
+  | 'moeda'
+  | 'horas'
+  /** Segundos crus; a tela escolhe entre segundos, minutos e horas. */
+  | 'duracao'
+  | 'data_hora'
+  | 'texto'
 
 /** Para onde o indicador deve ir — quem decide a cor da variação. */
 export type Sentido = 'maior_melhor' | 'menor_melhor' | 'neutro'

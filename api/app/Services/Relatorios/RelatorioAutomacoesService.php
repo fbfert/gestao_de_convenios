@@ -48,18 +48,18 @@ class RelatorioAutomacoesService extends RelatorioService
             'duracao_media' => [
                 'sentido' => self::SENTIDO_MENOR_MELHOR,
                 'label' => 'Duração média',
-                'formato' => self::FORMATO_HORAS,
+                'formato' => self::FORMATO_DURACAO,
             ],
             'duracao_p95' => [
                 'sentido' => self::SENTIDO_MENOR_MELHOR,
                 'label' => 'Duração no percentil 95',
-                'formato' => self::FORMATO_HORAS,
+                'formato' => self::FORMATO_DURACAO,
                 'hint' => 'Noventa e cinco por cento das execuções terminaram em menos tempo que isto.',
             ],
             'tempo_medio_fila' => [
                 'sentido' => self::SENTIDO_MENOR_MELHOR,
                 'label' => 'Tempo médio em fila',
-                'formato' => self::FORMATO_HORAS,
+                'formato' => self::FORMATO_DURACAO,
                 'hint' => 'Do enfileiramento ao início da execução.',
             ],
             'reprocessamentos' => [
@@ -95,9 +95,10 @@ class RelatorioAutomacoesService extends RelatorioService
         return [
             'execucoes' => $encerradas,
             'taxa_sucesso' => $this->percentual((int) $totais->sucesso, $encerradas),
-            'duracao_media' => $this->emHoras($this->media($duracoes)),
-            'duracao_p95' => $this->emHoras($this->percentil($duracoes, 95)),
-            'tempo_medio_fila' => $this->emHoras($this->tempoMedioEmFila($filtros)),
+            // Em segundos, crus: quem escolhe a unidade é a tela.
+            'duracao_media' => $this->arredondar($this->media($duracoes)),
+            'duracao_p95' => $this->arredondar($this->percentil($duracoes, 95)),
+            'tempo_medio_fila' => $this->arredondar($this->tempoMedioEmFila($filtros)),
             'reprocessamentos' => (int) $totais->reprocessamentos,
             'sincronizacoes_clinica' => (int) $sync->total,
             'sincronizacoes_com_erro' => (int) $sync->com_erro,
@@ -457,7 +458,7 @@ class RelatorioAutomacoesService extends RelatorioService
                 'sucesso' => 'Sucesso',
                 'erro' => 'Erro',
                 'taxa_sucesso' => '% sucesso',
-                'duracao_media' => 'Duração média (h)',
+                'duracao_media' => 'Duração média (s)',
             ],
             $linhas->map(fn ($linha) => [
                 'operacao' => $linha->operacao,
@@ -465,7 +466,7 @@ class RelatorioAutomacoesService extends RelatorioService
                 'sucesso' => (int) $linha->sucesso,
                 'erro' => (int) $linha->erro,
                 'taxa_sucesso' => $this->percentual((int) $linha->sucesso, (int) $linha->total),
-                'duracao_media' => $this->emHoras($linha->segundos === null ? null : (float) $linha->segundos),
+                'duracao_media' => $this->arredondar($linha->segundos === null ? null : (float) $linha->segundos),
                 // A tabela da tela transforma `href` em link: é o caminho de
                 // "vi o número, quero ver as execuções por trás dele".
                 'href' => '/automacoes?operacao='.rawurlencode($linha->operacao),
@@ -475,7 +476,7 @@ class RelatorioAutomacoesService extends RelatorioService
                 'sucesso' => self::FORMATO_INTEIRO,
                 'erro' => self::FORMATO_INTEIRO,
                 'taxa_sucesso' => self::FORMATO_PERCENTUAL,
-                'duracao_media' => self::FORMATO_HORAS,
+                'duracao_media' => self::FORMATO_DURACAO,
             ],
         );
     }
@@ -542,6 +543,12 @@ class RelatorioAutomacoesService extends RelatorioService
             ->orderByDesc('total')
             ->when($limite, fn (Builder $query, int $n) => $query->limit($n))
             ->get();
+    }
+
+    /** Segundos com uma casa — o cru que o formato `duracao` espera. */
+    private function arredondar(?float $segundos): ?float
+    {
+        return $segundos === null ? null : round($segundos, 1);
     }
 
     /** @param float[] $valores */

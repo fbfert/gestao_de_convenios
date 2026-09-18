@@ -42,12 +42,12 @@
 
 ## 5. Abas Financeiro, Automações e Uso
 
-- [ ] 5.1 Financeiro: BRL, glosa percentual com uma casa, pizza das conciliações, pareto de motivos (o campo `motivo` existe em `analitico_unimed_linhas`).
-- [ ] 5.2 Automações: ok × erro por dia, barras por operação, pareto de código de erro, histograma de duração, e a linha da tabela levando a `/automacoes` já filtrado.
-- [ ] 5.3 Uso: barras por hora do dia, por entidade e por usuário; tabela por usuário com último acesso.
-- [ ] 5.4 Responsividade: KPIs em 2 colunas no estreito, gráficos empilhados, tabelas rolando na horizontal.
-- [ ] 5.5 E2E: admin abre `/relatorios`, troca as quatro abas, muda preset, aplica filtro de convênio, confere que a URL muda e que cada aba rende ao menos um KPI e um gráfico; e um papel sem `relatorios.financeiro` não enxerga a aba.
-- [ ] 5.6 **Atenção ao e2e**: a suíte roda com um worker e banco compartilhado (`playwright.config.ts`, commit `29da298`). Spec de relatório que mexer em dado de semente precisa desfazer no fim, como `adicionar-sessoes` faz com o convênio Unimed.
+- [x] 5.1 Financeiro: BRL, glosa percentual com uma casa, pizza das conciliações, pareto de motivos (o campo `motivo` existe em `analitico_unimed_linhas`).
+- [x] 5.2 Automações: ok × erro por dia, barras por operação, pareto de código de erro, histograma de duração, e a linha da tabela levando a `/automacoes` já filtrado.
+- [x] 5.3 Uso: barras por hora do dia, por entidade e por usuário; tabela por usuário com último acesso.
+- [x] 5.4 Responsividade: KPIs em 2 colunas no estreito, gráficos empilhados, tabelas rolando na horizontal.
+- [x] 5.5 E2E: admin abre `/relatorios`, troca as quatro abas, muda preset, aplica filtro de convênio, confere que a URL muda e que cada aba rende ao menos um KPI e um gráfico; e um papel sem `relatorios.financeiro` não enxerga a aba.
+- [x] 5.6 **Atenção ao e2e**: a suíte roda com um worker e banco compartilhado (`playwright.config.ts`, commit `29da298`). Spec de relatório que mexer em dado de semente precisa desfazer no fim, como `adicionar-sessoes` faz com o convênio Unimed.
 
 ## 6. Fechamento
 

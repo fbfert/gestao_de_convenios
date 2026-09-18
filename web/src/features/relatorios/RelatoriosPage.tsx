@@ -9,8 +9,10 @@ import { FiltrosRelatorio } from './FiltrosRelatorio'
 import { useFiltrosNaUrl } from './filtros'
 import { KpiTile } from './KpiTile'
 import { TabelaRelatorio } from './TabelaRelatorio'
-import { AbaEmConstrucao } from './abas/AbaEmConstrucao'
+import { AbaAutomacoes } from './abas/AbaAutomacoes'
+import { AbaFinanceiro } from './abas/AbaFinanceiro'
 import { AbaOperacao } from './abas/AbaOperacao'
+import { AbaUso } from './abas/AbaUso'
 import { ABAS, PERMISSAO_DA_ABA, ROTULO_DA_ABA, type Aba, type Relatorio } from './tipos'
 
 /**
@@ -110,11 +112,7 @@ export function RelatoriosPage() {
           <Tabs.Content key={aba} value={aba} className="space-y-6 pt-6">
             <Kpis relatorio={relatorio} carregando={consulta.isPending} />
 
-            {aba === 'operacao' ? (
-              <AbaOperacao relatorio={relatorio} carregando={consulta.isPending} />
-            ) : (
-              <AbaEmConstrucao nome={ROTULO_DA_ABA[aba]} />
-            )}
+            <Graficos aba={aba} relatorio={relatorio} carregando={consulta.isPending} />
 
             {(relatorio?.tabelas ?? []).map((tabela) => (
               <TabelaRelatorio
@@ -131,6 +129,36 @@ export function RelatoriosPage() {
       {relatorio ? <Rodape geradoEm={relatorio.gerado_em} cache={relatorio.cache} /> : null}
     </div>
   )
+}
+
+/**
+ * Os gráficos da aba aberta.
+ *
+ * Um componente por aba, escolhido aqui: cada aba conta uma história diferente
+ * e o arranjo dos gráficos é parte dela. O que é comum — KPI, tabela, filtro —
+ * a página monta uma vez para as quatro.
+ */
+function Graficos({
+  aba,
+  relatorio,
+  carregando,
+}: {
+  aba: Aba
+  relatorio?: Relatorio
+  carregando: boolean
+}) {
+  const props = { relatorio, carregando }
+
+  switch (aba) {
+    case 'operacao':
+      return <AbaOperacao {...props} />
+    case 'financeiro':
+      return <AbaFinanceiro {...props} />
+    case 'automacoes':
+      return <AbaAutomacoes {...props} />
+    case 'uso':
+      return <AbaUso {...props} />
+  }
 }
 
 function Kpis({

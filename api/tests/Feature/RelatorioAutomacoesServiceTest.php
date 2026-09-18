@@ -106,8 +106,10 @@ class RelatorioAutomacoesServiceTest extends TestCase
 
         $kpis = $this->kpis();
 
-        $this->assertSame(round(55 / 3600, 1), $kpis['duracao_media']['valor']);
-        $this->assertSame(round(100 / 3600, 1), $kpis['duracao_p95']['valor']);
+        // Em segundos crus: a unidade é escolha da tela, e "0,1 h" não deixa
+        // ninguém comparar duas execuções.
+        $this->assertSame(55.0, $kpis['duracao_media']['valor']);
+        $this->assertSame(100.0, $kpis['duracao_p95']['valor']);
     }
 
     public function test_tempo_medio_em_fila(): void
@@ -115,7 +117,7 @@ class RelatorioAutomacoesServiceTest extends TestCase
         $this->execucao('gerar_guia', 'succeeded', '2026-09-05 10:00:00', duracaoSegundos: 60, filaSegundos: 3600);
         $this->execucao('gerar_guia', 'succeeded', '2026-09-06 10:00:00', duracaoSegundos: 60, filaSegundos: 10800);
 
-        $this->assertSame(2.0, $this->kpis()['tempo_medio_fila']['valor'], 'média de 1h e 3h');
+        $this->assertSame(7200.0, $this->kpis()['tempo_medio_fila']['valor'], 'média de 1h e 3h, em segundos');
     }
 
     public function test_reprocessamento_e_contado_pelo_pai(): void

@@ -51,7 +51,7 @@ class RelatorioContraSeedDemoTest extends TestCase
             $this->assertArrayHasKey('key', $kpi);
             $this->assertArrayHasKey('valor', $kpi);
             $this->assertArrayHasKey('anterior', $kpi);
-            $this->assertContains($kpi['formato'], ['inteiro', 'percentual', 'moeda', 'horas'], $kpi['key']);
+            $this->assertContains($kpi['formato'], ['inteiro', 'percentual', 'moeda', 'horas', 'duracao'], $kpi['key']);
         }
 
         foreach ($relatorio['series'] as $serie) {

@@ -126,6 +126,10 @@ class RelatorioExportService
             RelatorioService::FORMATO_MOEDA => number_format(((int) $valor) / 100, 2, ',', '.'),
             RelatorioService::FORMATO_PERCENTUAL => number_format((float) $valor, 1, ',', '.'),
             RelatorioService::FORMATO_HORAS => number_format((float) $valor, 1, ',', '.'),
+            // Em SEGUNDOS, e não na unidade que a tela escolhe: numa planilha,
+            // uma coluna que mistura "45 s" com "3,5 min" não ordena nem soma.
+            // O cabeçalho da coluna carrega a unidade.
+            RelatorioService::FORMATO_DURACAO => number_format((float) $valor, 1, ',', '.'),
             RelatorioService::FORMATO_INTEIRO => number_format((int) $valor, 0, ',', '.'),
             'data_hora' => $this->comoDataHora($valor),
             default => is_scalar($valor) ? (string) $valor : '',
@@ -198,7 +202,9 @@ class RelatorioExportService
         return match ($formato) {
             // Em reais: a planilha é para somar, e ninguém soma centavos.
             RelatorioService::FORMATO_MOEDA => ((int) $valor) / 100,
-            RelatorioService::FORMATO_PERCENTUAL, RelatorioService::FORMATO_HORAS => (float) $valor,
+            RelatorioService::FORMATO_PERCENTUAL,
+            RelatorioService::FORMATO_HORAS,
+            RelatorioService::FORMATO_DURACAO => (float) $valor,
             RelatorioService::FORMATO_INTEIRO => (int) $valor,
             'data_hora' => $this->comoDataHora($valor),
             default => is_scalar($valor) ? (string) $valor : '',

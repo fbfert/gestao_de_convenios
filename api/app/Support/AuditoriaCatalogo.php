@@ -41,12 +41,19 @@ class AuditoriaCatalogo
         'unimed_rda.automation_reactivated' => 'Automação da Unimed reativada',
     ];
 
+    /**
+     * Entidade sem rótulo aqui aparece com o nome da TABELA na tela — foi assim
+     * que `alerta_regras`, `cids`, `paciente_arquivos` e `saude_componentes`
+     * saíram crus no relatório de Uso, que agrupa a trilha por entidade.
+     */
     private const ROTULOS_ENTIDADE = [
         'ai_openai_settings' => 'Configurações de IA',
         'ai_prompt_templates' => 'Prompts operacionais',
+        'alerta_regras' => 'Regras de alerta',
         'analitico_unimed_lotes' => 'Analíticos',
         'antecipacoes' => 'Antecipações',
         'audit_logs' => 'Auditoria',
+        'cids' => 'CIDs',
         'conciliacoes_financeiras' => 'Conciliações',
         'configuracoes_globais' => 'Configurações globais',
         'convenio_regras' => 'Regras de convênio',
@@ -60,8 +67,10 @@ class AuditoriaCatalogo
         'manuais' => 'Manual',
         'medicos' => 'Médicos',
         'movimentos_financeiros' => 'Movimentos financeiros',
+        'paciente_arquivos' => 'Arquivos do paciente',
         'pacientes' => 'Pacientes',
         'profissionais' => 'Profissionais',
+        'saude_componentes' => 'Componentes de saúde',
         'relatorios' => 'Relatórios',
         'roles' => 'Papéis',
         'solicitacoes' => 'Solicitações',

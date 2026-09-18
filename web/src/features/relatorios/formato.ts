@@ -30,11 +30,31 @@ export function formatar(valor: unknown, formato: Formato): string {
       return `${umaCasa.format(Number(valor))}%`
     case 'horas':
       return `${umaCasa.format(Number(valor))} h`
+    case 'duracao':
+      return formatarDuracao(Number(valor))
     case 'data_hora':
       return formatarDataHora(String(valor))
     default:
       return String(valor)
   }
+}
+
+/**
+ * Segundos na unidade que a pessoa usa para falar daquele tempo.
+ *
+ * A execução típica da automação leva segundos, e "0,1 h" não diz nada nem
+ * permite comparar duas linhas da tabela. Os cortes são onde a leitura vira
+ * desconfortável: acima de 90 segundos ninguém conta em segundos, e acima de 90
+ * minutos ninguém conta em minutos.
+ */
+export function formatarDuracao(segundos: number): string {
+  if (segundos < 90) {
+    return `${inteiro.format(Math.round(segundos))} s`
+  }
+
+  const minutos = segundos / 60
+
+  return minutos < 90 ? `${umaCasa.format(minutos)} min` : `${umaCasa.format(minutos / 60)} h`
 }
 
 function formatarDataHora(valor: string): string {

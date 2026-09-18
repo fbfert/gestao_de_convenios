@@ -1,8 +1,8 @@
 import { expect, test, type Page } from '@playwright/test'
 
-async function login(page: Page) {
+async function login(page: Page, email = 'admin@clinica-exemplo.test') {
   await page.goto('/login', { waitUntil: 'domcontentloaded' })
-  await page.getByTestId('login-email').fill('admin@clinica-exemplo.test')
+  await page.getByTestId('login-email').fill(email)
   await page.getByTestId('login-password').fill('password')
   await page.getByTestId('login-submit').click()
   await expect(page).toHaveURL(/\/dashboard$/)
@@ -49,7 +49,23 @@ test('a aba Operação mostra KPI, gráfico e tabela, e o recorte fica na URL', 
   await expect(page.getByTestId('kpi-guias_geradas-variacao')).toBeVisible({ timeout: 30000 })
 })
 
-test('as quatro abas abrem para o admin e a aba escolhida fica na URL', async ({ page }) => {
+/**
+ * Cada aba monta os SEUS gráficos.
+ *
+ * A prova é a presença do contêiner com a chave que o serviço daquela aba
+ * declarou. O gráfico pode estar vazio — o banco de teste tem pouco dado —, e
+ * é justamente por isso que o teste olha a chave: se a página trocasse de aba
+ * sem trocar de gráfico, ou se uma série mudasse de nome na API, os números
+ * continuariam aparecendo e o desenho estaria errado em silêncio.
+ */
+const GRAFICO_DA_ABA: Record<string, string> = {
+  operacao: 'grafico-guias_por_status',
+  financeiro: 'grafico-executado_x_pago',
+  automacoes: 'grafico-execucoes_por_dia',
+  uso: 'grafico-acoes_por_hora',
+}
+
+test('as quatro abas abrem para o admin, cada uma com KPI e gráfico próprios', async ({ page }) => {
   await login(page)
   await page.goto('/relatorios', { waitUntil: 'domcontentloaded' })
 
@@ -57,7 +73,65 @@ test('as quatro abas abrem para o admin e a aba escolhida fica na URL', async ({
     await page.getByTestId(`aba-${aba}`).click()
     await expect(page).toHaveURL(new RegExp(`aba=${aba}`))
     await expect(page.getByTestId('kpis')).toBeVisible({ timeout: 30000 })
+    await expect(page.getByTestId(GRAFICO_DA_ABA[aba])).toBeVisible({ timeout: 30000 })
   }
+})
+
+test('o filtro de convênio entra na URL e vale para a aba aberta', async ({ page }) => {
+  await login(page)
+  await page.goto('/relatorios', { waitUntil: 'domcontentloaded' })
+  await expect(page.getByTestId('kpis')).toBeVisible({ timeout: 30000 })
+
+  await page.getByTestId('filtro-convenio').click()
+  await page.getByRole('option', { name: 'Unimed', exact: true }).click()
+
+  await expect(page).toHaveURL(/convenio_id=\d+/)
+  await expect(page.getByTestId('kpis')).toBeVisible({ timeout: 30000 })
+})
+
+/**
+ * O recorte inteiro sobrevive ao recarregamento.
+ *
+ * É a razão de os filtros viverem na URL: relatório é feito para ser mandado
+ * para alguém, e o link precisa reproduzir o MESMO relatório do outro lado.
+ */
+test('abrir o endereço de novo reproduz o mesmo recorte', async ({ page }) => {
+  await login(page)
+
+  const endereco = '/relatorios?aba=uso&preset=mes_anterior&de=2026-08-01&ate=2026-08-31&comparar=1'
+  await page.goto(endereco, { waitUntil: 'domcontentloaded' })
+
+  await expect(page.getByTestId('aba-uso')).toHaveAttribute('data-state', 'active')
+  await expect(page.getByTestId('periodo-escolhido')).toContainText('01/08/2026 a 31/08/2026')
+  await expect(page.getByTestId('filtro-comparar')).toBeChecked()
+  await expect(page.getByTestId('preset-mes_anterior')).toHaveAttribute('aria-pressed', 'true')
+})
+
+/**
+ * Permissão é POR ABA.
+ *
+ * O papel `funcionario` recebe operação e automações, e não o financeiro — é o
+ * recorte que justifica quatro permissões em vez de uma. A tela precisa
+ * refletir isso: oferecer uma aba que só devolve 403 é pior do que não
+ * oferecer.
+ *
+ * Não mexe em dado de semente, então não precisa desfazer nada no fim (a suíte
+ * roda com um worker e banco compartilhado — ver playwright.config.ts).
+ */
+test('quem não tem a permissão do financeiro não enxerga a aba', async ({ page }) => {
+  await login(page, 'funcionario@clinica-exemplo.test')
+
+  await page.goto('/relatorios', { waitUntil: 'domcontentloaded' })
+
+  await expect(page.getByTestId('aba-operacao')).toBeVisible()
+  await expect(page.getByTestId('aba-automacoes')).toBeVisible()
+  await expect(page.getByTestId('aba-financeiro')).toHaveCount(0)
+  await expect(page.getByTestId('aba-uso')).toHaveCount(0)
+
+  // E a aba pedida pela URL também não aparece: a permissão manda, não o link.
+  await page.goto('/relatorios?aba=financeiro', { waitUntil: 'domcontentloaded' })
+  await expect(page.getByTestId('aba-financeiro')).toHaveCount(0)
+  await expect(page.getByTestId('aba-operacao')).toHaveAttribute('data-state', 'active')
 })
 
 /**

@@ -58,6 +58,16 @@ abstract class RelatorioService
     public const FORMATO_HORAS = 'horas';
 
     /**
+     * Duração em SEGUNDOS, com a unidade escolhida na tela pelo tamanho.
+     *
+     * Existe porque `horas` não serve para automação: a execução típica leva
+     * segundos, e "0,1 h" não diz nada a quem opera — nem permite comparar duas
+     * linhas da tabela. O valor sai cru daqui, em segundos, e a tela mostra
+     * "45 s", "3,5 min" ou "2,1 h" conforme a ordem de grandeza.
+     */
+    public const FORMATO_DURACAO = 'duracao';
+
+    /**
      * Para onde o indicador deve ir.
      *
      * Existe porque a tela pinta a variação, e pintar exige saber o que é

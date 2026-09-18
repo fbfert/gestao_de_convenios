@@ -3,6 +3,33 @@ import { defineConfig, devices } from '@playwright/test'
 export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: false,
+  /*
+   * Um worker só, e não o padrão (metade dos núcleos).
+   *
+   * `fullyParallel: false` serializa os testes DENTRO de um arquivo, mas não
+   * os arquivos entre si: com dois workers, dois specs batem no mesmo banco ao
+   * mesmo tempo. E a suíte inteira compartilha um banco e os dados da semente
+   * — `migrate:fresh --seed` roda uma vez, no começo.
+   *
+   * O estrago era mudança de dado compartilhado atravessando spec. O caso que
+   * apareceu: `adicionar-sessoes` troca o convênio Unimed para
+   * `connector_driver: unimed_rda`, porque precisa de um convênio automatizado;
+   * enquanto isso vale, `mvp-flow` não consegue criar guia à mão na Unimed,
+   * que `GuiaService::criar` recusa para convênio do robô. O `afterEach`
+   * daquele arquivo devolve a Unimed a `manual`, e resolve o vazamento
+   * SEQUENCIAL — mas não faz nada contra execução concorrente, porque durante
+   * o teste o convênio está trocado para todo mundo.
+   *
+   * O sintoma era uma falha por rodada, em spec diferente a cada vez,
+   * passando quando rodada sozinha: dependia de quem calhasse de estar na
+   * janela. Medido em 18/09/2026: com 2 workers, 47/1 em duas rodadas; com 1
+   * worker, 48/48 em duas rodadas.
+   *
+   * Não custa tempo: as rodadas levaram 2,7 e 3,3 min com um worker, contra
+   * 2,7 e 3,6 min com dois. O paralelismo não ganhava nada — só produzia falha
+   * aleatória.
+   */
+  workers: 1,
   retries: 0,
   timeout: 120000,
   reporter: 'line',

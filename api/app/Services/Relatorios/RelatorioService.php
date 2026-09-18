@@ -57,13 +57,32 @@ abstract class RelatorioService
 
     public const FORMATO_HORAS = 'horas';
 
+    /**
+     * Para onde o indicador deve ir.
+     *
+     * Existe porque a tela pinta a variação, e pintar exige saber o que é
+     * melhora. Subir é bom em "sessões realizadas" e é ruim em "taxa de
+     * negação"; sem esta declaração o front teria que adivinhar — na prática,
+     * manter uma lista de exceções por chave, longe de onde o KPI é definido, e
+     * que ninguém lembraria de atualizar ao criar um indicador novo.
+     *
+     * `NEUTRO` é o padrão, e não um palpite: há indicador que simplesmente não
+     * tem lado bom (execuções, ações por dia). A tela mostra a variação sem
+     * cor semântica nesses casos.
+     */
+    public const SENTIDO_MAIOR_MELHOR = 'maior_melhor';
+
+    public const SENTIDO_MENOR_MELHOR = 'menor_melhor';
+
+    public const SENTIDO_NEUTRO = 'neutro';
+
     /** Qual aba este serviço responde — entra na chave de cache. */
     abstract public function aba(): string;
 
     /**
      * Os KPIs da aba, em ordem de exibição.
      *
-     * @return array<string, array{label: string, formato: string, hint?: string}>
+     * @return array<string, array{label: string, formato: string, hint?: string, sentido?: string}>
      */
     abstract protected function kpisDeclarados(): array;
 
@@ -342,6 +361,7 @@ abstract class RelatorioService
                 // variação onde não houve comparação nenhuma.
                 'anterior' => $comparar ? ($anteriores[$key] ?? null) : null,
                 'formato' => $declaracao['formato'],
+                'sentido' => $declaracao['sentido'] ?? self::SENTIDO_NEUTRO,
                 'hint' => $declaracao['hint'] ?? null,
             ];
         }

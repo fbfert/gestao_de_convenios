@@ -148,6 +148,30 @@
   --alerta-borda: var(--alerta-texto);
   --info-borda: var(--info-texto);
 
+  /*
+   * Paleta categorica dos graficos (§11.2 — cor de grafico tambem e token).
+   *
+   * Seis series, porque acima disso ninguem distingue cor em legenda; a setima
+   * em diante o codigo repete o ciclo, e o desenho precisa evitar chegar la.
+   *
+   * Nenhum literal aqui: cada faixa aponta para um primitivo que ja passou pelo
+   * contraste da §11.1. Uma paleta propria, em hex, quebraria o tema de alto
+   * contraste em silencio — grafico nao tem teste de contraste, entao o erro so
+   * apareceria para quem precisa dele.
+   *
+   * A ordem nao e estetica: e a ordem em que as series aparecem. A primeira e o
+   * acento da marca porque a primeira serie e quase sempre a principal.
+   */
+  --grafico-1: var(--marca-600);
+  --grafico-2: var(--azul-texto);
+  --grafico-3: var(--ambar-texto);
+  --grafico-4: var(--vermelho-600);
+  --grafico-5: var(--marca-300);
+  --grafico-6: var(--neutro-600);
+
+  /* Eixo, grade e rotulo — o grafico usa os mesmos neutros do resto da tela. */
+  --grafico-grade: var(--linha);
+  --grafico-eixo: var(--texto-suave);
 }
 
 /*
@@ -284,6 +308,24 @@
 
     --tooltip: #17150F;
     --sobre-tooltip: var(--neutro-0);
+
+    /*
+     * Paleta de grafico do tema de alto contraste.
+     *
+     * Separa por LUMINANCIA, e nao por matiz: o tema existe para quem nao
+     * distingue matiz com facilidade, e seis verdes-azulados de mesma
+     * claridade seriam seis barras iguais. Da mais escura a mais clara, na
+     * ordem em que as series entram.
+     */
+    --grafico-1: #0E2A3D;
+    --grafico-2: #0069B0;
+    --grafico-3: #A87900;
+    --grafico-4: #7F2B00;
+    --grafico-5: #453F36;
+    --grafico-6: #6E675C;
+
+    --grafico-grade: #494540;
+    --grafico-eixo: #17150F;
 
     /* Espelho da paleta nativa, como nos demais temas. */
     --color-white: #17150F;

@@ -39,6 +39,7 @@ class RelatorioUsoService extends RelatorioService
     {
         return [
             'usuarios_ativos' => [
+                'sentido' => self::SENTIDO_MAIOR_MELHOR,
                 'label' => 'Usuários ativos',
                 'formato' => self::FORMATO_INTEIRO,
                 'hint' => 'Pessoas com ao menos uma ação registrada no período.',
@@ -62,11 +63,13 @@ class RelatorioUsoService extends RelatorioService
                 'formato' => self::FORMATO_INTEIRO,
             ],
             'taxa_linhas_invalidas' => [
+                'sentido' => self::SENTIDO_MENOR_MELHOR,
                 'label' => '% de linhas com erro',
                 'formato' => self::FORMATO_PERCENTUAL,
                 'hint' => 'Linhas recusadas sobre o total lido nas importações do período.',
             ],
             'alertas_gerados' => [
+                'sentido' => self::SENTIDO_MENOR_MELHOR,
                 'label' => 'Alertas gerados',
                 'formato' => self::FORMATO_INTEIRO,
             ],
@@ -75,6 +78,7 @@ class RelatorioUsoService extends RelatorioService
                 'formato' => self::FORMATO_INTEIRO,
             ],
             'tempo_medio_reconhecimento' => [
+                'sentido' => self::SENTIDO_MENOR_MELHOR,
                 'label' => 'Tempo médio até reconhecer',
                 'formato' => self::FORMATO_HORAS,
             ],

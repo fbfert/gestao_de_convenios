@@ -33,12 +33,12 @@
 
 ## 4. Menu em grupo, filtros e aba Operação
 
-- [ ] 4.1 `navigation.ts`: `/dashboard` vira grupo "Gestão de Convênios" com Painel e Relatórios. Relatórios aparece com QUALQUER uma das quatro permissões — estender o tipo do item de menu e tratar na filtragem, com comentário explicando a escolha.
-- [ ] 4.2 Página de grupo em `/inicio` reusando `features/grupos/GrupoPage.tsx`, que é o mesmo componente de Cadastros e Operação.
-- [ ] 4.3 `RelatoriosPage` com abas (só as permitidas; nenhuma ⇒ redireciona ao painel), `FiltrosRelatorio`, estado na URL, `api.ts` com TanStack Query (`staleTime` 5 min), `KpiTile` (valor, variação, ausência ≠ zero) e `TabelaRelatorio` (ordenável, com exportar).
-- [ ] 4.4 `recharts` instalado; `web/src/lib/graficos.ts` montando a paleta a partir de CSS vars; wrappers de linha, área, barras, funil e pizza. Nenhum hex literal. Estados de vazio e de carregamento em todo gráfico. Os dois temas conferidos.
-- [ ] 4.5 Aba Operação completa. As outras três ficam em "em construção" neste bloco.
-- [ ] 4.6 `npm run lint` (inclui `ds:check`) e `npm run build`. Se o `ds:check` reprovar algo do Recharts, resolver pelo design system — token ou classe —, nunca por exceção na regra.
+- [x] 4.1 `navigation.ts`: `/dashboard` vira grupo "Gestão de Convênios" com Painel e Relatórios. Relatórios aparece com QUALQUER uma das quatro permissões — estender o tipo do item de menu e tratar na filtragem, com comentário explicando a escolha.
+- [x] 4.2 Página de grupo em `/inicio` reusando `features/grupos/GrupoPage.tsx`, que é o mesmo componente de Cadastros e Operação.
+- [x] 4.3 `RelatoriosPage` com abas (só as permitidas; nenhuma ⇒ redireciona ao painel), `FiltrosRelatorio`, estado na URL, `api.ts` com TanStack Query (`staleTime` 5 min), `KpiTile` (valor, variação, ausência ≠ zero) e `TabelaRelatorio` (ordenável, com exportar).
+- [x] 4.4 `recharts` instalado; `web/src/lib/graficos.ts` montando a paleta a partir de CSS vars; wrappers de linha, área, barras, funil e pizza. Nenhum hex literal. Estados de vazio e de carregamento em todo gráfico. Os dois temas conferidos.
+- [x] 4.5 Aba Operação completa. As outras três ficam em "em construção" neste bloco.
+- [x] 4.6 `npm run lint` (inclui `ds:check`) e `npm run build`. Se o `ds:check` reprovar algo do Recharts, resolver pelo design system — token ou classe —, nunca por exceção na regra.
 
 ## 5. Abas Financeiro, Automações e Uso
 

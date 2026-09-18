@@ -41,24 +41,29 @@ class RelatorioAutomacoesService extends RelatorioService
                 'hint' => 'Execuções encerradas no período.',
             ],
             'taxa_sucesso' => [
+                'sentido' => self::SENTIDO_MAIOR_MELHOR,
                 'label' => 'Taxa de sucesso',
                 'formato' => self::FORMATO_PERCENTUAL,
             ],
             'duracao_media' => [
+                'sentido' => self::SENTIDO_MENOR_MELHOR,
                 'label' => 'Duração média',
                 'formato' => self::FORMATO_HORAS,
             ],
             'duracao_p95' => [
+                'sentido' => self::SENTIDO_MENOR_MELHOR,
                 'label' => 'Duração no percentil 95',
                 'formato' => self::FORMATO_HORAS,
                 'hint' => 'Noventa e cinco por cento das execuções terminaram em menos tempo que isto.',
             ],
             'tempo_medio_fila' => [
+                'sentido' => self::SENTIDO_MENOR_MELHOR,
                 'label' => 'Tempo médio em fila',
                 'formato' => self::FORMATO_HORAS,
                 'hint' => 'Do enfileiramento ao início da execução.',
             ],
             'reprocessamentos' => [
+                'sentido' => self::SENTIDO_MENOR_MELHOR,
                 'label' => 'Reprocessamentos',
                 'formato' => self::FORMATO_INTEIRO,
             ],
@@ -67,10 +72,12 @@ class RelatorioAutomacoesService extends RelatorioService
                 'formato' => self::FORMATO_INTEIRO,
             ],
             'sincronizacoes_com_erro' => [
+                'sentido' => self::SENTIDO_MENOR_MELHOR,
                 'label' => 'Sincronizações com erro',
                 'formato' => self::FORMATO_INTEIRO,
             ],
             'horas_fora_do_ar' => [
+                'sentido' => self::SENTIDO_MENOR_MELHOR,
                 'label' => 'Horas fora do ar',
                 'formato' => self::FORMATO_HORAS,
                 'hint' => 'Somadas entre os componentes monitorados. Ausente quando não há registro de estado no período.',
@@ -459,8 +466,9 @@ class RelatorioAutomacoesService extends RelatorioService
                 'erro' => (int) $linha->erro,
                 'taxa_sucesso' => $this->percentual((int) $linha->sucesso, (int) $linha->total),
                 'duracao_media' => $this->emHoras($linha->segundos === null ? null : (float) $linha->segundos),
-                // A tela usa isto para abrir /automacoes já filtrado.
-                'filtro' => ['operacao' => $linha->operacao],
+                // A tabela da tela transforma `href` em link: é o caminho de
+                // "vi o número, quero ver as execuções por trás dele".
+                'href' => '/automacoes?operacao='.rawurlencode($linha->operacao),
             ])->all(),
             [
                 'total' => self::FORMATO_INTEIRO,
@@ -483,7 +491,7 @@ class RelatorioAutomacoesService extends RelatorioService
             $linhas->map(fn ($linha) => [
                 'erro_codigo' => $linha->erro_codigo ?: 'Sem código',
                 'total' => (int) $linha->total,
-                'filtro' => ['status' => 'failed'],
+                'href' => '/automacoes?status=failed',
             ])->all(),
             ['total' => self::FORMATO_INTEIRO],
         );

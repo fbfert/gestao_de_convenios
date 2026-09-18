@@ -26,7 +26,8 @@ import { NovidadesPage } from '../features/novidades'
 import { UsuariosPage } from '../features/usuarios'
 import { ProfissionaisPage } from '../features/profissionais'
 import { DashboardPage } from '../features/dashboard'
-import { CadastrosPage, OperacaoConveniosPage } from '../features/grupos'
+import { CadastrosPage, GestaoConveniosPage, OperacaoConveniosPage } from '../features/grupos'
+import { RelatoriosPage } from '../features/relatorios'
 import { AuditoriaPage } from '../features/auditoria'
 import {
   ConfiguracoesClinicaSyncPage,
@@ -51,6 +52,8 @@ export function AppRoutes() {
         <Route element={<ShellLayout />}>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/inicio" element={<GestaoConveniosPage />} />
+          <Route path="/relatorios" element={<RelatoriosPage />} />
           <Route path="/cadastros" element={<CadastrosPage />} />
           <Route path="/operacao-convenios" element={<OperacaoConveniosPage />} />
           <Route path="/auditoria" element={<AuditoriaPage />} />

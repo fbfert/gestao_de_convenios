@@ -21,6 +21,20 @@ export type NavLeaf = {
    * caso do Dashboard e do Manual, que nao tem permissao propria na API.
    */
   permissao?: string
+  /**
+   * Item que aparece com QUALQUER UMA das permissoes da lista.
+   *
+   * Existe para Relatorios, que tem uma permissao por aba: quem pode ver
+   * qualquer uma das quatro precisa enxergar a entrada no menu. As
+   * alternativas eram pior — uma quinta permissao "abrir relatorios" seria
+   * mais uma caixa para o admin marcar e mais uma para alguem esquecer, e
+   * repetir o item quatro vezes no menu e absurdo.
+   *
+   * Vale JUNTO com `permissao`, e nao no lugar dela: um item pode exigir uma e
+   * qualquer uma das outras. Nenhum item faz isso hoje, mas o `filtrarItens`
+   * trata os dois campos separadamente, entao a combinacao nao vira surpresa.
+   */
+  permissaoQualquerUma?: string[]
 }
 
 export type NavGroup = {
@@ -272,12 +286,44 @@ export const operacaoGroup: NavGroup = {
   children: operacaoItems,
 }
 
-export const navEntries: NavEntry[] = [
+/** As quatro permissões de relatório — uma por aba. */
+export const permissoesDeRelatorio = [
+  'relatorios.operacao',
+  'relatorios.financeiro',
+  'relatorios.automacoes',
+  'relatorios.uso',
+]
+
+export const gestaoConveniosItems: NavLeaf[] = [
   {
     to: '/dashboard',
-    label: 'Gestão de Convênios',
-    descricao: 'Visão geral com os números do seu papel e a auditoria recente.',
+    label: 'Painel',
+    descricao:
+      'O agora da clínica: guias pendentes, senhas vencendo, alertas abertos e os números do seu papel.',
   },
+  {
+    to: '/relatorios',
+    label: 'Relatórios',
+    descricao:
+      'Os números por período, com comparação: aprovação e negação, dinheiro, automações e uso do sistema.',
+    permissaoQualquerUma: permissoesDeRelatorio,
+  },
+]
+
+export const gestaoConveniosGroup: NavGroup = {
+  to: '/inicio',
+  label: 'Gestão de Convênios',
+  descricao: 'O painel do dia a dia e os relatórios por período.',
+  children: gestaoConveniosItems,
+}
+
+export const navEntries: NavEntry[] = [
+  // Grupo, e não link direto para o painel: o painel responde "o que está
+  // aberto agora" e os relatórios respondem "como foi o mês" — duas perguntas
+  // diferentes que merecem duas entradas. Custa um clique a mais para chegar
+  // ao painel, e é uma escolha consciente pela consistência com Cadastros e
+  // Operação. A HomePage continua levando direto ao painel.
+  gestaoConveniosGroup,
   cadastrosGroup,
   operacaoGroup,
   // Entrada própria, e não dentro de Automações: senha vencendo e guia negada
@@ -308,7 +354,17 @@ export const clinicasEntry: NavLeaf = {
 
 /** Mantém só os itens que o usuário pode acessar. */
 export function filtrarItens(itens: NavLeaf[], pode: (permissao?: string) => boolean): NavLeaf[] {
-  return itens.filter((item) => pode(item.permissao))
+  return itens.filter((item) => {
+    if (!pode(item.permissao)) {
+      return false
+    }
+
+    // Lista vazia ou ausente não restringe nada — quem não usa o campo não
+    // muda de comportamento.
+    return (item.permissaoQualquerUma ?? []).length === 0
+      ? true
+      : item.permissaoQualquerUma!.some((permissao) => pode(permissao))
+  })
 }
 
 /**

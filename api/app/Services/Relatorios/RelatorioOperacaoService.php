@@ -44,47 +44,57 @@ class RelatorioOperacaoService extends RelatorioService
     {
         return [
             'solicitacoes_criadas' => [
+                'sentido' => self::SENTIDO_MAIOR_MELHOR,
                 'label' => 'Solicitações criadas',
                 'formato' => self::FORMATO_INTEIRO,
             ],
             'guias_geradas' => [
+                'sentido' => self::SENTIDO_MAIOR_MELHOR,
                 'label' => 'Guias geradas',
                 'formato' => self::FORMATO_INTEIRO,
             ],
             'taxa_aprovacao' => [
+                'sentido' => self::SENTIDO_MAIOR_MELHOR,
                 'label' => 'Taxa de aprovação',
                 'formato' => self::FORMATO_PERCENTUAL,
                 'hint' => 'Guias autorizadas ou aprovadas sobre o total de guias decididas no período, pela data da decisão.',
             ],
             'taxa_negacao' => [
+                'sentido' => self::SENTIDO_MENOR_MELHOR,
                 'label' => 'Taxa de negação',
                 'formato' => self::FORMATO_PERCENTUAL,
                 'hint' => 'Guias negadas sobre o total de guias decididas no período, pela data da decisão.',
             ],
             'tempo_medio_decisao' => [
+                'sentido' => self::SENTIDO_MENOR_MELHOR,
                 'label' => 'Tempo médio até a decisão',
                 'formato' => self::FORMATO_HORAS,
                 'hint' => 'Da entrada em análise até a decisão.',
             ],
             'tempo_mediano_decisao' => [
+                'sentido' => self::SENTIDO_MENOR_MELHOR,
                 'label' => 'Tempo mediano até a decisão',
                 'formato' => self::FORMATO_HORAS,
                 'hint' => 'Metade das guias foi decidida em menos tempo que isto.',
             ],
             'tempo_medio_finalizacao' => [
+                'sentido' => self::SENTIDO_MENOR_MELHOR,
                 'label' => 'Tempo médio até a aprovação',
                 'formato' => self::FORMATO_HORAS,
                 'hint' => 'Da autorização até a aprovação, com senha e validade registradas.',
             ],
             'sessoes_realizadas' => [
+                'sentido' => self::SENTIDO_MAIOR_MELHOR,
                 'label' => 'Sessões realizadas',
                 'formato' => self::FORMATO_INTEIRO,
             ],
             'sessoes_faltas' => [
+                'sentido' => self::SENTIDO_MENOR_MELHOR,
                 'label' => 'Faltas',
                 'formato' => self::FORMATO_INTEIRO,
             ],
             'sessoes_canceladas' => [
+                'sentido' => self::SENTIDO_MENOR_MELHOR,
                 'label' => 'Sessões canceladas',
                 'formato' => self::FORMATO_INTEIRO,
             ],

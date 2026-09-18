@@ -320,7 +320,7 @@ class RelatorioAutomacoesServiceTest extends TestCase
 
         $tabela = collect($this->relatorio()['tabelas'])->firstWhere('key', 'por_operacao');
 
-        $this->assertSame(['operacao' => 'gerar_guia'], $tabela['linhas'][0]['filtro']);
+        $this->assertSame('/automacoes?operacao=gerar_guia', $tabela['linhas'][0]['href']);
     }
 
     // ── Apoio ───────────────────────────────────────────────────────────────

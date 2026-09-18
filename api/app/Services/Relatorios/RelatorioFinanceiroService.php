@@ -44,6 +44,7 @@ class RelatorioFinanceiroService extends RelatorioService
     {
         return [
             'valor_executado' => [
+                'sentido' => self::SENTIDO_MAIOR_MELHOR,
                 'label' => 'Valor executado',
                 'formato' => self::FORMATO_MOEDA,
                 'hint' => 'Sessões realizadas no período pelo valor vigente na data de cada sessão.',
@@ -54,19 +55,23 @@ class RelatorioFinanceiroService extends RelatorioService
                 'hint' => 'Pago mais glosado nos lotes de analítico importados no período.',
             ],
             'valor_pago' => [
+                'sentido' => self::SENTIDO_MAIOR_MELHOR,
                 'label' => 'Valor pago',
                 'formato' => self::FORMATO_MOEDA,
             ],
             'valor_glosado' => [
+                'sentido' => self::SENTIDO_MENOR_MELHOR,
                 'label' => 'Glosa',
                 'formato' => self::FORMATO_MOEDA,
             ],
             'taxa_glosa' => [
+                'sentido' => self::SENTIDO_MENOR_MELHOR,
                 'label' => '% de glosa',
                 'formato' => self::FORMATO_PERCENTUAL,
                 'hint' => 'Glosado sobre apresentado.',
             ],
             'conciliacoes_pendentes' => [
+                'sentido' => self::SENTIDO_MENOR_MELHOR,
                 'label' => 'Conciliações pendentes',
                 'formato' => self::FORMATO_INTEIRO,
             ],
@@ -75,6 +80,7 @@ class RelatorioFinanceiroService extends RelatorioService
                 'formato' => self::FORMATO_INTEIRO,
             ],
             'conciliacoes_pagas' => [
+                'sentido' => self::SENTIDO_MAIOR_MELHOR,
                 'label' => 'Conciliações pagas',
                 'formato' => self::FORMATO_INTEIRO,
             ],

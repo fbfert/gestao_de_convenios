@@ -256,4 +256,129 @@ class PacientesApiTest extends TestCase
             'ativo' => true,
         ]);
     }
+
+    /**
+     * Inativo fica de fora quando ninguem pede status.
+     *
+     * E o caminho dos SELECTS de formulario: `usePacientes` chama `/pacientes`
+     * sem `status`, e ate 18/09/2026 recebia inativo junto — dava para abrir
+     * guia e solicitacao no nome de quem a clinica ja desligou.
+     */
+    public function test_listagem_sem_status_esconde_inativo(): void
+    {
+        $this->autenticar();
+
+        $paciente = Paciente::query()->firstOrFail();
+        $paciente->update(['ativo' => false]);
+
+        $ids = $this->getJson('/api/pacientes')->assertOk()->json('data.*.id');
+
+        $this->assertNotContains($paciente->id, $ids);
+
+        // E a assercao que prova que a listagem nao voltou vazia por outro
+        // motivo: sem ela, um filtro quebrado passaria igual.
+        $this->assertNotEmpty($ids);
+    }
+
+    /** A busca por nome usa o mesmo default — e o que o select do formulario faz ao digitar. */
+    public function test_busca_por_nome_sem_status_nao_acha_inativo(): void
+    {
+        $this->autenticar();
+
+        $paciente = Paciente::query()->firstOrFail();
+        $paciente->update(['ativo' => false]);
+
+        $ids = $this->getJson('/api/pacientes?busca='.urlencode($paciente->nome))
+            ->assertOk()->json('data.*.id');
+
+        $this->assertNotContains($paciente->id, $ids);
+    }
+
+    /** `todos` e o pedido explicito da tela de gestao, a unica que precisa ver os dois. */
+    public function test_status_todos_traz_ativo_e_inativo(): void
+    {
+        $this->autenticar();
+
+        $inativo = Paciente::query()->firstOrFail();
+        $inativo->update(['ativo' => false]);
+        $ativo = Paciente::query()->where('id', '!=', $inativo->id)->firstOrFail();
+        $ativo->update(['ativo' => true]);
+
+        $ids = $this->getJson('/api/pacientes?status=todos')->assertOk()->json('data.*.id');
+
+        $this->assertContains($inativo->id, $ids);
+        $this->assertContains($ativo->id, $ids);
+    }
+
+    public function test_status_inativos_traz_somente_inativo(): void
+    {
+        $this->autenticar();
+
+        $inativo = Paciente::query()->firstOrFail();
+        $inativo->update(['ativo' => false]);
+        $ativo = Paciente::query()->where('id', '!=', $inativo->id)->firstOrFail();
+        $ativo->update(['ativo' => true]);
+
+        $ids = $this->getJson('/api/pacientes?status=inativos')->assertOk()->json('data.*.id');
+
+        $this->assertSame([$inativo->id], $ids);
+    }
+
+    /** Reativar devolve o paciente as listagens que escondem inativo. */
+    public function test_paciente_reativado_volta_a_aparecer(): void
+    {
+        $this->autenticar();
+
+        $paciente = Paciente::query()->firstOrFail();
+        $paciente->update(['ativo' => false]);
+
+        $this->assertNotContains(
+            $paciente->id,
+            $this->getJson('/api/pacientes')->assertOk()->json('data.*.id'),
+        );
+
+        $paciente->update(['ativo' => true]);
+
+        $this->assertContains(
+            $paciente->id,
+            $this->getJson('/api/pacientes')->assertOk()->json('data.*.id'),
+        );
+    }
+
+    /**
+     * Os vizinhos ja escondiam inativo — este teste existe para a correcao de
+     * pacientes nao deixar um certo e o resto errado sem ninguem notar.
+     */
+    public function test_listagens_de_referencia_escondem_inativo_por_padrao(): void
+    {
+        $this->autenticar();
+
+        $profissional = Profissional::query()->firstOrFail();
+        $profissional->update(['ativo' => false]);
+        $this->assertNotContains(
+            $profissional->id,
+            $this->getJson('/api/profissionais')->assertOk()->json('data.*.id'),
+        );
+
+        $medico = Medico::query()->firstOrFail();
+        $medico->update(['ativo' => false]);
+        $this->assertNotContains(
+            $medico->id,
+            $this->getJson('/api/medicos')->assertOk()->json('data.*.id'),
+        );
+
+        $especialidade = Especialidade::query()->firstOrFail();
+        $especialidade->update(['ativo' => false]);
+        $this->assertNotContains(
+            $especialidade->id,
+            $this->getJson('/api/especialidades')->assertOk()->json('data.*.id'),
+        );
+
+        $convenio = Convenio::query()->firstOrFail();
+        $convenio->update(['ativo' => false]);
+        $this->assertNotContains(
+            $convenio->id,
+            $this->getJson('/api/convenios')->assertOk()->json('data.*.id'),
+        );
+    }
 }

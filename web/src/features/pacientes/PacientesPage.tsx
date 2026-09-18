@@ -109,8 +109,10 @@ export function PacientesPage() {
 
   // Editando um paciente específico por link direto, ele tem que aparecer
   // mesmo inativo e com "mostrar inativos" desmarcado — senão o formulário
-  // não carrega.
-  const pacientesQuery = usePacientesCrud(isEditRoute ? { ...filtros, status: '' } : filtros, page)
+  // não carrega. `todos`, e não string vazia: desde 18/09/2026 a listagem sem
+  // `status` esconde inativo, então vazio aqui deixaria de carregar
+  // exatamente o caso que este trecho existe para resolver.
+  const pacientesQuery = usePacientesCrud(isEditRoute ? { ...filtros, status: 'todos' } : filtros, page)
   const conveniosQuery = useConvenios()
   const criarPaciente = useCriarPaciente()
   const atualizarPaciente = useAtualizarPaciente()
@@ -657,7 +659,12 @@ export function PacientesPage() {
                   // comportamento das caixas equivalentes em Médicos e
                   // Profissionais, e diferente dos outros filtros desta
                   // tela (que só valem depois do submit).
-                  const status = event.target.checked ? '' : 'ativos'
+                  // `todos`, e não string vazia: desde 18/09/2026 a listagem
+                  // esconde inativo quando não recebe `status`, para os selects
+                  // de formulário não oferecerem paciente desligado. Vazio aqui
+                  // passaria a trazer só os ativos — o oposto do que o
+                  // checkbox promete.
+                  const status = event.target.checked ? 'todos' : 'ativos'
                   setRascunho((atual) => ({ ...atual, status }))
                   setFiltros({ ...filtros, status })
                 }}

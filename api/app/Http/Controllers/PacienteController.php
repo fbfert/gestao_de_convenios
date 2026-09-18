@@ -2,20 +2,21 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\AnalyzeCarteirinhaRequest;
 use App\Http\Requests\StorePacienteRequest;
 use App\Http\Requests\UpdatePacienteRequest;
 use App\Http\Resources\PacienteResource;
-use App\Http\Requests\AnalyzeCarteirinhaRequest;
 use App\Models\ConfiguracaoGlobal;
+use App\Models\Convenio;
 use App\Models\Paciente;
 use App\Models\PacienteDocumento;
 use App\Models\PacienteTelefone;
 use App\Models\Solicitacao;
+use App\Services\CarteirinhaAiService;
 use App\Support\PaginaListagem;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use App\Services\CarteirinhaAiService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -49,7 +50,21 @@ class PacienteController extends Controller
             ->select('pacientes.*')
             ->with(['convenio', 'telefones'])
             ->when($convenioId, fn ($query) => $query->where('convenio_id', $convenioId))
-            ->when($status === 'ativos', fn ($query) => $query->where('ativo', true))
+            /*
+             * Inativo fica de fora por padrão, e só entra a pedido.
+             *
+             * Era o contrário até 18/09/2026, e o default permissivo vazava:
+             * `usePacientes` — que alimenta os selects de Nova guia e de Ler
+             * pedido médico — chama sem `status`, então dava para abrir guia e
+             * solicitação no nome de quem a clínica já desligou. A armadilha é
+             * silenciosa: quem chama sem o parâmetro não vê que pediu inativo
+             * junto.
+             *
+             * Este é o mesmo default de profissionais, médicos, especialidades
+             * e convênios. `todos` existe para a tela de gestão de Pacientes, a
+             * única que precisa ver os dois.
+             */
+            ->when($status !== 'todos' && $status !== 'inativos', fn ($query) => $query->where('ativo', true))
             ->when($status === 'inativos', fn ($query) => $query->where('ativo', false))
             ->when($vencidas === 'vencidas', fn ($query) => $query
                 ->whereNotNull('validade_carteirinha')
@@ -301,7 +316,7 @@ class PacienteController extends Controller
             return $dados;
         }
 
-        $convenio = \App\Models\Convenio::query()
+        $convenio = Convenio::query()
             ->where('tenant_id', $tenantId)
             ->whereKey($convenioId)
             ->first();

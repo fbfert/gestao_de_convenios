@@ -374,7 +374,12 @@ class PacienteCarteirinhaApiTest extends TestCase
             ->assertJsonMissing(['nome' => 'Abel Ordenacao']);
 
         // Coluna fora da lista fechada cai no padrao, e nao vira ORDER BY cru.
-        $this->getJson('/api/pacientes?ordenar_por=(select 1)&direcao=asc')
+        //
+        // `status=todos` porque "Abel Ordenacao" e inativo e, desde 18/09/2026,
+        // a listagem sem `status` esconde inativo. O alvo deste caso e a
+        // ORDENACAO, entao o pedido explicito mantem o mesmo conjunto de antes
+        // em vez de trocar o paciente esperado e enfraquecer a assercao.
+        $this->getJson('/api/pacientes?status=todos&ordenar_por=(select 1)&direcao=asc')
             ->assertOk()
             ->assertJsonPath('data.0.nome', 'Abel Ordenacao');
     }

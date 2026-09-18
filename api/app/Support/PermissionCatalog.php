@@ -55,6 +55,13 @@ class PermissionCatalog
         'configuracoes.unimed.manage' => 'Configurar a automação da Unimed',
         'configuracoes.convenios.manage' => 'Configurar credenciais de automação dos convênios',
         'configuracoes.clinica.manage' => 'Configurar a sincronização com o clinica',
+        // Uma permissão por aba de Relatórios: além de liberar o endpoint, são
+        // elas que decidem quais abas a tela monta. Sem nenhuma das quatro, a
+        // entrada de Relatórios some do menu.
+        'relatorios.operacao' => 'Ver o relatório de Operação',
+        'relatorios.financeiro' => 'Ver o relatório Financeiro',
+        'relatorios.automacoes' => 'Ver o relatório de Automações',
+        'relatorios.uso' => 'Ver o relatório de Uso do sistema',
     ];
 
     /** @return string[] */

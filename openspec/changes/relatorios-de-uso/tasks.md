@@ -3,14 +3,14 @@
 
 ## 1. Permissões, filtros e esqueleto da API
 
-- [ ] 1.1 Permissões `relatorios.operacao`, `relatorios.financeiro`, `relatorios.automacoes` e `relatorios.uso` no catálogo, e migration `sync_relatorios_permissions_to_existing_roles` no padrão das `sync_*` anteriores (a mais recente é `2026_09_15_100002_sync_convenios_manage_permission_to_existing_roles`).
-- [ ] 1.2 `RelatorioFiltros` (DTO imutável) e `RelatorioPeriodo`: presets, período anterior de mesmo tamanho, granularidade automática (≤31 dias dia, ≤120 semana, acima mês), teto de 366 dias, tudo em America/Sao_Paulo.
-- [ ] 1.3 `RelatorioFiltrosRequest`. `tenant_id` só é aceito de super admin (`users.super_admin`, ver `User::ehSuperAdmin()`); dos demais, 403 mesmo que enviado.
-- [ ] 1.4 `RelatorioController::show` e `::export`, com cada service devolvendo o contrato vazio, para a rota existir e ser testável.
-- [ ] 1.5 Resolução de tenant no service base, com o comentário explicando por que o `withoutGlobalScope` vive só ali.
-- [ ] 1.6 Cache de 5 min com chave `relatorios:{tenant|todos}:{aba}:{sha1 dos filtros}`, e o campo `cache` na resposta.
-- [ ] 1.7 Rotas com `middleware('permission:relatorios.{aba}')`.
-- [ ] 1.8 Testes: 403 sem permissão; 422 para período inválido, invertido e acima de 366 dias; 403 para `tenant_id` de usuário comum; super admin com `todos` não filtra por tenant; período anterior correto nos presets; granularidade automática nos três limites.
+- [x] 1.1 Permissões `relatorios.operacao`, `relatorios.financeiro`, `relatorios.automacoes` e `relatorios.uso` no catálogo, e migration `sync_relatorios_permissions_to_existing_roles` no padrão das `sync_*` anteriores (a mais recente é `2026_09_15_100002_sync_convenios_manage_permission_to_existing_roles`).
+- [x] 1.2 `RelatorioFiltros` (DTO imutável) e `RelatorioPeriodo`: presets, período anterior de mesmo tamanho, granularidade automática (≤31 dias dia, ≤120 semana, acima mês), teto de 366 dias, tudo em America/Sao_Paulo.
+- [x] 1.3 `RelatorioFiltrosRequest`. `tenant_id` só é aceito de super admin (`users.super_admin`, ver `User::ehSuperAdmin()`); dos demais, 403 mesmo que enviado.
+- [x] 1.4 `RelatorioController::show` e `::export`, com cada service devolvendo o contrato vazio, para a rota existir e ser testável.
+- [x] 1.5 Resolução de tenant no service base, com o comentário explicando por que o `withoutGlobalScope` vive só ali.
+- [x] 1.6 Cache de 5 min com chave `relatorios:{tenant|todos}:{aba}:{sha1 dos filtros}`, e o campo `cache` na resposta.
+- [x] 1.7 Rotas com `middleware('permission:relatorios.{aba}')`.
+- [x] 1.8 Testes: 403 sem permissão; 422 para período inválido, invertido e acima de 366 dias; 403 para `tenant_id` de usuário comum; super admin com `todos` não filtra por tenant; período anterior correto nos presets; granularidade automática nos três limites.
 
 ## 2. Cálculo das quatro abas
 

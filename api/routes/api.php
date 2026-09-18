@@ -38,6 +38,7 @@ use App\Http\Controllers\PacienteMergeController;
 use App\Http\Controllers\PacientePastaController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\ProfissionalController;
+use App\Http\Controllers\RelatorioController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\RolePermissionController;
 use App\Http\Controllers\SaudeController;
@@ -48,6 +49,7 @@ use App\Http\Controllers\TenantController;
 use App\Http\Controllers\UnimedSettingsController;
 use App\Http\Controllers\UserController;
 use App\Http\Middleware\EncerrarSessaoExpirada;
+use App\Services\Relatorios\RelatorioAba;
 use App\Support\AuthPayload;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -233,6 +235,24 @@ Route::middleware(['auth:sanctum', EncerrarSessaoExpirada::class])->group(functi
     Route::get('/permissions', [PermissionController::class, 'index'])->middleware('permission:permissoes.manage');
     Route::get('/roles/{role}/permissions', [RolePermissionController::class, 'show'])->middleware('permission:permissoes.manage');
     Route::put('/roles/{role}/permissions', [RolePermissionController::class, 'update'])->middleware('permission:permissoes.manage');
+
+    // Uma rota por aba, e não `/relatorios/{aba}`: é o que permite a cada uma
+    // declarar a SUA permissão no middleware. Com a aba como parâmetro, a
+    // checagem só poderia acontecer dentro do controller — depois de a
+    // requisição já ter passado —, e `ExigeAutorizacaoDeclarada` veria uma rota
+    // autenticada sem autorização declarada. O laço mantém rota, aba e
+    // permissão em lockstep: aba nova no RelatorioAba nasce protegida.
+    foreach (RelatorioAba::TODAS as $aba) {
+        $permissao = 'permission:'.RelatorioAba::permissaoDe($aba);
+
+        Route::get("/relatorios/{$aba}", [RelatorioController::class, 'show'])
+            ->defaults('aba', $aba)
+            ->middleware($permissao);
+
+        Route::get("/relatorios/{$aba}/export", [RelatorioController::class, 'export'])
+            ->defaults('aba', $aba)
+            ->middleware($permissao);
+    }
 
     // Gestão de clínicas. `super-admin` em vez de `permission:`: a capacidade
     // fica fora do PermissionCatalog para que o admin de um tenant não possa

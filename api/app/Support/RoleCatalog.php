@@ -57,6 +57,10 @@ class RoleCatalog
             'configuracoes.unimed.manage',
             'configuracoes.convenios.manage',
             'configuracoes.clinica.manage',
+            'relatorios.operacao',
+            'relatorios.financeiro',
+            'relatorios.automacoes',
+            'relatorios.uso',
         ],
         // As permissoes solicitacoes.manage/guias.manage/lancamentos.manage
         // controlam a EDICAO manual desses cadastros (nao a criacao normal,
@@ -90,6 +94,13 @@ class RoleCatalog
             'medicos.view',
             'medicos.manage',
             'alertas.view',
+            // Operação e Automações, e não as quatro: o financeiro é o que a
+            // clínica mais costuma querer restrito, e o funcionário já enxerga
+            // a fila de automações pela listagem (`/automacoes` exige
+            // `guias.view`, que ele tem). Concessão inicial — a tela de Perfis
+            // e Permissões continua mandando depois.
+            'relatorios.operacao',
+            'relatorios.automacoes',
         ],
         'profissional' => [
             'dashboard.guias',

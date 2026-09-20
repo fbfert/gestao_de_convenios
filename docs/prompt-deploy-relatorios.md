@@ -323,3 +323,50 @@ gunzip -c /opt/gescon/deploy/backups/<STAMP>_gestao_convenios.sql.gz \
   deploy rodam sozinhas pelo `entrypoint.sh`
 - Não rode `route:cache` (há rotas com Closure em `web.php`)
 - Se algo divergir do esperado, **pare e me diga** em vez de tentar corrigir por conta própria
+
+## Executado em 20/09/2026
+
+Rodado numa sessão do Claude Code na própria VPS, um passo por vez como pedido. Passos 0 a 4 bateram
+com o esperado, com uma ressalva:
+
+- **A "duplicação" de permissões no Passo 4 era falso alarme.** As consultas de conferência (as deste
+  documento, inclusive) não filtram por `tenant_id`, e a base tem dois tenants —
+  NeuroKids (`id=1`, produção) e Clínica Teste (`id=3`). Sem o filtro, os números somam os dois e
+  parecem dobrados. Filtrando certo (`WHERE r.tenant_id = 1`) e comparando com um dump de antes do
+  deploy restaurado num MariaDB descartável: NeuroKids foi de 38→42 permissões em `admin` (+4, as
+  quatro novas) e 24→26 em `funcionario` (+2, operação e automações) — exatamente o esperado, ninguém
+  perdeu nada.
+- No Passo 6, os componentes "Fila de processamento" e "Envio de e-mail" nasceram com o primeiro
+  evento em `down`. Não é quebra: essas linhas em `saude_componentes` têm `ativo=0` desde 09/09,
+  nunca foram conectadas a um heartbeat de verdade. Só "Agendador" pinga de fato.
+- Passo 5 rodou sem navegador (sessão de VPS pura) — a conferência foi feita direto pela API, com
+  tokens de teste gerados via `tinker` e revogados depois. O gating de permissão bateu certinho
+  (`funcionario` vê Operação e Automações, `profissional` não vê nenhuma aba). **Achado real: a aba
+  Financeiro devolve HTTP 500** — ver abaixo.
+- Passo 7: o `gescon-worker` e o agendador estavam de pé, mas achei que a automação Unimed real
+  estava **pausada desde 19/09 03:00** pelo disjuntor (`WORKER_INTERNAL_FATAL`, o de sempre — ver
+  `docs/automacao-unimed/`). Não é causado por este deploy. Cheguei a reativar por engano achando que
+  era incidente; era só domingo, dia em que a NeuroKids não atende e ninguém corre para reativar.
+  Revertido ao estado original (`ativo=0`, mesmo `automation_paused_at`/`reason` de antes), sem
+  nenhuma execução real ter tocado o portal da Unimed no meio disso.
+
+### Bug conhecido: aba Financeiro (HTTP 500)
+
+`RelatorioFinanceiroService::sessoesRealizadas()` (`api/app/Services/Relatorios/RelatorioFinanceiroService.php:454`)
+monta a query a partir de `Lancamento::query()->join('guias as guia_da_sessao', ...)` sem nunca chamar
+`->select()` antes dos `selectRaw()+groupByRaw()` que vários métodos fazem em cima dela (linhas
+~246-247, ~308-314, ~364-372, ~404-408). Sem select explícito, o Query Builder mantém o `*` implícito
+— que, com `JOIN`, expande para todas as colunas de todas as tabelas do join, inclusive as que não
+estão no `GROUP BY`. Isso quebra sob `ONLY_FULL_GROUP_BY`, que o MariaDB de produção tem ligado por
+padrão (mesma classe de "passa no dev, quebra em produção" já vista neste projeto). Reproduzido em
+produção:
+
+```
+SQLSTATE[42000]: Syntax error or access violation: 1055
+'gestao_convenios.guia_da_sessao.tenant_id' isn't in GROUP BY
+```
+
+Fix pendente: `->select('lancamentos.*')` (ou os campos específicos que cada série precisa) antes do
+primeiro `selectRaw` nos quatro métodos afetados. Operação, Automações e Uso não têm o mesmo padrão e
+funcionam normalmente. Não corrigido nesta sessão — a automação Unimed não depende disso, então o
+deploy seguiu; o fix fica para uma sessão separada.

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Antecipacao;
+use App\Models\AutomacaoExecucao;
 use App\Models\Cid;
 use App\Models\Convenio;
 use App\Models\Especialidade;
@@ -347,6 +348,51 @@ class AntecipacoesApiTest extends TestCase
 
         $this->assertCount(1, $linha['itens_gerados']);
         $this->assertNull($linha['itens_gerados'][0]['guia']);
+    }
+
+    /**
+     * O que a tela de Antecipações precisa pra oferecer "Enviar para a
+     * operadora" no item ainda sem guia — mesmo gate que a tela de
+     * Solicitações já aplica (App\Support\SolicitacaoStatus::BLOQUEIAM_ENVIO
+     * do lado do status, execução ativa do lado do item).
+     */
+    public function test_item_sem_guia_traz_execucao_ativa_e_dados_do_convenio_para_o_gate_de_envio(): void
+    {
+        $user = $this->autenticar();
+        $solicitacao = $this->solicitacaoComGuiaAprovada();
+        $itemOrigem = $solicitacao->itens()->firstOrFail();
+        $solicitacao->convenio()->update(['connector_driver' => 'unimed_rda']);
+
+        $criada = $this->postJson('/api/antecipacoes', [
+            'solicitacao_origem_id' => $solicitacao->id,
+            'itens_selecionados' => [[
+                'especialidade_id' => $itemOrigem->especialidade_id,
+                'profissional_id' => $itemOrigem->profissional_id,
+            ]],
+        ])->assertCreated()->json('data');
+
+        $item = $solicitacao->itens()->findOrFail((int) $criada['itens_selecionados'][0]['item_gerado_id']);
+        $item->guia()->delete();
+
+        $execucao = AutomacaoExecucao::query()->create([
+            'tenant_id' => $user->tenant_id,
+            'solicitacao_item_id' => $item->id,
+            'operacao' => 'gerar_guia',
+            'status' => 'queued',
+            'idempotency_key' => 'teste-antecipacao-'.uniqid(),
+            'queued_at' => now(),
+        ]);
+
+        $linha = collect($this->getJson('/api/antecipacoes')->assertOk()->json('data'))
+            ->firstWhere('id', $criada['id']);
+
+        // Item novo sem guia devolve a solicitação pra fila de automação —
+        // mesma regra de SolicitacaoStatusRefleteItensTest.
+        $this->assertSame('ready_for_automation', $linha['solicitacao_origem']['status']);
+        $this->assertSame('unimed_rda', $linha['solicitacao_origem']['convenio']['connector_driver']);
+        $this->assertSame($execucao->id, $linha['itens_gerados'][0]['automacao_execucao_ativa']['id']);
+        $this->assertSame('gerar_guia', $linha['itens_gerados'][0]['automacao_execucao_ativa']['operacao']);
+        $this->assertSame('queued', $linha['itens_gerados'][0]['automacao_execucao_ativa']['status']);
     }
 
     public function test_historico_filtra_por_status(): void

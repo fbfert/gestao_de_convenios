@@ -21,6 +21,8 @@ export type AntecipacaoItemGerado = {
   especialidade: string | null
   item_gerado_id: number | null
   guia: { id: number; numero: string | null; status: string } | null
+  /** Sem guia ainda: diz se já existe um envio pra operadora em aberto pra este item. */
+  automacao_execucao_ativa?: { id: number; operacao: string; status: string } | null
 }
 
 export type Antecipacao = {
@@ -35,8 +37,9 @@ export type Antecipacao = {
   created_at: string | null
   solicitacao_origem?: {
     id: number
+    status: string
     paciente: { id: number; nome: string } | null
-    convenio: { id: number; nome: string } | null
+    convenio: { id: number; nome: string; connector_type: string | null; connector_driver: string | null } | null
   }
   criado_por?: { id: number; nome: string } | null
 }

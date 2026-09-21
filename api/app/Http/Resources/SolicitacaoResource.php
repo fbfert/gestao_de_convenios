@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Models\AutomacaoExecucao;
 use App\Support\GuiaStatus;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -77,16 +78,7 @@ class SolicitacaoResource extends JsonResource
                     'status' => $item->guia->status,
                 ] : null,
                 'automacao_execucao_ativa' => $item->relationLoaded('automacaoExecucoes')
-                    ? $item->automacaoExecucoes
-                        ->whereIn('status', ['queued', 'running', 'uncertain'])
-                        ->sortByDesc('id')
-                        ->map(fn ($execucao) => [
-                            'id' => $execucao->id,
-                            'operacao' => $execucao->operacao,
-                            'status' => $execucao->status,
-                            'queued_at' => $execucao->queued_at?->toISOString(),
-                        ])
-                        ->first()
+                    ? AutomacaoExecucao::ativaMaisRecente($item->automacaoExecucoes)
                     : null,
                 'especialidade' => $item->relationLoaded('especialidade') && $item->especialidade ? [
                     'id' => $item->especialidade->id,

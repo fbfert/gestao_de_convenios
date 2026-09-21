@@ -13,6 +13,7 @@ import { useSolicitacao } from '../solicitacoes/useSolicitacoes'
 import type { Solicitacao } from '../solicitacoes/types'
 import { usePode } from '../../lib/permissoes'
 import { AntecipacaoTooltipDetalhe } from './AntecipacaoTooltipDetalhe'
+import { EnviarItemAutomacaoAcao } from '../solicitacoes/EnviarItemAutomacaoAcao'
 import { IgnorarAntecipacaoModal } from './IgnorarAntecipacaoModal'
 import { OrigemElegivelModal } from './OrigemElegivelModal'
 import { SelecionarItensAntecipacaoModal } from './SelecionarItensAntecipacaoModal'
@@ -369,7 +370,12 @@ export function AntecipacoesPage() {
         ) : null}
 
         <div className="space-y-2">
-          {(historicoQuery.data?.data ?? []).map((antecipacao) => (
+          {(historicoQuery.data?.data ?? []).map((antecipacao) => {
+            const itensGerados = antecipacao.itens_gerados ?? []
+            const prontos = itensGerados.filter((item) => item.guia)
+            const pendentes = itensGerados.filter((item) => !item.guia)
+
+            return (
             <div
               key={antecipacao.id}
               className="flex flex-col gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
@@ -395,40 +401,62 @@ export function AntecipacoesPage() {
                 </p>
 
                 {/*
-                  As guias que a antecipação gerou, com link para cada uma —
-                  era a pergunta que a tela não respondia: "gerou o quê?".
+                  Item sem guia não é erro: em convênio automatizado a guia só
+                  chega depois de alguém mandar pra operadora (esta tela nunca
+                  envia sozinha, ver cabeçalho). Por isso ganha linha própria,
+                  com o mesmo botão de Solicitações — sem ele, mandar exigia
+                  sair daqui e achar o item de novo lá.
 
-                  Item sem guia não é erro: em convênio automatizado a guia
-                  chega depois, quando a operadora responde. Por isso o texto
-                  diz o que está acontecendo, em vez de deixar um espaço vazio.
+                  As guias já prontas ficam colapsadas: quem abriu o histórico
+                  veio ver o que falta, não reconferir o que já foi.
                 */}
-                {antecipacao.status === 'gerada' && (antecipacao.itens_gerados?.length ?? 0) > 0 ? (
-                  <p
-                    className="text-meta text-slate-400"
-                    data-testid={`antecipacao-guias-${antecipacao.id}`}
-                  >
-                    Guias:{' '}
-                    {antecipacao.itens_gerados?.map((item, indice) => (
-                      <span key={item.item_gerado_id ?? indice}>
-                        {indice > 0 ? ' · ' : ''}
-                        {item.guia ? (
+                {antecipacao.status === 'gerada' && pendentes.length > 0 ? (
+                  <div className="space-y-1" data-testid={`antecipacao-pendentes-${antecipacao.id}`}>
+                    {pendentes.map((item, indice) => (
+                      <div
+                        key={item.item_gerado_id ?? indice}
+                        className="flex flex-wrap items-center gap-2 text-meta text-slate-400"
+                      >
+                        <span>{item.especialidade ? `${item.especialidade}:` : 'Item:'}</span>
+                        {item.item_gerado_id && podeGerenciar ? (
+                          <EnviarItemAutomacaoAcao
+                            itemId={item.item_gerado_id}
+                            guia={item.guia}
+                            automacaoExecucaoAtiva={item.automacao_execucao_ativa}
+                            convenio={antecipacao.solicitacao_origem?.convenio}
+                            solicitacaoStatus={antecipacao.solicitacao_origem?.status ?? ''}
+                            testIdPrefix="antecipacao-item"
+                            queryKeysInvalidar={[['antecipacoes']]}
+                          />
+                        ) : (
+                          <span>aguardando a operadora</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+
+                {antecipacao.status === 'gerada' && prontos.length > 0 ? (
+                  <details className="text-meta text-slate-400" data-testid={`antecipacao-guias-${antecipacao.id}`}>
+                    <summary className="cursor-pointer">
+                      {prontos.length} guia(s) pronta(s)
+                    </summary>
+                    <p className="mt-1">
+                      {prontos.map((item, indice) => (
+                        <span key={item.item_gerado_id ?? indice}>
+                          {indice > 0 ? ' · ' : ''}
                           <Link
-                            to={`/guias/${item.guia.id}`}
+                            to={`/guias/${item.guia!.id}`}
                             state={{ from: voltarPara }}
                             className="font-medium text-acento underline-offset-2 hover:underline"
                             title={item.especialidade ?? undefined}
                           >
-                            {item.guia.numero ?? `#${item.guia.id}`}
+                            {item.guia!.numero ?? `#${item.guia!.id}`}
                           </Link>
-                        ) : (
-                          <span title={item.especialidade ?? undefined}>
-                            {item.especialidade ? `${item.especialidade}: ` : ''}aguardando a
-                            operadora
-                          </span>
-                        )}
-                      </span>
-                    ))}
-                  </p>
+                        </span>
+                      ))}
+                    </p>
+                  </details>
                 ) : null}
               </div>
               <div className="flex items-center gap-2">
@@ -454,7 +482,8 @@ export function AntecipacoesPage() {
                 ) : null}
               </div>
             </div>
-          ))}
+            )
+          })}
         </div>
 
         {totalPages > 1 ? (

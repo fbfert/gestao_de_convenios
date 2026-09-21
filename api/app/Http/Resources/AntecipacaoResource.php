@@ -24,6 +24,9 @@ class AntecipacaoResource extends JsonResource
             'created_at' => $this->created_at?->toISOString(),
             'solicitacao_origem' => $this->whenLoaded('solicitacaoOrigem', fn () => [
                 'id' => $this->solicitacaoOrigem->id,
+                // Usado pelo gate de "Enviar para a operadora" nos itens
+                // gerados — o mesmo que a tela de Solicitações já aplica.
+                'status' => $this->solicitacaoOrigem->status,
                 'paciente' => $this->solicitacaoOrigem->paciente ? [
                     'id' => $this->solicitacaoOrigem->paciente->id,
                     'nome' => $this->solicitacaoOrigem->paciente->nome,
@@ -31,6 +34,8 @@ class AntecipacaoResource extends JsonResource
                 'convenio' => $this->solicitacaoOrigem->convenio ? [
                     'id' => $this->solicitacaoOrigem->convenio->id,
                     'nome' => $this->solicitacaoOrigem->convenio->nome,
+                    'connector_type' => $this->solicitacaoOrigem->convenio->connector_type,
+                    'connector_driver' => $this->solicitacaoOrigem->convenio->connector_driver,
                 ] : null,
             ]),
             'criado_por' => $this->whenLoaded('criadoPor', fn () => $this->criadoPor ? [

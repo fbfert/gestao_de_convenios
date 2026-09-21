@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Antecipacao;
+use App\Models\AutomacaoExecucao;
 use App\Models\Guia;
 use App\Models\Solicitacao;
 use App\Models\SolicitacaoItem;
@@ -163,7 +164,10 @@ class AntecipacaoService
 
         $itens = $ids === []
             ? collect()
-            : SolicitacaoItem::query()->whereIn('id', $ids)->with(['guia', 'especialidade'])->get()->keyBy('id');
+            : SolicitacaoItem::query()->whereIn('id', $ids)
+                ->with(['guia', 'especialidade', 'automacaoExecucoes'])
+                ->get()
+                ->keyBy('id');
 
         foreach ($antecipacoes as $antecipacao) {
             $antecipacao->setAttribute('itens_gerados', collect($antecipacao->itens_selecionados ?? [])
@@ -179,6 +183,12 @@ class AntecipacaoService
                             'numero' => $guia->numero_guia,
                             'status' => $guia->status,
                         ] : null,
+                        // Sem guia ainda: é o que decide se a tela pode oferecer
+                        // "Enviar para a operadora" pra este item, e se já tem
+                        // execução em aberto travando o reenvio.
+                        'automacao_execucao_ativa' => $item
+                            ? AutomacaoExecucao::ativaMaisRecente($item->automacaoExecucoes)
+                            : null,
                     ];
                 })
                 ->all());

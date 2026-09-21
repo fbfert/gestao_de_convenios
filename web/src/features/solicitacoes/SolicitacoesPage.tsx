@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import { AvisoErro } from '../../components/ui/AvisoErro'
 import { useConfirm } from '../../components/ui/ConfirmDialog'
 import { MoreVertical, Plus, X } from 'lucide-react'
 import { DropdownMenu } from 'radix-ui'
@@ -12,14 +11,12 @@ import {
   getHttpErrorMessage,
   useAtualizarStatusSolicitacao,
   useCriarSolicitacao,
-  useEnviarItemUnimed,
   useRemoverItem,
   useSolicitacoes,
-  useVerificarAndamentoItem,
   useVincularDocumento,
 } from './useSolicitacoes'
 import { ConfirmarExclusao } from '../../components/ui/ConfirmarExclusao'
-import { STATUS_QUE_BLOQUEIAM_ADICAO, STATUS_QUE_BLOQUEIAM_ENVIO } from './types'
+import { STATUS_QUE_BLOQUEIAM_ADICAO } from './types'
 import type {
   Solicitacao,
   SolicitacaoFilters,
@@ -42,9 +39,7 @@ import { SolicitacaoInfoCelula } from './SolicitacaoInfoCelula'
 import { formatarData } from './datas'
 import { SelecionarPacienteModal } from './SelecionarPacienteModal'
 import { SelecionarMedicoModal } from './SelecionarMedicoModal'
-import { AutomacaoProgressoModal } from '../automacoes/AutomacaoProgressoModal'
-import { AutomacaoUnimedDesativadaModal } from '../configuracoes/AutomacaoUnimedDesativadaModal'
-import { useAutomacaoUnimedGate } from '../configuracoes/useAutomacaoUnimedGate'
+import { EnviarItemAutomacaoAcao } from './EnviarItemAutomacaoAcao'
 import { CidsCampo } from '../cids/CidsCampo'
 import { SolicitacaoItensFields } from './SolicitacaoItensFields'
 import { ResumoPastaPaciente } from './ResumoPastaPaciente'
@@ -158,7 +153,6 @@ export function SolicitacoesPage() {
   const [draftFilters, setDraftFilters] = useState(filters)
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [selectedSolicitacaoId, setSelectedSolicitacaoId] = useState<number | null>(null)
-  const [progressoExecucaoId, setProgressoExecucaoId] = useState<number | null>(null)
   const [adicionarSessoesId, setAdicionarSessoesId] = useState<number | null>(null)
   const [gerarAntecipacaoId, setGerarAntecipacaoId] = useState<number | null>(null)
   const [form, setForm] = useState<SolicitacaoForm>(emptyForm)
@@ -200,15 +194,8 @@ export function SolicitacoesPage() {
   const solicitacoesQuery = useSolicitacoes({ ...filters, ...ordenacao }, page)
   const criarSolicitacao = useCriarSolicitacao()
   const atualizarStatusSolicitacao = useAtualizarStatusSolicitacao()
-  const enviarItemUnimed = useEnviarItemUnimed()
   const removerItem = useRemoverItem()
   const vincularDocumento = useVincularDocumento()
-  const verificarAndamentoItem = useVerificarAndamentoItem()
-  const {
-    tratarErroUnimed,
-    modalProps: automacaoUnimedModalProps,
-    avisoProps: automacaoUnimedAvisoProps,
-  } = useAutomacaoUnimedGate()
 
   const convenios = useMemo(() => conveniosQuery.data ?? emptyArray, [conveniosQuery.data])
   const especialidades = useMemo(
@@ -524,28 +511,6 @@ export function SolicitacoesPage() {
     } catch (error) {
       setErroAcao(
         getHttpErrorMessage(error, 'Não foi possível alterar o status da solicitação.'),
-      )
-    }
-  }
-
-  const handleEnviarItemUnimed = async (itemId: number) => {
-    try {
-      const execucao = await enviarItemUnimed.mutateAsync(itemId)
-      setProgressoExecucaoId(execucao.id)
-    } catch (error) {
-      tratarErroUnimed(error, 'Não foi possível enviar o item para a Unimed.', () => handleEnviarItemUnimed(itemId))
-    }
-  }
-
-  const handleVerificarAndamentoItem = async (itemId: number) => {
-    try {
-      const execucao = await verificarAndamentoItem.mutateAsync(itemId)
-      setProgressoExecucaoId(execucao.id)
-    } catch (error) {
-      tratarErroUnimed(
-        error,
-        'Não foi possível verificar o andamento no portal da Unimed.',
-        () => handleVerificarAndamentoItem(itemId),
       )
     }
   }
@@ -1065,32 +1030,6 @@ export function SolicitacoesPage() {
                       {solicitacao.itens?.length ? (
                         <div className="space-y-1">
                           {solicitacao.itens.map((item) => {
-                            const isUnimedRda =
-                              solicitacao.convenio?.connector_driver === 'unimed_rda'
-                            const hasActiveExecution = item.automacao_execucao_ativa !== null
-                            // Gate por ITEM, e não pela solicitação inteira:
-                            // exigir `ready_for_automation` fazia o item novo de
-                            // uma solicitação já aprovada nunca poder ser
-                            // enviado — que é justamente o caso de "Adicionar
-                            // sessões". A lista de status barrados espelha
-                            // App\Support\SolicitacaoStatus::BLOQUEIAM_ENVIO, e
-                            // a API a aplica de novo do lado de lá.
-                            const canSend =
-                              isUnimedRda &&
-                              !item.guia &&
-                              !hasActiveExecution &&
-                              !STATUS_QUE_BLOQUEIAM_ENVIO.includes(
-                                solicitacao.status as SolicitacaoStatus,
-                              )
-                            // Guia incerta pos-submit (Finalizar rodou no portal mas o worker
-                            // nao leu a confirmacao de volta): sem numero de guia conhecido,
-                            // so da pra confirmar buscando por paciente, nao reenviando.
-                            const precisaVerificarAndamento =
-                              isUnimedRda &&
-                              !item.guia &&
-                              item.automacao_execucao_ativa?.operacao === 'gerar_guia' &&
-                              item.automacao_execucao_ativa?.status === 'uncertain'
-
                             return (
                               <div
                                 key={item.id}
@@ -1153,55 +1092,15 @@ export function SolicitacoesPage() {
                                       {translateStatus('guias', item.guia.status)}
                                     </Badge>
                                   ) : null}
-                                  {item.automacao_execucao_ativa ? (
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        setProgressoExecucaoId(item.automacao_execucao_ativa!.id)
-                                      }
-                                      className="rounded-full border border-amber-400/20 bg-amber-400/10 px-2.5 py-1 text-meta font-semibold text-amber-100 transition hover:bg-amber-400/20"
-                                      data-testid={`solicitacao-item-execucao-ativa-${item.id}`}
-                                    >
-                                      {item.automacao_execucao_ativa.status} · ver andamento
-                                    </button>
-                                  ) : null}
-                                  {precisaVerificarAndamento ? (
-                                    <>
-                                      <button
-                                        type="button"
-                                        onClick={() => void handleVerificarAndamentoItem(item.id)}
-                                        disabled={verificarAndamentoItem.isPending}
-                                        className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1.5 text-meta font-semibold text-cyan-100 transition hover:bg-cyan-400/20 disabled:cursor-not-allowed disabled:opacity-50"
-                                        data-testid={`solicitacao-item-verificar-andamento-${item.id}`}
-                                      >
-                                        Verificar Andamento
-                                      </button>
-                                      <Tooltip rotulo="O que este botão faz">
-                                        O robô tentou gerar a guia mas não conseguiu confirmar o
-                                        resultado com o portal. Clique para checar se a guia foi
-                                        criada de fato, buscando pelo paciente em Exames em
-                                        aberto — sem reenviar a solicitação.
-                                      </Tooltip>
-                                    </>
-                                  ) : isUnimedRda && !item.guia ? (
-                                    <>
-                                      <button
-                                        type="button"
-                                        onClick={() => void handleEnviarItemUnimed(item.id)}
-                                        disabled={!canSend || enviarItemUnimed.isPending}
-                                        className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1.5 text-meta font-semibold text-cyan-100 transition hover:bg-cyan-400/20 disabled:cursor-not-allowed disabled:opacity-50"
-                                        data-testid={`solicitacao-item-enviar-unimed-${item.id}`}
-                                      >
-                                        Enviar para Unimed
-                                      </button>
-                                      <Tooltip rotulo="Quando este botão funciona">
-                                        Dispara o robô da Unimed para gerar a guia sozinho (ver
-                                        Automações). Só fica ativo com a solicitação pronta para
-                                        automatização, sem guia gerada ainda e sem outra execução em
-                                        andamento para este item.
-                                      </Tooltip>
-                                    </>
-                                  ) : null}
+                                  <EnviarItemAutomacaoAcao
+                                    itemId={item.id}
+                                    guia={item.guia}
+                                    automacaoExecucaoAtiva={item.automacao_execucao_ativa}
+                                    convenio={solicitacao.convenio}
+                                    solicitacaoStatus={solicitacao.status}
+                                    testIdPrefix="solicitacao-item"
+                                    queryKeysInvalidar={[['solicitacoes']]}
+                                  />
                                   {!item.guia &&
                                   (solicitacao.itens?.length ?? 0) > 1 &&
                                   !STATUS_QUE_BLOQUEIAM_ADICAO.includes(
@@ -1375,15 +1274,6 @@ export function SolicitacoesPage() {
         solicitacao={solicitacaoParaAntecipar}
         onClose={() => setGerarAntecipacaoId(null)}
       />
-
-      <AutomacaoProgressoModal
-        execucaoId={progressoExecucaoId}
-        onClose={() => setProgressoExecucaoId(null)}
-        queryKeysInvalidar={[['solicitacoes']]}
-      />
-
-      <AvisoErro {...automacaoUnimedAvisoProps} testId="automacao-unimed-erro" />
-      <AutomacaoUnimedDesativadaModal {...automacaoUnimedModalProps} />
 
       {itemAExcluir ? (
         <ConfirmarExclusao

@@ -21,7 +21,7 @@ export function useSolicitacoes(filters: SolicitacaoFilters, page: number) {
       const { data } = await apiClient.get<PaginatedResponse<Solicitacao>>('/solicitacoes', {
         params: {
           ...filters,
-          page,
+          page,
         },
       })
 
@@ -422,8 +422,13 @@ export function useEnviarItemUnimed() {
 
       return data.data
     },
+    // 'antecipacoes' junto: os itens gerados por renovação também dependem
+    // deste envio manual, e o histórico daquela tela mostra o mesmo item.
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['solicitacoes'] })
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['solicitacoes'] }),
+        queryClient.invalidateQueries({ queryKey: ['antecipacoes'] }),
+      ])
     },
   })
 }
@@ -446,7 +451,10 @@ export function useVerificarAndamentoItem() {
       return data.data
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['solicitacoes'] })
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['solicitacoes'] }),
+        queryClient.invalidateQueries({ queryKey: ['antecipacoes'] }),
+      ])
     },
   })
 }

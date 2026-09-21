@@ -67,3 +67,13 @@ api/database/*.sqlite
 # versao do interpretador (cpython-314). Nao serve para outra maquina.
 __pycache__/
 *.pyc
+
+# Saida de rascunho das sessoes do Claude Code. O que vale ali e copiado para
+# docs/ quando presta — manter as duas copias so cria divergencia silenciosa.
+Claude outputs/
+
+# Planilhas de origem da SC Saude: 15 MB de XLSX que o git guardaria inteiros a
+# cada versao, para um dado que nao e lido por codigo nenhum. Os .md ao lado
+# registram o que foi extraido delas, que e o que o projeto precisa. Os
+# arquivos ficam com quem os recebeu.
+docs/scsaude/*.xlsx

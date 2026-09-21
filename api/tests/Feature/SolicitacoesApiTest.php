@@ -374,10 +374,15 @@ class SolicitacoesApiTest extends TestCase
             'tipo_terapia' => 'especializada',
             'status' => 'under_review',
             'data_solicitacao' => today(),
+            // Senha capturada antes, como a automação faz: finalizar não a
+            // devolve, só encerra a guia na operadora.
+            'senha' => 'SENHA-1',
         ]);
 
         $this->registrarSessaoParaGuia($guiaItem1);
-        app(\App\Services\GuiaService::class)->finalizar($guiaItem1, ['senha' => 'SENHA-1']);
+        // Guia de convênio com automação Unimed não finaliza pelo caminho
+        // manual — quem finaliza é o robô, depois que a operadora aceitou.
+        app(\App\Services\GuiaService::class)->finalizarPelaAutomacao($guiaItem1);
 
         // Item 2 nunca teve guia gerada: mesmo com o item 1 finalizado, a
         // solicitação inteira fica em 'ready_for_automation' — ainda falta

@@ -12,6 +12,7 @@ use App\Models\ConfiguracaoGlobal;
 use App\Models\ConvenioRegra;
 use Illuminate\Support\Facades\DB;
 use App\Services\Concerns\AppliesOwnScope;
+use App\Services\Sessoes\GuiasEmConflitoService;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use App\Support\OrdenaListagem;
@@ -125,6 +126,15 @@ class GuiaService
                     'COALESCE(sessoes_autorizadas, sessoes_solicitadas, 0) > '
                     .'(SELECT COUNT(*) FROM lancamentos WHERE lancamentos.guia_id = guias.id)'
                 ))
+            /*
+             * Guias apontadas pelo card "Sessões em conflito" do dashboard.
+             *
+             * A lista de ids vem do avaliador de agenda, não de SQL: a regra
+             * mora num lugar só (ver GuiasEmConflitoService). `whereIn` com
+             * lista vazia devolve nada, que é o certo — sem conflito, sem guia.
+             */
+            ->when(Arr::get($filtros, 'sessoes_em_conflito'), fn ($query) => $query
+                ->whereIn('guias.id', app(GuiasEmConflitoService::class)->guiaIds($this->tenantId())->all() ?: [0]))
             ->tap(fn ($query) => OrdenaListagem::aplicar(
                 $query->select('guias.*'),
                 $filtros,
@@ -328,8 +338,37 @@ class GuiaService
      * Desde 21/09/2026 a direcao oposta passou a valer: exige pelo menos 1
      * Lancamento antes de finalizar (o botao saiu das telas de Guias e foi
      * pro CRUD de sessoes, LancamentosPage, exatamente por causa disto).
+     *
+     * E desde a change `automacao-unimed-finalizar-guia` este caminho é o
+     * MANUAL: guia de convenio com automacao Unimed so finaliza depois que a
+     * operadora aceitou, por finalizarPelaAutomacao(). Ver a spec
+     * `automacao-unimed-finalizar-guia`.
      */
     public function finalizar(Guia $guia, array $dados): Guia
+    {
+        $guia->loadMissing('convenio');
+
+        if ($guia->convenio?->connector_driver === 'unimed_rda') {
+            throw GuiaStatusInvalidoException::finalizacaoExigeOperadora();
+        }
+
+        return $this->gravarFinalizacao($guia, $dados, GuiaStatusHistorico::ORIGEM_MANUAL);
+    }
+
+    /**
+     * Finalização vinda do robô, depois que a Unimed aceitou.
+     *
+     * Faz o mesmo bookkeeping do caminho manual — senha, validade e data —,
+     * só que a origem da transição é a automação, e não uma pessoa. Senha e
+     * validade continuam vindo de onde já vinham (captura da automação ou
+     * regra do convênio): finalizar no portal não devolve senha nova.
+     */
+    public function finalizarPelaAutomacao(Guia $guia): Guia
+    {
+        return $this->gravarFinalizacao($guia, [], GuiaStatusHistorico::ORIGEM_AUTOMACAO);
+    }
+
+    private function gravarFinalizacao(Guia $guia, array $dados, string $origem): Guia
     {
         if (! in_array($guia->status, [GuiaStatus::UNDER_REVIEW, GuiaStatus::APPROVED], true)) {
             throw GuiaStatusInvalidoException::transicaoInvalida($guia->status, GuiaStatus::FINALIZED);
@@ -379,7 +418,7 @@ class GuiaService
         ]);
 
         $this->registrarTransicao($guia, GuiaStatus::FINALIZED, [
-            'origem' => GuiaStatusHistorico::ORIGEM_MANUAL,
+            'origem' => $origem,
         ]);
 
         if ($guia->solicitacao_id) {

@@ -74,6 +74,84 @@ class DashboardGuiasCardTest extends TestCase
     }
 
     /**
+     * O card de sessões em conflito só existe quando há conflito.
+     *
+     * As regras de agenda valem para o que é gravado a partir delas, então o
+     * esperado é zero — e uma linha cravada em zero para sempre vira ruído no
+     * painel, que é o oposto de um alerta.
+     */
+    public function test_sessoes_em_conflito_so_aparece_quando_ha_conflito(): void
+    {
+        $this->autenticar();
+
+        $this->assertArrayNotHasKey('sessoes_em_conflito', $this->linhas());
+
+        $guia = $this->guia(['status' => GuiaStatus::APPROVED, 'sessoes_autorizadas' => 10]);
+        $this->sessao($guia, '2026-09-21', '08:00');
+        $this->sessao($guia, '2026-09-21', '08:20');
+
+        $linha = $this->linhas()['sessoes_em_conflito'];
+
+        $this->assertSame(1, $linha['value']);
+        $this->assertSame('/guias?sessoes_em_conflito=1', $linha['href']);
+    }
+
+    public function test_sessoes_em_conflito_conta_as_duas_guias_do_par(): void
+    {
+        $this->autenticar();
+
+        $primeira = $this->guia(['status' => GuiaStatus::APPROVED, 'sessoes_autorizadas' => 10]);
+        $segunda = $this->guia(['status' => GuiaStatus::APPROVED, 'sessoes_autorizadas' => 10]);
+
+        // Mesmo paciente (o helper usa sempre o primeiro), guias diferentes.
+        $this->sessao($primeira, '2026-09-21', '08:00');
+        $this->sessao($segunda, '2026-09-21', '08:20');
+
+        $this->assertSame(2, $this->linhas()['sessoes_em_conflito']['value']);
+    }
+
+    public function test_filtro_da_listagem_devolve_as_guias_contadas(): void
+    {
+        $this->autenticar();
+
+        $emConflito = $this->guia(['status' => GuiaStatus::APPROVED, 'sessoes_autorizadas' => 10]);
+        $this->sessao($emConflito, '2026-09-21', '08:00');
+        $this->sessao($emConflito, '2026-09-21', '08:20');
+
+        $limpa = $this->guia(['status' => GuiaStatus::APPROVED, 'sessoes_autorizadas' => 10]);
+        $this->sessao($limpa, '2026-09-25', '08:00');
+
+        $ids = collect($this->getJson('/api/guias?sessoes_em_conflito=1')->assertOk()->json('data'))
+            ->pluck('id')
+            ->all();
+
+        $this->assertSame([$emConflito->id], $ids);
+    }
+
+    public function test_filtro_da_listagem_sem_conflito_nao_devolve_nada(): void
+    {
+        $this->autenticar();
+
+        $guia = $this->guia(['status' => GuiaStatus::APPROVED, 'sessoes_autorizadas' => 10]);
+        $this->sessao($guia, '2026-09-21', '08:00');
+
+        $this->getJson('/api/guias?sessoes_em_conflito=1')->assertOk()->assertJsonCount(0, 'data');
+    }
+
+    /** Grava direto, sem passar pelo service — o ponto é simular o passivo anterior às regras. */
+    private function sessao(Guia $guia, string $data, string $hora): void
+    {
+        \App\Models\Lancamento::query()->create([
+            'tenant_id' => $guia->tenant_id,
+            'guia_id' => $guia->id,
+            'profissional_id' => $guia->profissional_id,
+            'data_sessao' => $data,
+            'hora_inicio' => $hora,
+            'status' => 'completed',
+        ]);
+    }
+
+    /**
      * "Verificar Restrição" segue as mesmas regras das negadas: conta pelo
      * status, some quando o alerta é ocultado, e o detalhe vem da data da
      * TRANSIÇÃO — não do `created_at` da guia.

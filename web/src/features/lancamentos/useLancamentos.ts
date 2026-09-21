@@ -4,6 +4,7 @@ import { getHttpErrorMessage } from '../../lib/httpError'
 import type { Guia, PaginatedResponse as GuiaPaginatedResponse } from '../guias/types'
 import type {
   AnaliticoUnimedPreview,
+  ConferenciaDeAgenda,
   LancamentoConfirmImportForm,
   Lancamento,
   LancamentoFilters,
@@ -12,6 +13,7 @@ import type {
   LancamentoPrintTemplate,
   LancamentoPrintTemplateForm,
   LancamentoTranscricaoImportResult,
+  LancamentoTranscricaoSessao,
   PaginatedResponse,
 } from './types'
 
@@ -120,6 +122,68 @@ export function useLerRegistroSessoes() {
       return data.data
     },
   })
+}
+
+const CONFERENCIA_VAZIA: ConferenciaDeAgenda = { conflitos: [], avisos: [] }
+
+/**
+ * Confere a grade contra as regras de agenda enquanto o operador digita.
+ *
+ * É uma consulta ao servidor, e não uma cópia da regra em TypeScript, de
+ * propósito: as regras dependem das sessões já gravadas em OUTRAS guias do
+ * paciente, que a tela não tem. Ver a spec `sessoes-regras-de-agenda`.
+ *
+ * Fica desabilitada sem guia ou sem linha preenchida — nesses casos não há o
+ * que conferir, e a chamada só ocuparia a rede.
+ */
+export function useConferirAgenda(params: {
+  guiaId: number | null
+  profissionalId: string
+  sessoes: LancamentoTranscricaoSessao[]
+}) {
+  const preenchidas = params.sessoes
+    .map((sessao, indice) => ({ indice, sessao }))
+    .filter(({ sessao }) => Boolean(sessao.data_sessao))
+
+  const habilitada = params.guiaId !== null && preenchidas.length > 0
+
+  const query = useQuery({
+    // A chave carrega data e hora de cada linha: mexer numa delas refaz a
+    // conferência, mexer no resumo não.
+    queryKey: [
+      'conferencia-agenda',
+      params.guiaId,
+      params.profissionalId,
+      params.sessoes.map((sessao) => `${sessao.data_sessao ?? ''}@${sessao.hora_inicio ?? ''}`).join('|'),
+    ],
+    queryFn: async () => {
+      const { data } = await apiClient.post<{ data: ConferenciaDeAgenda }>(
+        `/guias/${params.guiaId}/lancamentos/conferir-agenda`,
+        {
+          profissional_id: params.profissionalId ? Number(params.profissionalId) : null,
+          // O índice REAL da linha vai como chave, para a resposta apontar a
+          // linha da grade e não a posição na lista filtrada.
+          sessoes: Object.fromEntries(
+            preenchidas.map(({ indice, sessao }) => [
+              indice,
+              { data_sessao: sessao.data_sessao, hora_inicio: sessao.hora_inicio },
+            ]),
+          ),
+        },
+      )
+
+      return data.data
+    },
+    enabled: habilitada,
+    // Enquanto digita, mostrar o resultado anterior evita a grade piscar entre
+    // "sem conflito" e o conflito que continua lá.
+    placeholderData: (anterior) => anterior,
+  })
+
+  return {
+    conferencia: habilitada ? (query.data ?? CONFERENCIA_VAZIA) : CONFERENCIA_VAZIA,
+    conferindo: query.isFetching,
+  }
 }
 
 export function useConfirmarLancamentosTranscritos() {

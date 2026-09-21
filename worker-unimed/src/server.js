@@ -2,6 +2,7 @@ import http from 'node:http'
 import { executarGerarGuia } from './operations/gerarGuia.js'
 import { executarCapturarAutorizacaoBatch, executarConsultarStatusBatch } from './operations/statusSenha.js'
 import { executarConfirmarGuiaIncerta } from './operations/confirmarGuiaIncerta.js'
+import { executarFinalizarGuia } from './operations/finalizarGuia.js'
 
 const port = Number(process.env.UNIMED_WORKER_PORT ?? 8787)
 // Padrao 127.0.0.1 para execucao local. Em container precisa ser 0.0.0.0,
@@ -85,6 +86,17 @@ const server = http.createServer(async (request, response) => {
         return
       }
 
+      if (operation === 'finalizar_guia') {
+        const result = await executarFinalizarGuia({
+          executionId: payload.execution_id ?? null,
+          idempotencyKey: payload.idempotency_key ?? null,
+          payload: payload.payload ?? {},
+        })
+
+        sendJson(response, 200, result)
+        return
+      }
+
       if (operation === 'confirmar_guia_incerta') {
         const result = await executarConfirmarGuiaIncerta({
           executionId: payload.execution_id ?? null,
@@ -119,3 +131,7 @@ const server = http.createServer(async (request, response) => {
 server.listen(port, host, () => {
   console.log(`Unimed worker listening on http://${host}:${port}`)
 })
+
+// Exportado para o teste de roteamento poder falar com o servidor de verdade
+// em vez de reimplementar o `if` de cada operação.
+export { server }

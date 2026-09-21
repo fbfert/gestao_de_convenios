@@ -62,6 +62,35 @@ class AutomationErrorCatalog
             self::CREDENTIAL_MISSING => 'Convênio sem credencial de automação ativa',
             'WORKER_UNAVAILABLE' => 'Worker indisponível',
             'TENANT_LOCK_UNAVAILABLE' => 'Automação concorrente bloqueada',
+
+            /*
+             * Finalização de guia na Unimed.
+             *
+             * Cada rótulo diz ao operador o que fazer, e não o que a função
+             * retornou: o portal real nunca foi visto em desenvolvimento (não
+             * há homologação da Unimed), então boa parte destes erros vai
+             * aparecer pela primeira vez em produção e precisa se explicar
+             * sozinha. Ver a spec `automacao-unimed-finalizar-guia`.
+             */
+            'NUMERO_GUIA_AUSENTE' => 'Guia sem número da operadora',
+            'SEM_SESSOES_PARA_ENVIAR' => 'Guia sem sessões para enviar',
+            'TELA_BUSCA_GUIA_NAO_ENCONTRADA' => 'Não achei a busca de guia no portal — confira o caminho configurado',
+            'GUIA_NAO_ENCONTRADA_NO_PORTAL' => 'A busca no portal não devolveu esta guia',
+            'TELA_EXECUCAO_NAO_ABRIU' => 'A tela de execução da guia não abriu no portal',
+            'REGIME_ATENDIMENTO_RECUSADO' => 'O portal não aceitou o regime de atendimento',
+            'TIPO_ATENDIMENTO_RECUSADO' => 'O portal não aceitou o tipo de atendimento',
+            'QT_AUTORIZADA_NAO_LIDA' => 'Não consegui ler a quantidade autorizada no portal',
+            'QT_AUTORIZADA_DIVERGENTE' => 'Quantidade autorizada diverge entre o Gescon e o portal',
+            'SESSOES_ACIMA_DO_AUTORIZADO' => 'Há mais sessões registradas do que o portal autoriza',
+            'SESSOES_ACIMA_DO_MAXIMO' => 'Mais sessões do que as dez que o portal aceita por guia',
+            'DT_SERIE_CAMPO_INDISPONIVEL' => 'Campo de data da série indisponível no portal',
+            'DT_SERIE_FORMATO_RECUSADO' => 'O portal recusou o formato da data da sessão',
+            'ANEXO_SEM_CAMINHO' => 'Folha de registro sem arquivo no servidor',
+            'ANEXO_BOTAO_NAO_ENCONTRADO' => 'Não achei o botão de anexos no portal',
+            'ANEXO_NAO_CONFIRMADO' => 'O portal não confirmou o envio da folha',
+            'BOTAO_GRAVAR_FINALIZAR_NAO_ENCONTRADO' => 'Não achei o botão Gravar e Finalizar no portal',
+            'GRAVAR_FINALIZAR_RECUSADO' => 'O portal recusou a finalização',
+
             default => $code ?: 'Erro não classificado',
         };
     }

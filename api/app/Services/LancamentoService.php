@@ -2,12 +2,17 @@
 
 namespace App\Services;
 
+use App\Exceptions\ConflitoDeAgendaException;
 use App\Models\Guia;
 use App\Models\Lancamento;
 use App\Models\Profissional;
 use App\Services\Concerns\AppliesOwnScope;
 use App\Services\LancamentoTranscricaoService;
+use App\Services\Sessoes\AvaliadorDeAgenda;
+use App\Services\Sessoes\ResultadoDeAgenda;
+use App\Services\Sessoes\SessaoCandidata;
 use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use App\Support\OrdenaListagem;
 use Illuminate\Support\Arr;
@@ -20,7 +25,8 @@ class LancamentoService
     use AppliesOwnScope;
 
     public function __construct(
-        private readonly LancamentoTranscricaoService $transcricaoService
+        private readonly LancamentoTranscricaoService $transcricaoService,
+        private readonly AvaliadorDeAgenda $avaliadorDeAgenda,
     ) {
     }
 
@@ -91,6 +97,7 @@ class LancamentoService
                 'profissional',
                 'guia.paciente',
                 'guia.solicitacaoItem.solicitacao.medico',
+                'guia.convenio',
             ])
             ->orderBy('lancamentos.data_sessao')
             ->orderBy('lancamentos.id')
@@ -145,9 +152,75 @@ class LancamentoService
     {
         return DB::transaction(function () use ($guia, $profissional, $dados) {
             $this->garantirVaga($guia);
+            $this->garantirAgendaLivre($guia, $profissional->id, [$dados]);
 
             return $this->persistirSessao($guia, $profissional, $dados)->refresh();
         });
+    }
+
+    /**
+     * Confere as sessões contra as regras de agenda sem gravar nada.
+     *
+     * É o que a grade de conferência chama enquanto o operador digita: sem
+     * isso a tela teria de reimplementar as regras em TypeScript, e duas
+     * cópias da mesma regra divergem com o tempo. Ver
+     * App\Services\Sessoes\AvaliadorDeAgenda.
+     *
+     * A referência de cada candidata é a chave que veio no array de sessões —
+     * na grade isso é o índice da linha, que é o que a tela usa para marcar a
+     * linha certa.
+     *
+     * @param  array<array-key, array{data_sessao?:string|null, hora_inicio?:string|null}>  $sessoes
+     */
+    public function conferirAgenda(
+        Guia $guia,
+        ?int $profissionalId,
+        array $sessoes,
+        ?int $ignorarLancamentoId = null,
+    ): ResultadoDeAgenda {
+        $guia->loadMissing('especialidade');
+
+        $candidatas = [];
+
+        foreach ($sessoes as $chave => $sessao) {
+            if (empty($sessao['data_sessao'])) {
+                continue;
+            }
+
+            $candidatas[] = new SessaoCandidata(
+                referencia: (string) $chave,
+                pacienteId: (int) $guia->paciente_id,
+                especialidadeId: $guia->especialidade_id !== null ? (int) $guia->especialidade_id : null,
+                especialidadeNome: $guia->especialidade?->nome,
+                profissionalId: $profissionalId,
+                data: CarbonImmutable::parse($sessao['data_sessao']),
+                horaInicio: SessaoCandidata::normalizarHora($sessao['hora_inicio'] ?? null),
+                lancamentoId: $ignorarLancamentoId,
+                guiaId: (int) $guia->id,
+                guiaNumero: $guia->numero_guia,
+            );
+        }
+
+        return $this->avaliadorDeAgenda->avaliar($candidatas);
+    }
+
+    /**
+     * O mesmo da conferência, mas recusando: é por aqui que passam todos os
+     * caminhos que gravam sessão.
+     *
+     * @param  array<array-key, array{data_sessao?:string|null, hora_inicio?:string|null}>  $sessoes
+     */
+    private function garantirAgendaLivre(
+        Guia $guia,
+        ?int $profissionalId,
+        array $sessoes,
+        ?int $ignorarLancamentoId = null,
+    ): void {
+        $resultado = $this->conferirAgenda($guia, $profissionalId, $sessoes, $ignorarLancamentoId);
+
+        if ($resultado->temConflito()) {
+            throw new ConflitoDeAgendaException($resultado);
+        }
     }
 
     /**
@@ -170,8 +243,27 @@ class LancamentoService
         }
     }
 
+    /**
+     * Editar data ou hora é decisão nova sobre a agenda, então passa pelas
+     * mesmas regras — com a sessão editada fora da comparação, senão ela
+     * conflitaria consigo mesma.
+     */
     public function atualizar(Lancamento $lancamento, array $dados): Lancamento
     {
+        if (array_key_exists('data_sessao', $dados) || array_key_exists('hora_inicio', $dados)) {
+            $lancamento->loadMissing('guia.especialidade');
+
+            $this->garantirAgendaLivre(
+                $lancamento->guia,
+                (int) ($dados['profissional_id'] ?? $lancamento->profissional_id),
+                [[
+                    'data_sessao' => $dados['data_sessao'] ?? $lancamento->data_sessao?->toDateString(),
+                    'hora_inicio' => $dados['hora_inicio'] ?? $lancamento->hora_inicio,
+                ]],
+                ignorarLancamentoId: (int) $lancamento->id,
+            );
+        }
+
         $lancamento->fill(array_filter([
             'profissional_id' => $dados['profissional_id'] ?? null,
             'data_sessao' => $dados['data_sessao'] ?? null,
@@ -223,6 +315,18 @@ class LancamentoService
         if ($sessoesPreenchidas === []) {
             throw new RuntimeException('Nenhuma linha da grade tem data preenchida.');
         }
+
+        /*
+         * Antes da transação, e contra a grade INTEIRA de uma vez: o operador
+         * precisa ver todos os conflitos juntos, não descobrir um a cada
+         * tentativa. Referências são os índices originais da grade (não os da
+         * lista filtrada), que é o que a tela usa para marcar a linha.
+         */
+        $this->garantirAgendaLivre(
+            $guia,
+            $profissional->id,
+            array_filter($sessoes, fn ($sessao) => ! empty($sessao['data_sessao'])),
+        );
 
         $registros = DB::transaction(function () use ($guia, $profissional, $transcricao, $sessoesPreenchidas) {
             $registros = [];

@@ -10,6 +10,8 @@ use App\Models\ConfiguracaoGlobal;
 use App\Models\Guia;
 use App\Services\Automation\CapturarSenhaValidadeUnimedService;
 use App\Services\Automation\ConsultarStatusUnimedService;
+use App\Services\Automation\FinalizarGuiaPreVoo;
+use App\Services\Automation\FinalizarGuiaUnimedService;
 use App\Services\GuiaService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -44,6 +46,7 @@ class GuiaController extends Controller
                 // dentro; a tradução para os filtros internos é logo abaixo.
                 'pendente',
                 'senha_vencendo',
+                'sessoes_em_conflito',
             ]), $request->integer('per_page') ?: ConfiguracaoGlobal::itensPorPagina())
         );
     }
@@ -121,6 +124,43 @@ class GuiaController extends Controller
                 'operacao' => $execucao->operacao,
                 'guia_id' => $execucao->guia_id,
                 'queued_at' => $execucao->queued_at?->toISOString(),
+            ],
+        ], 202);
+    }
+
+    /**
+     * O que a tela precisa saber antes de oferecer a finalização.
+     *
+     * Só leitura: é daqui que saem os diálogos de decisão (finalizar com menos
+     * sessões, cortar no autorizado, finalizar sem folha) e a lista de
+     * conflitos que impedem o envio.
+     */
+    public function preVooFinalizarUnimed(Guia $guia, FinalizarGuiaPreVoo $preVoo): JsonResponse
+    {
+        return response()->json(['data' => $preVoo->avaliar($guia)]);
+    }
+
+    public function finalizarUnimed(Request $request, Guia $guia, FinalizarGuiaUnimedService $finalizarGuia): JsonResponse
+    {
+        $confirmacoes = $request->validate([
+            FinalizarGuiaPreVoo::DECISAO_MENOS_SESSOES => ['sometimes', 'boolean'],
+            FinalizarGuiaPreVoo::DECISAO_LIMITAR_AO_AUTORIZADO => ['sometimes', 'boolean'],
+            FinalizarGuiaPreVoo::DECISAO_SEM_ANEXO => ['sometimes', 'boolean'],
+        ]);
+
+        $execucao = $finalizarGuia->enviar($guia, array_map(
+            static fn ($valor) => (bool) $valor,
+            $confirmacoes,
+        ));
+
+        return response()->json([
+            'data' => [
+                'id' => $execucao->id,
+                'status' => $execucao->status,
+                'operacao' => $execucao->operacao,
+                'guia_id' => $execucao->guia_id,
+                'queued_at' => $execucao->queued_at?->toISOString(),
+                'simulado' => (bool) ($execucao->payload['simular'] ?? false),
             ],
         ], 202);
     }

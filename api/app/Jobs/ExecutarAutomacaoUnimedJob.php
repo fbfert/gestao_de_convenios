@@ -8,6 +8,7 @@ use App\Services\Automation\AutomacaoService;
 use App\Services\Automation\CapturarSenhaValidadeUnimedService;
 use App\Services\Automation\ConfirmarGuiaIncertaUnimedService;
 use App\Services\Automation\ConsultarStatusUnimedService;
+use App\Services\Automation\FinalizarGuiaUnimedService;
 use App\Services\Automation\GerarGuiaUnimedService;
 use App\Services\Automation\UnimedCircuitBreakerService;
 use App\Services\Automation\UnimedWorkerClient;
@@ -39,6 +40,7 @@ class ExecutarAutomacaoUnimedJob implements ShouldQueue
         $execucao = AutomacaoExecucao::query()->findOrFail($this->execucaoId);
         $capturarSenhaValidadeUnimed = app(CapturarSenhaValidadeUnimedService::class);
         $confirmarGuiaIncertaUnimed = app(ConfirmarGuiaIncertaUnimedService::class);
+        $finalizarGuiaUnimed = app(FinalizarGuiaUnimedService::class);
         $lock = Cache::lock("automacao:unimed:tenant:{$execucao->tenant_id}:{$execucao->operacao}", 300);
 
         if (! $lock->get()) {
@@ -58,6 +60,7 @@ class ExecutarAutomacaoUnimedJob implements ShouldQueue
                 'consultar_status', ConsultarStatusUnimedService::OPERATION => $consultarStatusUnimed->payloadParaWorker($execucao),
                 CapturarSenhaValidadeUnimedService::OPERATION => $capturarSenhaValidadeUnimed->payloadParaWorker($execucao),
                 ConfirmarGuiaIncertaUnimedService::OPERATION => $confirmarGuiaIncertaUnimed->payloadParaWorker($execucao),
+                FinalizarGuiaUnimedService::OPERATION => $finalizarGuiaUnimed->payloadParaWorker($execucao),
                 default => $execucao->payload ?? [],
             };
             $resultado = $worker->executar($execucao, $payload);
@@ -86,6 +89,8 @@ class ExecutarAutomacaoUnimedJob implements ShouldQueue
                 $capturarSenhaValidadeUnimed->aplicarResultado($execucao, $resultado);
             } elseif ($execucao->operacao === ConfirmarGuiaIncertaUnimedService::OPERATION) {
                 $confirmarGuiaIncertaUnimed->aplicarResultado($execucao, $resultado);
+            } elseif ($execucao->operacao === FinalizarGuiaUnimedService::OPERATION) {
+                $finalizarGuiaUnimed->aplicarResultado($execucao, $resultado);
             } else {
                 $automacoes->concluir($execucao, $resultado);
             }

@@ -186,3 +186,30 @@ export type GuiaImportPreview = {
   lote: GuiaImportLote
   linhas: GuiaImportLinha[]
 }
+
+/**
+ * Uma decisão que só uma pessoa pode tomar antes de finalizar na Unimed.
+ *
+ * `chave` é o nome com que a confirmação volta no disparo — a API recusa o
+ * POST enquanto uma decisão detectada não vier confirmada, para que um
+ * cliente fora da tela não drible o diálogo.
+ */
+export type FinalizarUnimedDecisao = {
+  chave: 'confirmar_menos_sessoes' | 'limitar_ao_autorizado' | 'confirmar_sem_anexo'
+  mensagem: string
+  registradas?: number
+  autorizadas?: number
+  regional_exige?: boolean
+}
+
+export type FinalizarUnimedPreVoo = {
+  pode_finalizar: boolean
+  impedimentos: string[]
+  conflitos: Array<{ tipo: string; mensagem: string; guia_numero: string | null }>
+  decisoes: FinalizarUnimedDecisao[]
+  sessoes: Array<{ data: string | null; hora: string | null }>
+  sessoes_autorizadas: number | null
+  folhas: number
+  /** Modo simulação ligado: o robô preenche tudo e NÃO grava e finaliza. */
+  simular: boolean
+}

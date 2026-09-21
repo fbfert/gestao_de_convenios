@@ -222,8 +222,10 @@ TXT;
             'transcricao' => $transcricao,
             'confirmar_envio' => true,
             'sessoes' => [
+                // 08 e 09 de abril, como na folha: as regras de agenda não
+                // deixam duas sessões da mesma especialidade no mesmo dia.
                 [
-                    'data_sessao' => '2026-04-09',
+                    'data_sessao' => '2026-04-08',
                     'hora_inicio' => '14:50',
                     'hora_fim' => '15:40',
                     'acompanhante' => 'Bruno Marinho',
@@ -285,7 +287,7 @@ TXT;
         $confirmacao->assertCreated()
             ->assertJsonPath('data.confirmacao_pendente', false)
             ->assertJsonPath('data.cabecalho.clinica', 'Centro Neuro Kids Ltda')
-            ->assertJsonPath('data.sessoes.0.data_sessao', '2026-04-09')
+            ->assertJsonPath('data.sessoes.0.data_sessao', '2026-04-08')
             ->assertJsonPath('data.registros.0.hora_inicio', '14:50')
             ->assertJsonPath('data.registros.7.hora_fim', '16:20');
 
@@ -484,13 +486,15 @@ TXT;
         $tenant = Tenant::query()->where('slug', 'clinica-exemplo')->firstOrFail();
         $profissional = Profissional::query()->where('nome', 'Dra. Marina Tavares')->firstOrFail();
 
+        // Um dia por sessão: as três guias são do mesmo paciente e da mesma
+        // especialidade, e o limite diário não deixa duas caírem no mesmo dia.
         $lancamentoA = $this->criarLancamentoParaProfissional($tenant, $profissional, 'Unimed', 'especializada', 'GUIA-PAG-A-'.uniqid());
         $guiaA = $lancamentoA->guia;
         app(LancamentoService::class)->registrar($guiaA, $profissional, today()->subDay());
         app(LancamentoService::class)->registrar($guiaA, $profissional, today()->subDays(2));
 
-        $lancamentoB = $this->criarLancamentoParaProfissional($tenant, $profissional, 'Unimed', 'especializada', 'GUIA-PAG-B-'.uniqid());
-        $lancamentoC = $this->criarLancamentoParaProfissional($tenant, $profissional, 'Unimed', 'especializada', 'GUIA-PAG-C-'.uniqid());
+        $lancamentoB = $this->criarLancamentoParaProfissional($tenant, $profissional, 'Unimed', 'especializada', 'GUIA-PAG-B-'.uniqid(), today()->subDays(3));
+        $lancamentoC = $this->criarLancamentoParaProfissional($tenant, $profissional, 'Unimed', 'especializada', 'GUIA-PAG-C-'.uniqid(), today()->subDays(4));
 
         $pagina1 = $this->getJson('/api/lancamentos?per_page=2')->assertOk();
         $pagina1->assertJsonCount(2, 'data')
@@ -617,7 +621,13 @@ TXT;
         ]);
     }
 
-    private function criarLancamentoParaProfissional(Tenant $tenant, Profissional $profissional, string $convenioNome, string $tipoTerapia, string $prefixoNumero): Lancamento
+    /**
+     * `$data` existe porque as regras de agenda limitam sessões por paciente,
+     * especialidade e dia — guias diferentes do mesmo paciente na mesma
+     * especialidade não podem cair todas no mesmo dia. Quem cria mais de uma
+     * guia para o mesmo paciente espalha as datas.
+     */
+    private function criarLancamentoParaProfissional(Tenant $tenant, Profissional $profissional, string $convenioNome, string $tipoTerapia, string $prefixoNumero, ?\Carbon\Carbon $data = null): Lancamento
     {
         $convenioId = Convenio::query()->where('nome', $convenioNome)->firstOrFail()->id;
 
@@ -641,7 +651,7 @@ TXT;
             'observacoes' => null,
         ]);
 
-        return app(LancamentoService::class)->registrar($guia, $profissional, today());
+        return app(LancamentoService::class)->registrar($guia, $profissional, $data ?? today());
     }
 
     private function criarArquivoAnaliticoUnimed(): UploadedFile

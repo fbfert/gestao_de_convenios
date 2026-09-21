@@ -707,22 +707,20 @@
 <h3>Ações de status</h3>
 <table>
   <tr><th>Botão</th><th>O que faz</th></tr>
-  <tr><td><span class="btn">Finalizar</span></td><td>
-    Aparece em <span class="badge azul">Em análise</span> e também em <span class="badge verde">Autorizada</span>.<br>
-    Em <span class="badge azul">Em análise</span>: abre um mini-formulário para informar a
-    <strong>Senha</strong> (obrigatória) e a <strong>Validade da senha</strong> (opcional).<br>
-    Em <span class="badge verde">Autorizada</span>: o mesmo formulário já vem preenchido com a senha e
-    validade que a automação capturou sozinha — revise e confirme.<br>
-    Nos dois casos, ao confirmar a guia passa para <span class="badge verde">Aprovada</span>.
+  <tr><td><span class="btn">Aprovar</span></td><td>
+    Só aparece em <span class="badge azul">Em análise</span>. Leva a guia a
+    <span class="badge verde">Autorizada</span>, que é a situação em que ela já aceita lançamento de
+    sessão. Para convênio com automação Unimed isso costuma acontecer sozinho, pelo robô; este botão
+    existe para os demais convênios, e para quando a automação não deu conta.
   </td></tr>
   <tr><td><span class="btn">Negar</span></td><td>Só aparece em <span class="badge azul">Em análise</span>. Marca a guia como <span class="badge vermelho">Negada</span>, sem campos extra — não faz sentido negar uma guia que a operadora já autorizou.</td></tr>
 </table>
 <div class="nota">Uma vez aprovada, negada ou vencida, a guia não tem mais botões de mudança de status — o fluxo é de mão única pela tela.</div>
 <div class="nota">
-  <strong>Lançar sessão não espera mais o Finalizar.</strong> Toda guia <span class="badge verde">Autorizada</span>
-  ou <span class="badge verde">Aprovada</span> já aceita lançamento em <a href="#lancamentos">Sessões</a> — a
-  quantidade disponível é contada ao vivo a partir das sessões autorizadas da própria guia. Finalizar virou só
-  bookkeeping de senha e validade, sem efeito nenhum sobre isso.
+  <strong>Finalizar não fica mais aqui.</strong> Finalizar depende de haver sessão registrada, então a ação
+  mora em <a href="#lancamentos">Sessões</a>, no grupo de cada guia. E lançar sessão não espera por ela: toda
+  guia <span class="badge verde">Autorizada</span> ou <span class="badge verde">Aprovada</span> já aceita
+  lançamento, com a quantidade disponível contada ao vivo a partir das sessões autorizadas da própria guia.
 </div>
 <h3>Alerta de guias negadas</h3>
 <p>
@@ -950,8 +948,74 @@
 </ol>
 <div class="nota">
   Se o número do cartão do convênio começar com <code>0220</code>, o sistema exige o anexo do PDF do registro de
-  sessões antes de liberar a confirmação — o botão fica bloqueado até o arquivo ser anexado.
+  sessões antes de liberar a confirmação — o botão fica bloqueado até o arquivo ser anexado. <strong>Uma folha
+  basta para confirmar:</strong> guia de dez sessões costuma ser impressa em duas vias e preenchida em partes, e
+  as demais podem ser anexadas depois, no detalhe da guia, em <strong>Folhas de registro</strong>.
 </div>
+
+<h3>Regras de agenda das sessões</h3>
+<p>
+  Enquanto você preenche a grade, o sistema confere se as sessões poderiam ter acontecido. A conferência
+  considera também o que já está gravado em <strong>outras guias do mesmo paciente</strong>, não só as linhas
+  da folha em mãos.
+</p>
+<table>
+  <tr><th>Regra</th><th>O que vale</th></tr>
+  <tr><td>Intervalo mínimo</td><td>Ao menos <strong>50 minutos entre os inícios</strong> de duas sessões do mesmo paciente. É o que o portal da Unimed exige.</td></tr>
+  <tr><td>Limite diário</td><td><strong>8 sessões por dia</strong> na mesma especialidade quando é terapia ABA; <strong>1 por dia</strong> quando não é.</td></tr>
+  <tr><td>Especialidades diferentes</td><td>O paciente pode ter mais de uma especialidade no mesmo dia — o que ele não pode é estar em duas ao mesmo tempo.</td></tr>
+</table>
+<p>
+  A linha em conflito fica <strong>marcada em vermelho</strong>, com o motivo e a guia contra a qual bateu, e o
+  botão de registrar espera a correção. Corrigir a data ou a hora na própria grade reconfere na hora.
+</p>
+<div class="nota">
+  <strong>Conflito de agenda não tem "confirmar assim mesmo".</strong> Diferente da divergência de paciente — que
+  aceita justificativa, porque há casos legítimos —, aqui o horário está errado de um dos dois lados, e enviar
+  assim leva o erro para a operadora.
+</div>
+<div class="nota">
+  Um aviso à parte, <strong>em amarelo e sem bloquear</strong>, mostra quando o executante já tem sessão com outro
+  paciente naquele horário. Quem está com a folha na mão raramente pode resolver a agenda alheia, e o erro pode
+  estar do outro lado.
+</div>
+<p>
+  As regras valem para o que for gravado a partir de agora. Para o que já estava no sistema, o
+  <a href="#dashboard">Dashboard</a> ganha o card <strong>Sessões em conflito</strong> no grupo de Guias — ele só
+  aparece quando existe algo a corrigir, e leva à lista dessas guias.
+</p>
+
+<h3>Finalizar a guia</h3>
+<p>
+  A ação de finalizar mora aqui, no grupo de cada guia, e não nas telas de Guias: finalizar exige ao menos uma
+  sessão registrada. O que o botão faz depende do convênio.
+</p>
+<table>
+  <tr><th>Convênio</th><th>O que acontece</th></tr>
+  <tr><td>Sem automação</td><td><span class="btn">Finalizar</span> abre o mini-formulário de <strong>Senha</strong> e <strong>Validade da senha</strong>, como sempre.</td></tr>
+  <tr><td>Com automação Unimed</td><td><span class="btn">Finalizar na Unimed</span> manda o robô ao portal. A guia <strong>só fica finalizada no Gescon quando a operadora aceitar</strong>.</td></tr>
+</table>
+<p>
+  No portal, o robô busca a guia, fixa regime <em>Ambulatorial</em> e tipo <em>Outras Terapias</em>, preenche as
+  datas das sessões registradas aqui — da mais antiga para a mais recente —, anexa <strong>todas</strong> as
+  folhas de registro da guia e finaliza.
+</p>
+<p>Antes de abrir o portal, o sistema pergunta o que depende de decisão:</p>
+<ul>
+  <li><strong>Menos sessões do que o autorizado:</strong> mostra as duas quantidades e pede confirmação de encerrar a guia com menos.</li>
+  <li><strong>Mais sessões do que o autorizado:</strong> oferece enviar só as mais antigas, até o limite, ou parar para revisar.</li>
+  <li><strong>Sem folha anexada:</strong> avisa — e avisa mais forte na regional <code>0220</code>, que exige a folha — e pede confirmação explícita.</li>
+</ul>
+<div class="nota">
+  <strong>Modo simulação.</strong> Enquanto ligado (é o padrão), o robô percorre o portal inteiro e
+  <strong>para antes de Gravar e Finalizar</strong>, guardando uma foto da tela preenchida. Serve para conferir o
+  que teria sido enviado — a Unimed não tem ambiente de teste. O painel do botão avisa em amarelo quando a
+  simulação está ligada, e a guia não muda de situação nessas execuções. Desliga-se em Configurações.
+</div>
+<p>
+  No detalhe da guia, a seção <strong>Finalizações na Unimed</strong> lista cada tentativa: quando foi, o
+  resultado e, havendo falha, o motivo. Execução em simulação aparece marcada como tal.
+</p>
 <div class="nota">
   A leitura por IA usa o prompt <code>ler_sessoes_escaneadas</code>, editável em Configurações → IA → Prompts
   Operacionais.

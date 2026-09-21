@@ -2,6 +2,7 @@
 
 use App\Exceptions\AntecipacaoCotaEsgotadaException;
 use App\Exceptions\ConciliacaoStatusInvalidoException;
+use App\Exceptions\ConflitoDeAgendaException;
 use App\Exceptions\ConvenioRegraNaoEncontradaException;
 use App\Exceptions\GuiaStatusInvalidoException;
 use App\Exceptions\SolicitacaoStatusInvalidoException;
@@ -72,5 +73,14 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $exceptions->render(function (GuiaStatusInvalidoException|AntecipacaoCotaEsgotadaException|SolicitacaoStatusInvalidoException|ConciliacaoStatusInvalidoException $e, Request $request) {
             return response()->json(['message' => $e->getMessage()], 422);
+        });
+
+        /*
+          422 como os outros, mas com corpo maior: a tela precisa saber qual
+          linha da grade conflitou e contra o quê para marcar a linha. Ver
+          ConflitoDeAgendaException.
+        */
+        $exceptions->render(function (ConflitoDeAgendaException $e, Request $request) {
+            return response()->json($e->payload(), 422);
         });
     })->create();

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\ConfiguracaoGlobal;
 use App\Models\Guia;
 use App\Models\GuiaStatusHistorico;
+use App\Services\Sessoes\GuiasEmConflitoService;
 use App\Support\GuiaStatus;
 
 /**
@@ -23,6 +24,11 @@ class DashboardGuiasCardService
     /** Prazo em que "vence logo" vira urgencia, dentro da janela configurada. */
     private const DIAS_URGENTE = 2;
 
+    public function __construct(
+        private readonly GuiasEmConflitoService $guiasEmConflito,
+    ) {
+    }
+
     public function montar(int $tenantId): array
     {
         $hoje = today();
@@ -36,7 +42,9 @@ class DashboardGuiasCardService
         $restricao = $porTransicao[GuiaStatus::NEEDS_VERIFICATION] ?? ['hoje' => 0, 'semana' => 0];
         $emAnalise = $porTransicao[GuiaStatus::UNDER_REVIEW] ?? ['hoje' => 0, 'semana' => 0];
 
-        return [
+        $emConflito = $this->guiasEmConflito->contar($tenantId);
+
+        $cards = [
             [
                 'key' => 'negadas',
                 'label' => 'Negadas',
@@ -80,6 +88,25 @@ class DashboardGuiasCardService
                 'href' => '/antecipacoes',
             ],
         ];
+
+        /*
+          Só aparece quando existe: as regras de agenda valem para o que é
+          gravado a partir delas, então o esperado é zero, e um card cravado em
+          zero vira ruído permanente no painel. Quando aparece, é passivo que
+          impede finalizar a guia na operadora.
+        */
+        if ($emConflito > 0) {
+            $cards[] = [
+                'key' => 'sessoes_em_conflito',
+                'label' => 'Sessões em conflito',
+                'value' => $emConflito,
+                'unidade' => 'guias',
+                'detail' => 'intervalo ou limite diário violado',
+                'href' => '/guias?sessoes_em_conflito=1',
+            ];
+        }
+
+        return $cards;
     }
 
     /**

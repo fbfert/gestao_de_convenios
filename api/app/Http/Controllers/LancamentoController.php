@@ -11,16 +11,15 @@ use App\Http\Resources\LancamentoResource;
 use App\Models\ConfiguracaoGlobal;
 use App\Models\Guia;
 use App\Models\Lancamento;
-use App\Models\PacienteArquivo;
 use App\Models\Profissional;
 use App\Services\AnaliticoUnimedImportService;
 use App\Services\LancamentoService;
 use App\Services\RegistroSessoesAiService;
+use App\Services\Sessoes\FolhasDeRegistroService;
 use App\Support\Auditoria;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -28,7 +27,8 @@ class LancamentoController extends Controller
 {
     public function __construct(
         private readonly LancamentoService $service,
-        private readonly AnaliticoUnimedImportService $analiticoImportService
+        private readonly AnaliticoUnimedImportService $analiticoImportService,
+        private readonly FolhasDeRegistroService $folhas,
     ) {}
 
     /**
@@ -54,6 +54,9 @@ class LancamentoController extends Controller
                     'validade_senha' => $grupo['guia']->validade_senha?->toDateString(),
                     'paciente_nome' => $grupo['guia']->paciente?->nome,
                     'medico_nome' => $grupo['guia']->solicitacaoItem?->solicitacao?->medico?->nome,
+                    // Decide qual finalização a tela oferece: guia de convênio
+                    // com automação é finalizada NA OPERADORA, não à mão.
+                    'connector_driver' => $grupo['guia']->convenio?->connector_driver,
                 ] : null,
                 'lancamentos' => LancamentoResource::collection($grupo['lancamentos'])->resolve(),
             ])->values(),
@@ -129,6 +132,32 @@ class LancamentoController extends Controller
         ]);
     }
 
+    /**
+     * Confere a grade contra as regras de agenda sem gravar.
+     *
+     * A grade chama isto enquanto o operador digita, para marcar a linha em
+     * conflito na hora. A conferência de verdade continua acontecendo na
+     * confirmação — esta é só a que dá retorno cedo, e usa exatamente o mesmo
+     * avaliador, para não existirem duas versões da regra.
+     */
+    public function conferirAgenda(Request $request, Guia $guia): JsonResponse
+    {
+        $dados = $request->validate([
+            'profissional_id' => ['nullable', 'integer', 'exists:profissionais,id'],
+            'sessoes' => ['array'],
+            'sessoes.*.data_sessao' => ['nullable', 'date'],
+            'sessoes.*.hora_inicio' => ['nullable', 'date_format:H:i'],
+        ]);
+
+        $resultado = $this->service->conferirAgenda(
+            $guia,
+            isset($dados['profissional_id']) ? (int) $dados['profissional_id'] : null,
+            $dados['sessoes'] ?? [],
+        );
+
+        return response()->json(['data' => $resultado->toArray()]);
+    }
+
     public function importarTranscricao(ImportLancamentosTranscricaoRequest $request, Guia $guia): JsonResponse
     {
         $dados = $request->validated();
@@ -162,7 +191,12 @@ class LancamentoController extends Controller
             $numeroCartao = $this->service->previsualizarTranscricao($dados['transcricao'])['cabecalho']['numero_cartao'] ?? null;
         }
 
-        if ($this->regiaoExigePdf($numeroCartao) && ! $request->hasFile('pdf_registro_sessoes')) {
+        // UMA folha basta para confirmar, ainda que a guia tenha sido
+        // preenchida em mais de uma via: as outras podem ser anexadas depois,
+        // antes de finalizar na operadora.
+        $folhas = $this->folhasEnviadas($request);
+
+        if ($this->folhas->regiaoExigeFolha($numeroCartao) && $folhas === []) {
             throw ValidationException::withMessages([
                 'pdf_registro_sessoes' => 'O PDF do registro de sessões é obrigatório para a regional 0220.',
             ]);
@@ -176,15 +210,16 @@ class LancamentoController extends Controller
         );
 
         /*
-         * A folha de registro entra na pasta do paciente.
+         * As folhas de registro entram na pasta do paciente.
          *
-         * Antes ela era exigida pela regional 0220, conferida e descartada:
-         * nada a gravava, então o comprovante da remessa se perdia assim que a
-         * requisição terminava. Guardar depois de confirmar, e não antes, evita
-         * deixar arquivo órfão quando a confirmação falha.
+         * Antes a folha era exigida pela regional 0220, conferida e
+         * descartada: nada a gravava, então o comprovante da remessa se
+         * perdia assim que a requisição terminava. Guardar depois de
+         * confirmar, e não antes, evita deixar arquivo órfão quando a
+         * confirmação falha.
          */
-        if ($request->hasFile('pdf_registro_sessoes')) {
-            $this->guardarRegistroDeSessoes($request->file('pdf_registro_sessoes'), $guia);
+        if ($folhas !== []) {
+            $this->folhas->anexar($guia, $folhas);
         }
 
         /*
@@ -235,41 +270,25 @@ class LancamentoController extends Controller
     }
 
     /**
-     * Guarda a folha de registro como arquivo do paciente da guia.
+     * As folhas do envio, aceitas tanto como arquivo único quanto como lista.
      *
-     * Mesma pasta e mesmo padrão de nome dos outros anexos (UUID, fora do
-     * docroot). O `metadata` amarra o arquivo à guia que originou a remessa —
-     * é o que permite, na pasta do paciente, dizer de qual guia cada folha veio.
+     * Uma guia de dez sessões costuma vir em duas vias impressas, preenchidas
+     * em partes — daí a lista. O arquivo único continua valendo porque é o que
+     * as telas antigas mandam, e quebrar isso não traria nada.
+     *
+     * @return array<int, UploadedFile>
      */
-    private function guardarRegistroDeSessoes(UploadedFile $arquivo, Guia $guia): void
+    private function folhasEnviadas(Request $request): array
     {
-        $path = $arquivo->storeAs(
-            "pacientes/{$guia->paciente_id}/registro-sessoes",
-            Str::uuid()->toString().'.'.$arquivo->getClientOriginalExtension(),
-            'local',
-        );
+        $enviado = $request->file('pdf_registro_sessoes');
 
-        PacienteArquivo::query()->create([
-            'tenant_id' => $guia->tenant_id,
-            'paciente_id' => $guia->paciente_id,
-            'tipo' => 'registro_sessoes',
-            'nome_original' => basename($arquivo->getClientOriginalName()),
-            // Do arquivo gravado, nunca do header multipart: o valor volta cru
-            // no Content-Type do download.
-            'mime' => Storage::disk('local')->mimeType($path) ?: 'application/octet-stream',
-            'path' => $path,
-            'metadata' => ['guia_id' => $guia->id, 'numero_guia' => $guia->numero_guia],
-        ]);
-    }
-
-    private function regiaoExigePdf(?string $numeroCartao): bool
-    {
-        if ($numeroCartao === null || $numeroCartao === '') {
-            return false;
+        if ($enviado === null) {
+            return [];
         }
 
-        $somenteDigitos = preg_replace('/\D+/', '', $numeroCartao) ?? '';
-
-        return str_starts_with($somenteDigitos, '0220');
+        return array_values(array_filter(
+            is_array($enviado) ? $enviado : [$enviado],
+            fn ($arquivo) => $arquivo instanceof UploadedFile,
+        ));
     }
 }

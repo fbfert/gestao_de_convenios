@@ -120,11 +120,31 @@ async function guiaParaLancamento(
   expect(guiaCriada.status(), await guiaCriada.text()).toBe(201)
   const guia = (await guiaCriada.json()).data
 
-  // Finalizar dá senha e validade, e é o status com saldo que a tela aceita.
+  /*
+   * Finalizar dá senha e validade, e é o status com saldo que a tela aceita.
+   *
+   * Desde 21/09/2026 finalizar exige ao menos uma sessão registrada, então
+   * registramos uma de bootstrap só para passar pela trava e a apagamos em
+   * seguida: os testes daqui precisam da guia finalizada com a cota CHEIA, e
+   * não com uma sessão já consumida. Mesmo padrão de `criarGuiaAprovada` nos
+   * testes da API.
+   */
+  // Aprovar primeiro: a guia nasce em análise, e `Guia::aceitaLancamento()`
+  // só libera lançamento a partir de aprovada.
+  const aprovada = await api.patch(`/api/guias/${guia.id}/aprovar`, { data: {} })
+  expect(aprovada.status(), await aprovada.text()).toBe(200)
+
+  const bootstrap = await api.post(`/api/guias/${guia.id}/lancamentos`, {
+    data: { profissional_id: item.profissional_id, data_sessao: hoje() },
+  })
+  expect(bootstrap.status(), await bootstrap.text()).toBe(201)
+
   const finalizada = await api.patch(`/api/guias/${guia.id}/finalizar`, {
     data: { senha: `E2E${Date.now()}`.slice(0, 20), validade_senha: '2027-12-31' },
   })
   expect(finalizada.status(), await finalizada.text()).toBe(200)
+
+  await api.delete(`/api/lancamentos/${(await bootstrap.json()).data.id}`)
 
   return {
     id: guia.id,
@@ -203,12 +223,32 @@ test('capturar congela a foto para conferencia, e tirar outra volta ao vivo', as
  * Só a leitura é interceptada: a busca que resolve a guia pelo número vai à
  * API de verdade, que é o que prova a integração entre as duas.
  */
+/**
+ * Cada leitura interceptada usa um dia próprio.
+ *
+ * Os testes deste arquivo gravam sessões para o MESMO paciente, e as regras de
+ * agenda (change `automacao-unimed-finalizar-guia`) recusam duas sessões dele
+ * no mesmo dia e horário. Uma data fixa para todos faria o segundo teste a
+ * gravar bater no primeiro — conflito de verdade, pelo motivo certo, mas
+ * causado pelo teste e não pelo produto.
+ */
+let diaDaLeitura = 0
+
+function proximaDataDaLeitura(): string {
+  diaDaLeitura += 1
+  const data = new Date('2026-04-08T00:00:00Z')
+  data.setDate(data.getDate() + diaDaLeitura)
+
+  return data.toISOString().slice(0, 10)
+}
+
 async function interceptarLeitura(
   page: Page,
   cabecalho: Record<string, string | null>,
-): Promise<{ chamadas: () => number; corpo: () => string }> {
+): Promise<{ chamadas: () => number; corpo: () => string; dataDaSessao: string }> {
   let chamadas = 0
   let corpo = ''
+  const dataDaSessao = proximaDataDaLeitura()
 
   await page.route('**/api/lancamentos/ler-registro', async (route) => {
     chamadas += 1
@@ -231,7 +271,7 @@ async function interceptarLeitura(
           },
           sessoes: [
             {
-              data_sessao: '2026-04-08',
+              data_sessao: dataDaSessao,
               hora_inicio: '14:50',
               hora_fim: '15:40',
               acompanhante: 'Bruno Marinho',
@@ -244,7 +284,7 @@ async function interceptarLeitura(
     })
   })
 
-  return { chamadas: () => chamadas, corpo: () => corpo }
+  return { chamadas: () => chamadas, corpo: () => corpo, dataDaSessao }
 }
 
 /** Abre a webcam, captura e confirma a foto. */
@@ -328,14 +368,14 @@ test('registro sem numero de guia legivel nao abre nada nem escolhe por outro da
   await login(page)
   await page.goto('/lancamentos/novo', { waitUntil: 'domcontentloaded' })
 
-  await interceptarLeitura(page, { guia_numero: null, paciente: 'Ana Paula Ribeiro' })
+  const leitura = await interceptarLeitura(page, { guia_numero: null, paciente: 'Ana Paula Ribeiro' })
 
   await capturarEConfirmar(page)
 
   // A grade foi preenchida pela leitura...
   await expect(
     page.getByTestId('lancamento-linha-1').locator('input[type="date"]'),
-  ).toHaveValue('2026-04-08')
+  ).toHaveValue(leitura.dataDaSessao)
 
   // ...e a escolha da guia continua com o operador.
   await expect(page.getByTestId('selecionar-guia-modal')).toHaveCount(0)

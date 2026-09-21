@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Fixture Unimed Finalizar Guia</title>
+</head>
+<body>
+  <main id="app"></main>
+  <script>
+    /*
+      Fixture da finalização de guia.
+
+      Montada a partir do HTML que quem opera o portal forneceu (nomes de
+      campo, classes e rótulos são os reais) — não de uma captura do portal,
+      que não temos. Serve para exercitar o fluxo e, principalmente, os
+      caminhos de falha: campo que recusa o formato, campo desabilitado, guia
+      que não aparece na busca, anexo que não confirma.
+
+      Cenários (?scenario=):
+        success              caminho feliz, uma folha
+        duas-folhas          duas folhas, ambas confirmadas
+        guia-nao-encontrada  o filtro não devolve a guia
+        outro-regime         a tela abre com regime/tipo errados (devem ser sobrescritos)
+        qt-divergente        QT_AUTORIZADA_1 diferente do que a API mandou
+        data-recusada        dt_serie_1 rejeita o valor e volta vazio
+        campo-desabilitado   dt_serie_2 nasce disabled
+        anexo-falha          a popup de anexo não confirma o envio
+        erro-ao-finalizar    "Gravar e Finalizar" devolve erro na tela
+    */
+    const params = new URLSearchParams(location.search)
+    const scenario = params.get('scenario') || 'success'
+    const app = document.querySelector('#app')
+
+    window.__finalizado = false
+    window.__anexos = []
+
+    function html(content) {
+      app.innerHTML = content
+      bind()
+    }
+
+    function processing(next) {
+      app.insertAdjacentHTML('beforeend', '<div id="processing">Processando, por favor aguarde...</div>')
+      setTimeout(() => {
+        document.querySelector('#processing')?.remove()
+        next()
+      }, 20)
+    }
+
+    function bind() {
+      document.querySelector('#login-form')?.addEventListener('submit', (event) => {
+        event.preventDefault()
+        processing(showBusca)
+      })
+
+      document.querySelector('[name="Button_FIltro"]')?.addEventListener('click', (event) => {
+        event.preventDefault()
+        processing(showResultado)
+      })
+
+      document.querySelector('#link-guia')?.addEventListener('click', (event) => {
+        event.preventDefault()
+        processing(showExecucao)
+      })
+
+      document.querySelector('#item_anexos_1')?.addEventListener('click', (event) => {
+        event.preventDefault()
+        abrirPopupAnexo()
+      })
+
+      document.querySelector('#Button_Submit')?.addEventListener('click', (event) => {
+        event.preventDefault()
+        processing(() => {
+          if (scenario === 'erro-ao-finalizar') {
+            app.insertAdjacentHTML(
+              'beforeend',
+              '<div class="MagnetoErrorMessage">Data de realização fora da validade da senha.</div>',
+            )
+            return
+          }
+
+          window.__finalizado = true
+          app.insertAdjacentHTML('beforeend', '<p id="finalizada">Guia finalizada com sucesso.</p>')
+        })
+      })
+
+      // O datepicker reformata no blur — e é aí que o cenário de recusa age.
+      document.querySelectorAll('.hasDatepicker').forEach((campo) => {
+        campo.addEventListener('blur', () => {
+          if (scenario === 'data-recusada' && campo.id === 'dt_serie_1') {
+            campo.value = ''
+          }
+        })
+      })
+    }
+
+    function showLogin() {
+      html(`
+        <form id="login-form">
+          <input id="login" name="login">
+          <input id="passwordTemp" name="passwordTemp" type="password">
+          <button name="Button_DoLogin">Entrar</button>
+        </form>
+      `)
+    }
+
+    // O worker espera a home do portal (o mesmo botão de gerar guia) antes de
+    // procurar o campo de busca: login() é compartilhado entre as operações.
+    function showBusca() {
+      html(`
+        <a id="cadastro_biometria" href="#"><div class="MagnetoBigRoundedButton">+ Novo Exame</div></a>
+        <form id="filtro">
+          <input class="MagnetoInput" value="" name="s_nr_guia">
+          <input name="Button_FIltro" type="submit" value="Filtrar" class="MagnetoButton">
+        </form>
+      `)
+    }
+
+    function showResultado() {
+      if (scenario === 'guia-nao-encontrada') {
+        html(`
+          <a id="cadastro_biometria" href="#"><div class="MagnetoBigRoundedButton">+ Novo Exame</div></a>
+          <form id="filtro">
+            <input class="MagnetoInput" value="" name="s_nr_guia">
+            <input name="Button_FIltro" type="submit" value="Filtrar" class="MagnetoButton">
+          </form>
+          <p>Nenhum registro encontrado.</p>
+        `)
+        return
+      }
+
+      html(`
+        <a id="cadastro_biometria" href="#"><div class="MagnetoBigRoundedButton">+ Novo Exame</div></a>
+        <form id="filtro">
+          <input class="MagnetoInput" value="" name="s_nr_guia">
+          <input name="Button_FIltro" type="submit" value="Filtrar" class="MagnetoButton">
+        </form>
+        <table>
+          <tr>
+            <td>18/09/2026 16:55</td>
+            <td><a id="link-guia" class="MagnetoDataLink" href="#">50144616272</a></td>
+            <td>0220.1380.000165.10-2 - NICOLLAS DEL CASTANHEL RIBEIRO</td>
+          </tr>
+        </table>
+      `)
+    }
+
+    function showExecucao() {
+      const regimeSelecionado = scenario === 'outro-regime' ? '03' : ''
+      const tipoSelecionado = scenario === 'outro-regime' ? '04' : ''
+      const autorizada = scenario === 'qt-divergente' ? '4' : '10'
+
+      const series = []
+      for (let i = 1; i <= 10; i++) {
+        const desabilitado = scenario === 'campo-desabilitado' && i === 2 ? ' disabled="disabled"' : ''
+        series.push(
+          `<label>${i}<input name="dt_serie_${i}" id="dt_serie_${i}" value="" class="MagnetoInput hasDatepicker" size="16"${desabilitado}></label>`,
+        )
+      }
+
+      html(`
+        <form id="execucao">
+          <select class="MagnetoSelect" name="DM_REGIME_ATEND" id="DM_REGIME_ATEND">
+            <option value=""${regimeSelecionado === '' ? ' selected' : ''}>Selecione</option>
+            <option value="01">01 - Ambulatorial</option>
+            <option value="02">02 - Domiciliar</option>
+            <option value="03"${regimeSelecionado === '03' ? ' selected' : ''}>03 - Internação</option>
+            <option value="04">04 - Pronto-socorro</option>
+            <option value="05">05 - TELESSAÚDE</option>
+          </select>
+
+          <select name="DM_TP_ATEND_SADT" id="DM_TP_ATEND_SADT" class="MagnetoSelect">
+            <option value=""${tipoSelecionado === '' ? ' selected' : ''}>Selecione</option>
+            <option value="01">01 - Remoção</option>
+            <option value="02">02 - Pequena cirurgia</option>
+            <option value="03">03 - Outras Terapias</option>
+            <option value="04"${tipoSelecionado === '04' ? ' selected' : ''}>04 - Consulta</option>
+            <option value="23">23 - Exame</option>
+          </select>
+
+          <input name="QT_AUTORIZADA_1" id="QT_AUTORIZADA_1" value="${autorizada}" size="5" class="info" readonly>
+
+          <div id="series">${series.join('')}</div>
+
+          <a href="#" id="item_anexos_1">
+            <img width="16" height="16" border="0" alt="Item anexos" title="Item anexos" src="ico16guias-anexos.gif">
+          </a>
+
+          <input class="MagnetoButton submitter" type="button" value="Gravar e Finalizar" name="Button_Submit" id="Button_Submit">
+        </form>
+      `)
+    }
+
+    function abrirPopupAnexo() {
+      const popup = window.open('about:blank', '_blank')
+      popup.document.open()
+      popup.document.write(`
+        <!doctype html>
+        <html><body>
+          <form id="anexo">
+            <input class="MagnetoInput fileArquivo" type="file" name="File_NM_ARQUIVO_FISICO_File">
+            <input name="Button_Insert" type="submit" value="Anexar" class="MagnetoButton">
+          </form>
+          <div id="lista">Total de registros: <span id="total">${window.__anexos.length}</span></div>
+          <input class="MagnetoButton" type="button" value="Finalizar" name="btn_finalizar" id="btn_finalizar">
+          <script>
+            document.querySelector('[name="Button_Insert"]').addEventListener('click', function (event) {
+              event.preventDefault()
+              var arquivo = document.querySelector('input[type=file]').files[0]
+              var body = document.body
+              body.insertAdjacentHTML('beforeend', '<div id="processing">Processando, por favor aguarde...</div>')
+              setTimeout(function () {
+                document.querySelector('#processing').remove()
+                if (window.opener.__cenario === 'anexo-falha') {
+                  document.querySelector('#lista').textContent = 'Total de registros: 0'
+                  return
+                }
+                window.opener.__anexos.push(arquivo ? arquivo.name : '(sem arquivo)')
+                document.querySelector('#lista').textContent =
+                  'Total de registros: ' + window.opener.__anexos.length
+              }, 20)
+            })
+            document.querySelector('#btn_finalizar').addEventListener('click', function () {
+              window.close()
+            })
+          <\/script>
+        </body></html>
+      `)
+      popup.document.close()
+    }
+
+    window.__cenario = scenario
+    showLogin()
+  </script>
+</body>
+</html>

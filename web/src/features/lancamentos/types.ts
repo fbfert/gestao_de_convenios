@@ -39,6 +39,12 @@ export type LancamentoGuiaGrupo = {
     validade_senha: string | null
     paciente_nome: string | null
     medico_nome: string | null
+    /**
+     * Decide qual finalização a tela oferece: `unimed_rda` é finalizada NA
+     * OPERADORA, pelo robô; convênio sem automação continua sendo finalizado
+     * à mão, com senha e validade.
+     */
+    connector_driver: string | null
   } | null
   lancamentos: Lancamento[]
 }
@@ -77,6 +83,34 @@ export type LancamentoTranscricaoSessao = {
   hora_fim: string | null
   acompanhante: string | null
   resumo_atividades: string | null
+}
+
+/**
+ * Um motivo para a sessão não poder ser gravada — ver a spec
+ * `sessoes-regras-de-agenda`.
+ *
+ * `referencia` é o índice da linha da grade, em texto, que é como a API
+ * devolve: é por ele que a tela sabe qual linha marcar.
+ */
+export type ConflitoDeAgenda = {
+  tipo: 'intervalo' | 'mesmo_horario' | 'limite_diario'
+  referencia: string
+  referencia_outra: string | null
+  mensagem: string
+  guia_id: number | null
+  guia_numero: string | null
+}
+
+/** Avisa, não bloqueia. Hoje só o choque de agenda do executante. */
+export type AvisoDeAgenda = {
+  tipo: 'choque_profissional'
+  referencia: string
+  mensagem: string
+}
+
+export type ConferenciaDeAgenda = {
+  conflitos: ConflitoDeAgenda[]
+  avisos: AvisoDeAgenda[]
 }
 
 export type LancamentoTranscricaoPreview = {

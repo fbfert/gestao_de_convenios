@@ -25,6 +25,7 @@ use App\Http\Controllers\EspecialidadeController;
 use App\Http\Controllers\GuiaController;
 use App\Http\Controllers\GuiaImportController;
 use App\Http\Controllers\HealthController;
+use App\Http\Controllers\FolhaDeRegistroController;
 use App\Http\Controllers\LancamentoController;
 use App\Http\Controllers\LancamentoImportController;
 use App\Http\Controllers\LancamentoPrintTemplateController;
@@ -336,8 +337,21 @@ Route::middleware(['auth:sanctum', EncerrarSessaoExpirada::class])->group(functi
     Route::post('/guias/{guia}/consultar-unimed', [GuiaController::class, 'consultarUnimed'])->middleware('permission:guias.view|guias.viewOwn');
     Route::post('/guias/{guia}/buscar-senha-validade-unimed', [GuiaController::class, 'buscarSenhaValidadeUnimed'])->middleware('permission:guias.view|guias.viewOwn');
 
+    // Finalização na Unimed. O pré-voo é leitura (o que a tela precisa saber
+    // antes de oferecer o botão); o POST é o passo irreversível, e por isso
+    // exige `guias.manage`, não a permissão de leitura.
+    Route::get('/guias/{guia}/finalizar-unimed/pre-voo', [GuiaController::class, 'preVooFinalizarUnimed'])->middleware('permission:guias.view|guias.viewOwn');
+    Route::post('/guias/{guia}/finalizar-unimed', [GuiaController::class, 'finalizarUnimed'])->middleware('permission:guias.manage');
+
     Route::post('/guias/{guia}/lancamentos', [LancamentoController::class, 'store'])->middleware('permission:lancamentos.view|lancamentos.viewOwn');
     Route::post('/guias/{guia}/lancamentos/importar-transcricao', [LancamentoController::class, 'importarTranscricao'])->middleware('permission:lancamentos.view|lancamentos.viewOwn');
+    Route::post('/guias/{guia}/lancamentos/conferir-agenda', [LancamentoController::class, 'conferirAgenda'])->middleware('permission:lancamentos.view|lancamentos.viewOwn');
+
+    // Folhas de registro da guia — a segunda via costuma chegar depois da
+    // primeira, e até a finalização na operadora ainda dá tempo de anexar.
+    Route::get('/guias/{guia}/folhas-registro', [FolhaDeRegistroController::class, 'index'])->middleware('permission:lancamentos.view|lancamentos.viewOwn');
+    Route::post('/guias/{guia}/folhas-registro', [FolhaDeRegistroController::class, 'store'])->middleware('permission:lancamentos.view|lancamentos.viewOwn');
+    Route::delete('/guias/{guia}/folhas-registro/{arquivo}', [FolhaDeRegistroController::class, 'destroy'])->middleware('permission:lancamentos.manage');
     // Sem guia: a folha é que diz de qual guia ela é, e exigir a guia antes
     // obrigava a procurar à mão o que a IA leria em seguida.
     Route::post('/lancamentos/ler-registro', [LancamentoController::class, 'lerRegistroSessoes'])->middleware('permission:lancamentos.view|lancamentos.viewOwn');

@@ -7,6 +7,7 @@ import type {
   GuiaFilters,
   GuiaFinalizarForm,
   GuiaForm,
+  FinalizarUnimedPreVoo,
   PaginatedResponse,
 } from './types'
 
@@ -267,6 +268,53 @@ export function useBuscarSenhaValidadeGuiaUnimed() {
     onSuccess: async (_data, id) => {
       await queryClient.invalidateQueries({ queryKey: ['guias'] })
       await queryClient.invalidateQueries({ queryKey: ['guias', id] })
+    },
+  })
+}
+
+/**
+ * O que a tela precisa saber antes de oferecer a finalização na Unimed.
+ *
+ * Só leitura, e é daqui que saem os diálogos: o que impede finalizar, o que
+ * conflita nas sessões, e o que depende de alguém dizer sim (finalizar com
+ * menos sessões, cortar no autorizado, finalizar sem folha anexada).
+ */
+export function useFinalizarUnimedPreVoo(guiaId: number | null, enabled = true) {
+  return useQuery({
+    queryKey: ['guias', guiaId, 'finalizar-unimed', 'pre-voo'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ data: FinalizarUnimedPreVoo }>(
+        `/guias/${guiaId}/finalizar-unimed/pre-voo`,
+      )
+
+      return data.data
+    },
+    enabled: guiaId !== null && enabled,
+  })
+}
+
+export function useFinalizarGuiaUnimed() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ id, confirmacoes }: { id: number; confirmacoes: Record<string, boolean> }) => {
+      const { data } = await apiClient.post<{
+        data: {
+          id: number
+          status: string
+          operacao: string
+          guia_id: number
+          queued_at: string | null
+          simulado: boolean
+        }
+      }>(`/guias/${id}/finalizar-unimed`, confirmacoes)
+
+      return data.data
+    },
+    onSuccess: async (_data, { id }) => {
+      await queryClient.invalidateQueries({ queryKey: ['guias'] })
+      await queryClient.invalidateQueries({ queryKey: ['guias', id] })
+      await queryClient.invalidateQueries({ queryKey: ['lancamentos'] })
     },
   })
 }

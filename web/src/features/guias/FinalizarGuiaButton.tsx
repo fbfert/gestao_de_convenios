@@ -4,6 +4,7 @@ import type { GuiaFinalizarForm } from './types'
 import { Botao } from '../../components/ui/Botao'
 import { Tooltip } from '../../components/ui/Tooltip'
 import { useConfirm } from '../../components/ui/ConfirmDialog'
+import { FinalizarNaUnimedButton } from './FinalizarNaUnimedButton'
 
 const emptyFinalizeForm: GuiaFinalizarForm = {
   senha: '',
@@ -20,6 +21,8 @@ type GuiaParaFinalizar = {
   numero_guia?: string | null
   senha?: string | null
   validade_senha?: string | null
+  /** `unimed_rda` = finalização acontece na operadora, não aqui. */
+  connector_driver?: string | null
 }
 
 /**
@@ -27,6 +30,12 @@ type GuiaParaFinalizar = {
  * GuiaService::finalizar) — por isso este botão só existe no grupo por guia
  * de LancamentosPage, e não mais nas telas de Guias: todo grupo que aparece
  * lá já tem sessão, por construção de listarAgrupadoPorGuia.
+ *
+ * Desde a change `automacao-unimed-finalizar-guia` há dois caminhos, e este
+ * componente escolhe entre eles: guia de convênio com automação Unimed é
+ * finalizada NA OPERADORA (o Gescon só a dá por finalizada depois que a
+ * Unimed aceitou); convênio sem automação continua com a finalização manual
+ * de senha e validade abaixo.
  */
 export function FinalizarGuiaButton({ guia }: { guia: GuiaParaFinalizar | null | undefined }) {
   const [isOpen, setIsOpen] = useState(false)
@@ -43,6 +52,10 @@ export function FinalizarGuiaButton({ guia }: { guia: GuiaParaFinalizar | null |
 
   if (!podeFinalizar) {
     return null
+  }
+
+  if (guia.connector_driver === 'unimed_rda') {
+    return <FinalizarNaUnimedButton guia={guia} />
   }
 
   const handleFinalize = async () => {

@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react'
 import { AvisoErro } from '../../components/ui/AvisoErro'
 import { Link, useLocation, useParams } from 'react-router-dom'
 import { GuiaDetalheResumo } from './GuiaDetalheResumo'
+import { FolhasDeRegistro } from './FolhasDeRegistro'
+import { HistoricoFinalizacoesUnimed } from './HistoricoFinalizacoesUnimed'
 import { GuiaStatusActions } from './GuiaStatusActions'
 import { getHttpErrorMessage, useBuscarSenhaValidadeGuiaUnimed, useConsultarGuiaUnimed, useGuia } from './useGuias'
 import { guiaTemDadosADefinir } from './aDefinir'
@@ -150,11 +152,18 @@ export function GuiaDetalhePage() {
 
       <GuiaDetalheResumo guia={guia} />
 
+      <FolhasDeRegistro guiaId={guia.id} guiaFinalizada={guia.status === 'finalized'} />
+
+      {isUnimed ? <HistoricoFinalizacoesUnimed guiaId={guia.id} /> : null}
+
       <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
         <h3 className="text-subtitulo font-semibold text-white">Ações da guia</h3>
         <p className="mt-1 text-corpo text-slate-300">
-          Aprove ou negue enquanto estiver em análise. Finalizar (senha e validade) agora fica na
-          tela de Sessões, depois de registrar ao menos uma.
+          Aprove ou negue enquanto estiver em análise. Finalizar fica na tela de Sessões, depois de
+          registrar ao menos uma —{' '}
+          {isUnimed
+            ? 'e para esta guia a finalização acontece na Unimed: ela só fica finalizada aqui depois que a operadora aceitar.'
+            : 'com a senha e a validade da autorização.'}
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           <GuiaStatusActions guia={guia} />

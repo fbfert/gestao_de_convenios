@@ -16,6 +16,7 @@ import { statusTone as guiaStatusTone } from '../guias/statusTone'
 import { FinalizarGuiaButton } from '../guias/FinalizarGuiaButton'
 import {
   getHttpErrorMessage,
+  useConferirAgenda,
   useConfirmarLancamentosTranscritos,
   useImportarLancamentosTranscritos,
   useLancamentoPrintTemplate,
@@ -24,6 +25,7 @@ import {
   buscarGuiasDisponiveis,
 } from './useLancamentos'
 import type {
+  ConferenciaDeAgenda,
   LancamentoConfirmImportForm,
   LancamentoFilters,
   LancamentoTranscricaoSessao,
@@ -252,6 +254,41 @@ export function LancamentosPage() {
   const exigePdf = numeroCartao?.replace(/\D+/g, '').startsWith('0220') ?? false
   const sessoesPreenchidas = useMemo(() => sessoes.filter((sessao) => Boolean(sessao.data_sessao)).length, [sessoes])
 
+  /*
+    Conferência de agenda ao vivo — ver a spec `sessoes-regras-de-agenda`.
+
+    Roda no servidor porque as regras olham as sessões já gravadas em outras
+    guias do paciente, que a tela não tem. Muda a cada edição de data ou hora,
+    então corrigir a linha já derruba a marcação sem precisar tentar gravar.
+
+    `conflitosPorLinha` e `avisosPorLinha` indexam pelo índice da linha, que é
+    a referência que a API devolve.
+  */
+  const { conferencia: agenda, conferindo: conferindoAgenda } = useConferirAgenda({
+    guiaId: guiaSelecionada?.id ?? null,
+    profissionalId,
+    sessoes,
+  })
+
+  const [conflitosPorLinha, avisosPorLinha] = useMemo(() => {
+    const conflitos = new Map<number, ConferenciaDeAgenda['conflitos']>()
+    const avisos = new Map<number, ConferenciaDeAgenda['avisos']>()
+
+    agenda.conflitos.forEach((conflito) => {
+      const linha = Number(conflito.referencia)
+      conflitos.set(linha, [...(conflitos.get(linha) ?? []), conflito])
+    })
+
+    agenda.avisos.forEach((aviso) => {
+      const linha = Number(aviso.referencia)
+      avisos.set(linha, [...(avisos.get(linha) ?? []), aviso])
+    })
+
+    return [conflitos, avisos] as const
+  }, [agenda])
+
+  const temConflitoDeAgenda = agenda.conflitos.length > 0
+
   const aplicarResultado = (resultado: {
     cabecalho: { numero_cartao: string | null; paciente?: string | null }
     sessoes: LancamentoTranscricaoSessao[]
@@ -426,6 +463,15 @@ export function LancamentosPage() {
 
     if (exigePdf && !pdf) {
       setFormError('O PDF do registro de sessões é obrigatório para a regional 0220.')
+      return
+    }
+
+    // Conflito de agenda não tem "confirmar assim mesmo": só sai daqui
+    // corrigido. Diferente da divergência de paciente logo abaixo, que tem.
+    if (temConflitoDeAgenda) {
+      setFormError(
+        'Há sessões em conflito na agenda do paciente. Corrija as linhas marcadas antes de registrar.',
+      )
       return
     }
 
@@ -775,15 +821,25 @@ export function LancamentosPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-linha bg-superficie">
-                  {sessoes.map((sessao, indice) => (
-                    <tr key={indice} data-testid={`lancamento-linha-${indice + 1}`}>
+                  {sessoes.map((sessao, indice) => {
+                    const conflitosDaLinha = conflitosPorLinha.get(indice) ?? []
+                    const avisosDaLinha = avisosPorLinha.get(indice) ?? []
+                    const emConflito = conflitosDaLinha.length > 0
+
+                    return (
+                    <tr
+                      key={indice}
+                      data-testid={`lancamento-linha-${indice + 1}`}
+                      data-conflito={emConflito ? 'true' : undefined}
+                      className={emConflito ? 'bg-rose-500/10' : undefined}
+                    >
                       <td className="px-4 py-3 text-slate-400">{indice + 1}</td>
                       <td data-rotulo="Data" className="px-4 py-3">
                         <input
                           type="date"
                           value={sessao.data_sessao ?? ''}
                           onChange={(event) => atualizarSessao(indice, 'data_sessao', event.target.value)}
-                          className={celulaClasses()}
+                          className={`${celulaClasses()} ${emConflito ? 'border-rose-400/70' : ''}`}
                         />
                       </td>
                       <td data-rotulo="Início" className="px-4 py-3">
@@ -791,7 +847,7 @@ export function LancamentosPage() {
                           type="time"
                           value={sessao.hora_inicio ?? ''}
                           onChange={(event) => atualizarSessao(indice, 'hora_inicio', event.target.value)}
-                          className={celulaClasses()}
+                          className={`${celulaClasses()} ${emConflito ? 'border-rose-400/70' : ''}`}
                         />
                       </td>
                       <td data-rotulo="Fim" className="px-4 py-3">
@@ -815,9 +871,30 @@ export function LancamentosPage() {
                           onChange={(event) => atualizarSessao(indice, 'resumo_atividades', event.target.value)}
                           className={`${celulaClasses()} min-h-16`}
                         />
+
+                        {conflitosDaLinha.map((conflito, i) => (
+                          <p
+                            key={`conflito-${i}`}
+                            className="mt-2 text-meta text-rose-300"
+                            data-testid={`lancamento-linha-${indice + 1}-conflito`}
+                          >
+                            {conflito.mensagem}
+                          </p>
+                        ))}
+
+                        {avisosDaLinha.map((aviso, i) => (
+                          <p
+                            key={`aviso-${i}`}
+                            className="mt-2 text-meta text-amber-300"
+                            data-testid={`lancamento-linha-${indice + 1}-aviso`}
+                          >
+                            {aviso.mensagem}
+                          </p>
+                        ))}
                       </td>
                     </tr>
-                  ))}
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
@@ -825,12 +902,20 @@ export function LancamentosPage() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="inline-flex min-h-6 items-center text-corpo text-slate-300">
                 {sessoesPreenchidas} de 10 linha(s) preenchida(s).
+                {temConflitoDeAgenda ? (
+                  <span className="ml-2 text-rose-300" data-testid="lancamento-conflito-resumo">
+                    {agenda.conflitos.length} em conflito — corrija para registrar.
+                  </span>
+                ) : null}
+                {conferindoAgenda ? (
+                  <span className="ml-2 text-slate-400">Conferindo a agenda...</span>
+                ) : null}
               </p>
 
               <Botao
                 variante="primario"
                 onClick={() => void enviar()}
-                disabled={confirmar.isPending || sessoesPreenchidas === 0}
+                disabled={confirmar.isPending || sessoesPreenchidas === 0 || temConflitoDeAgenda}
                 data-testid="lancamento-submit"
               >
                 {confirmar.isPending ? 'Salvando...' : 'Registrar sessões'}

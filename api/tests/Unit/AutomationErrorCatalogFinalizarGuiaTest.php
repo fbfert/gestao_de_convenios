@@ -41,6 +41,10 @@ class AutomationErrorCatalogFinalizarGuiaTest extends TestCase
             'ANEXO_NAO_CONFIRMADO',
             'BOTAO_GRAVAR_FINALIZAR_NAO_ENCONTRADO',
             'GRAVAR_FINALIZAR_RECUSADO',
+
+            // Conferência de guias já finalizadas na operadora.
+            'TELA_EXAMES_FINALIZADOS_NAO_ABRIU',
+            'FILTRO_DATA_NAO_LIMPO',
         ]);
     }
 

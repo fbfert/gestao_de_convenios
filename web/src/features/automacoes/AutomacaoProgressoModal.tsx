@@ -150,6 +150,25 @@ function resultadoSucesso(execucao: AutomacaoExecucao): { tom: 'sucesso' | 'erro
   const validadeSenha = campoResultado(resultado, 'validade_senha')
 
   const detalhes: string[] = []
+
+  /*
+   * A conferência de guias finalizadas devolve um resumo em vez de um status
+   * de guia: ela responde sobre VÁRIAS guias de uma vez, e o que interessa é a
+   * contagem dos três desfechos.
+   *
+   * Um lote que devolva zero finalizadas é sinal de alerta — provavelmente o
+   * filtro de data do portal não foi limpo —, e é por isso que os três números
+   * aparecem juntos em vez de só "concluído".
+   */
+  const resumo = (resultado as { resumo?: Record<string, number> } | null)?.resumo
+  if (resumo) {
+    detalhes.push(
+      `${resumo.finalizadas ?? 0} finalizada(s) na operadora`,
+      `${resumo.nao_finalizadas ?? 0} não finalizada(s)`,
+      `${resumo.falhas ?? 0} falha(s)`,
+    )
+  }
+
   if (numeroGuia) {
     detalhes.push(`Guia nº ${numeroGuia}`)
   }

@@ -7,6 +7,7 @@ use App\Models\SaudeComponente;
 use App\Services\Automation\AutomacaoService;
 use App\Services\Automation\CapturarSenhaValidadeUnimedService;
 use App\Services\Automation\ConfirmarGuiaIncertaUnimedService;
+use App\Services\Automation\ConferirGuiaFinalizadaUnimedService;
 use App\Services\Automation\ConsultarStatusUnimedService;
 use App\Services\Automation\FinalizarGuiaUnimedService;
 use App\Services\Automation\GerarGuiaUnimedService;
@@ -41,6 +42,7 @@ class ExecutarAutomacaoUnimedJob implements ShouldQueue
         $capturarSenhaValidadeUnimed = app(CapturarSenhaValidadeUnimedService::class);
         $confirmarGuiaIncertaUnimed = app(ConfirmarGuiaIncertaUnimedService::class);
         $finalizarGuiaUnimed = app(FinalizarGuiaUnimedService::class);
+        $conferirGuiaFinalizada = app(ConferirGuiaFinalizadaUnimedService::class);
         $lock = Cache::lock("automacao:unimed:tenant:{$execucao->tenant_id}:{$execucao->operacao}", 300);
 
         if (! $lock->get()) {
@@ -61,6 +63,7 @@ class ExecutarAutomacaoUnimedJob implements ShouldQueue
                 CapturarSenhaValidadeUnimedService::OPERATION => $capturarSenhaValidadeUnimed->payloadParaWorker($execucao),
                 ConfirmarGuiaIncertaUnimedService::OPERATION => $confirmarGuiaIncertaUnimed->payloadParaWorker($execucao),
                 FinalizarGuiaUnimedService::OPERATION => $finalizarGuiaUnimed->payloadParaWorker($execucao),
+                ConferirGuiaFinalizadaUnimedService::OPERATION => $conferirGuiaFinalizada->payloadParaWorker($execucao),
                 default => $execucao->payload ?? [],
             };
             $resultado = $worker->executar($execucao, $payload);
@@ -91,6 +94,8 @@ class ExecutarAutomacaoUnimedJob implements ShouldQueue
                 $confirmarGuiaIncertaUnimed->aplicarResultado($execucao, $resultado);
             } elseif ($execucao->operacao === FinalizarGuiaUnimedService::OPERATION) {
                 $finalizarGuiaUnimed->aplicarResultado($execucao, $resultado);
+            } elseif ($execucao->operacao === ConferirGuiaFinalizadaUnimedService::OPERATION) {
+                $conferirGuiaFinalizada->aplicarResultado($execucao, $resultado);
             } else {
                 $automacoes->concluir($execucao, $resultado);
             }

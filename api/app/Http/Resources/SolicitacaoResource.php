@@ -76,6 +76,9 @@ class SolicitacaoResource extends JsonResource
                     'numero_guia' => $item->guia->numero_guia,
                     'numero_operadora' => GuiaStatus::numeroDaOperadora($item->guia->numero_guia),
                     'status' => $item->guia->status,
+                    // É por esta data que a tela decide recolher o item: guia
+                    // finalizada na operadora não tem mais ação pendente aqui.
+                    'finalizada_na_operadora_em' => $item->guia->finalizada_na_operadora_em?->toISOString(),
                 ] : null,
                 'automacao_execucao_ativa' => $item->relationLoaded('automacaoExecucoes')
                     ? AutomacaoExecucao::ativaMaisRecente($item->automacaoExecucoes)

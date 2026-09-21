@@ -340,6 +340,12 @@ Route::middleware(['auth:sanctum', EncerrarSessaoExpirada::class])->group(functi
     // Finalização na Unimed. O pré-voo é leitura (o que a tela precisa saber
     // antes de oferecer o botão); o POST é o passo irreversível, e por isso
     // exige `guias.manage`, não a permissão de leitura.
+    // Conferir se a guia já está entre os exames finalizados no portal. É
+    // consulta, não altera nada lá — daí a permissão de leitura, ao contrário
+    // da finalização logo abaixo.
+    Route::post('/guias/{guia}/conferir-finalizada-unimed', [GuiaController::class, 'conferirFinalizadaUnimed'])->middleware('permission:guias.view|guias.viewOwn');
+    Route::post('/guias/conferir-finalizadas-unimed', [GuiaController::class, 'conferirFinalizadasUnimedEmLote'])->middleware('permission:guias.manage');
+
     Route::get('/guias/{guia}/finalizar-unimed/pre-voo', [GuiaController::class, 'preVooFinalizarUnimed'])->middleware('permission:guias.view|guias.viewOwn');
     Route::post('/guias/{guia}/finalizar-unimed', [GuiaController::class, 'finalizarUnimed'])->middleware('permission:guias.manage');
 

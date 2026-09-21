@@ -23,6 +23,11 @@ import type { GuiaFilters, GuiaForm } from './types'
 import { GuiaAlertaNegacoes, GuiaAlertaRestricoes } from './GuiaAlertaNegacoes'
 import { GuiaStatusActions } from './GuiaStatusActions'
 import { statusTone } from './statusTone'
+import { SeloFinalizadaNaOperadora } from './SeloFinalizadaNaOperadora'
+import {
+  ConferirFinalizadaUnimedButton,
+  ConferirFinalizadasEmLoteButton,
+} from './ConferirFinalizadaUnimed'
 import { SENHA_VENCENDO_EM_DIAS } from './senhaValidade'
 import { guiaTemDadosADefinir } from './aDefinir'
 import { Indicadores } from '../../components/ui/Indicadores'
@@ -43,6 +48,7 @@ const defaultFilters: GuiaFilters = {
   validade_senha_vencendo_em_dias: '',
   mostrar_a_definir: '',
   mostrar_historico: '',
+  finalizada_na_operadora: '',
 }
 
 const emptyForm: GuiaForm = {
@@ -233,6 +239,12 @@ export function GuiasPage() {
     }))
   }
 
+  const toggleFinalizadaNaOperadora = () => {
+    const nextValue = draftFilters.finalizada_na_operadora === '1' ? '' : '1'
+    setFilters({ ...filters, finalizada_na_operadora: nextValue })
+    setDraftFilters((current) => ({ ...current, finalizada_na_operadora: nextValue }))
+  }
+
   const handleGerarConciliacao = async (guideId: number) => {
     setConciliacaoError(null)
 
@@ -402,6 +414,26 @@ export function GuiasPage() {
             >
               {filters.mostrar_historico === '1' ? 'Histórico' : 'Mostrar Histórico'}
             </button>
+            {/* O passivo: guias que a operadora já tinha por finalizadas antes
+                de a automação existir. Só faz sentido depois de conferir. */}
+            <button
+              type="button"
+              onClick={toggleFinalizadaNaOperadora}
+              className={[
+                'inline-flex rounded-full border px-3 py-1.5 text-corpo font-semibold transition',
+                filters.finalizada_na_operadora === '1'
+                  ? 'border-cyan-200/50 bg-cyan-300/20 text-white'
+                  : 'border-cyan-200/20 bg-white/5 text-cyan-50 hover:bg-white/10',
+              ].join(' ')}
+              data-testid="guia-filtro-finalizada-operadora"
+            >
+              {filters.finalizada_na_operadora === '1'
+                ? 'Finalizadas na operadora'
+                : 'Mostrar finalizadas na operadora'}
+            </button>
+            {/* Liquida o passivo de uma vez: pergunta ao portal, para cada guia
+                Unimed ainda não conferida, se ela já está finalizada lá. */}
+            {pode('guias.manage') ? <ConferirFinalizadasEmLoteButton /> : null}
           </span>
         </div>
       </section>
@@ -786,6 +818,19 @@ export function GuiasPage() {
                             <Badge tone={statusTone(guia.status)} data-testid={`guia-status-${guia.id}`}>
                               {translateStatus('guias', guia.status)}
                             </Badge>
+                            {/* Ao lado do status, não no lugar dele: são duas
+                                informações diferentes — ver o componente. */}
+                            <SeloFinalizadaNaOperadora
+                              finalizadaEm={guia.finalizada_na_operadora_em}
+                              conferidaEm={guia.conferida_na_operadora_em}
+                              testId={`guia-selo-operadora-${guia.id}`}
+                            />
+                            {guia.convenio?.connector_driver === 'unimed_rda' && guia.numero_guia ? (
+                              <ConferirFinalizadaUnimedButton
+                                guiaId={guia.id}
+                                jaConferida={Boolean(guia.conferida_na_operadora_em)}
+                              />
+                            ) : null}
                             {guia.status === 'under_review' &&
                             guia.convenio?.connector_driver === 'unimed_rda' &&
                             guia.numero_guia &&

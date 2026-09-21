@@ -5,8 +5,8 @@
 
 ---
 
-Você está na VPS de produção do Gescon, em `/opt/gescon`. Vamos publicar a change
-`automacao-unimed-finalizar-guia`: um commit, `950f1f8..e802798`.
+Você está na VPS de produção do Gescon, em `/opt/gescon`. Vamos publicar duas changes:
+`automacao-unimed-finalizar-guia` e `conferir-guias-finalizadas-unimed`.
 
 **Existe um único tenant em produção (NeuroKids), com a automação da Unimed rodando em guias reais
 todos os dias.** Quebrar isso custa atendimento de paciente. Um passo por vez, com a saída na tela
@@ -14,20 +14,22 @@ antes do próximo — não encadeie os passos.
 
 ## O que este deploy leva
 
-Três coisas que só fazem sentido juntas:
+Quatro coisas:
 
 1. **Regras de agenda ao registrar sessão** — 50 minutos entre inícios, 8/dia em especialidade ABA,
    1/dia nas demais, conferidas também contra sessões de outras guias do paciente. **Bloqueia.**
 2. **Várias folhas de registro por guia** — o anexo deixa de ser um por remessa.
 3. **Finalizar a guia na Unimed pelo robô** — operação nova no worker, com **modo simulação ligado
    por padrão**.
+4. **Conferir quais guias a Unimed já dava por finalizadas** — o passivo anterior à automação.
+   Diferente da finalização, é **só consulta**: não altera nada no portal.
 
 | O quê | Detalhe |
 |---|---|
-| **Uma migration** | `add_finalizar_guia_simulacao_to_configuracoes_globais_table` — coluna booleana, default `true` |
+| **Duas migrations** | `add_finalizar_guia_simulacao_to_configuracoes_globais_table` (booleana, default `true`) e `add_finalizada_na_operadora_to_guias_table` (duas datas nulas + índice) |
 | **Dependências novas** | Nenhuma, nem no backend nem no frontend |
-| **Operação nova no worker** | `finalizar_guia` — o `gescon-worker` precisa ser rebuildado |
-| **Rotas novas** | `conferir-agenda`, `folhas-registro` (3), `finalizar-unimed` (2) |
+| **Operações novas no worker** | `finalizar_guia` e `conferir_guia_finalizada` — o `gescon-worker` precisa ser rebuildado |
+| **Rotas novas** | `conferir-agenda`, `folhas-registro` (3), `finalizar-unimed` (2), `conferir-finalizada(s)-unimed` (2) |
 
 A migration roda sozinha: o `entrypoint.sh` executa `php artisan migrate --force` ao subir.
 
@@ -74,11 +76,16 @@ E o retrato de antes:
 docker exec gescon-db mariadb -u root -p"$DB_ROOT" gestao_convenios \
   -e "SELECT COUNT(*) AS tabelas FROM information_schema.tables WHERE table_schema='gestao_convenios';"
 
-# A coluna da change ainda NÃO pode existir
+# As colunas das duas changes ainda NÃO podem existir — as duas consultas dão 0
 docker exec gescon-db mariadb -u root -p"$DB_ROOT" gestao_convenios \
   -e "SELECT COUNT(*) AS ja_existe FROM information_schema.columns
        WHERE table_schema='gestao_convenios' AND table_name='configuracoes_globais'
          AND column_name='automacao_finalizar_guia_simulacao_ativo';"
+
+docker exec gescon-db mariadb -u root -p"$DB_ROOT" gestao_convenios \
+  -e "SELECT COUNT(*) AS ja_existe FROM information_schema.columns
+       WHERE table_schema='gestao_convenios' AND table_name='guias'
+         AND column_name='finalizada_na_operadora_em';"
 
 # Quantas sessões existem hoje, e quantas guias Unimed estão finalizáveis
 docker exec gescon-db mariadb -u root -p"$DB_ROOT" gestao_convenios \
@@ -91,8 +98,8 @@ docker exec gescon-db mariadb -u root -p"$DB_ROOT" gestao_convenios \
        GROUP BY g.status ORDER BY g.status;"
 ```
 
-Anote os quatro resultados. O segundo tem que ser **0** — se vier 1, a change já subiu; **pare e me
-diga**.
+Anote os resultados. As **duas** consultas de coluna têm que dar **0** — se alguma vier 1, a change
+correspondente já subiu; **pare e me diga**.
 
 Se o `git status` mostrar alteração local não commitada, me mostre antes de qualquer pull: o
 `redeploy.sh` faz `--ff-only` e vai falhar.
@@ -301,7 +308,42 @@ docker exec gescon-db mariadb -u root -p"$DB_ROOT" gestao_convenios \
         FROM convenio_credenciais WHERE tenant_id = 1;"
 ```
 
-## Passo 7 — A homologação da finalização é OUTRA sessão
+## Passo 7 — O primeiro lote de conferência
+
+Este deploy também traz a **conferência de guias já finalizadas na Unimed** (change
+`conferir-guias-finalizadas-unimed`). Diferente da finalização, ela é **só consulta**: não altera
+nada no portal, e por isso pode rodar de verdade já neste deploy.
+
+Em **Guias**, clique em **Conferir finalizadas na Unimed**. O robô abre os *Exames finalizados*,
+limpa a data inicial do filtro e procura cada guia pelo número.
+
+Quando terminar, o resultado traz três números. **Confira-os antes de confiar na marca:**
+
+```bash
+set -a; . /opt/gescon/deploy/.secrets.env; set +a
+
+docker exec gescon-db mariadb -u root -p"$DB_ROOT" gestao_convenios \
+  -e "SELECT
+        SUM(finalizada_na_operadora_em IS NOT NULL) AS finalizadas,
+        SUM(finalizada_na_operadora_em IS NULL AND conferida_na_operadora_em IS NOT NULL) AS nao_finalizadas,
+        SUM(conferida_na_operadora_em IS NULL) AS nunca_conferidas
+      FROM guias WHERE tenant_id = 1;"
+```
+
+**Um lote que devolva ZERO finalizadas é sinal de alerta, não de boa notícia.** A clínica finalizou
+guias no portal durante meses; zero quase certamente significa que o filtro de data (`s_dt_ini`) não
+foi limpo, e todas as guias antigas ficaram de fora da busca. Nesse caso:
+
+1. Confira em `/automacoes` se a execução traz `FILTRO_DATA_NAO_LIMPO` — o worker foi escrito para
+   acusar exatamente isso em vez de concluir "não finalizada" em silêncio.
+2. Se não trouxer esse código e ainda assim vier zero, **pare e me diga**: a tela pode ser diferente
+   do presumido, e o resultado seria um falso negativo em massa.
+
+Conferindo certo, as guias marcadas passam a mostrar o selo **Finalizada na operadora** em Guias e
+aparecem recolhidas em Solicitações. **O selo não muda o status delas** — é marca própria, e isso é
+deliberado.
+
+## Passo 8 — A homologação da finalização é OUTRA sessão
 
 **Pare aqui.** A finalização de verdade tem roteiro próprio, em
 `docs/automacao-unimed/v2-08-homologacao-finalizar-guia.md`, e ele começa com uma rodada em
@@ -312,7 +354,7 @@ em desenvolvimento — a Unimed não tem ambiente de teste —, e três coisas a
 formato que `dt_serie_N` aceita, o caminho até a tela de busca de guia, e o HTML do popup de anexos.
 É a rodada de simulação que responde as três.
 
-**Me diga quando o Passo 6 terminar e eu paro por aqui.**
+**Me diga quando o Passo 7 terminar e eu paro por aqui.**
 
 ## Rollback
 

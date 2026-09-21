@@ -3,6 +3,7 @@ import { executarGerarGuia } from './operations/gerarGuia.js'
 import { executarCapturarAutorizacaoBatch, executarConsultarStatusBatch } from './operations/statusSenha.js'
 import { executarConfirmarGuiaIncerta } from './operations/confirmarGuiaIncerta.js'
 import { executarFinalizarGuia } from './operations/finalizarGuia.js'
+import { executarConferirGuiaFinalizada } from './operations/conferirGuiaFinalizada.js'
 
 const port = Number(process.env.UNIMED_WORKER_PORT ?? 8787)
 // Padrao 127.0.0.1 para execucao local. Em container precisa ser 0.0.0.0,
@@ -88,6 +89,17 @@ const server = http.createServer(async (request, response) => {
 
       if (operation === 'finalizar_guia') {
         const result = await executarFinalizarGuia({
+          executionId: payload.execution_id ?? null,
+          idempotencyKey: payload.idempotency_key ?? null,
+          payload: payload.payload ?? {},
+        })
+
+        sendJson(response, 200, result)
+        return
+      }
+
+      if (operation === 'conferir_guia_finalizada') {
+        const result = await executarConferirGuiaFinalizada({
           executionId: payload.execution_id ?? null,
           idempotencyKey: payload.idempotency_key ?? null,
           payload: payload.payload ?? {},

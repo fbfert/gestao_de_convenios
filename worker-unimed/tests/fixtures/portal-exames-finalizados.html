@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Fixture Unimed Exames Finalizados</title>
+</head>
+<body>
+  <main id="app"></main>
+  <script>
+    /*
+      Fixture da tela "Exames finalizados".
+
+      Montada a partir da descrição de quem opera o portal (nomes de campo e
+      rótulos são os reais) — não de uma captura, que não temos. O que ela
+      exercita de verdade são os caminhos de falha, que é onde esta operação
+      pode errar em silêncio.
+
+      Cenários (?scenario=):
+        success          a guia procurada está entre as finalizadas
+        nao-finalizada   a busca não devolve a guia
+        data-reposta     o portal repõe s_dt_ini no blur (falso negativo em lote)
+        tela-nao-abre    o ícone existe mas a tela de filtro nunca aparece
+        sem-campo-data   a tela não tem s_dt_ini (não é falha)
+        lote             duas guias finalizadas e uma não, pelo número
+    */
+    const params = new URLSearchParams(location.search)
+    const scenario = params.get('scenario') || 'success'
+    const app = document.querySelector('#app')
+
+    // As guias que ESTA fixture considera finalizadas.
+    const FINALIZADAS = ['50144618222', '50144618333']
+
+    let filtroGuia = ''
+
+    function html(content) {
+      app.innerHTML = content
+      bind()
+    }
+
+    function processing(next) {
+      app.insertAdjacentHTML('beforeend', '<div id="processing">Processando, por favor aguarde...</div>')
+      setTimeout(() => {
+        document.querySelector('#processing')?.remove()
+        next()
+      }, 20)
+    }
+
+    function bind() {
+      document.querySelector('#login-form')?.addEventListener('submit', (event) => {
+        event.preventDefault()
+        processing(showHome)
+      })
+
+      document.querySelector('#exames-finalizados')?.addEventListener('click', (event) => {
+        event.preventDefault()
+        processing(scenario === 'tela-nao-abre' ? showHome : showFiltro)
+      })
+
+      document.querySelector('[name="Button_FIltro"]')?.addEventListener('click', (event) => {
+        event.preventDefault()
+        filtroGuia = document.querySelector('[name="s_nr_guia"]').value.trim()
+        processing(showResultado)
+      })
+
+      // O datepicker do Magneto reformata no blur — e é aí que o cenário de
+      // reposição age, reproduzindo o falso negativo que a operação previne.
+      document.querySelector('[name="s_dt_ini"]')?.addEventListener('blur', (event) => {
+        if (scenario === 'data-reposta' && event.target.value === '') {
+          event.target.value = '06/09/2026'
+        }
+      })
+    }
+
+    function showLogin() {
+      html(`
+        <form id="login-form">
+          <input id="login" name="login">
+          <input id="passwordTemp" name="passwordTemp" type="password">
+          <button name="Button_DoLogin">Entrar</button>
+        </form>
+      `)
+    }
+
+    // O worker espera a home do portal antes de procurar a tela: login() é
+    // compartilhado entre todas as operações.
+    function showHome() {
+      html(`
+        <a id="cadastro_biometria" href="#"><div class="MagnetoBigRoundedButton">+ Novo Exame</div></a>
+        <a id="exames-finalizados" href="#">
+          <div><img src="/cmagnet/Themes/Magneto2014/menus/ico16examFinalizada.gif"></div>
+          Exames finalizados
+        </a>
+      `)
+    }
+
+    function campoData() {
+      if (scenario === 'sem-campo-data') {
+        return ''
+      }
+
+      // Como no portal: já vem preenchida, e é ela que esconderia as guias
+      // antigas se o worker não limpasse.
+      return '<input name="s_dt_ini" value="06/09/2026" class="MagnetoInput hasDatepicker" size="11" id="s_dt_ini">'
+    }
+
+    function showFiltro() {
+      html(`
+        <a id="exames-finalizados" href="#">Exames finalizados</a>
+        <form id="filtro">
+          ${campoData()}
+          <input name="s_nr_guia" value="" class="MagnetoInput">
+          <input name="Button_FIltro" type="submit" value="Filtrar" class="MagnetoButton">
+        </form>
+      `)
+    }
+
+    function showResultado() {
+      const dataInicial = document.querySelector('[name="s_dt_ini"]')?.value ?? ''
+
+      // O portal filtra por data: com s_dt_ini preenchida, guia antiga nao
+      // aparece. E o que torna o passo de limpar critico — e o que faz o
+      // cenario `data-reposta` produzir um falso negativo se a operacao nao
+      // conferir o campo.
+      const achou =
+        scenario !== 'nao-finalizada' &&
+        dataInicial === '' &&
+        FINALIZADAS.includes(filtroGuia)
+
+      const linha = achou
+        ? `<tr>
+             <td>17/09/2026 15:24</td>
+             <td>${filtroGuia}</td>
+             <td>0220.1600.000082.30-5 - TATIANE SILVA DE SOUZA</td>
+             <td>0220</td>
+             <td>SAMARA APARECIDA DO AMARAL DE OLIVEIRA</td>
+           </tr>`
+        : ''
+
+      html(`
+        <a id="exames-finalizados" href="#">Exames finalizados</a>
+        <form id="filtro">
+          ${campoData()}
+          <input name="s_nr_guia" value="${filtroGuia}" class="MagnetoInput">
+          <input name="Button_FIltro" type="submit" value="Filtrar" class="MagnetoButton">
+        </form>
+        <p>${achou ? 1 : 0} exame(s) encontrado(s).</p>
+        <table>
+          <tr><th>Data de atendimento</th><th>Nº Guia</th><th>Nome Beneficiário</th><th>Orig.</th><th>Contratado Executante</th></tr>
+          ${linha}
+        </table>
+      `)
+    }
+
+    showLogin()
+  </script>
+</body>
+</html>

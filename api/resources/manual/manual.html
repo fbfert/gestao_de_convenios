@@ -722,6 +722,41 @@
   guia <span class="badge verde">Autorizada</span> ou <span class="badge verde">Aprovada</span> já aceita
   lançamento, com a quantidade disponível contada ao vivo a partir das sessões autorizadas da própria guia.
 </div>
+<h3>Guias já finalizadas na Unimed</h3>
+<p>
+  As guias que a clínica encerrou no portal <strong>antes</strong> de a automação existir continuavam
+  aparecendo aqui como trabalho pendente. O botão <span class="btn">Conferir na Unimed</span>, em cada
+  guia, procura-a entre os <em>Exames finalizados</em> do portal; <span class="btn">Conferir
+  finalizadas na Unimed</span>, no topo da tela, faz isso para todas as guias Unimed ainda não
+  conferidas de uma vez. <strong>Nada é alterado no portal</strong> — é uma consulta.
+</p>
+<p>
+  A guia encontrada ganha o selo verde <strong>Finalizada na operadora</strong>, com a data da
+  conferência, ao lado do status. O botão <span class="btn">Mostrar finalizadas na operadora</span>
+  filtra só essas.
+</p>
+<div class="nota">
+  <strong>O selo não é o status.</strong> A guia continua <span class="badge verde">Autorizada</span>,
+  <span class="badge azul">Em análise</span>, ou o que estiver. São duas informações: o status conta o
+  ciclo da guia <em>neste sistema</em>, com as sessões lançadas aqui; o selo conta o que o
+  <em>portal</em> respondeu sobre uma guia que talvez nunca tenha passado por esse ciclo.
+</div>
+<div class="nota">
+  <strong>O selo também não cria sessão, não mexe em cota, antecipação, conciliação nem
+  relatório.</strong> Se a guia virasse "Finalizada" de verdade, ela passaria a aceitar lançamento de
+  sessão — o oposto do que se quer para uma guia encerrada lá atrás.
+</div>
+<p>
+  Conferência que <strong>não</strong> acha a guia também fica registrada: ela não ganha o selo, mas a
+  data é guardada. É assim que a varredura seguinte sabe o que já foi olhado. E guia já marcada não
+  entra na finalização pelo robô — não há o que finalizar de novo.
+</p>
+<p>
+  Em <a href="#solicitacoes">Solicitações</a>, o item cuja guia está finalizada na operadora aparece
+  <strong>recolhido</strong>: uma linha com especialidade, número da guia e o selo, sem os botões de
+  ação. Um clique expande.
+</p>
+
 <h3>Alerta de guias negadas</h3>
 <p>
   Sempre que existir alguma guia <span class="badge vermelho">Negada</span> ainda não revisada, um

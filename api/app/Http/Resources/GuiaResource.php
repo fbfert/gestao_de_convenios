@@ -29,6 +29,17 @@ class GuiaResource extends JsonResource
             'protocolo_operadora' => $this->protocolo_operadora,
             'data_solicitacao' => $this->data_solicitacao?->toDateString(),
             'data_finalizacao' => $this->data_finalizacao?->toDateString(),
+            /*
+             * A marca de finalizada na operadora, e a data da conferência que a
+             * produziu. Vão sempre juntas: a marca afirma o que o portal disse
+             * num momento, e sem a data ninguém sabe quando foi verdade.
+             *
+             * `conferida_...` preenchida com `finalizada_...` nula quer dizer
+             * "conferimos e ela não estava lá" — que é diferente de "nunca
+             * conferimos", e é por isso que são dois campos.
+             */
+            'finalizada_na_operadora_em' => $this->finalizada_na_operadora_em?->toISOString(),
+            'conferida_na_operadora_em' => $this->conferida_na_operadora_em?->toISOString(),
             'senha' => $this->senha,
             'validade_senha' => $this->validade_senha?->toDateString(),
             'observacoes' => $this->observacoes,

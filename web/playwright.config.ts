@@ -61,6 +61,33 @@ export default defineConfig({
       stdout: 'ignore',
       stderr: 'ignore',
     },
+    /*
+     * O worker Unimed de verdade, servindo as fixtures HTML do disco.
+     *
+     * Sem ele, tudo que depende da automação só podia ser coberto na API com o
+     * worker falso — e o caminho API -> worker -> marca -> tela nunca era
+     * exercitado inteiro. A alternativa seria abrir uma rota de teste no código
+     * de produção para forjar o estado, que provaria o teste e não o produto.
+     *
+     * `UNIMED_PERMITIR_FIXTURES_LOCAIS` é a mesma flag que a suíte do próprio
+     * worker usa (ver `loginUrlFromCredential` em portal.js): ela libera
+     * `base_url` com esquema `file:`. Produção nunca a define, e sem ela o
+     * worker recusa o desvio.
+     */
+    {
+      command: 'node src/server.js',
+      cwd: '../worker-unimed',
+      url: 'http://127.0.0.1:8787/health',
+      reuseExistingServer: false,
+      env: {
+        UNIMED_WORKER_HOST: '127.0.0.1',
+        UNIMED_WORKER_PORT: '8787',
+        UNIMED_WORKER_TOKEN: '',
+        UNIMED_PERMITIR_FIXTURES_LOCAIS: '1',
+      },
+      stdout: 'ignore',
+      stderr: 'ignore',
+    },
     {
       command: 'php artisan serve --env=testing --host=127.0.0.1 --port=8001',
       cwd: '../api',
@@ -68,6 +95,11 @@ export default defineConfig({
       reuseExistingServer: false,
       env: {
         APP_ENV: 'testing',
+        // A API fala com o worker acima. Sem isto ela usaria o padrão de
+        // `config/services.php`, que aponta para o mesmo endereço mas não
+        // garante que a suíte e o worker concordem sobre a porta.
+        UNIMED_WORKER_URL: 'http://127.0.0.1:8787',
+        UNIMED_WORKER_TOKEN: '',
         // Só para o processo levantado aqui, e não no `api/.env.testing`: o
         // phpunit também carrega aquele arquivo, e afrouxar o limite lá tornaria
         // inútil o AuthApiTest, que existe para provar que a sexta tentativa é

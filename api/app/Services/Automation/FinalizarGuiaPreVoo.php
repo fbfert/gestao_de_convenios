@@ -111,6 +111,15 @@ class FinalizarGuiaPreVoo
             $impedimentos[] = 'A guia pertence a uma solicitação histórica e não entra em automação.';
         }
 
+        /*
+         * Pedir ao portal que finalize o que ele já deu por finalizado não é
+         * uma operação que faça sentido: a guia nem chegaria à tela de execução
+         * que o robô espera, porque saiu dos exames em aberto.
+         */
+        if ($guia->finalizadaNaOperadora()) {
+            $impedimentos[] = 'A operadora já deu esta guia por finalizada — não há o que finalizar de novo.';
+        }
+
         if (! $this->credenciais->ativa((int) $guia->tenant_id, (int) $guia->convenio_id)) {
             $impedimentos[] = 'A credencial Unimed ativa não está configurada.';
         }

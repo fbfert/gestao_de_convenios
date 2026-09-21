@@ -135,6 +135,13 @@ class GuiaService
              */
             ->when(Arr::get($filtros, 'sessoes_em_conflito'), fn ($query) => $query
                 ->whereIn('guias.id', app(GuiasEmConflitoService::class)->guiaIds($this->tenantId())->all() ?: [0]))
+            /*
+             * Guias que a operadora já tinha por finalizadas antes de a
+             * automação existir. É marca própria, não status — ver
+             * Guia::finalizadaNaOperadora().
+             */
+            ->when(Arr::get($filtros, 'finalizada_na_operadora'), fn ($query) => $query
+                ->whereNotNull('guias.finalizada_na_operadora_em'))
             ->tap(fn ($query) => OrdenaListagem::aplicar(
                 $query->select('guias.*'),
                 $filtros,

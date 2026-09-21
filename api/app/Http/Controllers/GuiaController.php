@@ -9,6 +9,7 @@ use App\Http\Resources\GuiaResource;
 use App\Models\ConfiguracaoGlobal;
 use App\Models\Guia;
 use App\Services\Automation\CapturarSenhaValidadeUnimedService;
+use App\Services\Automation\ConferirGuiaFinalizadaUnimedService;
 use App\Services\Automation\ConsultarStatusUnimedService;
 use App\Services\Automation\FinalizarGuiaPreVoo;
 use App\Services\Automation\FinalizarGuiaUnimedService;
@@ -47,6 +48,7 @@ class GuiaController extends Controller
                 'pendente',
                 'senha_vencendo',
                 'sessoes_em_conflito',
+                'finalizada_na_operadora',
             ]), $request->integer('per_page') ?: ConfiguracaoGlobal::itensPorPagina())
         );
     }
@@ -124,6 +126,58 @@ class GuiaController extends Controller
                 'operacao' => $execucao->operacao,
                 'guia_id' => $execucao->guia_id,
                 'queued_at' => $execucao->queued_at?->toISOString(),
+            ],
+        ], 202);
+    }
+
+    /**
+     * Pergunta ao portal se esta guia já está entre os exames finalizados.
+     *
+     * Não altera nada lá: é uma consulta. O que ela produz aqui é a marca
+     * "finalizada na operadora", que convive com o status em vez de substituí-lo.
+     */
+    public function conferirFinalizadaUnimed(Guia $guia, ConferirGuiaFinalizadaUnimedService $conferir): JsonResponse
+    {
+        return $this->respostaDaExecucao($conferir->enviar($guia));
+    }
+
+    /**
+     * A mesma conferência, para as guias Unimed ainda não conferidas.
+     *
+     * `incluir_ja_conferidas` refaz todas: é a saída para um lote que correu
+     * errado (filtro do portal não limpo, tela diferente da esperada), que sem
+     * isso custaria uma conferência avulsa por guia para desfazer.
+     */
+    public function conferirFinalizadasUnimedEmLote(Request $request, ConferirGuiaFinalizadaUnimedService $conferir): JsonResponse
+    {
+        $dados = $request->validate([
+            'incluir_ja_conferidas' => ['sometimes', 'boolean'],
+        ]);
+
+        return $this->respostaDaExecucao(
+            $conferir->enviarLote(
+                (int) $request->user()->tenant_id,
+                incluirJaConferidas: (bool) ($dados['incluir_ja_conferidas'] ?? false),
+            )
+        );
+    }
+
+    private function respostaDaExecucao(\App\Models\AutomacaoExecucao $execucao): JsonResponse
+    {
+        return response()->json([
+            'data' => [
+                'id' => $execucao->id,
+                'status' => $execucao->status,
+                'operacao' => $execucao->operacao,
+                'guia_id' => $execucao->guia_id,
+                'queued_at' => $execucao->queued_at?->toISOString(),
+                'total_guias' => count($execucao->payload['guias'] ?? []),
+                // O lote cobre UM convênio (a credencial é por convênio); a
+                // tela avisa quando sobram guias de outro.
+                'convenio' => $execucao->payload['convenio_id'] ?? null
+                    ? \App\Models\Convenio::query()->find($execucao->payload['convenio_id'])?->nome
+                    : null,
+                'restantes_de_outros_convenios' => (int) ($execucao->payload['restantes_de_outros_convenios'] ?? 0),
             ],
         ], 202);
     }

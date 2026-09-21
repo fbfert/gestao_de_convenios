@@ -10,6 +10,7 @@ import { formatCarteirinha } from '../../lib/carteirinha'
 import { isSenhaVencendo } from './senhaValidade'
 import { getHttpErrorMessage, useAtualizarGuia, type GuiaEditForm } from './useGuias'
 import { statusTone } from './statusTone'
+import { SeloFinalizadaNaOperadora } from './SeloFinalizadaNaOperadora'
 import type { Guia } from './types'
 
 /**
@@ -148,6 +149,12 @@ export function GuiaDetalheResumo({ guia }: { guia: Guia }) {
           <Badge tone={statusTone(guia.status)} className="w-fit">
             {translateStatus('guias', guia.status)}
           </Badge>
+          {/* Separado do status de propósito: o status conta o ciclo da guia
+              neste sistema, o selo conta o que o portal respondeu. */}
+          <SeloFinalizadaNaOperadora
+            finalizadaEm={guia.finalizada_na_operadora_em}
+            conferidaEm={guia.conferida_na_operadora_em}
+          />
           {pode('guias.manage') && !editando ? (
             <button
               type="button"

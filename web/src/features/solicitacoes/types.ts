@@ -106,6 +106,11 @@ export type SolicitacaoItem = {
     numero_guia: string | null
     numero_operadora: string | null
     status: string
+    /**
+     * A operadora já dava esta guia por finalizada. É por isto que o item
+     * aparece recolhido: não há mais ação pendente nele.
+     */
+    finalizada_na_operadora_em?: string | null
   } | null
   /**
    * O item de ORIGEM da cadeia de renovação — nulo quando este é a origem.

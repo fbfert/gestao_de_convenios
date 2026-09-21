@@ -18,6 +18,16 @@ export type Guia = {
   protocolo_operadora: string | null
   data_solicitacao: string
   data_finalizacao: string | null
+  /**
+   * A operadora já dava esta guia por finalizada — marca própria, que convive
+   * com o `status` em vez de substituí-lo.
+   *
+   * `conferida_...` preenchida com `finalizada_...` nula quer dizer
+   * "conferimos e ela não estava lá", que é diferente de "nunca conferimos"
+   * (as duas nulas). É por isso que são dois campos.
+   */
+  finalizada_na_operadora_em: string | null
+  conferida_na_operadora_em: string | null
   senha: string | null
   validade_senha: string | null
   observacoes: string | null
@@ -112,6 +122,8 @@ export type GuiaFilters = {
   validade_senha_vencendo_em_dias: string
   mostrar_a_definir: string
   mostrar_historico: string
+  /** Só as guias que a operadora já dava por finalizadas. */
+  finalizada_na_operadora: string
   /** Só guias aprovadas/finalizadas com sessão sobrando — seletor de Sessões. */
   disponivel_para_lancamento?: string
 }

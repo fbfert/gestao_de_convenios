@@ -91,6 +91,17 @@ class AutomationErrorCatalog
             'BOTAO_GRAVAR_FINALIZAR_NAO_ENCONTRADO' => 'Não achei o botão Gravar e Finalizar no portal',
             'GRAVAR_FINALIZAR_RECUSADO' => 'O portal recusou a finalização',
 
+            /*
+             * Conferência de guias já finalizadas na operadora.
+             *
+             * `FILTRO_DATA_NAO_LIMPO` é o que mais importa dos três: sem ele, o
+             * portal filtraria pelos últimos dias e devolveria "não finalizada"
+             * para guias antigas que ESTÃO finalizadas — em lote, e sem nada
+             * acusando. Ver conferirGuiaFinalizada.js.
+             */
+            'TELA_EXAMES_FINALIZADOS_NAO_ABRIU' => 'Não achei a tela de exames finalizados no portal',
+            'FILTRO_DATA_NAO_LIMPO' => 'O portal repôs a data do filtro — a busca esconderia as guias antigas',
+
             default => $code ?: 'Erro não classificado',
         };
     }

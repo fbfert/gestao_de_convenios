@@ -319,6 +319,69 @@ export function useFinalizarGuiaUnimed() {
   })
 }
 
+/**
+ * Pergunta ao portal se a guia já está entre os exames finalizados.
+ *
+ * Consulta, não altera nada lá. O que ela produz aqui é a marca "finalizada na
+ * operadora" — ver SeloFinalizadaNaOperadora.
+ */
+export function useConferirGuiaFinalizadaUnimed() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const { data } = await apiClient.post<{ data: ExecucaoDeConferencia }>(
+        `/guias/${id}/conferir-finalizada-unimed`,
+      )
+
+      return data.data
+    },
+    onSuccess: async (_data, id) => {
+      await queryClient.invalidateQueries({ queryKey: ['guias'] })
+      await queryClient.invalidateQueries({ queryKey: ['guias', id] })
+    },
+  })
+}
+
+/**
+ * A mesma conferência, em lote.
+ *
+ * `incluirJaConferidas` refaz todas, inclusive as que já têm data. É a saída
+ * para um lote que correu errado — sem ela, desfazer custaria uma conferência
+ * avulsa por guia.
+ */
+export function useConferirGuiasFinalizadasEmLote() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (opcoes: { incluirJaConferidas?: boolean } = {}) => {
+      const { data } = await apiClient.post<{ data: ExecucaoDeConferencia }>(
+        '/guias/conferir-finalizadas-unimed',
+        opcoes.incluirJaConferidas ? { incluir_ja_conferidas: true } : {},
+      )
+
+      return data.data
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['guias'] })
+      await queryClient.invalidateQueries({ queryKey: ['solicitacoes'] })
+    },
+  })
+}
+
+type ExecucaoDeConferencia = {
+  id: number
+  status: string
+  operacao: string
+  guia_id: number | null
+  queued_at: string | null
+  total_guias: number
+  /** O lote cobre UM convênio: a credencial do portal é por convênio. */
+  convenio: string | null
+  /** Guias elegíveis que ficaram para um próximo lote, de outro convênio. */
+  restantes_de_outros_convenios: number
+}
+
 export function useGerarConciliacao() {
   return useGerarConciliacaoMutation()
 }

@@ -103,6 +103,10 @@ class Guia extends Model
         'data_solicitacao', 'data_finalizacao', 'senha', 'validade_senha', 'observacoes',
         'alerta_negacao_ocultado_em', 'alerta_restricao_ocultado_em', 'alerta_antecipacao_ocultado_em',
         'antecipacao_data_alvo',
+        // A operadora já tinha esta guia por finalizada antes de a automação
+        // existir. Marca própria, que NÃO mexe no status — ver
+        // ConferirGuiaFinalizadaUnimedService.
+        'finalizada_na_operadora_em', 'conferida_na_operadora_em',
         // Carimbos escritos so por GuiaService::registrarTransicao, junto com o
         // historico. Preenchiveis para o backfill conseguir gravar.
         'negada_em', 'aprovada_em',
@@ -123,7 +127,22 @@ class Guia extends Model
         'alerta_antecipacao_ocultado_em' => 'datetime',
         'negada_em' => 'datetime',
         'aprovada_em' => 'datetime',
+        'finalizada_na_operadora_em' => 'datetime',
+        'conferida_na_operadora_em' => 'datetime',
     ];
+
+    /**
+     * A operadora deu esta guia por finalizada.
+     *
+     * Não confundir com `status === FINALIZED`: aquilo é o ciclo da guia neste
+     * sistema, com as sessões lançadas aqui; isto é o que o portal respondeu
+     * sobre uma guia que talvez nunca tenha passado por esse ciclo. Uma guia
+     * pode ter uma das duas coisas, as duas, ou nenhuma.
+     */
+    public function finalizadaNaOperadora(): bool
+    {
+        return $this->finalizada_na_operadora_em !== null;
+    }
 
     public function statusHistorico()
     {

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useConfirm } from '../../components/ui/ConfirmDialog'
-import { MoreVertical, Plus, X } from 'lucide-react'
+import { ChevronDown, MoreVertical, Plus, X } from 'lucide-react'
 import { DropdownMenu } from 'radix-ui'
 import { ColunaOrdenavel } from '../../components/ui/ColunaOrdenavel'
 import { useOrdenacao } from '../../lib/useOrdenacao'
@@ -34,6 +34,7 @@ import {
 } from '../../lib/queries/useReferenceData'
 import { formatCarteirinha } from '../../lib/carteirinha'
 import { SolicitacaoGuiaModal } from './SolicitacaoGuiaModal'
+import { ItemRecolhido, itemFinalizadoNaOperadora } from './ItemRecolhido'
 import { AdicionarSessoesModal } from './AdicionarSessoesModal'
 import { SolicitacaoInfoCelula } from './SolicitacaoInfoCelula'
 import { formatarData } from './datas'
@@ -167,6 +168,25 @@ export function SolicitacoesPage() {
   const [solicitacaoCriada, setSolicitacaoCriada] = useState<Solicitacao | null>(null)
   const [pacienteModalAberto, setPacienteModalAberto] = useState(false)
   const [medicoModalAberto, setMedicoModalAberto] = useState(false)
+  /*
+    Itens recolhidos que o usuário abriu.
+
+    O conjunto vive aqui, e não dentro de cada item, porque a lista é montada
+    num `.map` — estado por item ali dentro se perde a cada reordenação. E é
+    estado de TELA: nada é gravado, e recarregar volta tudo a recolhido.
+  */
+  const [itensExpandidos, setItensExpandidos] = useState<Set<number>>(new Set())
+
+  const expandirItem = (id: number) =>
+    setItensExpandidos((atual) => new Set(atual).add(id))
+
+  const recolherItem = (id: number) =>
+    setItensExpandidos((atual) => {
+      const proximo = new Set(atual)
+      proximo.delete(id)
+      return proximo
+    })
+
   const [itemAExcluir, setItemAExcluir] = useState<{
     solicitacaoId: number
     item: SolicitacaoItem
@@ -1030,11 +1050,38 @@ export function SolicitacoesPage() {
                       {solicitacao.itens?.length ? (
                         <div className="space-y-1">
                           {solicitacao.itens.map((item) => {
+                            /*
+                             * Item cuja guia a operadora já deu por finalizada
+                             * aparece recolhido: não há ação pendente nele, e
+                             * as que a linha traria só competem por atenção
+                             * com os itens que ainda pedem trabalho.
+                             */
+                            if (itemFinalizadoNaOperadora(item) && !itensExpandidos.has(item.id)) {
+                              return (
+                                <ItemRecolhido
+                                  key={item.id}
+                                  item={item}
+                                  onExpandir={() => expandirItem(item.id)}
+                                />
+                              )
+                            }
+
                             return (
                               <div
                                 key={item.id}
                                 className="flex flex-col gap-2 rounded-superficie border border-linha bg-fundo p-3 shadow-e1"
                               >
+                                {itemFinalizadoNaOperadora(item) ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => recolherItem(item.id)}
+                                    className="inline-flex w-fit items-center gap-1 text-meta font-semibold text-cyan-200 transition hover:text-cyan-100"
+                                    data-testid={`solicitacao-item-recolher-${item.id}`}
+                                  >
+                                    <ChevronDown className="size-4" aria-hidden="true" />
+                                    Recolher
+                                  </button>
+                                ) : null}
                                 <p>
                                   {item.especialidade?.nome ?? item.especialidade_id}
                                   {item.especialidade?.mapeamento_convenio?.codigo_procedimento

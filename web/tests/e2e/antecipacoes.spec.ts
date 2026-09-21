@@ -141,10 +141,24 @@ async function cenarioElegivel(api: APIRequestContext, etiqueta: string): Promis
       numero_guia: numeroGuia,
       tipo_terapia: 'especializada',
       data_solicitacao: hojeMais(-30),
+      // Sem isso sessoesDisponiveis() fica 0 e o lançamento de sessão abaixo
+      // (pré-requisito novo de Finalizar) é rejeitado por falta de cota.
+      sessoes_autorizadas: 10,
     },
   })
   expect(guiaCriada.status(), await guiaCriada.text()).toBe(201)
   const guia = (await guiaCriada.json()).data
+
+  // Guia sem automação Unimed sai de under_review pelo Aprovar manual — sem
+  // isso ela nunca aceita lançamento (Guia::aceitaLancamento()), e Finalizar
+  // passou a exigir ao menos 1 sessão registrada antes de aceitar.
+  const aprovada = await api.patch(`/api/guias/${guia.id}/aprovar`)
+  expect(aprovada.status(), await aprovada.text()).toBe(200)
+
+  const sessaoRegistrada = await api.post(`/api/guias/${guia.id}/lancamentos`, {
+    data: { profissional_id: item.profissional_id, data_sessao: hojeMais(-1) },
+  })
+  expect(sessaoRegistrada.status(), await sessaoRegistrada.text()).toBe(201)
 
   // Finalizar é o caminho de status que a API expõe (status não se edita pelo
   // PATCH normal), e é ele que grava a `validade_senha` de onde sai a data-alvo.

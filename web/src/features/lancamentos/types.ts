@@ -35,6 +35,8 @@ export type LancamentoGuiaGrupo = {
     id: number
     numero_guia: string | null
     status: string
+    senha: string | null
+    validade_senha: string | null
     paciente_nome: string | null
     medico_nome: string | null
   } | null

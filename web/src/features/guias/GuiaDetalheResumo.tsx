@@ -177,7 +177,8 @@ export function GuiaDetalheResumo({ guia }: { guia: Guia }) {
       </section>
       <p className="-mt-4 text-meta text-slate-400">
         Paciente, convênio e status não são editáveis aqui: antecipações e conciliações já geradas usam esses
-        dados, e o status muda pelos botões Finalizar/Negar.
+        dados. O status muda pelos botões Aprovar/Negar aqui, ou por Finalizar na tela de Sessões
+        (depois de registrar ao menos uma sessão).
       </p>
 
       {!editando ? (

@@ -50,6 +50,8 @@ class LancamentoController extends Controller
                     'id' => $grupo['guia']->id,
                     'numero_guia' => $grupo['guia']->numero_guia,
                     'status' => $grupo['guia']->status,
+                    'senha' => $grupo['guia']->senha,
+                    'validade_senha' => $grupo['guia']->validade_senha?->toDateString(),
                     'paciente_nome' => $grupo['guia']->paciente?->nome,
                     'medico_nome' => $grupo['guia']->solicitacaoItem?->solicitacao?->medico?->nome,
                 ] : null,

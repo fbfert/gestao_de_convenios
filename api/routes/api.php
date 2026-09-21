@@ -328,6 +328,7 @@ Route::middleware(['auth:sanctum', EncerrarSessaoExpirada::class])->group(functi
     Route::get('/guias/{guia}', [GuiaController::class, 'show']);
     Route::patch('/guias/{guia}', [GuiaController::class, 'update'])->middleware('permission:guias.manage');
     Route::patch('/guias/{guia}/finalizar', [GuiaController::class, 'finalizar'])->middleware('permission:guias.view|guias.viewOwn');
+    Route::patch('/guias/{guia}/aprovar', [GuiaController::class, 'aprovar'])->middleware('permission:guias.view|guias.viewOwn');
     Route::patch('/guias/{guia}/negar', [GuiaController::class, 'negar'])->middleware('permission:guias.view|guias.viewOwn');
     Route::patch('/guias/{guia}/ocultar-alerta-negacao', [GuiaController::class, 'ocultarAlertaNegacao'])->middleware('permission:guias.view|guias.viewOwn');
     Route::patch('/guias/{guia}/ocultar-alerta-restricao', [GuiaController::class, 'ocultarAlertaRestricao'])->middleware('permission:guias.view|guias.viewOwn');

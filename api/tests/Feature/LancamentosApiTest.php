@@ -458,7 +458,9 @@ TXT;
             'especialidade_id' => $especialidade->id,
             'numero_guia' => 'GUIA-MEDICO-'.uniqid(),
             'tipo_terapia' => 'especializada',
-            'status' => 'under_review',
+            // approved já é suficiente pra Guia::aceitaLancamento() — não
+            // precisa passar por Finalizar (que agora exige sessão prévia).
+            'status' => 'approved',
             'sessoes_autorizadas' => 10,
             'data_solicitacao' => today(),
             'data_finalizacao' => null,
@@ -467,13 +469,12 @@ TXT;
             'observacoes' => null,
         ]);
 
-        $guiaFinalizada = app(GuiaService::class)->finalizar($guia, ['senha' => 'ABC123']);
-        app(LancamentoService::class)->registrar($guiaFinalizada, $profissional, today());
+        app(LancamentoService::class)->registrar($guia, $profissional, today());
 
         $this->getJson('/api/lancamentos?'.http_build_query(['busca' => $medico->nome]))
             ->assertOk()
             ->assertJsonCount(1, 'data')
-            ->assertJsonPath('data.0.guia_id', $guiaFinalizada->id)
+            ->assertJsonPath('data.0.guia_id', $guia->id)
             ->assertJsonPath('data.0.guia.medico_nome', $medico->nome);
     }
 
@@ -557,14 +558,26 @@ TXT;
         return $user;
     }
 
-    /** Guia finalizada, já aceitando lançamento, com a cota que o teste pedir. */
+    /** Guia finalizada, já aceitando lançamento, com a cota que o teste pedir (cheia — ver abaixo). */
     private function criarGuiaAprovada(string $convenioNome, string $especialidadeNome, string $tipoTerapia, int $sessoesAutorizadas = 10): Guia
     {
         $guia = $this->criarGuiaBase($convenioNome, $especialidadeNome, $tipoTerapia, $sessoesAutorizadas);
+        $profissional = Profissional::query()->where('especialidade_id', $guia->especialidade_id)->firstOrFail();
 
-        return app(GuiaService::class)->finalizar($guia, [
+        app(GuiaService::class)->registrarTransicao($guia, 'approved', ['origem' => 'automacao']);
+
+        // Finalizar exige >=1 sessão desde 21/09/2026. Registra uma de
+        // bootstrap só pra passar pela trava e apaga em seguida — os testes
+        // que usam este helper esperam a guia finalizada com a cota CHEIA
+        // (sessoesDisponiveis == sessoesAutorizadas), não com 1 sessão já
+        // consumida.
+        $bootstrap = app(LancamentoService::class)->registrar($guia->fresh(), $profissional, today()->subDay());
+        $finalizada = app(GuiaService::class)->finalizar($bootstrap->guia, [
             'senha' => 'ABC123',
         ]);
+        $bootstrap->delete();
+
+        return $finalizada->fresh();
     }
 
     /** Guia com 1 sessão autorizada e já lançada — sessoesDisponiveis() = 0. */
@@ -617,7 +630,9 @@ TXT;
             'especialidade_id' => $profissional->especialidade_id,
             'numero_guia' => $prefixoNumero,
             'tipo_terapia' => $tipoTerapia,
-            'status' => 'under_review',
+            // approved já é suficiente pra Guia::aceitaLancamento() — não
+            // precisa passar por Finalizar (que agora exige sessão prévia).
+            'status' => 'approved',
             'sessoes_autorizadas' => 10,
             'data_solicitacao' => today(),
             'data_finalizacao' => null,
@@ -626,11 +641,7 @@ TXT;
             'observacoes' => null,
         ]);
 
-        $guiaFinalizada = app(GuiaService::class)->finalizar($guia, [
-            'senha' => 'ABC123',
-        ]);
-
-        return app(LancamentoService::class)->registrar($guiaFinalizada, $profissional, today());
+        return app(LancamentoService::class)->registrar($guia, $profissional, today());
     }
 
     private function criarArquivoAnaliticoUnimed(): UploadedFile

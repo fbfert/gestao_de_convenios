@@ -7,6 +7,7 @@ use App\Models\Cid;
 use App\Models\Convenio;
 use App\Models\Especialidade;
 use App\Models\Guia;
+use App\Models\Lancamento;
 use App\Models\Medico;
 use App\Models\Paciente;
 use App\Models\Profissional;
@@ -315,6 +316,7 @@ class SolicitacoesApiTest extends TestCase
         $guiaItem1 = Guia::query()->where('solicitacao_item_id', $itens[0]->id)->firstOrFail();
         $guiaItem2 = Guia::query()->where('solicitacao_item_id', $itens[1]->id)->firstOrFail();
 
+        $this->registrarSessaoParaGuia($guiaItem1);
         app(\App\Services\GuiaService::class)->finalizar($guiaItem1, ['senha' => 'SENHA-1']);
 
         // Item 2 já tem guia (ainda under_review) — todo item já com guia,
@@ -323,6 +325,7 @@ class SolicitacoesApiTest extends TestCase
         // pra automatizar" com a automação já concluída pros dois itens).
         $this->assertSame('guia_gerada', $solicitacao->refresh()->status);
 
+        $this->registrarSessaoParaGuia($guiaItem2);
         app(\App\Services\GuiaService::class)->finalizar($guiaItem2, ['senha' => 'SENHA-2']);
 
         $this->assertSame('approved', $solicitacao->refresh()->status);
@@ -373,6 +376,7 @@ class SolicitacoesApiTest extends TestCase
             'data_solicitacao' => today(),
         ]);
 
+        $this->registrarSessaoParaGuia($guiaItem1);
         app(\App\Services\GuiaService::class)->finalizar($guiaItem1, ['senha' => 'SENHA-1']);
 
         // Item 2 nunca teve guia gerada: mesmo com o item 1 finalizado, a
@@ -484,6 +488,18 @@ class SolicitacoesApiTest extends TestCase
     {
         $user = User::query()->where('email', 'admin@clinica-exemplo.test')->firstOrFail();
         Sanctum::actingAs($user);
+    }
+
+    /** Finalizar exige ao menos 1 sessão registrada — insere direto, sem passar pelo CRUD de sessões. */
+    private function registrarSessaoParaGuia(Guia $guia): void
+    {
+        Lancamento::query()->create([
+            'tenant_id' => $guia->tenant_id,
+            'guia_id' => $guia->id,
+            'profissional_id' => $guia->profissional_id,
+            'data_sessao' => today(),
+            'status' => 'completed',
+        ]);
     }
 
     private function payloadSolicitacao(string $convenioNome): array

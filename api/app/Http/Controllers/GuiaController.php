@@ -70,6 +70,11 @@ class GuiaController extends Controller
         return new GuiaResource($this->service->finalizar($guia, $request->validated()));
     }
 
+    public function aprovar(Guia $guia): GuiaResource
+    {
+        return new GuiaResource($this->service->aprovar($guia));
+    }
+
     public function negar(MutateGuiaStatusRequest $request, Guia $guia): GuiaResource
     {
         return new GuiaResource($this->service->negar($guia, $request->input('observacoes')));

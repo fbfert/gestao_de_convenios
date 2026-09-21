@@ -217,7 +217,8 @@ test('fluxo completo de negocio', async ({ page }, testInfo: TestInfo) => {
   ).toBe(200)
   await selectOption(page, 'guia-paciente', 'Ana Paula Ribeiro · UNI-2026-0001')
   await selectOption(page, 'guia-profissional', 'Dra. Marina Tavares')
-  await page.getByTestId('guia-numero').fill(`GUIA-E2E-${Date.now()}`)
+  const numeroGuia = `GUIA-E2E-${Date.now()}`
+  await page.getByTestId('guia-numero').fill(numeroGuia)
   await selectOption(page, 'guia-tipo-terapia', 'Especializada')
   const createGuideResponsePromise = page.waitForResponse((response) => {
     return response.request().method() === 'POST' && response.url().includes('/guias')
@@ -257,38 +258,33 @@ test('fluxo completo de negocio', async ({ page }, testInfo: TestInfo) => {
   await page.getByTestId('guia-editar-salvar').click()
   expect((await salvarGuiaResponsePromise).status()).toBe(200)
 
+  /*
+   * Finalizar saiu das telas de Guias e foi pro CRUD de sessoes -- agora exige
+   * ao menos 1 sessao registrada (LancamentosPage). Guia sem automacao
+   * Unimed sai de under_review pelo Aprovar manual (GuiaService::aprovar,
+   * criado junto dessa trava), que nao pede senha -- isso so e capturado em
+   * Finalizar, depois, ja no CRUD de sessoes.
+   */
   await page.goto(`/guias/${guideId}`, { waitUntil: 'domcontentloaded' })
   await expect(page.getByTestId('guia-detalhe-page')).toBeVisible()
-  await expect(page.getByTestId(`guia-finalizar-${guideId}`)).toHaveText('Finalizar')
-  await page.getByTestId(`guia-finalizar-${guideId}`).click()
-  await page.getByTestId(`guia-senha-${guideId}`).fill('ABC123')
-  await page.screenshot({
-    path: testInfo.outputPath(`guia-finalizar-${guideId}-pre-submit.png`),
-    fullPage: true,
-  })
+  await expect(page.getByTestId(`guia-aprovar-${guideId}`)).toHaveText('Aprovar')
 
-  const finalizeResponsePromise = page.waitForResponse((response) => {
-    return response.request().method() === 'PATCH' && response.url().includes(`/guias/${guideId}/finalizar`)
+  const aprovarGuiaResponsePromise = page.waitForResponse((response) => {
+    return response.request().method() === 'PATCH' && response.url().includes(`/guias/${guideId}/aprovar`)
   })
-
-  await page.getByTestId(`guia-finalizar-confirmar-${guideId}`).click()
+  await page.getByTestId(`guia-aprovar-${guideId}`).click()
   await confirmarNoDialogo(page)
 
-  const finalizeResponse = await finalizeResponsePromise
-  const finalizeResponseText = await finalizeResponse.text()
+  const aprovarGuiaResponse = await aprovarGuiaResponsePromise
+  const aprovarGuiaResponseText = await aprovarGuiaResponse.text()
   console.log(
-    `[E2E] PATCH /guias/${guideId}/finalizar => ${finalizeResponse.status()} :: ${finalizeResponseText}`,
+    `[E2E] PATCH /guias/${guideId}/aprovar => ${aprovarGuiaResponse.status()} :: ${aprovarGuiaResponseText}`,
   )
-
   await expect(
-    finalizeResponse.status(),
-    `PATCH /guias/${guideId}/finalizar retornou ${finalizeResponse.status()} com corpo: ${finalizeResponseText}`,
+    aprovarGuiaResponse.status(),
+    `PATCH /guias/${guideId}/aprovar retornou ${aprovarGuiaResponse.status()} com corpo: ${aprovarGuiaResponseText}`,
   ).toBe(200)
-  // inalized deixou de se chamar Aprovado: o rótulo virou Finalizado,
-  // porque pproved (a operadora autorizou) e inalized (alguém confirmou
-  // no gescon e abriu a Antecipação) eram dois estados com o mesmo nome. Ver o
-  // comentário em src/lib/statusLabels.ts.
-  await expect(page.getByText('Finalizado', { exact: true }).first()).toBeVisible()
+  await expect(page.getByText('Autorizado', { exact: true }).first()).toBeVisible()
 
   /*
    * A cota por antecipação deixou de existir (`refactor(antecipacao): Fase 1`):
@@ -367,6 +363,36 @@ Sessões
   await expect(page.getByTestId('guia-resumo-sessoes-contagem')).toContainText(
     '1 lançada(s) · 0 disponível(is)',
   )
+
+  /*
+   * Finalizar agora fica no grupo da guia em LancamentosPage — só existe
+   * porque a sessão acima já foi registrada (GuiaService::finalizar exige
+   * ao menos 1 lançamento). Filtra pelo número da guia pra achar o grupo
+   * certo sem depender de paginação.
+   */
+  await page.goto('/lancamentos', { waitUntil: 'domcontentloaded' })
+  await expect(page.getByTestId('lancamentos-page')).toBeVisible()
+  await page.getByTestId('lancamento-filtro-busca').fill(numeroGuia)
+  await page.getByRole('button', { name: 'Aplicar' }).click()
+  await expect(page.getByTestId(`guia-finalizar-${guideId}`)).toHaveText('Finalizar')
+  await page.getByTestId(`guia-finalizar-${guideId}`).click()
+  await page.getByTestId(`guia-senha-${guideId}`).fill('ABC123')
+
+  const finalizeResponsePromise = page.waitForResponse((response) => {
+    return response.request().method() === 'PATCH' && response.url().includes(`/guias/${guideId}/finalizar`)
+  })
+  await page.getByTestId(`guia-finalizar-confirmar-${guideId}`).click()
+  await confirmarNoDialogo(page)
+
+  const finalizeResponse = await finalizeResponsePromise
+  const finalizeResponseText = await finalizeResponse.text()
+  console.log(
+    `[E2E] PATCH /guias/${guideId}/finalizar => ${finalizeResponse.status()} :: ${finalizeResponseText}`,
+  )
+  await expect(
+    finalizeResponse.status(),
+    `PATCH /guias/${guideId}/finalizar retornou ${finalizeResponse.status()} com corpo: ${finalizeResponseText}`,
+  ).toBe(200)
 
   const guiasListResponsePromise = page.waitForResponse((response) => {
     return response.request().method() === 'GET' && response.url().includes('/guias?')
@@ -470,7 +496,7 @@ Sessões
   console.log('[E2E] redirect after logout done')
 })
 
-test('detalhe de guia abre pela lista e atualiza após finalizar', async ({ page }) => {
+test('detalhe de guia abre pela lista e atualiza apos aprovar', async ({ page }) => {
   await login(page)
 
   await page.goto('/guias', { waitUntil: 'domcontentloaded' })
@@ -496,21 +522,18 @@ test('detalhe de guia abre pela lista e atualiza após finalizar', async ({ page
   expect((await detailResponsePromise).status()).toBe(200)
   await expect(page).toHaveURL(new RegExp(`/guias/${guideId}$`))
   await expect(page.getByTestId('guia-detalhe-page')).toBeVisible()
-  await expect(page.getByTestId(`guia-finalizar-${guideId}`)).toHaveText('Finalizar')
-  await page.getByTestId(`guia-finalizar-${guideId}`).click()
-  await page.getByTestId(`guia-senha-${guideId}`).fill('DETALHE123')
+  // Aprovar (nao Finalizar, que agora exige sessao registrada e mudou de
+  // tela) e o suficiente pra este teste: o que se verifica aqui e a pagina
+  // de detalhe reagir a uma mutacao de status, nao a regra de negocio dela.
+  await expect(page.getByTestId(`guia-aprovar-${guideId}`)).toHaveText('Aprovar')
+  await page.getByTestId(`guia-aprovar-${guideId}`).click()
 
-  const finalizeResponsePromise = page.waitForResponse((response) => {
-    return response.request().method() === 'PATCH' && response.url().includes(`/guias/${guideId}/finalizar`)
+  const aprovarResponsePromise = page.waitForResponse((response) => {
+    return response.request().method() === 'PATCH' && response.url().includes(`/guias/${guideId}/aprovar`)
   })
-  await page.getByTestId(`guia-finalizar-confirmar-${guideId}`).click()
   await confirmarNoDialogo(page)
-  expect((await finalizeResponsePromise).status()).toBe(200)
-  // inalized deixou de se chamar Aprovado: o rótulo virou Finalizado,
-  // porque pproved (a operadora autorizou) e inalized (alguém confirmou
-  // no gescon e abriu a Antecipação) eram dois estados com o mesmo nome. Ver o
-  // comentário em src/lib/statusLabels.ts.
-  await expect(page.getByText('Finalizado', { exact: true }).first()).toBeVisible()
+  expect((await aprovarResponsePromise).status()).toBe(200)
+  await expect(page.getByText('Autorizado', { exact: true }).first()).toBeVisible()
 })
 
 test('pedido com duas especialidades recebe anexos por especialidade', async ({ page }) => {

@@ -324,11 +324,19 @@ class GuiaService
      * ou FINALIZED ja aceita Lancamento (Guia::aceitaLancamento()), a cota
      * e contada ao vivo contra Guia::sessoesDisponiveis(). Antes disso
      * Finalizar abria um ciclo de Antecipacao (removido).
+     *
+     * Desde 21/09/2026 a direcao oposta passou a valer: exige pelo menos 1
+     * Lancamento antes de finalizar (o botao saiu das telas de Guias e foi
+     * pro CRUD de sessoes, LancamentosPage, exatamente por causa disto).
      */
     public function finalizar(Guia $guia, array $dados): Guia
     {
         if (! in_array($guia->status, [GuiaStatus::UNDER_REVIEW, GuiaStatus::APPROVED], true)) {
             throw GuiaStatusInvalidoException::transicaoInvalida($guia->status, GuiaStatus::FINALIZED);
+        }
+
+        if (! $guia->lancamentos()->exists()) {
+            throw GuiaStatusInvalidoException::finalizacaoRequerSessoes();
         }
 
         $senha = $dados['senha'] ?? $guia->senha;
@@ -407,6 +415,27 @@ class GuiaService
     public function ocultarAlertaAntecipacao(Guia $guia): Guia
     {
         $guia->forceFill(['alerta_antecipacao_ocultado_em' => now()])->save();
+
+        return $guia->refresh();
+    }
+
+    /**
+     * Aprovação manual — criada em 21/09/2026 junto da trava de "Finalizar
+     * exige sessão": sem isto, uma guia sem automação Unimed (ou antes dela
+     * rodar) não tinha NENHUM jeito de sair de under_review, porque
+     * Guia::aceitaLancamento() só libera lançamento em approved/finalized, e
+     * Finalizar passou a exigir lançamento antes de aceitar under_review.
+     * Sem senha/validade — isso continua sendo capturado só em Finalizar.
+     */
+    public function aprovar(Guia $guia): Guia
+    {
+        if ($guia->status !== GuiaStatus::UNDER_REVIEW) {
+            throw GuiaStatusInvalidoException::transicaoInvalida($guia->status, GuiaStatus::APPROVED);
+        }
+
+        $this->registrarTransicao($guia, GuiaStatus::APPROVED, [
+            'origem' => GuiaStatusHistorico::ORIGEM_MANUAL,
+        ]);
 
         return $guia->refresh();
     }

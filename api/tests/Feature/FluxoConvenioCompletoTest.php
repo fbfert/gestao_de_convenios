@@ -66,9 +66,17 @@ class FluxoConvenioCompletoTest extends TestCase
         $lancamentoService = app(LancamentoService::class);
         $conciliacaoService = app(ConciliacaoService::class);
 
-        $guiaFinalizada = $guiaService->finalizar($guia, [
+        $guiaService->registrarTransicao($guia, 'approved', ['origem' => 'automacao']);
+
+        // Finalizar exige >=1 sessão desde 21/09/2026. Registra uma de
+        // bootstrap só pra passar pela trava e apaga em seguida — o teste
+        // quer a cota CHEIA (sessoesAutorizadas=1, 0 consumida) logo após
+        // finalizar, pra depois consumi-la de propósito abaixo.
+        $bootstrap = $lancamentoService->registrar($guia->fresh(), $profissional, today()->subDay());
+        $guiaFinalizada = $guiaService->finalizar($bootstrap->guia, [
             'senha' => 'ABC123',
         ]);
+        $bootstrap->delete();
 
         $this->assertTrue($guiaFinalizada->aceitaLancamento());
         $this->assertSame(1, $guiaFinalizada->sessoesDisponiveis());

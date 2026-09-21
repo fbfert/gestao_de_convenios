@@ -13,6 +13,7 @@ import { useProfissionais } from '../../lib/queries/useReferenceData'
 import { useGuia } from '../guias/useGuias'
 import type { Guia } from '../guias/types'
 import { statusTone as guiaStatusTone } from '../guias/statusTone'
+import { FinalizarGuiaButton } from '../guias/FinalizarGuiaButton'
 import {
   getHttpErrorMessage,
   useConfirmarLancamentosTranscritos,
@@ -931,36 +932,39 @@ export function LancamentosPage() {
                       <Fragment key={grupo.guia_id}>
                         <tr>
                           <td colSpan={7} className="p-0">
-                            <button
-                              type="button"
-                              onClick={() => alternarGuia(grupo.guia_id)}
-                              className="flex w-full flex-wrap items-center gap-3 px-4 py-3 text-left transition hover:bg-white/5"
-                              data-testid={`lancamento-grupo-guia-${grupo.guia_id}`}
-                              aria-expanded={aberta}
-                            >
-                              {aberta ? (
-                                <ChevronDown className="size-4 shrink-0 text-slate-400" aria-hidden="true" />
-                              ) : (
-                                <ChevronRight className="size-4 shrink-0 text-slate-400" aria-hidden="true" />
-                              )}
-                              <span className="font-semibold text-white">
-                                Guia {grupo.guia?.numero_guia ?? `#${grupo.guia_id}`}
-                              </span>
-                              {grupo.guia?.paciente_nome ? (
-                                <span className="text-slate-300">· {grupo.guia.paciente_nome}</span>
-                              ) : null}
-                              {grupo.guia?.medico_nome ? (
-                                <span className="text-slate-400">· Dr(a). {grupo.guia.medico_nome}</span>
-                              ) : null}
-                              {grupo.guia?.status ? (
-                                <Badge tone={guiaStatusTone(grupo.guia.status)}>
-                                  {translateStatus('guias', grupo.guia.status)}
-                                </Badge>
-                              ) : null}
+                            <div className="flex w-full flex-wrap items-center gap-3 px-4 py-3">
+                              <button
+                                type="button"
+                                onClick={() => alternarGuia(grupo.guia_id)}
+                                className="flex flex-1 flex-wrap items-center gap-3 text-left transition hover:bg-white/5"
+                                data-testid={`lancamento-grupo-guia-${grupo.guia_id}`}
+                                aria-expanded={aberta}
+                              >
+                                {aberta ? (
+                                  <ChevronDown className="size-4 shrink-0 text-slate-400" aria-hidden="true" />
+                                ) : (
+                                  <ChevronRight className="size-4 shrink-0 text-slate-400" aria-hidden="true" />
+                                )}
+                                <span className="font-semibold text-white">
+                                  Guia {grupo.guia?.numero_guia ?? `#${grupo.guia_id}`}
+                                </span>
+                                {grupo.guia?.paciente_nome ? (
+                                  <span className="text-slate-300">· {grupo.guia.paciente_nome}</span>
+                                ) : null}
+                                {grupo.guia?.medico_nome ? (
+                                  <span className="text-slate-400">· Dr(a). {grupo.guia.medico_nome}</span>
+                                ) : null}
+                                {grupo.guia?.status ? (
+                                  <Badge tone={guiaStatusTone(grupo.guia.status)}>
+                                    {translateStatus('guias', grupo.guia.status)}
+                                  </Badge>
+                                ) : null}
+                              </button>
+                              <FinalizarGuiaButton guia={grupo.guia} />
                               <span className="ml-auto text-meta font-semibold text-slate-400">
                                 {grupo.lancamentos.length} sessão(ões)
                               </span>
-                            </button>
+                            </div>
                           </td>
                         </tr>
 

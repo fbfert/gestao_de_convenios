@@ -50,6 +50,8 @@ class GuiasApiTest extends TestCase
             ->assertJsonPath('data.id', $id)
             ->assertJsonPath('data.status', 'under_review');
 
+        $this->registrarSessaoParaGuia($id);
+
         $this->patchJson("/api/guias/{$id}/finalizar", [
             'senha' => 'ABC123',
         ])
@@ -194,6 +196,8 @@ class GuiasApiTest extends TestCase
             ->assertCreated()
             ->json('data.id');
 
+        $this->registrarSessaoParaGuia($guia);
+
         $response = $this->patchJson("/api/guias/{$guia}/finalizar", [
             'senha' => 'ABC123',
         ]);
@@ -215,6 +219,9 @@ class GuiasApiTest extends TestCase
         $guiaLonga = $this->postJson('/api/guias', $this->payloadGuia('SC Saúde'))
             ->assertCreated()
             ->json('data.id');
+
+        $this->registrarSessaoParaGuia($guiaCurta);
+        $this->registrarSessaoParaGuia($guiaLonga);
 
         $this->patchJson("/api/guias/{$guiaCurta}/finalizar", [
             'senha' => 'CURTA123',
@@ -241,6 +248,7 @@ class GuiasApiTest extends TestCase
         $idAprovada = $this->postJson('/api/guias', $this->payloadGuia('SC Saúde'))->assertCreated()->json('data.id');
 
         $this->patchJson("/api/guias/{$idNegada}/negar", [])->assertOk()->assertJsonPath('data.status', 'denied');
+        $this->registrarSessaoParaGuia($idAprovada);
         $this->patchJson("/api/guias/{$idAprovada}/finalizar", ['senha' => 'ABC123'])->assertOk();
 
         $this->getJson('/api/guias?alerta_negacao_pendente=1')
@@ -648,6 +656,7 @@ class GuiasApiTest extends TestCase
         $this->autenticar();
         $id = $this->postJson('/api/guias', $this->payloadGuia('Unimed'))->assertCreated()->json('data.id');
 
+        $this->registrarSessaoParaGuia($id);
         $this->patchJson("/api/guias/{$id}/finalizar", ['senha' => 'ABC123'])->assertOk();
 
         $this->patchJson("/api/guias/{$id}", ['protocolo_operadora' => 'PROTOCOLO-999'])
@@ -698,6 +707,20 @@ class GuiasApiTest extends TestCase
     {
         $user = User::query()->where('email', 'admin@clinica-exemplo.test')->firstOrFail();
         Sanctum::actingAs($user);
+    }
+
+    /** Finalizar exige ao menos 1 sessão registrada — insere direto, sem passar pelo CRUD de sessões. */
+    private function registrarSessaoParaGuia(int $guiaId): void
+    {
+        $guia = Guia::query()->findOrFail($guiaId);
+
+        Lancamento::query()->create([
+            'tenant_id' => $guia->tenant_id,
+            'guia_id' => $guia->id,
+            'profissional_id' => $guia->profissional_id,
+            'data_sessao' => today(),
+            'status' => 'completed',
+        ]);
     }
 
     private function autenticarProfissional(): User

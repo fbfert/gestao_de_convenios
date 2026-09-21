@@ -11,6 +11,11 @@ class GuiaStatusInvalidoException extends RuntimeException
         return new self('Para finalizar a guia, senha e validade_senha são obrigatórias.');
     }
 
+    public static function finalizacaoRequerSessoes(): self
+    {
+        return new self('Para finalizar a guia, é necessário ter ao menos uma sessão registrada.');
+    }
+
     public static function transicaoInvalida(string $statusAtual, string $statusDestino): self
     {
         return new self("Transição inválida de guia: {$statusAtual} -> {$statusDestino}.");

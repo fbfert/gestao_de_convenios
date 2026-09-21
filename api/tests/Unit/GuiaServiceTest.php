@@ -6,6 +6,7 @@ use App\Exceptions\GuiaStatusInvalidoException;
 use App\Models\Convenio;
 use App\Models\Especialidade;
 use App\Models\Guia;
+use App\Models\Lancamento;
 use App\Models\Paciente;
 use App\Models\Profissional;
 use App\Models\Tenant;
@@ -23,6 +24,7 @@ class GuiaServiceTest extends TestCase
     {
         $service = app(GuiaService::class);
         $guia = $this->novaGuia('Unimed', 'Fisioterapia', 'especializada');
+        $this->registrarSessao($guia);
 
         $finalizada = $service->finalizar($guia, [
             'senha' => 'ABC123',
@@ -52,6 +54,7 @@ class GuiaServiceTest extends TestCase
         // O ponto central do pedido de 10/09/2026: já aceita lançamento
         // assim que aprovada, mesmo antes de Finalizar rodar.
         $this->assertTrue($guia->fresh()->aceitaLancamento());
+        $this->registrarSessao($guia);
 
         $finalizada = $service->finalizar($guia, []);
 
@@ -75,10 +78,21 @@ class GuiaServiceTest extends TestCase
     {
         $service = app(GuiaService::class);
         $guia = $this->novaGuia('Unimed', 'Fisioterapia', 'especializada');
+        $this->registrarSessao($guia);
 
         $this->expectException(GuiaStatusInvalidoException::class);
 
         $service->finalizar($guia, []);
+    }
+
+    public function test_finalizar_rejeita_sem_sessao_registrada(): void
+    {
+        $service = app(GuiaService::class);
+        $guia = $this->novaGuia('Unimed', 'Fisioterapia', 'especializada');
+
+        $this->expectException(GuiaStatusInvalidoException::class);
+
+        $service->finalizar($guia, ['senha' => 'ABC123']);
     }
 
     public function test_ocultar_alerta_negacao_preenche_timestamp_sem_mudar_status(): void
@@ -104,6 +118,18 @@ class GuiaServiceTest extends TestCase
 
         $this->assertSame('denied', $denied->status);
         $this->assertSame('documentação incompleta', $denied->observacoes);
+    }
+
+    /** Insere direto (sem passar por LancamentoService — não interessa aqui se a guia já aceita lançamento). */
+    private function registrarSessao(Guia $guia): Lancamento
+    {
+        return Lancamento::query()->create([
+            'tenant_id' => $guia->tenant_id,
+            'guia_id' => $guia->id,
+            'profissional_id' => $guia->profissional_id,
+            'data_sessao' => today(),
+            'status' => 'completed',
+        ]);
     }
 
     private function novaGuia(string $convenioNome, string $especialidadeNome, string $tipoTerapia): Guia

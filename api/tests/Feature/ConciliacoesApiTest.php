@@ -170,9 +170,18 @@ class ConciliacoesApiTest extends TestCase
             'observacoes' => null,
         ]);
 
-        return app(GuiaService::class)->finalizar($guia, [
+        app(GuiaService::class)->registrarTransicao($guia, 'approved', ['origem' => 'automacao']);
+
+        // Finalizar exige >=1 sessão desde 21/09/2026 — bootstrap descartável
+        // só pra passar pela trava, a guia volta com 0 lançamentos (quem
+        // chama este helper registra a própria sessão em seguida).
+        $bootstrap = app(LancamentoService::class)->registrar($guia->fresh(), $profissional, today()->subDay());
+        $finalizada = app(GuiaService::class)->finalizar($bootstrap->guia, [
             'senha' => 'ABC123',
         ]);
+        $bootstrap->delete();
+
+        return $finalizada->fresh();
     }
 
     private function criarConciliacaoParaProfissional(Tenant $tenant, Profissional $profissional, string $convenioNome, string $tipoTerapia, string $prefixoNumero): ConciliacaoFinanceira
@@ -189,17 +198,15 @@ class ConciliacoesApiTest extends TestCase
             'especialidade_id' => $profissional->especialidade_id,
             'numero_guia' => $prefixoNumero,
             'tipo_terapia' => $tipoTerapia,
-            'status' => 'under_review',
+            // approved já é suficiente pra Guia::aceitaLancamento() — não
+            // precisa passar por Finalizar (que agora exige sessão prévia).
+            'status' => 'approved',
             'sessoes_autorizadas' => 10,
             'data_solicitacao' => today(),
             'data_finalizacao' => null,
             'senha' => null,
             'validade_senha' => null,
             'observacoes' => null,
-        ]);
-
-        $guia = app(GuiaService::class)->finalizar($guia, [
-            'senha' => 'ABC123',
         ]);
 
         app(LancamentoService::class)->registrar($guia, $profissional, today());

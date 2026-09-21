@@ -152,7 +152,10 @@ export function GuiaDetalhePage() {
 
       <section className="rounded-janela border border-linha bg-superficie-elevada shadow-e2 p-6">
         <h3 className="text-subtitulo font-semibold text-white">Ações da guia</h3>
-        <p className="mt-1 text-corpo text-slate-300">Finalize com senha e validade ou negue enquanto estiver em análise.</p>
+        <p className="mt-1 text-corpo text-slate-300">
+          Aprove ou negue enquanto estiver em análise. Finalizar (senha e validade) agora fica na
+          tela de Sessões, depois de registrar ao menos uma.
+        </p>
         <div className="mt-4 flex flex-wrap gap-2">
           <GuiaStatusActions guia={guia} />
           <button

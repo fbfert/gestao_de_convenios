@@ -195,6 +195,20 @@ export function useOcultarAlertaAntecipacaoGuia() {
   })
 }
 
+export function useAprovarGuia() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const { data } = await apiClient.patch<{ data: Guia }>(`/guias/${id}/aprovar`)
+      return data.data
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['guias'] })
+    },
+  })
+}
+
 export function useNegarGuia() {
   const queryClient = useQueryClient()
 

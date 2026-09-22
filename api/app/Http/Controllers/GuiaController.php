@@ -131,6 +131,26 @@ class GuiaController extends Controller
     }
 
     /**
+     * Botão manual pra guias presas no bug de 22/09/2026: senha e validade já
+     * capturadas, mas sessões nunca vieram. Reusa a mesma tela de execução do
+     * SP/SADT via CapturarSenhaValidadeUnimedService::enviarRecuperacaoSessoes.
+     */
+    public function recuperarSessoesUnimed(Guia $guia, CapturarSenhaValidadeUnimedService $capturarSenhaValidade): JsonResponse
+    {
+        $execucao = $capturarSenhaValidade->enviarRecuperacaoSessoes($guia);
+
+        return response()->json([
+            'data' => [
+                'id' => $execucao->id,
+                'status' => $execucao->status,
+                'operacao' => $execucao->operacao,
+                'guia_id' => $execucao->guia_id,
+                'queued_at' => $execucao->queued_at?->toISOString(),
+            ],
+        ], 202);
+    }
+
+    /**
      * Pergunta ao portal se esta guia já está entre os exames finalizados.
      *
      * Não altera nada lá: é uma consulta. O que ela produz aqui é a marca

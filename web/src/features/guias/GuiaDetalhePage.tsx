@@ -5,7 +5,13 @@ import { GuiaDetalheResumo } from './GuiaDetalheResumo'
 import { FolhasDeRegistro } from './FolhasDeRegistro'
 import { HistoricoFinalizacoesUnimed } from './HistoricoFinalizacoesUnimed'
 import { GuiaStatusActions } from './GuiaStatusActions'
-import { getHttpErrorMessage, useBuscarSenhaValidadeGuiaUnimed, useConsultarGuiaUnimed, useGuia } from './useGuias'
+import {
+  getHttpErrorMessage,
+  useBuscarSenhaValidadeGuiaUnimed,
+  useConsultarGuiaUnimed,
+  useGuia,
+  useRecuperarSessoesGuiaUnimed,
+} from './useGuias'
 import { guiaTemDadosADefinir } from './aDefinir'
 import { useAuthStore } from '../../stores/authStore'
 import { useLancamentoPrintTemplate } from '../lancamentos/useLancamentos'
@@ -25,8 +31,9 @@ export function GuiaDetalhePage() {
   const guiaQuery = useGuia(guiaId)
   const consultarGuiaUnimed = useConsultarGuiaUnimed()
   const buscarSenhaValidadeUnimed = useBuscarSenhaValidadeGuiaUnimed()
+  const recuperarSessoesUnimed = useRecuperarSessoesGuiaUnimed()
   const confirmar = useConfirm()
-  const [progresso, setProgresso] = useState<{ id: number; tipo: 'status' | 'senha' } | null>(null)
+  const [progresso, setProgresso] = useState<{ id: number; tipo: 'status' | 'senha' | 'sessoes' } | null>(null)
   const {
     tratarErroUnimed,
     modalProps: automacaoUnimedModalProps,
@@ -82,6 +89,18 @@ export function GuiaDetalhePage() {
   // histórica. GuiasPage.tsx já usava igualdade nesse mesmo botão.
   const canConsultarUnimed = isUnimed && Boolean(guia.numero_guia) && guia.status === 'under_review' && !temDadosADefinir
   const canBuscarSenhaValidade = isUnimed && guia.status === 'approved' && Boolean(guia.numero_guia) && (!guia.senha || !guia.validade_senha) && !temDadosADefinir
+  // Espelho de canBuscarSenhaValidade: elegível quando senha/validade JÁ
+  // foram capturadas mas as sessões ainda estão zeradas (bug 22/09/2026, ver
+  // CapturarSenhaValidadeUnimedService::avaliarRecuperacaoSessoes no backend).
+  const canRecuperarSessoes =
+    isUnimed &&
+    guia.status === 'approved' &&
+    Boolean(guia.numero_guia) &&
+    Boolean(guia.senha) &&
+    Boolean(guia.validade_senha) &&
+    !(guia.sessoes_solicitadas ?? 0) &&
+    !(guia.sessoes_autorizadas ?? 0) &&
+    !temDadosADefinir
 
   const executarConsultarUnimed = async () => {
     try {
@@ -129,6 +148,31 @@ export function GuiaDetalhePage() {
     }
 
     await executarBuscarSenhaValidade()
+  }
+
+  const executarRecuperarSessoes = async () => {
+    try {
+      const execucao = await recuperarSessoesUnimed.mutateAsync(guia.id)
+      setProgresso({ id: execucao.id, tipo: 'sessoes' })
+    } catch (error) {
+      tratarErroUnimed(error, 'Não foi possível buscar as sessões na Unimed.', executarRecuperarSessoes)
+    }
+  }
+
+  const handleRecuperarSessoes = async () => {
+    const ok = await confirmar({
+      titulo: 'Buscar sessões na Unimed',
+      descricao:
+        'Consulta o portal da Unimed para capturar as sessões solicitadas e autorizadas desta guia, que ficaram sem esse dado numa captura anterior. Confirma?',
+      confirmarTexto: 'Buscar sessões',
+      variante: 'primario',
+    })
+
+    if (!ok) {
+      return
+    }
+
+    await executarRecuperarSessoes()
   }
 
   return (
@@ -185,6 +229,15 @@ export function GuiaDetalhePage() {
           >
             {buscarSenhaValidadeUnimed.isPending ? 'Buscando...' : 'Buscar senha/validade'}
           </button>
+          <button
+            type="button"
+            onClick={() => void handleRecuperarSessoes()}
+            disabled={!canRecuperarSessoes || recuperarSessoesUnimed.isPending}
+            className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1.5 text-meta font-semibold text-emerald-100 transition hover:bg-emerald-400/20 disabled:cursor-not-allowed disabled:opacity-50"
+            data-testid="guia-recuperar-sessoes-unimed"
+          >
+            {recuperarSessoesUnimed.isPending ? 'Buscando...' : 'Buscar sessões'}
+          </button>
         </div>
       </section>
     </div>
@@ -197,16 +250,26 @@ export function GuiaDetalhePage() {
     <AutomacaoProgressoModal
       execucaoId={progresso?.id ?? null}
       onClose={() => setProgresso(null)}
-      titulo={progresso?.tipo === 'senha' ? 'Buscando senha e validade na Unimed' : 'Verificando status na Unimed'}
+      titulo={
+        progresso?.tipo === 'sessoes'
+          ? 'Buscando sessões na Unimed'
+          : progresso?.tipo === 'senha'
+            ? 'Buscando senha e validade na Unimed'
+            : 'Verificando status na Unimed'
+      }
       descricao={
-        progresso?.tipo === 'senha'
-          ? 'Acompanhe a captura de senha e validade desta guia no portal da Unimed.'
-          : 'Acompanhe a consulta de status desta guia no portal da Unimed.'
+        progresso?.tipo === 'sessoes'
+          ? 'Acompanhe a captura das sessões solicitadas e autorizadas desta guia no portal da Unimed.'
+          : progresso?.tipo === 'senha'
+            ? 'Acompanhe a captura de senha e validade desta guia no portal da Unimed.'
+            : 'Acompanhe a consulta de status desta guia no portal da Unimed.'
       }
       mensagemExecutando={
-        progresso?.tipo === 'senha'
-          ? 'O robô está buscando a senha e a validade desta guia no portal da Unimed...'
-          : 'O robô está consultando o status desta guia no portal da Unimed...'
+        progresso?.tipo === 'sessoes'
+          ? 'O robô está buscando as sessões desta guia no portal da Unimed...'
+          : progresso?.tipo === 'senha'
+            ? 'O robô está buscando a senha e a validade desta guia no portal da Unimed...'
+            : 'O robô está consultando o status desta guia no portal da Unimed...'
       }
       queryKeysInvalidar={[['guias']]}
     />

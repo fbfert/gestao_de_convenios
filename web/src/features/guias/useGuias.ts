@@ -272,6 +272,31 @@ export function useBuscarSenhaValidadeGuiaUnimed() {
   })
 }
 
+/** Botão manual pras guias presas com senha/validade mas sessões zeradas (bug 22/09/2026). */
+export function useRecuperarSessoesGuiaUnimed() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const { data } = await apiClient.post<{
+        data: {
+          id: number
+          status: string
+          operacao: string
+          guia_id: number
+          queued_at: string | null
+        }
+      }>(`/guias/${id}/recuperar-sessoes-unimed`)
+
+      return data.data
+    },
+    onSuccess: async (_data, id) => {
+      await queryClient.invalidateQueries({ queryKey: ['guias'] })
+      await queryClient.invalidateQueries({ queryKey: ['guias', id] })
+    },
+  })
+}
+
 /**
  * O que a tela precisa saber antes de oferecer a finalização na Unimed.
  *

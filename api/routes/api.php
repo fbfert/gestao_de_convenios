@@ -336,6 +336,7 @@ Route::middleware(['auth:sanctum', EncerrarSessaoExpirada::class])->group(functi
     Route::patch('/guias/{guia}/ocultar-alerta-antecipacao', [GuiaController::class, 'ocultarAlertaAntecipacao'])->middleware('permission:guias.view|guias.viewOwn');
     Route::post('/guias/{guia}/consultar-unimed', [GuiaController::class, 'consultarUnimed'])->middleware('permission:guias.view|guias.viewOwn');
     Route::post('/guias/{guia}/buscar-senha-validade-unimed', [GuiaController::class, 'buscarSenhaValidadeUnimed'])->middleware('permission:guias.view|guias.viewOwn');
+    Route::post('/guias/{guia}/recuperar-sessoes-unimed', [GuiaController::class, 'recuperarSessoesUnimed'])->middleware('permission:guias.view|guias.viewOwn');
 
     // Finalização na Unimed. O pré-voo é leitura (o que a tela precisa saber
     // antes de oferecer o botão); o POST é o passo irreversível, e por isso

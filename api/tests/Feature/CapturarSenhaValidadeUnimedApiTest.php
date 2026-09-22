@@ -10,6 +10,7 @@ use App\Models\Guia;
 use App\Models\Paciente;
 use App\Models\Profissional;
 use App\Models\Solicitacao;
+use App\Models\User;
 use App\Services\Automation\AutomacaoService;
 use App\Services\Automation\CapturarSenhaValidadeUnimedService;
 use App\Services\Automation\ConsultarStatusUnimedService;
@@ -18,6 +19,9 @@ use App\Services\Automation\GerarGuiaUnimedService;
 use App\Services\Automation\UnimedCircuitBreakerService;
 use App\Services\Automation\UnimedWorkerClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
+use Illuminate\Validation\ValidationException;
+use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 /**
@@ -77,6 +81,71 @@ class CapturarSenhaValidadeUnimedApiTest extends TestCase
         $this->assertSame('9248082', $guia->senha);
         $this->assertSame(10, $guia->sessoes_solicitadas);
         $this->assertSame(10, $guia->sessoes_autorizadas);
+    }
+
+    public function test_recupera_sessoes_de_guia_com_senha_e_validade_mas_sessoes_zeradas(): void
+    {
+        $guia = $this->criarGuiaAprovadaSemSenha();
+        $guia->forceFill(['senha' => '381932656', 'validade_senha' => '2026-11-15'])->save();
+
+        $execucao = app(CapturarSenhaValidadeUnimedService::class)->enviarRecuperacaoSessoes($guia, dispatch: false);
+
+        $this->app->instance(UnimedWorkerClient::class, new FakeUnimedWorkerClient([
+            'status' => 'succeeded',
+            'senha' => '381932656',
+            'validade_senha' => '2026-11-15',
+            'sessoes_solicitadas' => 10,
+            'sessoes_autorizadas' => 9,
+        ]));
+
+        $this->executarJob($execucao);
+
+        $guia->refresh();
+        $this->assertSame('succeeded', $execucao->refresh()->status);
+        $this->assertSame(10, $guia->sessoes_solicitadas);
+        $this->assertSame(9, $guia->sessoes_autorizadas);
+    }
+
+    public function test_recusa_recuperar_sessoes_quando_guia_ainda_nao_tem_senha_e_validade(): void
+    {
+        $guia = $this->criarGuiaAprovadaSemSenha();
+
+        $this->expectException(ValidationException::class);
+
+        app(CapturarSenhaValidadeUnimedService::class)->enviarRecuperacaoSessoes($guia, dispatch: false);
+    }
+
+    public function test_recusa_recuperar_sessoes_quando_guia_ja_tem_sessoes(): void
+    {
+        $guia = $this->criarGuiaAprovadaSemSenha();
+        $guia->forceFill([
+            'senha' => '381932656',
+            'validade_senha' => '2026-11-15',
+            'sessoes_solicitadas' => 10,
+            'sessoes_autorizadas' => 9,
+        ])->save();
+
+        $this->expectException(ValidationException::class);
+
+        app(CapturarSenhaValidadeUnimedService::class)->enviarRecuperacaoSessoes($guia, dispatch: false);
+    }
+
+    public function test_endpoint_http_enfileira_recuperacao_de_sessoes(): void
+    {
+        $user = User::query()->where('email', 'admin@clinica-exemplo.test')->firstOrFail();
+        Sanctum::actingAs($user);
+
+        $guia = $this->criarGuiaAprovadaSemSenha();
+        $guia->forceFill(['senha' => '381932656', 'validade_senha' => '2026-11-15'])->save();
+
+        Queue::fake();
+
+        $this->postJson("/api/guias/{$guia->id}/recuperar-sessoes-unimed")
+            ->assertStatus(202)
+            ->assertJsonPath('data.status', 'queued')
+            ->assertJsonPath('data.operacao', CapturarSenhaValidadeUnimedService::OPERATION);
+
+        Queue::assertPushed(ExecutarAutomacaoUnimedJob::class, 1);
     }
 
     private function executarJob(\App\Models\AutomacaoExecucao $execucao): void

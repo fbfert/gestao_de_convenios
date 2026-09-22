@@ -21,6 +21,7 @@ use App\Http\Controllers\ConvenioProfissionalMapeamentoController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmailSettingsController;
 use App\Http\Controllers\EmailTemplateController;
+use App\Http\Controllers\ErroClienteController;
 use App\Http\Controllers\EspecialidadeController;
 use App\Http\Controllers\GuiaController;
 use App\Http\Controllers\GuiaImportController;
@@ -65,6 +66,18 @@ use Illuminate\Support\Facades\Route;
 Route::get('/health', HealthController::class);
 
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
+
+// Publico pelo mesmo motivo do /health, e por um a mais: um erro na tela de
+// LOGIN nao tem sessao para se identificar, e e justamente ali que ninguem
+// consegue reportar de outro jeito. Ate esta rota existir, uma queda da
+// interface nao deixava rastro nenhum — a tela ficava branca e o servidor
+// nunca ficava sabendo.
+//
+// O throttle e o teto: 30 por minuto absorve uma rajada de erros distintos
+// numa sessao ruim sem virar porta de entrada para lixo. O cliente ja
+// deduplica e limita por conta propria (ver reportClientError.ts); isto aqui e
+// a defesa que nao depende do cliente se comportar.
+Route::post('/erros-cliente', [ErroClienteController::class, 'store'])->middleware('throttle:30,1');
 
 // EncerrarSessaoExpirada vem logo apos o auth: precisa do usuario resolvido
 // para saber o prazo do tenant, e tem que barrar antes de qualquer rota.

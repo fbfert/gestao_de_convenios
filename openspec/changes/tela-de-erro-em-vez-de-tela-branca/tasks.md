@@ -4,9 +4,9 @@ Ordem deliberada: o registro de erros primeiro (o boundary depende dele), depois
 
 ## 1. Registro de erros no servidor
 
-- [ ] 1.1 Criar `ErroClienteController` com `POST /erros-cliente`, gravando em `Log::error('erro-cliente', [...])` com tenant e usuário quando `$request->user('sanctum')` resolver; verificar com teste de feature que responde 204 e que o log recebe os campos
-- [ ] 1.2 Registrar a rota FORA do grupo autenticado, com `throttle:30,1`, no precedente de `GET /health`; verificar com teste de feature que funciona sem token e que a 31ª chamada no minuto responde 429
-- [ ] 1.3 Validar o payload (mensagem obrigatória, pilha até 4000 caracteres, endereço, navegador, momento); verificar com teste de feature que payload sem mensagem responde 422
+- [x] 1.1 Criar `ErroClienteController` com `POST /erros-cliente`, gravando em `Log::error('erro-cliente', [...])` com tenant e usuário quando `$request->user('sanctum')` resolver; verificar com teste de feature que responde 204 e que o log recebe os campos
+- [x] 1.2 Registrar a rota FORA do grupo autenticado, com `throttle:30,1`, no precedente de `GET /health`; verificar com teste de feature que funciona sem token e que a 31ª chamada no minuto responde 429
+- [x] 1.3 Validar o payload (mensagem obrigatória, pilha até 4000 caracteres, endereço, navegador, momento); verificar com teste de feature que payload sem mensagem responde 422
 
 ## 2. O relator no navegador
 

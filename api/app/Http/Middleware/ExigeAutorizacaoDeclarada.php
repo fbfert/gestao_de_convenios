@@ -52,6 +52,13 @@ class ExigeAutorizacaoDeclarada
         'POST api/logout',
         'GET api/user',
 
+        // 1b. Relato de erro do navegador. Aberta porque o erro que mais
+        // precisa chegar é o da tela de LOGIN, onde não há sessão para se
+        // identificar. Não lê nem escreve dado de negócio: grava uma linha de
+        // log. O que a protege é o `throttle:30,1` na rota e a validação
+        // estrita do payload — ver ErroClienteController.
+        'POST api/erros-cliente',
+
         // 2. Produto, para qualquer papel
         'GET api/dashboard',
         'GET api/saude',

@@ -11,6 +11,8 @@ O sistema SHALL oferecer a finalização na operadora como ação explícita do 
 
 O sistema SHALL oferecer a ação apenas para guia de convênio com automação Unimed, apenas quando a guia estiver em situação que aceita finalização e apenas quando houver ao menos uma sessão registrada.
 
+O sistema SHALL NOT oferecer a finalização de guia já marcada como finalizada na operadora: pedir ao portal que finalize o que ele já deu por finalizado não é uma operação que faça sentido, e a guia chegaria lá fora da tela de execução que o robô espera.
+
 O sistema SHALL impedir que duas finalizações da mesma guia corram ao mesmo tempo, e SHALL apresentar a execução em andamento em vez de abrir outra.
 
 #### Scenario: Guia pronta para finalizar
@@ -20,6 +22,10 @@ O sistema SHALL impedir que duas finalizações da mesma guia corram ao mesmo te
 #### Scenario: Guia sem sessão registrada
 - **WHEN** a guia não tiver nenhuma sessão registrada
 - **THEN** o sistema SHALL NOT oferecer a finalização, pelo mesmo motivo que já recusa o encerramento sem sessão
+
+#### Scenario: Guia já finalizada na operadora
+- **WHEN** a guia estiver marcada como finalizada na operadora
+- **THEN** o sistema SHALL NOT oferecer a finalização, e SHALL dizer que a operadora já a deu por finalizada
 
 #### Scenario: Convênio sem automação
 - **WHEN** a guia for de convênio sem automação Unimed

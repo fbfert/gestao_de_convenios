@@ -344,6 +344,16 @@ async function selecionarProfissionalExecutante(page, payload) {
       message: 'Profissional executante não encontrado no portal.',
     })
   })
+
+  // Achado ao vivo em 22/09/2026, item 2612 (Miguel Velasco Masieiro):
+  // selectOption aqui dispara um postback igual aos outros pontos do
+  // arquivo (contratado, prestador, procedimento) — mas este era o unico
+  // sem espera depois. Sem isso, o reforco defensivo de FG_LIMINAR_JUDICIAL
+  // em finalizar() rodava contra um elemento prestes a ser substituido pelo
+  // postback, o valor "pegava" no elemento velho e sumia quando o form
+  // trocava por baixo — Finalizar submetia com o campo vazio e nenhum erro
+  // visivel ate a resposta do portal.
+  await waitProcessing(page)
 }
 
 async function finalizar(page, request, estrategiaMedico) {

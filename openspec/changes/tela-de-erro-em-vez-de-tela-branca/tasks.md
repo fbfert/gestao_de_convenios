@@ -10,10 +10,10 @@ Ordem deliberada: o registro de erros primeiro (o boundary depende dele), depois
 
 ## 2. O relator no navegador
 
-- [ ] 2.1 Criar `web/src/lib/reportClientError.ts` que monta o payload e envia, sem nunca lançar; verificar que um `fetch` que rejeita não propaga exceção
-- [ ] 2.2 Deduplicar por mensagem+pilha na sessão e limitar a dez envios; verificar com teste que o mesmo erro só vai uma vez e que o 11º distinto não vai
-- [ ] 2.3 Derivar o código curto do erro de mensagem+pilha, para o mesmo erro gerar o mesmo código em usuários diferentes; verificar com teste que dois erros iguais dão o mesmo código e dois diferentes não
-- [ ] 2.4 Registrar em `web/src/main.tsx` os listeners `error` e `unhandledrejection` chamando o relator; verificar que a página carrega normalmente com eles instalados
+- [x] 2.1 Criar `web/src/lib/reportClientError.ts` que monta o payload e envia, sem nunca lançar; verificar que um `fetch` que rejeita não propaga exceção
+- [x] 2.2 Deduplicar por mensagem+pilha na sessão e limitar a dez envios; verificar com teste que o mesmo erro só vai uma vez e que o 11º distinto não vai
+- [x] 2.3 Derivar o código curto do erro de mensagem+pilha, para o mesmo erro gerar o mesmo código em usuários diferentes; verificar com teste que dois erros iguais dão o mesmo código e dois diferentes não
+- [x] 2.4 Registrar em `web/src/main.tsx` os listeners `error` e `unhandledrejection` chamando o relator; verificar que a página carrega normalmente com eles instalados
 
 ## 3. A tela de erro
 

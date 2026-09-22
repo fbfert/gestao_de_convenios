@@ -46,7 +46,17 @@ export function SeloFinalizadaNaOperadora({
 
   return (
     <span
-      className="inline-flex items-center gap-1 whitespace-nowrap rounded-pilula border border-sucesso-borda/50 bg-sucesso-suave px-2.5 py-1 text-meta font-semibold text-sucesso-texto"
+      /*
+       * A borda usa o token de TEXTO de propósito.
+       *
+       * `--sucesso-borda` existe no CSS, mas não é exportado como cor do
+       * Tailwind — uma classe com esse nome não geraria estilo nenhum, e o
+       * selo renderizaria sem a borda que o distingue do badge de status (foi
+       * o que a guarda §11.3 do design system pegou). No tema claro os dois
+       * valores são o mesmo; no tema de contraste a própria folha de estilo já
+       * aplica uma borda sobre `bg-sucesso-suave`.
+       */
+      className="inline-flex items-center gap-1 whitespace-nowrap rounded-pilula border border-sucesso-texto/50 bg-sucesso-suave px-2.5 py-1 text-meta font-semibold text-sucesso-texto"
       title={quando ? `Conferido no portal da Unimed em ${quando}` : undefined}
       data-testid={testId ?? 'guia-selo-finalizada-operadora'}
     >

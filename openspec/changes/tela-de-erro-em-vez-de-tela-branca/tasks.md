@@ -17,10 +17,10 @@ Ordem deliberada: o registro de erros primeiro (o boundary depende dele), depois
 
 ## 3. A tela de erro
 
-- [ ] 3.1 Adicionar `react-error-boundary` ao `web/package.json`; verificar com `npm ci` e `npm run build`
-- [ ] 3.2 Criar `web/src/routes/AppErrorBoundary.tsx` com o fallback em português — título, a garantia sobre os dados no servidor, o código do erro e os dois botões — usando só tokens do design system; verificar com `npm run lint` (que inclui o `ds:check`)
-- [ ] 3.3 Envolver `<AppRoutes />` em `App.tsx`, dentro do `BrowserRouter`, com `resetKeys={[location.pathname]}` e `onError` chamando o relator; verificar que a navegação normal segue funcionando
-- [ ] 3.4 Rota de erro simulado que só existe em `import.meta.env.MODE === 'e2e'`; verificar que ela não aparece no bundle de produção (`npm run build` e busca pelo identificador no `dist/`)
+- [x] 3.1 Adicionar `react-error-boundary` ao `web/package.json`; verificar com `npm ci` e `npm run build`
+- [x] 3.2 Criar `web/src/routes/AppErrorBoundary.tsx` com o fallback em português — título, a garantia sobre os dados no servidor, o código do erro e os dois botões — usando só tokens do design system; verificar com `npm run lint` (que inclui o `ds:check`)
+- [x] 3.3 Envolver `<AppRoutes />` em `App.tsx`, dentro do `BrowserRouter`, com `resetKeys={[location.pathname]}` e `onError` chamando o relator; verificar que a navegação normal segue funcionando
+- [x] 3.4 Rota de erro simulado que só existe em `import.meta.env.MODE === 'e2e'`; verificar que ela não aparece no bundle de produção (`npm run build` e busca pelo identificador no `dist/`)
 
 ## 4. O botão à prova de tradutor
 

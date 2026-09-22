@@ -3,6 +3,7 @@ import { LoginPage } from './LoginPage'
 import { AutomacoesPage } from '../features/automacoes/AutomacoesPage'
 import { AutomacoesConfiguracoesPage } from '../features/automacoes/AutomacoesConfiguracoesPage'
 import { ProtectedRoute } from './ProtectedRoute'
+import { RotaDeErroSimulado } from './RotaDeErroSimulado'
 import { ShellLayout } from './ShellLayout'
 import { SolicitacoesPage } from '../features/solicitacoes/SolicitacoesPage'
 import { LerPedidoMedicoPage } from '../features/solicitacoes/LerPedidoMedicoPage'
@@ -52,6 +53,11 @@ export function AppRoutes() {
         <Route element={<ShellLayout />}>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<DashboardPage />} />
+          {/* Só no modo e2e — ver RotaDeErroSimulado. Em produção o
+              componente é null e a rota não chega a ser registrada. */}
+          {RotaDeErroSimulado ? (
+            <Route path="/erro-simulado" element={<RotaDeErroSimulado />} />
+          ) : null}
           <Route path="/inicio" element={<GestaoConveniosPage />} />
           <Route path="/relatorios" element={<RelatoriosPage />} />
           <Route path="/cadastros" element={<CadastrosPage />} />

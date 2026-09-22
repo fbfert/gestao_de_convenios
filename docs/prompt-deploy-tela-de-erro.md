@@ -212,6 +212,30 @@ Isso devolve a tela branca junto — vale lembrar disso antes de reverter por um
 - Não rode `route:cache` (há rotas com Closure em `web.php`)
 - Se algo divergir do esperado, **pare e me diga** em vez de tentar corrigir por conta própria
 
-## Executado em
+## Executado em 22/09/2026
 
-_(preencher depois da execução: o que bateu, o que divergiu, e o que ficou pendente.)_
+Rodado numa sessão do Claude Code na própria VPS, um passo por vez como pedido.
+
+- **Antes do Passo 0**, o prompt colado na sessão era o errado — o de
+  `automacao-unimed-finalizar-guia` + `conferir-guias-finalizadas-unimed`, que já tinha rodado hoje
+  de manhã (o backup `pre_unimed_finalizar_conferir_20260922_005227_*` já existia, e as duas colunas
+  que o Passo 0 daquele prompt esperava ver em 0 já estavam em 1). Identificado antes de qualquer
+  ação e parado para pedir o prompt certo — nada foi executado a partir daquele engano.
+- Passo 0 deste prompt bateu: HEAD em `eb6ff2f` (o esperado), `git status` limpo, rota
+  `erros-cliente` ainda inexistente.
+- **Horário do deploy**: o relógio da VPS marcava ~17:54 em Brasília, dentro do expediente provável
+  da NeuroKids — o prompt pede fora do horário de uso. Perguntei; a decisão foi seguir mesmo assim.
+- Passos 1 a 4 bateram sem ressalvas: backup íntegro (`pre_tela_de_erro_20260922_205506_*`), `git
+  pull` trouxe `eb6ff2f..e39be99`, `npm ci` instalou `react-error-boundary` sem passo manual, build
+  ok, smoke test HTTP 200 com bundle novo (`index-BK3X3K2d.js`), rota `POST api/erros-cliente`
+  respondeu 204 sem autenticação e o log capturou o teste (`codigo: C00709`), cache limpo.
+- Passo 5 (conferência pela interface) feito pelo usuário fora desta sessão — confirmado como ok.
+- Passo 6 bateu: `gescon-worker` saudável, credencial Unimed do tenant 1 sem pausa do disjuntor
+  (`ativo=1`, `automation_paused_at=NULL`).
+- **Achado à parte, não relacionado a este deploy**: no log havia um erro repetido em
+  `ClinicaSyncController::confirmarPushPendencia` (`Duplicate entry` em
+  `pacientes_tenant_id_clinica_id_unique`, `userId 4`), com timestamp **anterior** ao deploy
+  (20:27 UTC, deploy rodou 20:56 UTC) — pré-existente, não bloqueou nada, mas fica registrado para
+  investigar depois.
+- **Pendente**: Passo 7 (revisar `storage/logs/laravel.log` por `erro-cliente` daqui a alguns dias,
+  para ver se algum código de erro real se repete).

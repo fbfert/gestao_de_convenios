@@ -178,6 +178,14 @@ async function capturarAutorizacaoGuia(page, guia) {
       status: 'succeeded',
       senha: dados.nrSenha,
       validade_senha: dados.dtValidadeSenha,
+      // A mesma tela de execucao ja traz QT_SOLIC_1/QT_AUTORIZADA_1 — nao ha
+      // motivo pra deixar de repassar so porque esta operacao foi pensada
+      // originalmente so pra senha/validade (achado ao vivo 22/09/2026, guia
+      // 50144652656: leu os dois campos e descartou, guia ficou com
+      // sessoes=0 mesmo autorizada e sem outra automacao elegivel pra
+      // corrigir depois).
+      ...(dados.qtSolicitadas !== null ? { sessoes_solicitadas: dados.qtSolicitadas } : {}),
+      ...(dados.qtAutorizadas !== null ? { sessoes_autorizadas: dados.qtAutorizadas } : {}),
     })
   } catch (error) {
     if (error instanceof WorkerResultError) {

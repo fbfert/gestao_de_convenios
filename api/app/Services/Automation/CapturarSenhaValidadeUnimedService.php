@@ -160,6 +160,17 @@ class CapturarSenhaValidadeUnimedService
             $updates['validade_senha'] = $resultado['validade_senha'];
         }
 
+        // A mesma tela de execucao do SP/SADT ja traz sessoes solicitadas/
+        // autorizadas junto com senha/validade — o worker passou a repassar
+        // (ver statusSenha.js). Sem isto, guias que so entram nesta captura
+        // (ex.: ja "approved", fora da consulta de status) nunca preenchiam
+        // sessoes (achado ao vivo 22/09/2026, guia 50144652656).
+        foreach (['sessoes_solicitadas', 'sessoes_autorizadas'] as $campo) {
+            if (filled($resultado[$campo] ?? null)) {
+                $updates[$campo] = (int) $resultado[$campo];
+            }
+        }
+
         if ($updates !== []) {
             $guia->forceFill($updates)->save();
         }

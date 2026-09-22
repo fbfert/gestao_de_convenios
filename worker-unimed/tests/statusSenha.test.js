@@ -99,6 +99,16 @@ test('captura senha e validade pela mesma tela de execucao', async () => {
   assert.equal(result.validade_senha, '2026-10-24')
 })
 
+test('captura senha e validade tambem repassa sessoes quando a tela de execucao traz', async () => {
+  const result = await run(executarCapturarAutorizacaoBatch, 'capture-sucesso-com-quantidades')
+
+  assert.equal(result.status, 'succeeded')
+  assert.equal(result.senha, '9248082')
+  assert.equal(result.validade_senha, '2026-10-24')
+  assert.equal(result.sessoes_solicitadas, 10)
+  assert.equal(result.sessoes_autorizadas, 6)
+})
+
 test('captura retorna SENHA_NAO_DISPONIVEL quando a guia ainda nao tem senha', async () => {
   const result = await run(executarCapturarAutorizacaoBatch, 'capture-sem-senha')
 

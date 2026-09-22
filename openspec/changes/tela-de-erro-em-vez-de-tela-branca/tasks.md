@@ -34,8 +34,8 @@ Ordem deliberada: o registro de erros primeiro (o boundary depende dele), depois
 
 ## 6. Documentação e fechamento
 
-- [ ] 6.1 Novidade `api/resources/novidades/2026-09-22-tela-de-erro-em-vez-de-tela-branca.md`, `tipo: correcao`, no formato dos vizinhos; verificar que aparece na tela de novidades
-- [ ] 6.2 Prompt de deploy `docs/prompt-deploy-tela-de-erro.md` no padrão dos existentes: sem migration, só código e bundle, dependência nova no frontend, deploy fora do horário de uso; verificar que o documento existe e diz como confirmar que a rota de erro está no ar
-- [ ] 6.3 Rodar `cd web && npm run lint && npm run build` sem erro
-- [ ] 6.4 Rodar `cd web && npm run test:e2e` e `cd api && php artisan test`, ambos verdes
-- [ ] 6.5 Rodar `openspec validate tela-de-erro-em-vez-de-tela-branca --type change --strict` sem erro
+- [x] 6.1 Novidade `api/resources/novidades/2026-09-22-tela-de-erro-em-vez-de-tela-branca.md`, `tipo: correcao`, no formato dos vizinhos; verificar que aparece na tela de novidades
+- [x] 6.2 Prompt de deploy `docs/prompt-deploy-tela-de-erro.md` no padrão dos existentes: sem migration, só código e bundle, dependência nova no frontend, deploy fora do horário de uso; verificar que o documento existe e diz como confirmar que a rota de erro está no ar
+- [x] 6.3 Rodar `cd web && npm run lint && npm run build` sem erro
+- [x] 6.4 Rodar `cd web && npm run test:e2e` e `cd api && php artisan test`, ambos verdes
+- [x] 6.5 Rodar `openspec validate tela-de-erro-em-vez-de-tela-branca --type change --strict` sem erro

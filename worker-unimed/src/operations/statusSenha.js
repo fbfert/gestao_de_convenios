@@ -158,10 +158,28 @@ async function capturarAutorizacaoGuia(page, guia) {
   try {
     const encontrada = await abrirGuiaPorFiltro(page, guia.numero_guia)
     if (!encontrada) {
+      // Mesmo fallback que consultarStatusGuia ja usa pra achar status —
+      // achado ao vivo em 22/09/2026, guia 50144774682: guia Autorizada que
+      // saiu de "Exames em aberto" (mesma classe do caso Negado/Cancelado
+      // documentado em localizarGuiaPorCadastro) continuava tendo
+      // senha/validade/sessoes legiveis via Localizar Guia -> clicar na
+      // guia, so que numa tela so-leitura diferente (ver
+      // tentarLerDetalheGuiaPorCadastro).
+      const viaCadastro = await localizarGuiaPorCadastro(page, guia)
+      if (!viaCadastro?.senha) {
+        return itemResult(guia, {
+          status: 'failed',
+          error_code: 'NOT_FOUND_IN_OPEN_EXAMS',
+          message: 'Guia não encontrada em Exames em aberto.',
+        })
+      }
+
       return itemResult(guia, {
-        status: 'failed',
-        error_code: 'NOT_FOUND_IN_OPEN_EXAMS',
-        message: 'Guia não encontrada em Exames em aberto.',
+        status: 'succeeded',
+        senha: viaCadastro.senha,
+        ...(viaCadastro.validade_senha ? { validade_senha: viaCadastro.validade_senha } : {}),
+        ...(viaCadastro.sessoes_solicitadas !== undefined ? { sessoes_solicitadas: viaCadastro.sessoes_solicitadas } : {}),
+        ...(viaCadastro.sessoes_autorizadas !== undefined ? { sessoes_autorizadas: viaCadastro.sessoes_autorizadas } : {}),
       })
     }
 
@@ -311,13 +329,64 @@ async function localizarGuiaPorCadastro(mainPage, guia) {
     const texto = await row.innerText().catch(() => '')
     const iconSrc = await row.locator('img').first().getAttribute('src').catch(() => null)
     const situacao = situacaoDaLinha(texto, iconSrc)
+    const detalhe = await tentarLerDetalheGuiaPorCadastro(popup, row)
 
-    return { situacao, guia_status: mapPortalStatus(situacao) }
+    return { situacao, guia_status: mapPortalStatus(situacao), ...detalhe }
   } catch {
     return null
   } finally {
     await popup.close().catch(() => {})
   }
+}
+
+/**
+ * Depois de achar a linha em "Localizar Guia", clica pra dentro pra tentar
+ * ler senha/validade/sessões — achado ao vivo em 22/09/2026, guia
+ * 50144774682: essa tela de destino (nova.do) é só leitura, sem os
+ * `<input name="NR_SENHA">` de "Exames em aberto". Os mesmos dados aparecem
+ * como texto solto ao lado do rótulo ("Senha de autorização:", "Validade da
+ * senha:" via `#CampoValidadeSenha`, "Qt. Solic."/"Qt. Autoriz." na tabela
+ * de procedimentos `#tlinhas`). Melhor-esforço: qualquer falha aqui (sem
+ * link clicável — caso de guias Negadas, por exemplo — ou tela diferente do
+ * esperado) devolve `{}` e quem chama continua só com o status, que é o
+ * comportamento de sempre.
+ */
+async function tentarLerDetalheGuiaPorCadastro(popup, row) {
+  try {
+    const link = row.locator('a').first()
+    if ((await link.count()) === 0) {
+      return {}
+    }
+
+    await link.click({ timeout: DEFAULT_TIMEOUT })
+    await waitProcessing(popup)
+    await popup.waitForLoadState('domcontentloaded', { timeout: DEFAULT_TIMEOUT }).catch(() => {})
+
+    const nrSenha = await valorAoLadoDoRotulo(popup, 'Senha de autorização:')
+    const dtValidadeSenha = normalizeDate(await valorAoLadoDoRotulo(popup, 'Validade da senha:'))
+    const linhaItem = popup.locator('#tlinhas tr.it').first()
+    const qtSolicitadas = parseNumber(await linhaItem.locator('td').nth(4).textContent().catch(() => null))
+    const qtAutorizadas = parseNumber(await linhaItem.locator('td').nth(5).textContent().catch(() => null))
+
+    return {
+      ...(nrSenha ? { senha: nrSenha } : {}),
+      ...(dtValidadeSenha ? { validade_senha: dtValidadeSenha } : {}),
+      ...(qtSolicitadas !== null ? { sessoes_solicitadas: qtSolicitadas } : {}),
+      ...(qtAutorizadas !== null ? { sessoes_autorizadas: qtAutorizadas } : {}),
+    }
+  } catch {
+    return {}
+  }
+}
+
+async function valorAoLadoDoRotulo(popup, rotulo) {
+  const valor = await popup
+    .locator(`td.MagnetoFieldCaptionTD:has-text("${rotulo}") + td`)
+    .first()
+    .textContent()
+    .catch(() => null)
+
+  return valor && valor.trim() !== '' ? valor.trim().replace(/\s+/g, ' ') : null
 }
 
 const STATUS_CONHECIDOS = ['Negado', 'Autorizado', 'Em execução', 'Cancelado', 'Em análise', 'Pendente']

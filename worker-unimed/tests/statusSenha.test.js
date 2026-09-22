@@ -122,3 +122,13 @@ test('captura retorna NOT_FOUND_IN_OPEN_EXAMS quando guia nao aparece', async ()
   assert.equal(result.status, 'failed')
   assert.equal(result.error_code, 'NOT_FOUND_IN_OPEN_EXAMS')
 })
+
+test('captura: guia some de Exames em aberto mas e achada via cadastro, na tela so-leitura de detalhe', async () => {
+  const result = await run(executarCapturarAutorizacaoBatch, 'capture-nao-encontrada-mas-no-cadastro')
+
+  assert.equal(result.status, 'succeeded')
+  assert.equal(result.senha, '2603332006')
+  assert.equal(result.validade_senha, '2026-11-14')
+  assert.equal(result.sessoes_solicitadas, 10)
+  assert.equal(result.sessoes_autorizadas, 10)
+})

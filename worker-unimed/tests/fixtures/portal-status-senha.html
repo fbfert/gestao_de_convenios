@@ -53,6 +53,16 @@
       'capture-sucesso-com-quantidades': { autorizado: true, comQuantidades: true },
       'capture-sem-senha': { autorizado: false, comQuantidades: false },
       'capture-nao-encontrada': { naoEncontrada: true },
+      // Achado ao vivo em 22/09/2026, guia 50144774682: some de "Exames em
+      // aberto" mas continua achavel via cadastro -> Localizar Guia, so que
+      // a tela de destino (nova.do) e so leitura (rotulo + texto solto, sem
+      // os <input name="NR_SENHA"...> de sempre).
+      'capture-nao-encontrada-mas-no-cadastro': {
+        naoEncontrada: true,
+        cadastroEncontrada: true,
+        iconeCadastro: 'ico16autorizado.gif',
+        cadastroComDetalhe: true,
+      },
     }
 
     document.querySelector('[name="Button_DoLogin"]').addEventListener('click', renderHome)
@@ -165,12 +175,48 @@
         return
       }
 
+      const numeroCelula = cfg.cadastroComDetalhe
+        ? \`<a href="#" data-open-detalhe>\${numero}</a>\`
+        : numero
+
       html(\`
         <table>
           <tr>
             <td>25/08/2026</td>
-            <td>\${numero}</td>
+            <td>\${numeroCelula}</td>
             <td><img width="16" height="16" alt="" title="" src="/cmagnet/Themes/Magneto2014/\${cfg.iconeCadastro}"></td>
+          </tr>
+        </table>
+      \`)
+
+      document.querySelector('[data-open-detalhe]')?.addEventListener('click', (event) => {
+        event.preventDefault()
+        processing(showDetalheGuiaCadastro)
+      })
+    }
+
+    // Espelha a tela real "nova.do" (Localizar Guia -> clicar na guia): so
+    // leitura, rotulo em <td class="MagnetoFieldCaptionTD"> seguido do valor
+    // em texto solto no <td> vizinho — nao tem os <input name="NR_SENHA"...>
+    // da tela de "Exames em aberto".
+    function showDetalheGuiaCadastro() {
+      html(\`
+        <table>
+          <tr>
+            <td class="MagnetoFieldCaptionTD">Senha de autorização:</td>
+            <td class="MagnetoDataRecordTD">2603332006&nbsp;</td>
+            <td class="MagnetoFieldCaptionTD">Validade da senha:</td>
+            <td class="MagnetoDataRecordTD"><span id="CampoValidadeSenha">14/11/2026 </span>&nbsp;</td>
+          </tr>
+        </table>
+        <table id="tlinhas">
+          <tr class="it">
+            <td>icone</td>
+            <td>00</td>
+            <td>2250005170 - TERAPIA ABA</td>
+            <td>UND</td>
+            <td>10&nbsp;</td>
+            <td>10&nbsp;</td>
           </tr>
         </table>
       \`)

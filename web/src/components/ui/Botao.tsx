@@ -74,7 +74,26 @@ export function Botao({
       {...props}
     >
       {carregando ? <LoaderCircle aria-hidden="true" className="size-4 animate-spin" /> : null}
-      {children}
+      {/*
+        O rótulo vive num <span>, e não solto como nó de texto.
+
+        Tradutor de navegador (e extensão equivalente) reescreve cada texto
+        embrulhando-o em <font><font>…</font></font>. Com o rótulo solto, o
+        clique seguinte num botão que entra em carregamento fazia o React
+        chamar insertBefore(spinner, textoDoRótulo) — e o texto já não era
+        filho do botão. O DOM lançava NotFoundError e a página inteira ficava
+        branca (era o gatilho reproduzido da change
+        `tela-de-erro-em-vez-de-tela-branca`).
+
+        Com o <span>, o spinner é inserido antes de um ELEMENTO, que é o que
+        sobrevive à reescrita: o tradutor troca nós de texto, não a caixa que
+        os contém.
+
+        Só no caminho normal: no `asChild` acima quem renderiza é o filho, e
+        embrulhá-lo quebraria o contrato do Slot. O layout já é
+        `inline-flex items-center gap-2`, então nada muda visualmente.
+      */}
+      <span>{children}</span>
     </button>
   )
 }

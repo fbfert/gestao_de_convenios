@@ -24,13 +24,13 @@ Ordem deliberada: o registro de erros primeiro (o boundary depende dele), depois
 
 ## 4. O botão à prova de tradutor
 
-- [ ] 4.1 Envolver `{children}` num `<span>` no caminho normal de `Botao.tsx`, deixando o `asChild` intocado; verificar com `npm run build` e conferindo que nenhum teste existente de botão quebra
+- [x] 4.1 Envolver `{children}` num `<span>` no caminho normal de `Botao.tsx`, deixando o `asChild` intocado; verificar com `npm run build` e conferindo que nenhum teste existente de botão quebra
 
 ## 5. Testes de ponta a ponta
 
-- [ ] 5.1 e2e: logar, abrir o dashboard, reescrever o DOM como o tradutor faz, clicar em `shell-logout` e afirmar que o `#root` NÃO ficou vazio; verificar que o teste falha sem a correção do `Botao` e passa com ela
-- [ ] 5.2 e2e: forçar erro de renderização pela rota de simulação e afirmar que aparece "Algo deu errado nesta tela" e que "Voltar ao início" recupera sem recarregar
-- [ ] 5.3 e2e: afirmar que o erro simulado chega ao servidor (interceptar a chamada a `/erros-cliente`)
+- [x] 5.1 e2e: logar, abrir o dashboard, reescrever o DOM como o tradutor faz, clicar em `shell-logout` e afirmar que o `#root` NÃO ficou vazio; verificar que o teste falha sem a correção do `Botao` e passa com ela
+- [x] 5.2 e2e: forçar erro de renderização pela rota de simulação e afirmar que aparece "Algo deu errado nesta tela" e que "Voltar ao início" recupera sem recarregar
+- [x] 5.3 e2e: afirmar que o erro simulado chega ao servidor (interceptar a chamada a `/erros-cliente`)
 
 ## 6. Documentação e fechamento
 

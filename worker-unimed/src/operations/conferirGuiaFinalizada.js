@@ -131,6 +131,18 @@ async function conferirUma(page, guia) {
  * Por isso tenta os caminhos plausíveis — o id, o texto do link, a imagem pelo
  * nome do arquivo — e falha nomeando a tela quando nenhum funciona, em vez de
  * seguir numa página qualquer e concluir que a guia não está finalizada.
+ *
+ * Achado ao vivo em 22/09/2026: o seletor que bate é sempre
+ * `a:has-text("Exames finalizados")` — o clique acontece e navega pra URL
+ * certa (`finalizadas.do`), mas a checagem de chegada usava
+ * `locator.isVisible({ timeout })`. O Playwright **ignora silenciosamente**
+ * esse `timeout` em `isVisible()` — a própria tipagem do pacote documenta
+ * "does not wait for the element to become visible and returns immediately".
+ * Ou seja: nunca houve espera nenhuma, nem os 10s originais nem os 30s de uma
+ * primeira tentativa de correção aqui mesmo (confirmado ao vivo: um lote de
+ * 50 guias "esperando" 30s cada rodou em 12s). `waitFor` é quem de fato
+ * espera — mesmo padrão já usado logo abaixo em `buscarGuia` para "exame(s)
+ * encontrado(s)".
  */
 async function abrirExamesFinalizados(page) {
   const candidatos = [
@@ -139,6 +151,8 @@ async function abrirExamesFinalizados(page) {
     'a:has-text("Exames Finalizados")',
     'img[src*="examFinalizada"]',
   ]
+
+  const ABRIR_EXAMES_FINALIZADOS_TIMEOUT = Math.max(DEFAULT_TIMEOUT, 30000)
 
   for (const seletor of candidatos) {
     const alvo = page.locator(seletor).first()
@@ -154,7 +168,8 @@ async function abrirExamesFinalizados(page) {
     const chegou = await page
       .locator('[name="s_nr_guia"]')
       .first()
-      .isVisible({ timeout: Math.max(DEFAULT_TIMEOUT, 10000) })
+      .waitFor({ state: 'visible', timeout: ABRIR_EXAMES_FINALIZADOS_TIMEOUT })
+      .then(() => true)
       .catch(() => false)
 
     if (chegou) {
@@ -225,11 +240,16 @@ async function buscarGuia(page, numeroGuia) {
    * indicador "Processando..." some ANTES de a tabela ser reescrita, e ler o
    * DOM nesse intervalo devolve o resultado do filtro anterior. Aqui isso
    * viraria um "não finalizada" falso.
+   *
+   * 30s e não 10s (achado ao vivo em 22/09/2026, mesma causa do timeout em
+   * abrirExamesFinalizados acima): a tabela de Exames finalizados deste
+   * tenant tem 1.512 guias no histórico, bem mais pesada que a de Exames em
+   * aberto.
    */
   await page
     .getByText(/exame\(s\) encontrado\(s\)/)
     .first()
-    .waitFor({ state: 'visible', timeout: Math.max(DEFAULT_TIMEOUT, 10000) })
+    .waitFor({ state: 'visible', timeout: Math.max(DEFAULT_TIMEOUT, 30000) })
     .catch(() => {})
 
   return await linhaDaGuia(page, numeroGuia)

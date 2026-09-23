@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { X } from 'lucide-react'
 import { AvisoErro } from '../../components/ui/AvisoErro'
 import { ColunaOrdenavel } from '../../components/ui/ColunaOrdenavel'
 import { useOrdenacao } from '../../lib/useOrdenacao'
@@ -50,7 +51,17 @@ const defaultFilters: GuiaFilters = {
   mostrar_a_definir: '',
   mostrar_historico: '',
   finalizada_na_operadora: '',
+  sessoes_em_conflito: '',
+  pendente: '',
+  senha_vencendo: '',
 }
+
+/** Filtros vindos do card do dashboard, mostrados como selo removível. */
+const FILTROS_DO_DASHBOARD = [
+  ['sessoes_em_conflito', 'Sessões em conflito'],
+  ['pendente', 'Somente pendentes'],
+  ['senha_vencendo', 'Senha vencendo'],
+] as const
 
 const emptyForm: GuiaForm = {
   solicitacao_id: '',
@@ -274,6 +285,11 @@ export function GuiasPage() {
     setDraftFilters((current) => ({ ...current, finalizada_na_operadora: nextValue }))
   }
 
+  const removerFiltroDoDashboard = (chave: (typeof FILTROS_DO_DASHBOARD)[number][0]) => {
+    setFilters({ ...filters, [chave]: '' })
+    setDraftFilters((current) => ({ ...current, [chave]: '' }))
+  }
+
   const handleGerarConciliacao = async (guideId: number) => {
     setConciliacaoError(null)
 
@@ -487,6 +503,19 @@ export function GuiasPage() {
                 ? 'Finalizadas na operadora'
                 : 'Mostrar finalizadas na operadora'}
             </button>
+            {FILTROS_DO_DASHBOARD.filter(([chave]) => filters[chave] === '1').map(([chave, rotulo]) => (
+              <button
+                key={chave}
+                type="button"
+                onClick={() => removerFiltroDoDashboard(chave)}
+                title="Remover filtro"
+                className="inline-flex items-center gap-1.5 rounded-full border border-cyan-200/50 bg-cyan-300/20 px-3 py-1.5 text-corpo font-semibold text-white transition hover:bg-cyan-300/30"
+                data-testid={`guia-filtro-${chave}`}
+              >
+                {rotulo}
+                <X className="h-3.5 w-3.5" aria-hidden="true" />
+              </button>
+            ))}
             {/* Liquida o passivo de uma vez: pergunta ao portal, para cada guia
                 Unimed ainda não conferida, se ela já está finalizada lá. */}
             {pode('guias.manage') ? <ConferirFinalizadasEmLoteButton /> : null}

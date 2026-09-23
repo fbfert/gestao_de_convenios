@@ -124,6 +124,17 @@ export type GuiaFilters = {
   mostrar_historico: string
   /** Só as guias que a operadora já dava por finalizadas. */
   finalizada_na_operadora: string
+  /*
+    Filtros que só chegam pelo link do card de Guias do dashboard. Sem estar
+    aqui (e em `defaultFilters`), `useListaNaUrl` não os lê da URL e a lista
+    abre inteira, contradizendo o número do card.
+  */
+  /** Só guias com sessão em conflito de agenda. */
+  sessoes_em_conflito?: string
+  /** Negadas/restrição cujo alerta ninguém ocultou. */
+  pendente?: string
+  /** Senha vencendo na janela configurada da clínica. */
+  senha_vencendo?: string
   /** Só guias aprovadas/finalizadas com sessão sobrando — seletor de Sessões. */
   disponivel_para_lancamento?: string
 }

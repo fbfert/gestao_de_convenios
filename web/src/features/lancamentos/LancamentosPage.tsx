@@ -262,8 +262,13 @@ export function LancamentosPage() {
   // Os formatos que a API guarda como folha (imagem vira PDF lá). Outro
   // formato lido — HEIC do iPhone, por exemplo — não pode travar o registro
   // das sessões: fica de fora, e a tela avisa.
+  // Pelo tipo OU pela extensão: no Windows o navegador às vezes informa tipo
+  // vazio para PDF (depende do registro do sistema), e a folha era ignorada em
+  // silêncio. A API confere o conteúdo de qualquer forma.
   const folhaLidaAnexavel =
-    folhaLida !== null && ['application/pdf', 'image/jpeg', 'image/png'].includes(folhaLida.type)
+    folhaLida !== null &&
+    (['application/pdf', 'image/jpeg', 'image/png'].includes(folhaLida.type) ||
+      /\.(pdf|jpe?g|png)$/i.test(folhaLida.name))
   const folhasParaAnexar = [folhaLidaAnexavel ? folhaLida : null, pdf].filter(
     (folha): folha is File => folha !== null,
   )
@@ -816,7 +821,9 @@ export function LancamentosPage() {
                 data-testid="lancamento-folha-lida"
               >
                 A folha lida (<strong className="font-semibold">{folhaLida?.name}</strong>) será anexada à
-                guia ao registrar as sessões{folhaLida?.type.startsWith('image/') ? ', convertida em PDF' : ''}.
+                guia ao registrar as sessões{folhaLida && (folhaLida.type.startsWith('image/') || /\.(jpe?g|png)$/i.test(folhaLida.name))
+                  ? ', convertida em PDF'
+                  : ''}.
               </p>
             ) : folhaLida ? (
               <p

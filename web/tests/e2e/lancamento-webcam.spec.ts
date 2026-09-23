@@ -297,6 +297,47 @@ async function capturarEConfirmar(page: Page) {
   await page.getByTestId('lancamento-webcam-usar').click()
 }
 
+/*
+  O PDF enviado pelo seletor de arquivo, e não pela webcam. A tela também aceita
+  o arquivo pela extensão quando o navegador não informa o tipo (acontece no
+  Windows), mas o Chromium do teste sempre deduz o tipo — esse caso não tem
+  como ser forçado aqui.
+*/
+test('pdf enviado pelo seletor fica na guia ao registrar', async ({ page }) => {
+  const api = await apiAutenticada()
+  const guia = await guiaParaLancamento(api)
+  await api.dispose()
+
+  await login(page)
+  await page.goto('/lancamentos/novo', { waitUntil: 'domcontentloaded' })
+
+  const leitura = await interceptarLeitura(page, {
+    guia_numero: guia.numero,
+    paciente: guia.pacienteNome,
+    numero_cartao: guia.carteirinha,
+  })
+
+  await page.getByTestId('lancamento-anexo').setInputFiles({
+    name: 'folha-escaneada.pdf',
+    mimeType: 'application/pdf',
+    buffer: Buffer.from('%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\ntrailer << /Root 1 0 R >>\n%%EOF\n'),
+  })
+  await expect.poll(leitura.chamadas).toBe(1)
+  await expect(page.getByTestId('lancamento-guia')).toContainText(guia.numero)
+  await expect(page.getByTestId('lancamento-folha-lida')).toContainText('folha-escaneada.pdf')
+
+  const executante = page.getByTestId('lancamento-profissional')
+  await expect(executante).toBeEnabled({ timeout: 30000 })
+  await executante.click()
+  await page.getByRole('option').nth(1).click()
+
+  await page.getByTestId('lancamento-submit').click()
+  await expect(page).toHaveURL(/\/lancamentos(\?|$)/)
+
+  await page.goto(`/guias/${guia.id}`, { waitUntil: 'domcontentloaded' })
+  await expect(page.getByTestId('guia-folhas-registro')).toContainText('folha-escaneada.pdf')
+})
+
 test('o numero de guia lido escolhe a guia, sem ninguem ter escolhido antes', async ({ page }) => {
   const api = await apiAutenticada()
   const guia = await guiaParaLancamento(api)

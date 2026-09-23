@@ -108,6 +108,12 @@ export function LancamentosPage() {
   const [numeroCartao, setNumeroCartao] = useState<string | null>(null)
   const [transcricaoTexto, setTranscricaoTexto] = useState('')
   const [pdf, setPdf] = useState<File | null>(null)
+  /**
+   * O arquivo que a leitura acabou de usar. Antes a tela o descartava depois
+   * de ler, e a folha só ficava na guia se alguém a enviasse de novo no campo
+   * avulso — que só aparecia para a regional 0220.
+   */
+  const [folhaLida, setFolhaLida] = useState<File | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
   const [webcamAberta, setWebcamAberta] = useState(false)
@@ -206,6 +212,7 @@ export function LancamentosPage() {
     setNumeroCartao(null)
     setTranscricaoTexto('')
     setPdf(null)
+    setFolhaLida(null)
     setFormError(null)
     setAviso(null)
     setGuiaVeioDaLeitura(null)
@@ -252,6 +259,14 @@ export function LancamentosPage() {
   const prontoParaAnalisarTexto = Boolean(guiaSelecionada) && profissionalId !== ''
   const lendo = analisarTexto.isPending || lerArquivo.isPending
   const exigePdf = numeroCartao?.replace(/\D+/g, '').startsWith('0220') ?? false
+  // Os formatos que a API guarda como folha (imagem vira PDF lá). Outro
+  // formato lido — HEIC do iPhone, por exemplo — não pode travar o registro
+  // das sessões: fica de fora, e a tela avisa.
+  const folhaLidaAnexavel =
+    folhaLida !== null && ['application/pdf', 'image/jpeg', 'image/png'].includes(folhaLida.type)
+  const folhasParaAnexar = [folhaLidaAnexavel ? folhaLida : null, pdf].filter(
+    (folha): folha is File => folha !== null,
+  )
   const sessoesPreenchidas = useMemo(() => sessoes.filter((sessao) => Boolean(sessao.data_sessao)).length, [sessoes])
 
   /*
@@ -303,6 +318,8 @@ export function LancamentosPage() {
     // diferente do impresso na folha.
     setPacienteLido(resultado.cabecalho.paciente ?? null)
     setPdf(null)
+    // Texto colado não tem folha; a leitura por arquivo a repõe logo depois.
+    setFolhaLida(null)
     setAviso(normalizadas.every((sessao) => !sessao.data_sessao) ? 'Nenhuma sessão foi reconhecida no documento.' : null)
   }
 
@@ -377,6 +394,7 @@ export function LancamentosPage() {
       // leitura pode vir ANTES da escolha.
       const resultado = await lerArquivo.mutateAsync(arquivo)
       aplicarResultado(resultado)
+      setFolhaLida(arquivo)
       setExecutanteLido(resultado.cabecalho.profissional_executante ?? null)
       await resolverGuiaLida(resultado.cabecalho.guia_numero ?? null, {
         paciente: resultado.cabecalho.paciente ?? null,
@@ -429,7 +447,7 @@ export function LancamentosPage() {
         transcricao: transcricaoTexto,
         numero_cartao: numeroCartao,
         sessoes,
-        pdf_registro_sessoes: pdf,
+        folhas_registro: folhasParaAnexar,
         divergencia: justificativa ? descreverDivergencia(conferencia) : null,
         divergencia_justificativa: justificativa ?? null,
       }
@@ -461,7 +479,7 @@ export function LancamentosPage() {
       return
     }
 
-    if (exigePdf && !pdf) {
+    if (exigePdf && folhasParaAnexar.length === 0) {
       setFormError('O PDF do registro de sessões é obrigatório para a regional 0220.')
       return
     }
@@ -792,14 +810,32 @@ export function LancamentosPage() {
               </p>
             ) : null}
 
-            {exigePdf ? (
+            {folhaLidaAnexavel ? (
+              <p
+                className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-corpo text-emerald-100"
+                data-testid="lancamento-folha-lida"
+              >
+                A folha lida (<strong className="font-semibold">{folhaLida?.name}</strong>) será anexada à
+                guia ao registrar as sessões{folhaLida?.type.startsWith('image/') ? ', convertida em PDF' : ''}.
+              </p>
+            ) : folhaLida ? (
+              <p
+                className="rounded-2xl border border-amber-400/20 bg-amber-500/10 px-4 py-3 text-corpo text-amber-100"
+                data-testid="lancamento-folha-lida-nao-anexavel"
+              >
+                O formato da folha lida não pode ser guardado automaticamente. Depois de registrar,
+                anexe a folha em PDF, JPG ou PNG na tela da guia.
+              </p>
+            ) : null}
+
+            {exigePdf && !folhaLidaAnexavel ? (
               <div className="rounded-2xl border border-amber-400/20 bg-amber-500/10 px-4 py-3 text-corpo text-amber-50">
                 Regional 0220 detectada pela carteirinha. O PDF do registro de sessões é obrigatório
                 para confirmar o envio.
               </div>
             ) : null}
 
-            {exigePdf ? (
+            {exigePdf && !folhaLidaAnexavel ? (
               <label className="block space-y-2">
                 <span className="text-corpo font-medium text-slate-200">PDF do registro de sessões</span>
                 <input

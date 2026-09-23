@@ -84,6 +84,71 @@ class FolhasDeRegistroApiTest extends TestCase
         $this->assertSame(1, PacienteArquivo::query()->where('tipo', 'registro_sessoes')->count());
     }
 
+    /** A captura da webcam chega como JPEG e é guardada como PDF. */
+    public function test_confirmacao_com_imagem_guarda_a_folha_em_pdf(): void
+    {
+        $this->autenticar();
+        $guia = $this->guiaAprovada();
+
+        $this->post("/api/guias/{$guia->id}/lancamentos/importar-transcricao", [
+            'profissional_id' => $guia->profissional_id,
+            'confirmar_envio' => true,
+            'sessoes' => [['data_sessao' => '2026-09-21', 'hora_inicio' => '08:00']],
+            'pdf_registro_sessoes' => UploadedFile::fake()->image('registro-sessoes.jpg', 120, 90),
+        ])->assertCreated();
+
+        $folha = PacienteArquivo::query()->where('tipo', 'registro_sessoes')->sole();
+
+        $this->assertSame('registro-sessoes.pdf', $folha->nome_original);
+        $this->assertSame('application/pdf', $folha->mime);
+        $this->assertStringEndsWith('.pdf', $folha->path);
+
+        $conteudo = Storage::disk('local')->get($folha->path);
+        $this->assertStringStartsWith('%PDF-', $conteudo);
+        $this->assertStringContainsString('/Filter /DCTDecode', $conteudo);
+        // Imagem mais larga que alta: A4 deitado.
+        $this->assertStringContainsString('/MediaBox [0 0 842 595]', $conteudo);
+        $this->assertStringEndsWith("%%EOF\n", $conteudo);
+    }
+
+    public function test_anexar_depois_tambem_converte_png_em_pdf(): void
+    {
+        $this->autenticar();
+        $guia = $this->guiaAprovada();
+
+        $this->post("/api/guias/{$guia->id}/folhas-registro", [
+            'arquivos' => [UploadedFile::fake()->image('foto-da-folha.png', 60, 90)],
+        ])->assertCreated()
+            ->assertJsonPath('data.0.nome_original', 'foto-da-folha.pdf')
+            ->assertJsonPath('data.0.mime', 'application/pdf');
+
+        $folha = PacienteArquivo::query()->where('tipo', 'registro_sessoes')->sole();
+        $conteudo = Storage::disk('local')->get($folha->path);
+        $this->assertStringStartsWith('%PDF-', $conteudo);
+        $this->assertStringContainsString('/MediaBox [0 0 595 842]', $conteudo);
+    }
+
+    /** Confirmação recusada não deixa folha órfã na pasta do paciente. */
+    public function test_confirmacao_recusada_nao_guarda_a_folha(): void
+    {
+        $this->autenticar();
+        $guia = $this->guiaAprovada();
+
+        // Duas sessões a dez minutos uma da outra: conflito de agenda.
+        $this->post("/api/guias/{$guia->id}/lancamentos/importar-transcricao", [
+            'profissional_id' => $guia->profissional_id,
+            'confirmar_envio' => true,
+            'sessoes' => [
+                ['data_sessao' => '2026-09-21', 'hora_inicio' => '08:00'],
+                ['data_sessao' => '2026-09-21', 'hora_inicio' => '08:10'],
+            ],
+            'pdf_registro_sessoes' => UploadedFile::fake()->image('registro-sessoes.jpg'),
+        ], ['Accept' => 'application/json'])->assertStatus(422);
+
+        $this->assertSame(0, PacienteArquivo::query()->where('tipo', 'registro_sessoes')->count());
+        $this->assertSame([], Storage::disk('local')->allFiles("pacientes/{$guia->paciente_id}"));
+    }
+
     public function test_anexa_folha_depois_sem_confirmar_sessoes_de_novo(): void
     {
         $this->autenticar();
@@ -215,6 +280,23 @@ class FolhasDeRegistroApiTest extends TestCase
             'sessoes' => [['data_sessao' => '2026-09-21', 'hora_inicio' => '08:00']],
             'pdf_registro_sessoes' => UploadedFile::fake()->create('folha.pdf', 64, 'application/pdf'),
         ])->assertCreated();
+    }
+
+    /** A captura da webcam, já convertida em PDF, satisfaz a regional 0220. */
+    public function test_regional_0220_aceita_a_folha_capturada_pela_webcam(): void
+    {
+        $this->autenticar();
+        $guia = $this->guiaAprovada();
+
+        $this->post("/api/guias/{$guia->id}/lancamentos/importar-transcricao", [
+            'profissional_id' => $guia->profissional_id,
+            'confirmar_envio' => true,
+            'numero_cartao' => '0220 090000 551.330-8',
+            'sessoes' => [['data_sessao' => '2026-09-21', 'hora_inicio' => '08:00']],
+            'pdf_registro_sessoes' => UploadedFile::fake()->image('registro-sessoes.jpg'),
+        ])->assertCreated();
+
+        $this->assertSame('application/pdf', PacienteArquivo::query()->where('tipo', 'registro_sessoes')->sole()->mime);
     }
 
     private function autenticar(): User

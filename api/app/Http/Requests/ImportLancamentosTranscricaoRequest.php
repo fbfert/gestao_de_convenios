@@ -71,10 +71,10 @@ class ImportLancamentosTranscricaoRequest extends FormRequest
         if (is_array($this->file('pdf_registro_sessoes'))) {
             return [
                 'pdf_registro_sessoes' => ['array', 'max:10'],
-                'pdf_registro_sessoes.*' => ['file', 'mimes:pdf'],
+                'pdf_registro_sessoes.*' => ['file', 'mimes:pdf,jpg,jpeg,png'],
             ];
         }
 
-        return ['pdf_registro_sessoes' => ['nullable', 'file', 'mimes:pdf']];
+        return ['pdf_registro_sessoes' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png']];
     }
 }

@@ -212,9 +212,9 @@ export function useConfirmarLancamentosTranscritos() {
         formData.append(`sessoes[${index}][resumo_atividades]`, sessao.resumo_atividades ?? '')
       })
 
-      if (payload.pdf_registro_sessoes) {
-        formData.append('pdf_registro_sessoes', payload.pdf_registro_sessoes)
-      }
+      payload.folhas_registro.forEach((folha, index) => {
+        formData.append(`pdf_registro_sessoes[${index}]`, folha)
+      })
 
       const { data } = await apiClient.post<{
         data: LancamentoTranscricaoImportResult

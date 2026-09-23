@@ -5,6 +5,7 @@ namespace App\Services\Sessoes;
 use App\Models\Guia;
 use App\Models\PacienteArquivo;
 use App\Support\GuiaStatus;
+use App\Support\ImagemParaPdf;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -97,17 +98,32 @@ class FolhasDeRegistroService
 
     private function guardar(Guia $guia, UploadedFile $arquivo): PacienteArquivo
     {
-        $path = $arquivo->storeAs(
-            "pacientes/{$guia->paciente_id}/registro-sessoes",
-            Str::uuid()->toString().'.'.$arquivo->getClientOriginalExtension(),
-            'local',
-        );
+        $pasta = "pacientes/{$guia->paciente_id}/registro-sessoes";
+        $nomeOriginal = basename($arquivo->getClientOriginalName());
+
+        /*
+         * Foto e captura da webcam viram PDF. A folha é o comprovante que vai
+         * à operadora, e a regional 0220 a exige em PDF — guardar a imagem
+         * crua deixaria para a finalização descobrir que o formato não serve.
+         * O tipo vem do conteúdo, não da extensão nem do header.
+         */
+        if (ImagemParaPdf::ehImagem((string) $arquivo->getMimeType())) {
+            $path = "{$pasta}/".Str::uuid()->toString().'.pdf';
+            Storage::disk('local')->put($path, ImagemParaPdf::converter($arquivo->getRealPath()));
+            $nomeOriginal = pathinfo($nomeOriginal, PATHINFO_FILENAME).'.pdf';
+        } else {
+            $path = $arquivo->storeAs(
+                $pasta,
+                Str::uuid()->toString().'.'.$arquivo->getClientOriginalExtension(),
+                'local',
+            );
+        }
 
         return PacienteArquivo::query()->create([
             'tenant_id' => $guia->tenant_id,
             'paciente_id' => $guia->paciente_id,
             'tipo' => self::TIPO,
-            'nome_original' => basename($arquivo->getClientOriginalName()),
+            'nome_original' => $nomeOriginal,
             // Do arquivo gravado, nunca do header multipart: o valor volta cru
             // no Content-Type do download.
             'mime' => Storage::disk('local')->mimeType($path) ?: 'application/octet-stream',

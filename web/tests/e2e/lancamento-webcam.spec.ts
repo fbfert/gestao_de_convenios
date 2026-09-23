@@ -499,9 +499,17 @@ test('folha que confere com a guia nao pede justificativa', async ({ page }) => 
   await executante.click()
   await page.getByRole('option').nth(1).click()
 
+  // A captura que acabou de ser lida é a folha que vai para a guia.
+  await expect(page.getByTestId('lancamento-folha-lida')).toContainText('registro-sessoes.jpg')
+  await expect(page.getByTestId('lancamento-folha-lida')).toContainText('convertida em PDF')
+
   await page.getByTestId('lancamento-submit').click()
 
   // Direto, sem passar pela justificativa.
   await expect(page.getByTestId('confirmar-divergencia-modal')).toHaveCount(0)
   await expect(page).toHaveURL(/\/lancamentos(\?|$)/)
+
+  // E a folha ficou na guia, já em PDF, sem ninguém anexá-la de novo.
+  await page.goto(`/guias/${guia.id}`, { waitUntil: 'domcontentloaded' })
+  await expect(page.getByTestId('guia-folhas-registro')).toContainText('registro-sessoes.pdf')
 })

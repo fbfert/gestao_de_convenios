@@ -63,7 +63,8 @@ export type LancamentoImportForm = {
 
 export type LancamentoConfirmImportForm = LancamentoImportForm & {
   sessoes: LancamentoTranscricaoSessao[]
-  pdf_registro_sessoes: File | null
+  /** Folhas de registro guardadas na guia junto da confirmação — a lida e a avulsa. */
+  folhas_registro: File[]
   numero_cartao: string | null
   /**
    * O paciente da folha lida contradiz o da guia escolhida.

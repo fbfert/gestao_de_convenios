@@ -64,8 +64,9 @@ f9c5ae7 fix(lancamentos): a folha lida fica anexada a guia ao registrar as sesso
 fd59362 test(api): super admin em acesso valida ids pela clinica acessada; registra o deploy de 23/09
 ```
 
-Pode aparecer, **acima** deles, um commit só de documentação com "prompt de deploy" no título — é
-este próprio arquivo. **Qualquer outro commit: pare e me diga.** Foi assim que a change
+Podem aparecer, **acima** deles, commits que só mexem em `docs/prompt-deploy-folha-lida-anexada-a-guia.md`
+— é este próprio arquivo. Confira com
+`git -C /opt/gescon diff --name-only 7bccbc5 origin/main`: tem que listar só ele (ou nada). **Qualquer outro commit: pare e me diga.** Foi assim que a change
 `isolamento-entre-clinicas` subiu sem estar no roteiro no deploy anterior.
 
 Carregue os segredos sem imprimi-los, e confira como ficou o modo simulação no deploy anterior:

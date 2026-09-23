@@ -51,6 +51,9 @@ const defaultFilters: LancamentoFilters = {
   busca: '',
 }
 
+/** Folhas por confirmação — o teto de `ImportLancamentosTranscricaoRequest`. */
+const MAXIMO_DE_FOLHAS = 10
+
 const LINHA_VAZIA: LancamentoTranscricaoSessao = {
   data_sessao: null,
   hora_inicio: null,
@@ -107,7 +110,8 @@ export function LancamentosPage() {
   const [sessoes, setSessoes] = useState<LancamentoTranscricaoSessao[]>(criarGradeVazia())
   const [numeroCartao, setNumeroCartao] = useState<string | null>(null)
   const [transcricaoTexto, setTranscricaoTexto] = useState('')
-  const [pdf, setPdf] = useState<File | null>(null)
+  /** Folhas anexadas à mão, além da lida — segunda via, ou a folha de sessões vindas de texto colado. */
+  const [folhasAvulsas, setFolhasAvulsas] = useState<File[]>([])
   /**
    * O arquivo que a leitura acabou de usar. Antes a tela o descartava depois
    * de ler, e a folha só ficava na guia se alguém a enviasse de novo no campo
@@ -211,7 +215,7 @@ export function LancamentosPage() {
     setSessoes(criarGradeVazia())
     setNumeroCartao(null)
     setTranscricaoTexto('')
-    setPdf(null)
+    setFolhasAvulsas([])
     setFolhaLida(null)
     setFormError(null)
     setAviso(null)
@@ -269,9 +273,21 @@ export function LancamentosPage() {
     folhaLida !== null &&
     (['application/pdf', 'image/jpeg', 'image/png'].includes(folhaLida.type) ||
       /\.(pdf|jpe?g|png)$/i.test(folhaLida.name))
-  const folhasParaAnexar = [folhaLidaAnexavel ? folhaLida : null, pdf].filter(
-    (folha): folha is File => folha !== null,
-  )
+  const folhasParaAnexar = [...(folhaLidaAnexavel && folhaLida ? [folhaLida] : []), ...folhasAvulsas]
+
+  /** O limite é da API (dez por confirmação), contando a folha lida. */
+  const anexarFolhasAvulsas = (arquivos: FileList | null) => {
+    const novas = Array.from(arquivos ?? []).filter((arquivo) => /\.(pdf|jpe?g|png)$/i.test(arquivo.name))
+    const vagas = Math.max(MAXIMO_DE_FOLHAS - folhasParaAnexar.length, 0)
+
+    if (novas.length > vagas) {
+      setFormError(
+        `Até ${MAXIMO_DE_FOLHAS} folhas por registro, contando a folha lida. ${novas.length - vagas} ficaram de fora.`,
+      )
+    }
+
+    setFolhasAvulsas((atuais) => [...atuais, ...novas.slice(0, vagas)])
+  }
   const sessoesPreenchidas = useMemo(() => sessoes.filter((sessao) => Boolean(sessao.data_sessao)).length, [sessoes])
 
   /*
@@ -322,7 +338,7 @@ export function LancamentosPage() {
     // divergência sempre que a carteirinha do cadastro estiver em formato
     // diferente do impresso na folha.
     setPacienteLido(resultado.cabecalho.paciente ?? null)
-    setPdf(null)
+    // As folhas anexadas à mão ficam: uma nova leitura não as apaga.
     // Texto colado não tem folha; a leitura por arquivo a repõe logo depois.
     setFolhaLida(null)
     setAviso(normalizadas.every((sessao) => !sessao.data_sessao) ? 'Nenhuma sessão foi reconhecida no documento.' : null)
@@ -835,25 +851,59 @@ export function LancamentosPage() {
               </p>
             ) : null}
 
-            {exigePdf && !folhaLidaAnexavel ? (
+            {exigePdf && folhasParaAnexar.length === 0 ? (
               <div className="rounded-2xl border border-amber-400/20 bg-amber-500/10 px-4 py-3 text-corpo text-amber-50">
-                Regional 0220 detectada pela carteirinha. O PDF do registro de sessões é obrigatório
-                para confirmar o envio.
+                Regional 0220 detectada pela carteirinha. A folha do registro de sessões é obrigatória
+                para confirmar o envio — anexe-a abaixo.
               </div>
             ) : null}
 
-            {exigePdf && !folhaLidaAnexavel ? (
+            {/*
+              Sempre visível: a segunda via, a folha de sessões vindas de texto
+              colado, ou a folha que a leitura não pôde guardar. Antes o campo só
+              aparecia para a regional 0220, e aceitava um arquivo só.
+            */}
+            <div className="space-y-2" data-testid="lancamento-folhas-avulsas">
               <label className="block space-y-2">
-                <span className="text-corpo font-medium text-slate-200">PDF do registro de sessões</span>
+                <span className="text-corpo font-medium text-slate-200">Anexar folhas de registro</span>
                 <input
                   type="file"
-                  accept="application/pdf,.pdf"
-                  onChange={(event) => setPdf(event.target.files?.[0] ?? null)}
+                  multiple
+                  accept="application/pdf,.pdf,image/jpeg,.jpg,.jpeg,image/png,.png"
+                  onChange={(event) => {
+                    anexarFolhasAvulsas(event.target.files)
+                    event.target.value = ''
+                  }}
                   className="inline-flex items-center justify-center block w-full rounded-2xl border border-white/10 bg-white/5 h-10 px-4 text-corpo text-slate-200 file:mr-4 file:rounded-full file:border-0 file:bg-cyan-400 file:px-4 file:py-2 file:text-corpo file:font-semibold file:text-slate-950"
                   data-testid="lancamento-pdf"
                 />
+                <span className="block text-meta text-slate-400">
+                  PDF, JPG ou PNG — foto vira PDF. Vão para a guia junto com a folha lida, ao registrar as sessões.
+                </span>
               </label>
-            ) : null}
+
+              {folhasAvulsas.length > 0 ? (
+                <ul className="space-y-1">
+                  {folhasAvulsas.map((folha, indice) => (
+                    <li
+                      key={`${folha.name}-${indice}`}
+                      className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-corpo text-slate-200"
+                      data-testid="lancamento-folha-avulsa"
+                    >
+                      <span className="truncate">{folha.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => setFolhasAvulsas((atuais) => atuais.filter((_, i) => i !== indice))}
+                        className="shrink-0 rounded-full border border-white/10 px-3 py-1 text-meta font-semibold text-slate-300 transition hover:bg-white/10"
+                        data-testid={`lancamento-folha-avulsa-retirar-${indice}`}
+                      >
+                        Retirar
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
 
             <div className="overflow-x-auto rounded-superficie border border-linha">
               <table className="w-full min-w-[52rem] border-collapse text-left text-corpo" data-cartoes="lg">

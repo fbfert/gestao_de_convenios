@@ -16,3 +16,9 @@
 - [x] 3.1 Remoção pela pasta recusa folha de guia finalizada — mesma regra da remoção pela guia
 - [x] 3.2 Pasta mostra o número da guia em cada folha e esconde "Remover" quando travada
 - [x] 3.3 Testes da API para os dois casos de remoção e para o número da guia na listagem
+
+## 4. Anexar à mão no registro
+
+- [x] 4.1 Campo "Anexar folhas" sempre visível, com vários arquivos e botão de retirar
+- [x] 4.2 Regional 0220 aceita a folha lida ou uma anexada à mão; limite de 10 no total
+- [x] 4.3 E2E: folha lida + folha anexada à mão chegam as duas na guia

@@ -47,3 +47,27 @@ O sistema SHALL aplicar à remoção pela pasta do paciente a mesma regra da rem
 #### Scenario: Remover pela pasta folha de guia em aberto
 - **WHEN** alguém remover pela pasta do paciente a folha de uma guia ainda não finalizada
 - **THEN** o sistema SHALL removê-la
+
+### Requirement: Anexar folhas à mão ao registrar as sessões
+
+O sistema SHALL oferecer, na tela de registro de sessões, um campo sempre visível para anexar à mão uma ou mais folhas de registro (PDF, JPG ou PNG), qualquer que seja a regional e qualquer que seja a origem das sessões — arquivo lido, webcam ou texto colado.
+
+As folhas anexadas à mão SHALL ser guardadas na guia junto com a folha lida, na mesma confirmação, e SHALL seguir as mesmas regras: imagem convertida em PDF, nada guardado se a confirmação for recusada.
+
+O sistema SHALL permitir retirar da lista uma folha anexada à mão antes de registrar, e SHALL limitar o total de folhas de uma confirmação a dez.
+
+#### Scenario: Folha lida e folha anexada à mão
+- **WHEN** o usuário ler uma folha, anexar à mão uma segunda via e registrar as sessões
+- **THEN** o sistema SHALL guardar as duas na guia
+
+#### Scenario: Sessões de texto colado com folha anexada à mão
+- **WHEN** as sessões vierem de texto colado e o usuário anexar a folha à mão
+- **THEN** o sistema SHALL guardá-la na guia ao registrar
+
+#### Scenario: Retirar antes de registrar
+- **WHEN** o usuário retirar da lista uma folha anexada à mão
+- **THEN** o sistema SHALL NOT enviá-la ao registrar
+
+#### Scenario: Limite de folhas
+- **WHEN** a soma da folha lida com as anexadas à mão passar de dez
+- **THEN** o sistema SHALL recusar as excedentes e informar o limite

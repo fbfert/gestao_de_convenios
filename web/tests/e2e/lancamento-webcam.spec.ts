@@ -326,6 +326,20 @@ test('pdf enviado pelo seletor fica na guia ao registrar', async ({ page }) => {
   await expect(page.getByTestId('lancamento-guia')).toContainText(guia.numero)
   await expect(page.getByTestId('lancamento-folha-lida')).toContainText('folha-escaneada.pdf')
 
+  // À mão, além da lida: uma segunda via em foto, e uma folha que vai ser
+  // retirada antes de registrar.
+  const fotoPng = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR4nGP8z8DAwMDAxMDAwMDAAAANHQEDasKb6QAAAABJRU5ErkJggg==',
+    'base64',
+  )
+  await page.getByTestId('lancamento-pdf').setInputFiles([
+    { name: 'segunda-via.png', mimeType: 'image/png', buffer: fotoPng },
+    { name: 'engano.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4\n%%EOF\n') },
+  ])
+  await expect(page.getByTestId('lancamento-folha-avulsa')).toHaveCount(2)
+  await page.getByTestId('lancamento-folha-avulsa').filter({ hasText: 'engano.pdf' }).getByRole('button', { name: 'Retirar' }).click()
+  await expect(page.getByTestId('lancamento-folha-avulsa')).toHaveCount(1)
+
   const executante = page.getByTestId('lancamento-profissional')
   await expect(executante).toBeEnabled({ timeout: 30000 })
   await executante.click()
@@ -335,7 +349,11 @@ test('pdf enviado pelo seletor fica na guia ao registrar', async ({ page }) => {
   await expect(page).toHaveURL(/\/lancamentos(\?|$)/)
 
   await page.goto(`/guias/${guia.id}`, { waitUntil: 'domcontentloaded' })
-  await expect(page.getByTestId('guia-folhas-registro')).toContainText('folha-escaneada.pdf')
+  const folhas = page.getByTestId('guia-folhas-registro')
+  await expect(folhas).toContainText('folha-escaneada.pdf')
+  // A foto anexada à mão chega convertida em PDF; a retirada não chega.
+  await expect(folhas).toContainText('segunda-via.pdf')
+  await expect(folhas).not.toContainText('engano.pdf')
 })
 
 test('o numero de guia lido escolhe a guia, sem ninguem ter escolhido antes', async ({ page }) => {

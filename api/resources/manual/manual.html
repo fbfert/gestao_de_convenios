@@ -317,7 +317,20 @@
   <tr><td>Pacientes, Profissionais, Médicos, Especialidades</td><td>Totais ativos / total cadastrado.</td></tr>
   <tr><td>Analíticos</td><td>Lotes importados / quantos ainda não foram conciliados.</td></tr>
   <tr><td>Auditoria</td><td>Eventos registrados nas últimas 24 horas.</td></tr>
+  <tr><td>Antecipações elegíveis</td><td>Quantas entradas estão na fila de elegíveis da tela de <a href="#antecipacoes">Antecipações</a> — o mesmo número que aparece lá, uma por solicitação. Leva à tela de Antecipações.</td></tr>
+  <tr><td>Antecipações realizadas</td><td>Total de antecipações geradas; abaixo, quantas neste mês e quantas foram dispensadas. Leva ao histórico já filtrado pelas geradas.</td></tr>
 </table>
+<div class="nota">
+  "Antecipações elegíveis" conta <strong>solicitações</strong>, como a fila; o cartão "Prontas para Antecipação",
+  no grupo de Guias, conta <strong>guias</strong>. Uma solicitação com duas guias elegíveis soma 1 no primeiro e 2
+  no segundo — os dois números podem ser diferentes sem haver erro.
+</div>
+<p>
+  Os cartões do grupo de <strong>Guias</strong> (Negadas, Verificar Restrição, Em análise, Senha vencendo e, quando
+  existir, Sessões em conflito) levam à listagem de Guias <strong>já filtrada</strong> pelo que o número conta. O
+  filtro aparece como um selo no topo da listagem — por exemplo <span class="btn">Sessões em conflito ×</span> —, e
+  clicar no selo volta à lista inteira.
+</p>
 <p>Clicar em qualquer cartão leva direto para a tela correspondente. Abaixo dos cartões há uma lista fixa "Acesso rápido" com links para todas as telas operacionais, e um bloco <strong>"Últimas alterações"</strong> com as ações mais recentes registradas na auditoria (visível só para quem tem permissão de auditoria).</p>
 <p>
   Quando existir alguma guia <span class="badge vermelho">Negada</span> ainda não revisada, um aviso
@@ -334,6 +347,7 @@
 <table>
   <tr><th>Botão</th><th>O que faz</th></tr>
   <tr><td><span class="btn">Ver auditoria</span></td><td>Único link do sistema que leva à tela de <a href="#auditoria">Auditoria</a>.</td></tr>
+  <tr><td><span class="btn">Ver relatórios</span></td><td>Ao lado de Ver auditoria, abre <a href="#relatorios">Relatórios</a>. Só aparece para quem pode ver ao menos uma das abas.</td></tr>
 </table>
 
 <h3 id="relatorios">4.1 Relatórios <span class="rota">/relatorios</span></h3>
@@ -456,6 +470,30 @@
   (<code>/pacientes/{id}/editar</code>), o paciente aparece mesmo inativo e com a caixa desmarcada — senão o
   formulário não teria o que carregar.
 </div>
+<h3 id="pasta-paciente">Pasta do paciente <span class="rota">/pacientes/{id}</span></h3>
+<p>
+  Clicar no <strong>nome do paciente</strong> na listagem abre a pasta dele: os dados do cadastro e, em seções que
+  se abrem em <span class="btn">Ver</span>, as Solicitações, Guias, Sessões, Antecipações e os <strong>Arquivos</strong>.
+</p>
+<p>
+  Em Arquivos, os documentos ficam agrupados por tipo — Pedido Médico, Laudo Médico, Plano Individualizado,
+  Relatório de Evolução e <strong>Registro de Sessões</strong>. <span class="btn">Abrir</span> baixa o arquivo.
+</p>
+<ul>
+  <li>
+    Cada folha de <strong>Registro de Sessões</strong> mostra a guia a que pertence (<em>Guia nº …</em>). São as
+    mesmas folhas do detalhe da guia — as que foram lidas ao registrar sessões e as anexadas depois.
+  </li>
+  <li>
+    Folha de guia <strong>já finalizada</strong> aparece como <span class="badge cinza">Guia finalizada</span> e não
+    pode ser removida, nem por aqui nem pela guia: ela é o comprovante do que foi enviado à operadora.
+  </li>
+  <li>
+    Arquivo vinculado a uma solicitação aparece como <strong>Vinculado</strong>; o vínculo precisa ser desfeito na
+    solicitação antes de excluir o arquivo da pasta.
+  </li>
+</ul>
+
 <h3>Campos do cadastro</h3>
 <p>
   A ordem começa pelo <strong>Convênio</strong>, e ele <strong>não vem pré-selecionado</strong>. É ele que define o
@@ -965,27 +1003,44 @@
 </p>
 <ol>
   <li>
-    <strong>Escolher a guia e o executante.</strong> Só entram guias autorizadas/aprovadas com sessão disponível —
-    por exemplo <em>#134 · 50144598876 · Paciente Ana Ribeiro · 6 disponível(is)</em>. O executante lista apenas
-    quem atende aquela especialidade e, havendo um só, já vem escolhido: lançar sessão no nome de quem não faz a
+    <strong>Ler a folha.</strong> O botão <span class="btn">Ler foto ou PDF do registro</span> envia o arquivo para
+    a IA, que devolve o cabeçalho e as sessões; no computador, <span class="btn">Usar webcam</span> fotografa a folha
+    na própria página, e no celular o botão já abre a câmera. Quem tem a transcrição digitada pode usar
+    <strong>Colar a transcrição em texto</strong> — os caminhos terminam na mesma tabela de conferência. A leitura
+    vem <strong>antes</strong> da escolha da guia: é a folha que traz o número dela. Costuma levar de 5 a 30 segundos.
+  </li>
+  <li>
+    <strong>Conferir a guia e escolher o executante.</strong> Se o número lido corresponder a uma única guia com
+    sessão disponível, e o paciente dela bater com o da folha, ela já vem escolhida. Senão, abre a busca de guia já
+    preenchida com o número lido. Quando essa busca não encontra nada, a mensagem pede para
+    <strong>conferir se o número foi lido corretamente no arquivo de origem e ajustá-lo</strong> — letra ilegível ou
+    espaço no meio fazem a leitura errar. O executante é sempre escolhido à mão: a tela mostra, em destaque,
+    <strong>"A folha diz: <em>nome</em>"</strong>, mas não preenche o campo — lançar sessão no nome de quem não faz a
     terapia gera glosa na conciliação.
   </li>
   <li>
-    <strong>Ler o documento.</strong> O botão <span class="btn">Ler foto ou PDF do registro</span> envia a imagem
-    para a IA, que devolve o cabeçalho e as sessões. No celular abre a câmera. Quem já tem a transcrição digitada
-    pode usar <strong>Colar a transcrição em texto</strong>, logo abaixo — os dois caminhos terminam na mesma
-    tabela de conferência. Um aviso indica enquanto a leitura acontece; ela costuma levar de 5 a 30 segundos.
-  </li>
-  <li>
     <strong>Revisar e confirmar.</strong> A tabela é editável: ajuste data, horários, acompanhante e resumo, e
-    remova a linha que não for sessão. Só o botão <span class="btn">Confirmar envio</span> grava.
+    remova a linha que não for sessão. Só o botão de registrar grava.
   </li>
 </ol>
+<h4>A folha fica guardada na guia</h4>
+<p>
+  O arquivo lido — PDF, foto ou captura da webcam — é <strong>anexado automaticamente à guia</strong> quando as
+  sessões são registradas. Um aviso verde, acima da tabela, mostra qual arquivo vai junto. Foto e captura da webcam
+  são guardadas <strong>convertidas em PDF</strong>, que é o formato que vai para a operadora. A folha aparece no
+  detalhe da guia, em <strong>Folhas de registro</strong>, e na <a href="#pasta-paciente">pasta do paciente</a>.
+</p>
+<ul>
+  <li>Se o registro for recusado (por exemplo, por conflito de agenda), nada é guardado.</li>
+  <li>Sessões vindas de texto colado não têm folha: anexe-a depois, no detalhe da guia.</li>
+  <li>Formato que não pode ser guardado (HEIC do iPhone, por exemplo) não impede o registro; a tela avisa para anexar a folha depois, em PDF, JPG ou PNG.</li>
+</ul>
 <div class="nota">
-  Se o número do cartão do convênio começar com <code>0220</code>, o sistema exige o anexo do PDF do registro de
-  sessões antes de liberar a confirmação — o botão fica bloqueado até o arquivo ser anexado. <strong>Uma folha
-  basta para confirmar:</strong> guia de dez sessões costuma ser impressa em duas vias e preenchida em partes, e
-  as demais podem ser anexadas depois, no detalhe da guia, em <strong>Folhas de registro</strong>.
+  Se o número do cartão do convênio começar com <code>0220</code>, a folha é obrigatória para registrar. A folha
+  lida já cumpre a exigência; o campo avulso <strong>PDF do registro de sessões</strong> só aparece quando as
+  sessões vieram de texto colado. <strong>Uma folha basta:</strong> guia de dez sessões costuma ser impressa em duas
+  vias e preenchida em partes, e as demais podem ser anexadas depois, no detalhe da guia, em
+  <strong>Folhas de registro</strong>.
 </div>
 
 <h3>Regras de agenda das sessões</h3>
@@ -1045,7 +1100,9 @@
   <strong>Modo simulação.</strong> Enquanto ligado (é o padrão), o robô percorre o portal inteiro e
   <strong>para antes de Gravar e Finalizar</strong>, guardando uma foto da tela preenchida. Serve para conferir o
   que teria sido enviado — a Unimed não tem ambiente de teste. O painel do botão avisa em amarelo quando a
-  simulação está ligada, e a guia não muda de situação nessas execuções. Desliga-se em Configurações.
+  simulação está ligada, e a guia não muda de situação nessas execuções. Liga-se e desliga-se em
+  <a href="#automacoes-configuracoes">Automações → Configurações</a>; desligar pede confirmação, porque a partir daí
+  finalizar grava na operadora e não há como desfazer no portal.
 </div>
 <p>
   No detalhe da guia, a seção <strong>Finalizações na Unimed</strong> lista cada tentativa: quando foi, o
@@ -1304,6 +1361,22 @@
   vezes não gera duas execuções nem duplica a guia. Também não é possível ter duas execuções da mesma operação
   <span class="badge azul">rodando</span> ao mesmo tempo para o mesmo tenant — a segunda espera a primeira terminar.
 </div>
+<h3 id="automacoes-configuracoes">Configurações das automações <span class="rota">/automacoes/configuracoes</span></h3>
+<p>
+  Liga, desliga e ajusta o ritmo de cada automação de fundo. Desligar uma automação não afeta a ação manual
+  equivalente (como "Buscar senha/validade" numa guia, ou "Sincronizar Agora") — ela continua disponível.
+</p>
+<table>
+  <tr><th>Seção</th><th>O que controla</th></tr>
+  <tr><td>Reconsulta de status Unimed</td><td>Volta ao portal para ver o status das guias em análise; prazos após consulta normal e após falha técnica.</td></tr>
+  <tr><td>Busca de senha e validade Unimed</td><td>Busca senha e validade de guias aprovadas que ainda não têm; intervalo entre tentativas por guia.</td></tr>
+  <tr><td>Confirmação de guia incerta</td><td>Confirma pelo paciente, em "Exames em aberto", a guia cujo envio terminou sem resposta clara; janela de horário e intervalo.</td></tr>
+  <tr><td><strong>Modo simulação da finalização Unimed</strong></td><td>Marcado, o robô preenche a guia e anexa as folhas no portal, mas <strong>para antes de Gravar e Finalizar</strong>. Desmarcado, a finalização é de verdade. Desmarcar pede confirmação.</td></tr>
+  <tr><td>Sincronização com a clínica</td><td>Profissionais e pacientes com o clinica.gestaonossa.com.br, em três janelas de horário com intervalo próprio.</td></tr>
+  <tr><td>Expurgo de auditoria e de carteirinhas</td><td>Limpeza diária do que passou do prazo de retenção definido em Configurações → Globais.</td></tr>
+  <tr><td>Verificação diária de guias</td><td>Status das guias em análise dos convênios que não são Unimed RDA.</td></tr>
+</table>
+<p>As mudanças só valem depois de <span class="btn">Salvar configurações</span>.</p>
 <div class="dica">
   Automação <strong>parada não trava o atendimento</strong>: quem tem urgência sempre pode cadastrar a guia manualmente
   em <a href="#guias">Guias</a> enquanto a execução automática fica pendente ou é investigada.

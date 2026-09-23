@@ -656,8 +656,12 @@ export function LancamentosPage() {
                   contra executante que não atende a especialidade gera glosa
                   na conciliação — um palpite errado aqui só aparece lá. */}
               {executanteLido ? (
-                <span className="block text-meta text-slate-400" data-testid="lancamento-executante-lido">
-                  A folha diz: <strong className="font-semibold text-slate-200">{executanteLido}</strong>.
+                <span className="block text-corpo-lg text-slate-300" data-testid="lancamento-executante-lido">
+                  A folha diz:{' '}
+                  <strong className="rounded-md bg-cyan-300/15 px-1.5 py-0.5 text-subtitulo font-bold text-white">
+                    {executanteLido}
+                  </strong>
+                  .
                   Confirme quem executou — o campo não é preenchido pela leitura.
                 </span>
               ) : null}

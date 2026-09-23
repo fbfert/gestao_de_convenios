@@ -125,6 +125,14 @@ export function SelecionarGuiaModal({
               {!carregando && semResultado ? (
                 <p className="rounded-2xl px-4 py-3 text-corpo text-slate-400">
                   Nenhuma guia com sessão disponível encontrada.
+                  {/* Termo inicial = número lido da folha. Letra ilegível ou
+                      espaço no meio fazem a busca falhar, e o operador não tem
+                      como saber que o erro é da leitura, não da guia. */}
+                  {termoInicial ? (
+                    <span className="mt-1 block font-medium text-amber-200" data-testid="selecionar-guia-conferir-leitura">
+                      Confira se o número foi lido corretamente no arquivo de origem e ajuste-o.
+                    </span>
+                  ) : null}
                 </p>
               ) : null}
 

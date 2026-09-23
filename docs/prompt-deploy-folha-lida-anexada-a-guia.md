@@ -154,8 +154,9 @@ echo substr($pdf, 0, 8), " | ", strlen($pdf), " bytes | ",
   round(memory_get_peak_usage() / 1048576), " MB\n";'
 ```
 
-Tem que sair algo como `%PDF-1.4 | ... bytes | A4 em pe | pico ... MB`, com o pico **bem abaixo de
-256 MB**. Qualquer erro: pare e me diga.
+Tem que sair algo como `%PDF-1.4 | 98904 bytes | A4 em pe | pico 116 MB`. O pico inclui a própria
+imagem de teste de 12 MP criada no mesmo processo; tem que ficar **abaixo de ~150 MB** (o limite do PHP
+em produção é 256 MB). Qualquer erro: pare e me diga.
 
 E o log sem erro novo desde a subida:
 

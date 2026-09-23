@@ -10,3 +10,9 @@
 - [x] 2.1 Guardar o arquivo lido e enviá-lo na confirmação, junto do campo avulso
 - [x] 2.2 Mostrar que a folha lida será anexada; campo avulso da 0220 só sem folha lida
 - [x] 2.3 E2E: ler pela webcam, confirmar e ver a folha na guia
+
+## 3. Pasta do paciente
+
+- [x] 3.1 Remoção pela pasta recusa folha de guia finalizada — mesma regra da remoção pela guia
+- [x] 3.2 Pasta mostra o número da guia em cada folha e esconde "Remover" quando travada
+- [x] 3.3 Testes da API para os dois casos de remoção e para o número da guia na listagem

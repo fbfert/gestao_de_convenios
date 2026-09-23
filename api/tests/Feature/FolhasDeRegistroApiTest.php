@@ -242,6 +242,54 @@ class FolhasDeRegistroApiTest extends TestCase
         $this->assertSame(1, PacienteArquivo::query()->where('tipo', 'registro_sessoes')->count());
     }
 
+    /** A pasta do paciente não é desvio da regra acima. */
+    public function test_pasta_do_paciente_nao_remove_folha_de_guia_ja_finalizada(): void
+    {
+        $this->autenticar();
+        $guia = $this->guiaAprovada();
+
+        $this->post("/api/guias/{$guia->id}/folhas-registro", [
+            'arquivos' => [UploadedFile::fake()->create('folha.pdf', 64, 'application/pdf')],
+        ])->assertCreated();
+
+        $folha = PacienteArquivo::query()->where('tipo', 'registro_sessoes')->firstOrFail();
+        app(\App\Services\GuiaService::class)->registrarTransicao($guia, GuiaStatus::FINALIZED);
+
+        $this->getJson("/api/pacientes/{$guia->paciente_id}/arquivos")
+            ->assertOk()
+            ->assertJsonPath('data.0.guia.numero_guia', $guia->numero_guia)
+            ->assertJsonPath('data.0.guia.folha_travada', true);
+
+        $this->deleteJson("/api/pacientes/{$guia->paciente_id}/arquivos/{$folha->id}")
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['arquivo']);
+
+        $this->assertSame(1, PacienteArquivo::query()->where('tipo', 'registro_sessoes')->count());
+        Storage::disk('local')->assertExists($folha->path);
+    }
+
+    public function test_pasta_do_paciente_mostra_a_guia_e_remove_folha_de_guia_em_aberto(): void
+    {
+        $this->autenticar();
+        $guia = $this->guiaAprovada();
+
+        $this->post("/api/guias/{$guia->id}/folhas-registro", [
+            'arquivos' => [UploadedFile::fake()->create('folha.pdf', 64, 'application/pdf')],
+        ])->assertCreated();
+
+        $folha = PacienteArquivo::query()->where('tipo', 'registro_sessoes')->firstOrFail();
+
+        $this->getJson("/api/pacientes/{$guia->paciente_id}/arquivos")
+            ->assertOk()
+            ->assertJsonPath('data.0.guia.id', $guia->id)
+            ->assertJsonPath('data.0.guia.numero_guia', $guia->numero_guia)
+            ->assertJsonPath('data.0.guia.folha_travada', false);
+
+        $this->deleteJson("/api/pacientes/{$guia->paciente_id}/arquivos/{$folha->id}")->assertNoContent();
+
+        $this->assertSame(0, PacienteArquivo::query()->where('tipo', 'registro_sessoes')->count());
+    }
+
     public function test_nao_remove_folha_que_pertence_a_outra_guia(): void
     {
         $this->autenticar();

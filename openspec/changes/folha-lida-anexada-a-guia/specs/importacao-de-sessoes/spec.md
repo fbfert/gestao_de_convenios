@@ -29,3 +29,21 @@ O sistema SHALL NOT anexar nada quando as sessões vierem de texto colado, e SHA
 #### Scenario: Confirmação recusada
 - **WHEN** a confirmação for recusada, por exemplo por conflito de agenda
 - **THEN** o sistema SHALL NOT guardar a folha
+
+### Requirement: Folha de registro na pasta do paciente
+
+O sistema SHALL apresentar, na pasta do paciente, a guia a que cada folha de registro pertence.
+
+O sistema SHALL aplicar à remoção pela pasta do paciente a mesma regra da remoção pela guia: a folha de uma guia finalizada na operadora SHALL NOT ser removida, por nenhum caminho.
+
+#### Scenario: Folha identificada pela guia
+- **WHEN** alguém abrir a pasta de um paciente com folhas de registro
+- **THEN** o sistema SHALL exibir, em cada folha, o número da guia a que ela pertence
+
+#### Scenario: Remover pela pasta folha de guia finalizada
+- **WHEN** alguém tentar remover pela pasta do paciente a folha de uma guia já finalizada na operadora
+- **THEN** o sistema SHALL recusar a remoção e SHALL manter o arquivo
+
+#### Scenario: Remover pela pasta folha de guia em aberto
+- **WHEN** alguém remover pela pasta do paciente a folha de uma guia ainda não finalizada
+- **THEN** o sistema SHALL removê-la

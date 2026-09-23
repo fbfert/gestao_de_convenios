@@ -18,6 +18,8 @@ export type PacienteArquivo = {
   url: string
   created_at: string | null
   vinculos: PacienteArquivoVinculo[]
+  /** Só em folha de registro: a guia de origem, e se ela já trava a remoção. */
+  guia?: { id: number; numero_guia: string | null; folha_travada: boolean }
 }
 
 export function usePacienteArquivos(pacienteId: number | null) {

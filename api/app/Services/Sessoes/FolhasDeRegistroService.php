@@ -67,11 +67,7 @@ class FolhasDeRegistroService
      */
     public function remover(Guia $guia, PacienteArquivo $arquivo): void
     {
-        if ($guia->status === GuiaStatus::FINALIZED) {
-            throw ValidationException::withMessages([
-                'arquivo' => ['A guia já foi finalizada na operadora — a folha é o comprovante do envio e não pode ser removida.'],
-            ]);
-        }
+        $this->garantirRemovivel($guia);
 
         if ((int) ($arquivo->metadata['guia_id'] ?? 0) !== (int) $guia->id) {
             throw ValidationException::withMessages([
@@ -81,6 +77,61 @@ class FolhasDeRegistroService
 
         Storage::disk('local')->delete($arquivo->path);
         $arquivo->delete();
+    }
+
+    public function travada(Guia $guia): bool
+    {
+        return $guia->status === GuiaStatus::FINALIZED;
+    }
+
+    /**
+     * A guia de cada folha da lista, numa consulta só — para a pasta do
+     * paciente dizer de qual guia é cada folha sem uma consulta por linha.
+     *
+     * @param  iterable<PacienteArquivo>  $arquivos
+     * @return array<int, Guia> indexado pelo id do arquivo
+     */
+    public function guiasDasFolhas(iterable $arquivos): array
+    {
+        $folhas = collect($arquivos)->filter(fn (PacienteArquivo $arquivo) => $arquivo->tipo === self::TIPO);
+        $guias = Guia::query()
+            ->whereIn('id', $folhas->map(fn (PacienteArquivo $folha) => (int) ($folha->metadata['guia_id'] ?? 0))->filter()->unique()->values())
+            ->get(['id', 'numero_guia', 'status'])
+            ->keyBy('id');
+
+        return $folhas
+            ->mapWithKeys(fn (PacienteArquivo $folha) => [$folha->id => $guias->get((int) ($folha->metadata['guia_id'] ?? 0))])
+            ->filter()
+            ->all();
+    }
+
+    /**
+     * Remoção pela pasta do paciente, que não passa pela guia.
+     *
+     * Sem isto a pasta era um desvio da regra de remover(): a folha de uma
+     * guia já finalizada aparecia ali com "Remover" e o servidor apagava sem
+     * perguntar de que guia ela era.
+     */
+    public function garantirRemovivelPelaPasta(PacienteArquivo $arquivo): void
+    {
+        if ($arquivo->tipo !== self::TIPO) {
+            return;
+        }
+
+        $guia = $this->guiasDasFolhas([$arquivo])[$arquivo->id] ?? null;
+
+        if ($guia !== null) {
+            $this->garantirRemovivel($guia);
+        }
+    }
+
+    private function garantirRemovivel(Guia $guia): void
+    {
+        if ($this->travada($guia)) {
+            throw ValidationException::withMessages([
+                'arquivo' => ['A guia já foi finalizada na operadora — a folha é o comprovante do envio e não pode ser removida.'],
+            ]);
+        }
     }
 
     /**

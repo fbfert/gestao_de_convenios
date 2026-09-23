@@ -102,6 +102,9 @@ export function GrupoDocumento({
           {arquivos.map((arquivo) => {
             const travado = arquivo.vinculos.some((vinculo) => vinculo.travado)
             const semVinculo = arquivo.vinculos.length === 0
+            // Folha de guia finalizada é o comprovante do envio: a API recusa
+            // removê-la, então a tela nem oferece.
+            const folhaTravada = arquivo.guia?.folha_travada ?? false
 
             return (
               <li
@@ -118,7 +121,15 @@ export function GrupoDocumento({
                     >
                       Abrir
                     </button>
-                    {semVinculo ? (
+                    {folhaTravada ? (
+                      <span
+                        className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-meta font-semibold text-slate-400"
+                        title="A guia já foi finalizada na operadora — a folha é o comprovante do envio e não pode ser removida."
+                        data-testid={`pasta-arquivo-travado-${arquivo.id}`}
+                      >
+                        Guia finalizada
+                      </span>
+                    ) : semVinculo ? (
                       <button
                         type="button"
                         onClick={() => setAExcluir(arquivo)}
@@ -141,6 +152,11 @@ export function GrupoDocumento({
                     )}
                   </span>
                 </div>
+                {arquivo.guia ? (
+                  <p className="mt-1 text-meta text-slate-400" data-testid={`pasta-arquivo-guia-${arquivo.id}`}>
+                    Guia nº {arquivo.guia.numero_guia ?? `#${arquivo.guia.id}`}
+                  </p>
+                ) : null}
                 {arquivo.vinculos.length > 0 ? (
                   <p className="mt-1 text-meta text-slate-400">
                     {arquivo.vinculos.map((vinculo) => `Solicitação #${vinculo.solicitacao_id}`).join(' · ')}

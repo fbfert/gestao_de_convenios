@@ -62,7 +62,7 @@ function hoje(): string {
  */
 async function guiaParaLancamento(
   api: APIRequestContext,
-): Promise<{ id: number; numero: string; pacienteNome: string; carteirinha: string }> {
+): Promise<{ id: number; numero: string; pacienteId: number; pacienteNome: string; carteirinha: string }> {
   const convenios = (await (await api.get('/api/convenios')).json()).data as Array<{
     id: number
     connector_driver: string | null
@@ -149,6 +149,7 @@ async function guiaParaLancamento(
   return {
     id: guia.id,
     numero: numeroGuia,
+    pacienteId: paciente.id,
     pacienteNome: paciente.nome,
     carteirinha: paciente.carteirinha,
   }
@@ -512,4 +513,14 @@ test('folha que confere com a guia nao pede justificativa', async ({ page }) => 
   // E a folha ficou na guia, já em PDF, sem ninguém anexá-la de novo.
   await page.goto(`/guias/${guia.id}`, { waitUntil: 'domcontentloaded' })
   await expect(page.getByTestId('guia-folhas-registro')).toContainText('registro-sessoes.pdf')
+
+  // Na pasta do paciente também, dizendo de que guia é. Esta guia já está
+  // finalizada, então a folha é comprovante: a pasta não oferece remover.
+  await page.goto(`/pacientes/${guia.pacienteId}`, { waitUntil: 'domcontentloaded' })
+  await page.getByRole('button', { name: /^Arquivos/ }).click()
+  const grupo = page.getByTestId('pasta-grupo-registro_sessoes')
+  const linha = grupo.locator('li', { hasText: 'registro-sessoes.pdf' }).first()
+  await expect(linha).toContainText(`Guia nº ${guia.numero}`)
+  await expect(linha).toContainText('Guia finalizada')
+  await expect(linha.getByRole('button', { name: 'Remover' })).toHaveCount(0)
 })

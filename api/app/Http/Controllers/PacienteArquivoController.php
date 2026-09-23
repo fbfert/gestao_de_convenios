@@ -7,6 +7,7 @@ use App\Http\Resources\PacienteArquivoResource;
 use App\Models\Paciente;
 use App\Models\PacienteArquivo;
 use App\Models\SolicitacaoDocumento;
+use App\Services\Sessoes\FolhasDeRegistroService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Storage;
@@ -15,11 +16,16 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class PacienteArquivoController extends Controller
 {
-    public function index(Paciente $paciente): AnonymousResourceCollection
+    public function index(Paciente $paciente, FolhasDeRegistroService $folhas): AnonymousResourceCollection
     {
-        return PacienteArquivoResource::collection(
-            $paciente->arquivos()->with('vinculos')->orderByDesc('id')->get()
-        );
+        $arquivos = $paciente->arquivos()->with('vinculos')->orderByDesc('id')->get();
+
+        // Folha de registro diz de que guia é: um paciente com várias guias
+        // teria várias "registro-sessoes.pdf" indistinguíveis na pasta.
+        $guias = $folhas->guiasDasFolhas($arquivos);
+        $arquivos->each(fn (PacienteArquivo $arquivo) => $arquivo->setRelation('guiaDaFolha', $guias[$arquivo->id] ?? null));
+
+        return PacienteArquivoResource::collection($arquivos);
     }
 
     public function store(StorePacienteArquivoRequest $request, Paciente $paciente): JsonResponse
@@ -119,9 +125,10 @@ class PacienteArquivoController extends Controller
         ]]);
     }
 
-    public function destroy(Paciente $paciente, PacienteArquivo $arquivo): JsonResponse
+    public function destroy(Paciente $paciente, PacienteArquivo $arquivo, FolhasDeRegistroService $folhas): JsonResponse
     {
         $this->garantirVinculo($paciente, $arquivo);
+        $folhas->garantirRemovivelPelaPasta($arquivo);
 
         $vinculos = $arquivo->vinculos()->get();
 

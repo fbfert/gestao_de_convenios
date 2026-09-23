@@ -350,6 +350,11 @@ test('numero de guia que nao resolve abre a busca ja preenchida', async ({ page 
   await expect(page.getByTestId('selecionar-guia-modal')).toBeVisible()
   await expect(page.getByTestId('selecionar-guia-busca')).toHaveValue(inexistente)
 
+  // Sem resultado, a mensagem aponta a causa provável: a leitura errou.
+  await expect(page.getByTestId('selecionar-guia-conferir-leitura')).toHaveText(
+    'Confira se o número foi lido corretamente no arquivo de origem e ajuste-o.',
+  )
+
   // E nenhuma guia foi escolhida por conta própria.
   await page.getByTestId('selecionar-guia-modal').getByLabel('Fechar').click()
   await expect(page.getByTestId('lancamento-guia')).toContainText('Selecione uma guia')

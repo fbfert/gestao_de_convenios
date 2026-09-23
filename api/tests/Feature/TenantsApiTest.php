@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\AuditLog;
 use App\Models\ConfiguracaoGlobal;
+use App\Models\Especialidade;
+use App\Models\Profissional;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Support\PermissionCatalog;
@@ -337,6 +339,60 @@ class TenantsApiTest extends TestCase
                 'password' => 'senha-forte-123',
             ],
         ], $sobrescreve);
+    }
+
+    /**
+     * A validação recortada pela clínica (trait ExisteNaClinica) lê
+     * `$user->tenant_id`. Com o token de acesso, esse atributo aponta para a
+     * clínica-alvo — então o super admin, trabalhando dentro dela, tem os
+     * ids dela aceitos, e os da própria clínica de origem recusados.
+     */
+    public function test_super_admin_em_acesso_valida_ids_pela_clinica_acessada(): void
+    {
+        $superAdmin = $this->superAdmin();
+
+        $tokenHome = $this->postJson('/api/login', [
+            'email' => $superAdmin->email,
+            'password' => 'password',
+        ])->assertOk()->json('token');
+
+        $outra = Tenant::query()->create([
+            'nome' => 'Clínica Vizinha',
+            'slug' => 'clinica-vizinha',
+            'cnpj' => null,
+            'ativo' => true,
+        ]);
+
+        $especialidadeDaOutra = Especialidade::query()->withoutGlobalScopes()->create([
+            'tenant_id' => $outra->id,
+            'nome' => 'Especialidade da Vizinha',
+            'ativo' => true,
+        ]);
+
+        $profissionalDaOutra = Profissional::query()->withoutGlobalScopes()->create([
+            'tenant_id' => $outra->id,
+            'especialidade_id' => $especialidadeDaOutra->id,
+            'nome' => 'Profissional da Vizinha',
+            'ativo' => true,
+        ]);
+
+        $tokenAcesso = $this->withToken($tokenHome)
+            ->postJson("/api/tenants/{$outra->id}/acessar")
+            ->assertOk()
+            ->json('token');
+
+        $this->app['auth']->forgetGuards();
+
+        $this->withToken($tokenAcesso)
+            ->getJson("/api/conciliacoes?profissional_id={$profissionalDaOutra->id}")
+            ->assertOk();
+
+        $this->app['auth']->forgetGuards();
+
+        // Pela clínica de origem, o mesmo id é de outra clínica: recusado.
+        $this->withToken($tokenHome)
+            ->getJson("/api/conciliacoes?profissional_id={$profissionalDaOutra->id}")
+            ->assertJsonValidationErrors('profissional_id');
     }
 
     private function admin(): User

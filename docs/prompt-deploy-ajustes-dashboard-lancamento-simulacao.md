@@ -251,3 +251,35 @@ e a migration não é desfeita pelo checkout — a simulação ficaria desligada
 - Não finalize guia na Unimed para testar o deploy — o Passo 6 é uma decisão do responsável, com
   guia escolhida
 - Se algo divergir do esperado, **pare e me diga** em vez de tentar corrigir por conta própria
+
+## Executado em 23/09/2026
+
+Rodado numa sessão do Claude Code na própria VPS.
+
+- **Desvio no Passo 0, só percebido no Passo 2.** O prompt esperava a produção em `e4984d0`; ela
+  estava em `04f6425`. O `git pull` trouxe `04f6425..32f22c9`, e com ele a change
+  `isolamento-entre-clinicas` (`8f43d01`, `3dc8ae7`, `7c1a217`, `e4984d0`, de 22/09), que estava na
+  `main` sem ter sido publicada e não era citada no prompt. A falha foi do prompt: tomou como
+  publicado o último commit da `main` sem conferir o que a produção tinha. A conferência "`e4984d0`
+  ou posterior" do Passo 0 deveria ter parado, e também não parou.
+  - A sessão da VPS parou depois do `redeploy.sh` e perguntou. O responsável decidiu seguir.
+  - A change extra é pequena em código de produção: a validação de `profissional_id` (lançamentos,
+    importação de transcrição), dos filtros da conciliação e do `convenio_id` do cadastro rápido de
+    paciente passa a recusar id de outra clínica. Estava com todas as tasks fechadas e com a suíte
+    verde.
+  - Suspeitou-se que ela recusaria ids da clínica acessada por um super admin em "Acessar". Não
+    procede: com o token de acesso, `$user->tenant_id` devolve a clínica-alvo. Ficou coberto por
+    `TenantsApiTest::test_super_admin_em_acesso_valida_ids_pela_clinica_acessada`.
+- **Passos 1 a 3 bateram.** `redeploy.sh` ok (HTTP 200, bundle servido = imagem, `gescon-worker`
+  saudável); migration `desliga_finalizar_guia_simulacao` como `Ran`; `simulacao = 0` nos dois
+  tenants; nenhum erro novo no log depois da subida (18:46 UTC).
+- **Passo 0, homologação**: a rodada com duas folhas ainda não tinha sido feita. Pelo roteiro, a
+  simulação é religada pela tela no Passo 4.
+- **Pendente no momento deste registro**: Passo 4 (religar a simulação em Automações →
+  Configurações e confirmar `simulacao = 1`; os dois tenants foram desligados pela migration), e os
+  Passos 5 e 7. O Passo 6 fica para depois da homologação.
+
+**Para os próximos prompts de deploy**: o intervalo de commits sai de
+`git -C /opt/gescon rev-parse HEAD` na VPS, e não do último commit conhecido localmente. O Passo 0
+deve listar `git log --oneline HEAD..origin/main` depois de um `git fetch` e parar se aparecer
+commit que o prompt não descreve.

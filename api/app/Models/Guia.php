@@ -300,6 +300,28 @@ class Guia extends Model
      */
     public static function countElegiveisParaAntecipacao(int $tenantId): int
     {
+        return static::elegiveisParaAntecipacaoLeve($tenantId)->count();
+    }
+
+    /**
+     * Solicitações de origem das guias elegíveis — o que a fila "Elegíveis"
+     * agrupa. Mesma leitura leve de countElegiveisParaAntecipacao(), para o
+     * bloco do dashboard contar o que a tela de Antecipações mostra.
+     *
+     * @return \Illuminate\Support\Collection<int, int>
+     */
+    public static function solicitacaoIdsElegiveisParaAntecipacao(int $tenantId)
+    {
+        return static::elegiveisParaAntecipacaoLeve($tenantId)
+            ->pluck('solicitacao_id')
+            ->filter()
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
+    }
+
+    private static function elegiveisParaAntecipacaoLeve(int $tenantId)
+    {
         $hoje = today();
 
         return static::query()
@@ -308,15 +330,14 @@ class Guia extends Model
             ->whereIn('status', [GuiaStatus::APPROVED, GuiaStatus::FINALIZED])
             ->whereNull('alerta_antecipacao_ocultado_em')
             ->naoHistorica()
-            ->select(['id', 'tenant_id', 'convenio_id', 'antecipacao_data_alvo', 'data_finalizacao', 'data_solicitacao', 'validade_senha'])
+            ->select(['id', 'tenant_id', 'solicitacao_id', 'convenio_id', 'antecipacao_data_alvo', 'data_finalizacao', 'data_solicitacao', 'validade_senha'])
             ->with('convenio:id,antecipacao_dias,antecipacao_referencia')
             ->get()
             ->filter(function (self $guia) use ($hoje) {
                 $dataAlvo = $guia->antecipacaoDataAlvo();
 
                 return $dataAlvo !== null && ! $hoje->lt($dataAlvo);
-            })
-            ->count();
+            });
     }
 
     public function conciliacoes()

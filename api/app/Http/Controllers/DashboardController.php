@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Alerta;
 use App\Models\AnaliticoUnimedLote;
+use App\Models\Antecipacao;
 use App\Models\AuditLog;
 use App\Models\ConciliacaoFinanceira;
 use App\Models\Convenio;
@@ -15,6 +16,7 @@ use App\Models\Paciente;
 use App\Models\Profissional;
 use App\Models\Solicitacao;
 use App\Models\User;
+use App\Services\AntecipacaoService;
 use App\Services\DashboardGuiasCardService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -119,6 +121,28 @@ class DashboardController extends Controller
                 'detail' => AnaliticoUnimedLote::query()->where('status', 'importado')->count().' importados',
             ],
             [
+                'key' => 'antecipacoes_elegiveis',
+                'permission' => 'dashboard.antecipacoes',
+                'label' => 'Antecipações elegíveis',
+                'href' => '/antecipacoes',
+                // Entradas da fila (uma por solicitação), não guias: é o número
+                // que a tela de Antecipações mostra. O card de Guias conta guias.
+                'value' => fn () => app(AntecipacaoService::class)->contarElegiveis((int) $user->tenant_id),
+                'detail' => 'aguardando gerar ou dispensar',
+            ],
+            [
+                'key' => 'antecipacoes_realizadas',
+                'permission' => 'dashboard.antecipacoes',
+                'label' => 'Antecipações realizadas',
+                'href' => '/antecipacoes?status='.Antecipacao::STATUS_GERADA,
+                'value' => fn () => Antecipacao::query()->where('status', Antecipacao::STATUS_GERADA)->count(),
+                'detail' => fn () => Antecipacao::query()
+                    ->where('status', Antecipacao::STATUS_GERADA)
+                    ->where('gerado_em', '>=', now()->startOfMonth())
+                    ->count().' neste mês · '
+                    .Antecipacao::query()->where('status', Antecipacao::STATUS_IGNORADA)->count().' dispensadas',
+            ],
+            [
                 'key' => 'auditoria',
                 'permission' => 'dashboard.auditoria',
                 'label' => 'Auditoria',
@@ -128,7 +152,14 @@ class DashboardController extends Controller
             ],
         ])->filter(function (array $block) use ($user) {
             return $user?->can($block['permission']) ?? false;
-        })->values();
+        })
+            // Os blocos de antecipação trazem closures: a fila de elegíveis é
+            // calculada em PHP e não deve rodar para quem nem vai ver o bloco.
+            ->map(fn (array $block) => array_map(
+                fn ($valor) => $valor instanceof \Closure ? $valor() : $valor,
+                $block,
+            ))
+            ->values();
 
         return response()->json([
             'data' => [

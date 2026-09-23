@@ -129,6 +129,58 @@ class AntecipacoesApiTest extends TestCase
         $this->assertCount(0, $data);
     }
 
+    /** O bloco do dashboard conta o que a fila mostra: entradas por solicitação, não guias. */
+    public function test_dashboard_conta_elegiveis_como_a_fila_e_as_realizadas(): void
+    {
+        $user = $this->autenticar();
+        $this->solicitacaoComGuiaAprovada();
+        $outra = $this->solicitacaoComGuiaAprovada();
+        $dispensada = $this->solicitacaoComGuiaAprovada();
+
+        // Segunda guia na mesma solicitação: continua sendo uma entrada da fila.
+        $guiaExtra = Guia::query()->where('solicitacao_id', $outra->id)->firstOrFail()->replicate();
+        $guiaExtra->numero_guia = 'ANTEC-API-'.uniqid();
+        $guiaExtra->save();
+
+        Antecipacao::query()->create([
+            'tenant_id' => $user->tenant_id,
+            'solicitacao_origem_id' => $dispensada->id,
+            'status' => Antecipacao::STATUS_IGNORADA,
+            'ignorado_em' => now(),
+        ]);
+        Antecipacao::query()->create([
+            'tenant_id' => $user->tenant_id,
+            'solicitacao_origem_id' => $dispensada->id,
+            'status' => Antecipacao::STATUS_GERADA,
+            'gerado_em' => now(),
+        ]);
+        Antecipacao::query()->create([
+            'tenant_id' => $user->tenant_id,
+            'solicitacao_origem_id' => $dispensada->id,
+            'status' => Antecipacao::STATUS_GERADA,
+            'gerado_em' => now()->subMonthsNoOverflow(2),
+        ]);
+
+        $fila = $this->getJson('/api/antecipacoes/elegiveis')->assertOk()->json('data');
+        $blocos = collect($this->getJson('/api/dashboard')->assertOk()->json('data.blocks'))->keyBy('key');
+
+        $this->assertCount(2, $fila);
+        $this->assertSame(2, $blocos['antecipacoes_elegiveis']['value']);
+        $this->assertSame(2, $blocos['antecipacoes_realizadas']['value']);
+        $this->assertSame('1 neste mês · 1 dispensadas', $blocos['antecipacoes_realizadas']['detail']);
+        $this->assertSame('/antecipacoes?status=gerada', $blocos['antecipacoes_realizadas']['href']);
+    }
+
+    public function test_dashboard_sem_permissao_nao_mostra_blocos_de_antecipacao(): void
+    {
+        Sanctum::actingAs(User::query()->where('email', 'profissional@clinica-exemplo.test')->firstOrFail());
+
+        $keys = array_column($this->getJson('/api/dashboard')->assertOk()->json('data.blocks'), 'key');
+
+        $this->assertNotContains('antecipacoes_elegiveis', $keys);
+        $this->assertNotContains('antecipacoes_realizadas', $keys);
+    }
+
     /** O coração da correção: gera item+guia NA MESMA solicitação, não uma solicitação nova. */
     public function test_criar_gera_item_e_guia_por_renovacao_na_mesma_solicitacao(): void
     {

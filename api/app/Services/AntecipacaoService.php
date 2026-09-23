@@ -40,6 +40,23 @@ class AntecipacaoService
      * já têm QUALQUER registro de Antecipacao (gerada ou ignorada) — uma vez
      * revisada, a solicitação sai da fila.
      */
+    /**
+     * Quantas entradas a fila de listarElegiveis() teria, sem montar a fila:
+     * o dashboard pergunta isso a cada 30s e não precisa de paciente, itens
+     * nem solicitação carregados.
+     */
+    public function contarElegiveis(int $tenantId): int
+    {
+        $solicitacoesComRegistro = Antecipacao::query()
+            ->where('tenant_id', $tenantId)
+            ->pluck('solicitacao_origem_id')
+            ->all();
+
+        return Guia::solicitacaoIdsElegiveisParaAntecipacao($tenantId)
+            ->diff($solicitacoesComRegistro)
+            ->count();
+    }
+
     public function listarElegiveis(int $tenantId): array
     {
         $guias = Guia::elegiveisParaAntecipacao($tenantId);

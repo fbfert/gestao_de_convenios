@@ -6,6 +6,7 @@ import { NovidadesCard } from '../novidades'
 import { SaudeCard } from '../saude'
 import { GuiasCard, type GuiasCardLinha } from './GuiasCard'
 import { usePode } from '../../lib/permissoes'
+import { permissoesDeRelatorio } from '../../routes/navigation'
 
 type DashboardBlock = {
   key: string
@@ -79,6 +80,8 @@ export function DashboardPage() {
   const guiasCard = dashboardQuery.data?.guias_card ?? []
   const alertasCard = dashboardQuery.data?.alertas_card ?? []
   const recentAudits = dashboardQuery.data?.recent_audits ?? []
+  // Mesma regra do item de menu: basta uma das abas de Relatórios.
+  const podeVerRelatorios = permissoesDeRelatorio.some((permissao) => pode(permissao))
 
   return (
     <div className="space-y-8" data-testid="dashboard-page">
@@ -146,12 +149,23 @@ export function DashboardPage() {
               <p className="text-meta font-semibold uppercase tracking-[0.2em] text-acento">Acesso rápido</p>
               <h3 className="mt-2 text-titulo font-semibold text-white">Telas operacionais</h3>
             </div>
-            <Link
-              to="/auditoria"
-              className="inline-flex h-10 shrink-0 items-center rounded-pilula border border-acento/40 px-4 text-corpo font-semibold text-acento transition hover:bg-acento-suave"
-            >
-              Ver auditoria
-            </Link>
+            <div className="flex flex-wrap justify-end gap-2">
+              <Link
+                to="/auditoria"
+                className="inline-flex h-10 shrink-0 items-center rounded-pilula border border-acento/40 px-4 text-corpo font-semibold text-acento transition hover:bg-acento-suave"
+              >
+                Ver auditoria
+              </Link>
+              {podeVerRelatorios ? (
+                <Link
+                  to="/relatorios"
+                  className="inline-flex h-10 shrink-0 items-center rounded-pilula border border-acento/40 px-4 text-corpo font-semibold text-acento transition hover:bg-acento-suave"
+                  data-testid="dashboard-ver-relatorios"
+                >
+                  Ver relatórios
+                </Link>
+              ) : null}
+            </div>
           </div>
 
           <div className="mt-5 grid gap-3 sm:grid-cols-2">

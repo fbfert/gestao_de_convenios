@@ -6,7 +6,7 @@
 ---
 
 Você está na VPS de produção do Gescon, em `/opt/gescon`. Vamos publicar a change
-`folha-lida-anexada-a-guia` e o manual atualizado: cinco commits, `32f22c9..7bccbc5`.
+`folha-lida-anexada-a-guia`, duas correções e o manual atualizado: sete commits de código e manual, de `32f22c9` em diante.
 
 **Existe um único tenant de uso real (NeuroKids), com a automação da Unimed rodando em guias reais
 todos os dias.** Quebrar isso custa atendimento de paciente. **Faça este deploy fora do horário de
@@ -22,6 +22,7 @@ Um passo por vez, com a saída na tela antes do próximo — não encadeie os pa
 | **Folha lida guardada na guia** | Ao registrar sessões a partir da leitura (arquivo ou webcam), o mesmo arquivo é anexado à guia. Antes era descartado — só a regional 0220, pelo campo avulso, guardava folha |
 | **Foto e webcam viram PDF** | Conversão no servidor, reduzindo a 2400 px no lado maior. Vale também para folha anexada depois, pela guia |
 | **Pasta do paciente** | Cada folha mostra "Guia nº …"; folha de guia finalizada não pode mais ser removida pela pasta (antes podia, e o servidor apagava) |
+| **Editar paciente** | Aberta pela pasta ("Editar cadastro") ou por endereço, a edição passa a carregar o paciente pelo id. Antes, quem não estava na primeira página da listagem abria com o formulário em branco |
 | **Manual e mapa mental** | Atualizados com estas mudanças e as do deploy anterior |
 | **Migration** | **Nenhuma** |
 | **Dependências novas** | Nenhuma. A conversão usa `gd` e `exif`, extensões PHP já instaladas pelo `Dockerfile` |
@@ -54,9 +55,11 @@ git -C /opt/gescon fetch origin
 git -C /opt/gescon log --oneline HEAD..origin/main
 ```
 
-Tem que listar estes cinco, e só eles:
+Tem que listar estes sete, e só eles (mais os commits do próprio prompt, ver abaixo):
 
 ```
+6285927 fix(lancamentos): folha lida reconhecida tambem pela extensao
+0d0b205 fix(pacientes): editar pelo endereco carrega o paciente pelo id
 7bccbc5 docs(manual): folha anexada a guia, pasta do paciente, painel e configuracoes das automacoes
 dd6c021 fix(pacientes): pasta mostra a guia de cada folha e nao remove folha de guia finalizada
 f9c5ae7 fix(lancamentos): a folha lida fica anexada a guia ao registrar as sessoes
@@ -64,9 +67,9 @@ f9c5ae7 fix(lancamentos): a folha lida fica anexada a guia ao registrar as sesso
 fd59362 test(api): super admin em acesso valida ids pela clinica acessada; registra o deploy de 23/09
 ```
 
-Podem aparecer, **acima** deles, commits que só mexem em `docs/prompt-deploy-folha-lida-anexada-a-guia.md`
-— é este próprio arquivo. Confira com
-`git -C /opt/gescon diff --name-only 7bccbc5 origin/main`: tem que listar só ele (ou nada). **Qualquer outro commit: pare e me diga.** Foi assim que a change
+Podem aparecer, no meio deles, commits cujo título começa com `docs:` e que só mexem em
+`docs/prompt-deploy-folha-lida-anexada-a-guia.md` — é este próprio arquivo. Confira cada um com
+`git -C /opt/gescon show --stat <commit>`. **Qualquer outro commit: pare e me diga.** Foi assim que a change
 `isolamento-entre-clinicas` subiu sem estar no roteiro no deploy anterior.
 
 Carregue os segredos sem imprimi-los, e confira como ficou o modo simulação no deploy anterior:
@@ -133,7 +136,7 @@ docker exec gescon-db mariadb -u root -p"$DB_ROOT" gestao_convenios \
 
 Me mostre a saída inteira. Além do HTTP 200, olhe:
 
-- **`git pull` trouxe `32f22c9..7bccbc5`** (ou até o commit do prompt, se ele tiver subido).
+- **`git pull` partiu de `32f22c9`** e trouxe os commits conferidos no Passo 0.
 - **O bundle servido é o da imagem nova.** Se o script disser que o servido difere do da imagem, as
   mudanças de tela **não estão valendo**, mesmo com HTTP 200.
 
@@ -188,7 +191,10 @@ Logado como admin da NeuroKids:
    veio de foto ou webcam.
 3. **Pacientes → nome do paciente → Arquivos → Ver**: no grupo "Registro de Sessões", a folha mostra
    "Guia nº …". Em folha de guia **finalizada**, aparece "Guia finalizada" e **não** há botão Remover.
-4. **Manual** (menu): a seção 5 tem "Pasta do paciente"; a seção 10 tem "A folha fica guardada na
+4. **Editar paciente**: abra a pasta de um paciente que **não** esteja na primeira página da listagem
+   de Pacientes e clique em **Editar cadastro**. Nome, carteirinha e convênio têm que aparecer
+   preenchidos. **Não salve** — só confira e cancele.
+5. **Manual** (menu): a seção 5 tem "Pasta do paciente"; a seção 10 tem "A folha fica guardada na
    guia"; a seção 18 tem "Configurações das automações".
 
 Se não houver folha para registrar agora, o item 1–2 fica para o primeiro uso real — registre isso.

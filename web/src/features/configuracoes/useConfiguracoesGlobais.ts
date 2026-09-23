@@ -34,6 +34,8 @@ export type ConfiguracoesGlobais = {
   unimed_captura_senha_validade_intervalo_horas: number
   /** Liga/desliga a confirmação automática de guia incerta pós-submit. */
   automacao_verificacao_incerta_ativo: boolean
+  /** Finalização Unimed para antes de gravar e finalizar no portal. */
+  automacao_finalizar_guia_simulacao_ativo: boolean
   /** Liga/desliga a sincronização agendada com a clínica ("Sincronizar Agora" continua disponível). */
   automacao_sincronizacao_clinica_ativo: boolean
   /** Janela diurna (padrão 08:00-18:00) e intervalo entre sincronizações nela, em minutos. */
@@ -74,6 +76,8 @@ export type ConfiguracoesGlobaisForm = {
   automacao_captura_senha_validade_ativo: boolean
   unimed_captura_senha_validade_intervalo_horas: string
   automacao_verificacao_incerta_ativo: boolean
+  /** Finalização Unimed para antes de gravar e finalizar no portal. */
+  automacao_finalizar_guia_simulacao_ativo: boolean
   automacao_sincronizacao_clinica_ativo: boolean
   automacao_sincronizacao_clinica_diurno_horario_inicio: string
   automacao_sincronizacao_clinica_diurno_horario_fim: string
@@ -110,6 +114,7 @@ export function paraFormulario(dados: ConfiguracoesGlobais): ConfiguracoesGlobai
     automacao_captura_senha_validade_ativo: dados.automacao_captura_senha_validade_ativo,
     unimed_captura_senha_validade_intervalo_horas: String(dados.unimed_captura_senha_validade_intervalo_horas),
     automacao_verificacao_incerta_ativo: dados.automacao_verificacao_incerta_ativo,
+    automacao_finalizar_guia_simulacao_ativo: dados.automacao_finalizar_guia_simulacao_ativo,
     automacao_sincronizacao_clinica_ativo: dados.automacao_sincronizacao_clinica_ativo,
     automacao_sincronizacao_clinica_diurno_horario_inicio: dados.automacao_sincronizacao_clinica_diurno_horario_inicio,
     automacao_sincronizacao_clinica_diurno_horario_fim: dados.automacao_sincronizacao_clinica_diurno_horario_fim,
@@ -175,6 +180,7 @@ export function useSalvarConfiguracoesGlobais() {
         automacao_captura_senha_validade_ativo: form.automacao_captura_senha_validade_ativo,
         unimed_captura_senha_validade_intervalo_horas: Number(form.unimed_captura_senha_validade_intervalo_horas),
         automacao_verificacao_incerta_ativo: form.automacao_verificacao_incerta_ativo,
+        automacao_finalizar_guia_simulacao_ativo: form.automacao_finalizar_guia_simulacao_ativo,
         automacao_sincronizacao_clinica_ativo: form.automacao_sincronizacao_clinica_ativo,
         automacao_sincronizacao_clinica_diurno_horario_inicio: form.automacao_sincronizacao_clinica_diurno_horario_inicio,
         automacao_sincronizacao_clinica_diurno_horario_fim: form.automacao_sincronizacao_clinica_diurno_horario_fim,

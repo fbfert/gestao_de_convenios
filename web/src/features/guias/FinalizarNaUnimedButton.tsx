@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Botao } from '../../components/ui/Botao'
 import { Tooltip } from '../../components/ui/Tooltip'
 import { AutomacaoProgressoModal } from '../automacoes/AutomacaoProgressoModal'
@@ -105,7 +106,11 @@ export function FinalizarNaUnimedButton({ guia }: { guia: GuiaParaFinalizar }) {
             >
               <span className="font-semibold">Modo simulação ligado.</span> O robô vai preencher a
               guia e anexar as folhas no portal, mas <strong>não</strong> vai gravar nem finalizar.
-              Desligue em Configurações quando quiser finalizar de verdade.
+              Desligue em{' '}
+              <Link to="/automacoes/configuracoes" className="font-semibold underline underline-offset-2">
+                Automações → Configurações
+              </Link>{' '}
+              quando quiser finalizar de verdade.
             </p>
           ) : null}
 

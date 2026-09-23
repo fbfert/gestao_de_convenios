@@ -31,6 +31,7 @@ const formVazio: ConfiguracoesGlobaisForm = {
   automacao_captura_senha_validade_ativo: true,
   unimed_captura_senha_validade_intervalo_horas: '6',
   automacao_verificacao_incerta_ativo: true,
+  automacao_finalizar_guia_simulacao_ativo: true,
   automacao_sincronizacao_clinica_ativo: true,
   automacao_sincronizacao_clinica_diurno_horario_inicio: '08:00',
   automacao_sincronizacao_clinica_diurno_horario_fim: '18:00',

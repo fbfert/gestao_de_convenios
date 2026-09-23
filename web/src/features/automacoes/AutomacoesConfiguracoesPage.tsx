@@ -8,6 +8,7 @@ import {
 } from '../configuracoes/useConfiguracoesGlobais'
 import { Botao } from '../../components/ui/Botao'
 import { Select } from '../../components/ui/Select'
+import { useConfirm } from '../../components/ui/ConfirmDialog'
 
 function inputClasses() {
   return 'w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-corpo text-white outline-none transition placeholder:text-texto-suave focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20'
@@ -31,6 +32,7 @@ const formVazio: ConfiguracoesGlobaisForm = {
   automacao_captura_senha_validade_ativo: true,
   unimed_captura_senha_validade_intervalo_horas: '6',
   automacao_verificacao_incerta_ativo: true,
+  automacao_finalizar_guia_simulacao_ativo: true,
   automacao_sincronizacao_clinica_ativo: true,
   automacao_sincronizacao_clinica_diurno_horario_inicio: '08:00',
   automacao_sincronizacao_clinica_diurno_horario_fim: '18:00',
@@ -166,6 +168,7 @@ export function AutomacoesConfiguracoesPage() {
   const [form, setForm] = useState<ConfiguracoesGlobaisForm>(formVazio)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const confirmar = useConfirm()
 
   useEffect(() => {
     if (query.data) {
@@ -178,6 +181,25 @@ export function AutomacoesConfiguracoesPage() {
     valor: ConfiguracoesGlobaisForm[C],
   ) => {
     setForm((atual) => ({ ...atual, [campo]: valor }))
+  }
+
+  // Desligar a simulação é o único liga/desliga desta tela cujo efeito não se
+  // desfaz: a próxima finalização encerra a guia na operadora.
+  const alterarSimulacao = async (valor: boolean) => {
+    if (!valor) {
+      const ok = await confirmar({
+        titulo: 'Desligar o modo simulação',
+        descricao:
+          'Depois de salvar, finalizar uma guia vai gravar e finalizar na Unimed de verdade — não há como desfazer no portal. Confirma?',
+        confirmarTexto: 'Desligar simulação',
+      })
+
+      if (!ok) {
+        return
+      }
+    }
+
+    alterar('automacao_finalizar_guia_simulacao_ativo', valor)
   }
 
   const handleSubmit = async (event: FormEvent) => {
@@ -336,6 +358,14 @@ export function AutomacoesConfiguracoesPage() {
           </label>
         </div>
       </SecaoAutomacao>
+
+      <SecaoAutomacao
+        titulo="Modo simulação da finalização Unimed"
+        descricao={'Ativo, o robô preenche a guia e anexa as folhas no portal, mas para antes de "Gravar e Finalizar" — nada é enviado à operadora e a guia não muda de situação no Gescon. Desativado, a finalização grava e finaliza a guia na Unimed de verdade, sem volta.'}
+        ativo={form.automacao_finalizar_guia_simulacao_ativo}
+        onAlterarAtivo={alterarSimulacao}
+        testIdAtivo="automacoes-config-finalizar-simulacao-ativo"
+      />
 
       <SecaoAutomacao
         titulo="Sincronização com a clínica"

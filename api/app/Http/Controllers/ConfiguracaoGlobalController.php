@@ -47,6 +47,7 @@ class ConfiguracaoGlobalController extends Controller
             'automacao_captura_senha_validade_ativo' => $configuracao->automacao_captura_senha_validade_ativo,
             'unimed_captura_senha_validade_intervalo_horas' => $configuracao->unimed_captura_senha_validade_intervalo_horas,
             'automacao_verificacao_incerta_ativo' => $configuracao->automacao_verificacao_incerta_ativo,
+            'automacao_finalizar_guia_simulacao_ativo' => $configuracao->automacao_finalizar_guia_simulacao_ativo,
             'automacao_sincronizacao_clinica_ativo' => $configuracao->automacao_sincronizacao_clinica_ativo,
             'automacao_sincronizacao_clinica_diurno_horario_inicio' => $this->paraHorario($configuracao->automacao_sincronizacao_clinica_diurno_horario_inicio),
             'automacao_sincronizacao_clinica_diurno_horario_fim' => $this->paraHorario($configuracao->automacao_sincronizacao_clinica_diurno_horario_fim),

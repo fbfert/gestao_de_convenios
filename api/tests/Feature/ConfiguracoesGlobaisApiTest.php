@@ -42,6 +42,7 @@ class ConfiguracoesGlobaisApiTest extends TestCase
             ->assertJsonPath('data.automacao_captura_senha_validade_ativo', true)
             ->assertJsonPath('data.unimed_captura_senha_validade_intervalo_horas', 6)
             ->assertJsonPath('data.automacao_verificacao_incerta_ativo', true)
+            ->assertJsonPath('data.automacao_finalizar_guia_simulacao_ativo', true)
             ->assertJsonPath('data.automacao_sincronizacao_clinica_ativo', true)
             ->assertJsonPath('data.automacao_sincronizacao_clinica_diurno_horario_inicio', '08:00')
             ->assertJsonPath('data.automacao_sincronizacao_clinica_diurno_horario_fim', '18:00')
@@ -145,6 +146,7 @@ class ConfiguracoesGlobaisApiTest extends TestCase
             'automacao_expurgo_auditoria_ativo' => false,
             'automacao_expurgo_carteirinhas_ativo' => false,
             'automacao_verificacao_guias_diaria_ativo' => false,
+            'automacao_finalizar_guia_simulacao_ativo' => false,
         ]))->assertOk()
             ->assertJsonPath('data.automacao_reconsulta_status_ativo', false)
             ->assertJsonPath('data.automacao_captura_senha_validade_ativo', false)
@@ -154,7 +156,8 @@ class ConfiguracoesGlobaisApiTest extends TestCase
             ->assertJsonPath('data.automacao_sincronizacao_clinica_diurno_intervalo_minutos', 15)
             ->assertJsonPath('data.automacao_expurgo_auditoria_ativo', false)
             ->assertJsonPath('data.automacao_expurgo_carteirinhas_ativo', false)
-            ->assertJsonPath('data.automacao_verificacao_guias_diaria_ativo', false);
+            ->assertJsonPath('data.automacao_verificacao_guias_diaria_ativo', false)
+            ->assertJsonPath('data.automacao_finalizar_guia_simulacao_ativo', false);
     }
 
     private function payloadValido(array $overrides = []): array
@@ -190,6 +193,7 @@ class ConfiguracoesGlobaisApiTest extends TestCase
             'automacao_expurgo_auditoria_ativo' => true,
             'automacao_expurgo_carteirinhas_ativo' => true,
             'automacao_verificacao_guias_diaria_ativo' => true,
+            'automacao_finalizar_guia_simulacao_ativo' => true,
         ], $overrides);
     }
 

@@ -64,6 +64,10 @@ class UpdateConfiguracaoGlobalRequest extends FormRequest
             // 30 min da reconsulta de status. Só as 4 opções da tela.
             'unimed_captura_senha_validade_intervalo_horas' => ['required', 'integer', 'in:1,6,12,24'],
             'automacao_verificacao_incerta_ativo' => ['required', 'boolean'],
+
+            // Modo simulação da finalização Unimed. Existia só no banco: a tela
+            // mandava "desligar em Configurações" e não havia onde.
+            'automacao_finalizar_guia_simulacao_ativo' => ['required', 'boolean'],
             'automacao_sincronizacao_clinica_ativo' => ['required', 'boolean'],
 
             // 3 janelas de horário, cada uma com seu próprio intervalo (SincronizarClinicaJob).

@@ -25,6 +25,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class SolicitacaoController extends Controller
@@ -170,7 +171,16 @@ class SolicitacaoController extends Controller
     {
         $validated = $request->validate([
             'nome' => ['required', 'string', 'max:255'],
-            'convenio_id' => ['required', 'integer', 'exists:convenios,id'],
+            // Recortado pela clinica: ver o trait ExisteNaClinica. O 404 logo
+            // abaixo ja barrava o acesso; o que faltava era a validacao nao
+            // revelar que o id existe em outra clinica.
+            'convenio_id' => [
+                'required',
+                'integer',
+                Rule::exists('convenios', 'id')->where(
+                    fn ($query) => $query->where('tenant_id', $request->user()?->tenant_id)
+                ),
+            ],
             'carteirinha' => ['required', 'string', 'max:255'],
         ]);
 

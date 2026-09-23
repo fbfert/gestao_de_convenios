@@ -2,10 +2,13 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\ExisteNaClinica;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ImportLancamentosTranscricaoRequest extends FormRequest
 {
+    use ExisteNaClinica;
+
     public function authorize(): bool
     {
         return true;
@@ -14,7 +17,7 @@ class ImportLancamentosTranscricaoRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'profissional_id' => ['required', 'integer', 'exists:profissionais,id'],
+            'profissional_id' => ['required', 'integer', $this->existeNaClinica('profissionais')],
             // Nulo quando a sessão veio de leitura por imagem/PDF ou de
             // preenchimento manual da grade — só a "colar texto" tem
             // transcrição de verdade para reprocessar.

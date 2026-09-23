@@ -2,10 +2,13 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\ExisteNaClinica;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateLancamentoRequest extends FormRequest
 {
+    use ExisteNaClinica;
+
     public function authorize(): bool
     {
         return true;
@@ -14,7 +17,7 @@ class UpdateLancamentoRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'profissional_id' => ['sometimes', 'integer', 'exists:profissionais,id'],
+            'profissional_id' => ['sometimes', 'integer', $this->existeNaClinica('profissionais')],
             'data_sessao' => ['sometimes', 'date'],
             'hora_inicio' => ['sometimes', 'nullable', 'date_format:H:i'],
             'hora_fim' => ['sometimes', 'nullable', 'date_format:H:i'],

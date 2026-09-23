@@ -21,6 +21,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class LancamentoController extends Controller
@@ -143,7 +144,16 @@ class LancamentoController extends Controller
     public function conferirAgenda(Request $request, Guia $guia): JsonResponse
     {
         $dados = $request->validate([
-            'profissional_id' => ['nullable', 'integer', 'exists:profissionais,id'],
+            // Recortado pela clínica: `exists` cru distinguiria "não existe" de
+            // "não é sua", e a diferença enumera a base da vizinha (ver o trait
+            // ExisteNaClinica).
+            'profissional_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('profissionais', 'id')->where(
+                    fn ($query) => $query->where('tenant_id', $request->user()?->tenant_id)
+                ),
+            ],
             'sessoes' => ['array'],
             'sessoes.*.data_sessao' => ['nullable', 'date'],
             'sessoes.*.hora_inicio' => ['nullable', 'date_format:H:i'],

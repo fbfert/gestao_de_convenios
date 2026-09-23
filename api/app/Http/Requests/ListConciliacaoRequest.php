@@ -2,10 +2,13 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\ExisteNaClinica;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ListConciliacaoRequest extends FormRequest
 {
+    use ExisteNaClinica;
+
     public function authorize(): bool
     {
         return true;
@@ -14,9 +17,9 @@ class ListConciliacaoRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'convenio_id' => ['nullable', 'integer', 'exists:convenios,id'],
-            'especialidade_id' => ['nullable', 'integer', 'exists:especialidades,id'],
-            'profissional_id' => ['nullable', 'integer', 'exists:profissionais,id'],
+            'convenio_id' => ['nullable', 'integer', $this->existeNaClinica('convenios')],
+            'especialidade_id' => ['nullable', 'integer', $this->existeNaClinica('especialidades')],
+            'profissional_id' => ['nullable', 'integer', $this->existeNaClinica('profissionais')],
             'status' => ['nullable', 'in:pending,reviewed,paid'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
         ];

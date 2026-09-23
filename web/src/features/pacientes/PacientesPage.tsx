@@ -4,7 +4,7 @@ import { useConvenios } from '../../lib/queries/useReferenceData'
 import { useListaNaUrl } from '../../lib/useListaNaUrl'
 import { Paginacao } from '../../components/ui/Paginacao'
 import { Select } from '../../components/ui/Select'
-import { getHttpErrorMessage, useAtualizarPaciente, useCriarPaciente, usePacientesCrud } from './usePacientes'
+import { getHttpErrorMessage, useAtualizarPaciente, useCriarPaciente, usePaciente, usePacientesCrud } from './usePacientes'
 import {
   formatCarteirinha,
   isCarteirinhaCompleta,
@@ -120,10 +120,9 @@ export function PacientesPage() {
   const pacientes = useMemo(() => pacientesQuery.data?.data ?? [], [pacientesQuery.data])
   const totalPages = pacientesQuery.data?.meta?.last_page ?? 1
   const query = searchParams.toString()
-  const pacienteEmEdicao = useMemo(
-    () => (isEditRoute ? pacientes.find((paciente) => paciente.id === routeEditingId) ?? null : null),
-    [isEditRoute, routeEditingId, pacientes],
-  )
+  // Pelo id, e não pela página da listagem: o paciente pode não estar nela.
+  const pacienteQuery = usePaciente(isEditRoute ? routeEditingId : null)
+  const pacienteEmEdicao = isEditRoute ? pacienteQuery.data ?? null : null
 
   // Hidrata quando a edicao e aberta direto pela URL ou recarregada.
   useEffect(() => {

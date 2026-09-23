@@ -18,6 +18,21 @@ export type PacientesConsulta = {
   direcao: 'asc' | 'desc'
 }
 
+/**
+ * Um paciente pelo id — para a edição aberta por endereço.
+ *
+ * A edição procurava o paciente só na página carregada da listagem. Aberta a
+ * partir da pasta ("Editar cadastro"), a listagem vem na página 1 sem filtro,
+ * e quem não estivesse ali abria com o formulário todo em branco.
+ */
+export function usePaciente(id: number | null) {
+  return useQuery({
+    queryKey: ['pacientes', 'um', id],
+    queryFn: async () => (await apiClient.get<{ data: Paciente }>(`/pacientes/${id}`)).data.data,
+    enabled: id !== null,
+  })
+}
+
 export function usePacientesCrud(consulta: PacientesConsulta, page?: number) {
   return useQuery({
     queryKey: ['pacientes', 'crud', consulta, page],

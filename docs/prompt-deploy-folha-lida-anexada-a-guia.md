@@ -6,7 +6,7 @@
 ---
 
 Você está na VPS de produção do Gescon, em `/opt/gescon`. Vamos publicar a change
-`folha-lida-anexada-a-guia`, duas correções e o manual atualizado: sete commits de código e manual, de `32f22c9` em diante.
+`folha-lida-anexada-a-guia`, duas correções e o manual atualizado: oito commits de código e manual, de `32f22c9` em diante.
 
 **Existe um único tenant de uso real (NeuroKids), com a automação da Unimed rodando em guias reais
 todos os dias.** Quebrar isso custa atendimento de paciente. **Faça este deploy fora do horário de
@@ -20,6 +20,7 @@ Um passo por vez, com a saída na tela antes do próximo — não encadeie os pa
 | O quê | Detalhe |
 |---|---|
 | **Folha lida guardada na guia** | Ao registrar sessões a partir da leitura (arquivo ou webcam), o mesmo arquivo é anexado à guia. Antes era descartado — só a regional 0220, pelo campo avulso, guardava folha |
+| **Anexar folhas à mão** | Campo "Anexar folhas de registro" sempre visível no registro de sessões, com várias folhas e "Retirar". Antes só aparecia para a regional 0220, com um arquivo |
 | **Foto e webcam viram PDF** | Conversão no servidor, reduzindo a 2400 px no lado maior. Vale também para folha anexada depois, pela guia |
 | **Pasta do paciente** | Cada folha mostra "Guia nº …"; folha de guia finalizada não pode mais ser removida pela pasta (antes podia, e o servidor apagava) |
 | **Editar paciente** | Aberta pela pasta ("Editar cadastro") ou por endereço, a edição passa a carregar o paciente pelo id. Antes, quem não estava na primeira página da listagem abria com o formulário em branco |
@@ -35,7 +36,7 @@ Um passo por vez, com a saída na tela antes do próximo — não encadeie os pa
 - **As folhas das sessões registradas antes deste deploy não voltam sozinhas.** O arquivo lido
   ficava no servidor sem vínculo com guia nem paciente; casá-lo agora seria adivinhação. Essas guias
   precisam receber a folha à mão, no detalhe da guia, antes de finalizar na Unimed.
-- **Regional 0220**: a folha lida já cumpre a exigência; o campo avulso só aparece para texto colado.
+- **Regional 0220**: a folha lida ou uma anexada à mão cumpre a exigência.
 
 ## Passo 0 — Onde a VPS está
 
@@ -55,9 +56,10 @@ git -C /opt/gescon fetch origin
 git -C /opt/gescon log --oneline HEAD..origin/main
 ```
 
-Tem que listar estes sete, e só eles (mais os commits do próprio prompt, ver abaixo):
+Tem que listar estes oito, e só eles (mais os commits do próprio prompt, ver abaixo):
 
 ```
+e52095b feat(lancamentos): anexar folhas de registro a mao ao registrar as sessoes
 6285927 fix(lancamentos): folha lida reconhecida tambem pela extensao
 0d0b205 fix(pacientes): editar pelo endereco carrega o paciente pelo id
 7bccbc5 docs(manual): folha anexada a guia, pasta do paciente, painel e configuracoes das automacoes
@@ -186,7 +188,9 @@ Logado como admin da NeuroKids:
 
 1. **Lançamentos → Novo**: na próxima folha que **já seria registrada de qualquer forma**, leia pelo
    arquivo ou pela webcam. Acima da tabela deve aparecer o aviso verde "A folha lida (…) será anexada à
-   guia ao registrar as sessões". **Não registre sessões só para testar.**
+   guia ao registrar as sessões". Logo abaixo, o campo **"Anexar folhas de registro"** tem que estar
+   visível, mesmo fora da regional 0220; se houver segunda via, anexe por ali. **Não registre sessões só
+   para testar.**
 2. Depois de registrar, no **detalhe da guia**, em "Folhas de registro", a folha aparece — em PDF se
    veio de foto ou webcam.
 3. **Pacientes → nome do paciente → Arquivos → Ver**: no grupo "Registro de Sessões", a folha mostra

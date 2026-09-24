@@ -68,11 +68,58 @@ class ErroClienteController extends Controller
      * investigações separadas. E o servidor o recomputa a partir do que
      * recebeu, sem depender de o cliente mandar um id que poderia não chegar.
      *
-     * Espelha `codigoDoErro` em `web/src/lib/reportClientError.ts`: os dois
-     * precisam concordar, senão o código da tela não acha a linha do log.
+     * FNV-1a de 32 bits, espelhando `codigoDoErro` em
+     * `web/src/lib/reportClientError.ts` — byte a byte, não "cada lado estável
+     * consigo mesmo".
+     *
+     * ISTO JÁ ESTEVE ERRADO: até 24/09/2026 aqui era sha256 e no navegador
+     * FNV-1a, então a clínica lia um código na tela (`836920`) e o log guardava
+     * outro para o mesmo erro (`5F6052`). O código existe só para casar o
+     * telefonema com a linha do registro, e não casava com nada. Os registros
+     * daqueles três dias seguem com o código antigo.
+     *
+     * Por que FNV-1a e não sha256 nos dois: no navegador o hash tem de estar
+     * pronto no instante em que a tela renderiza, e `crypto.subtle.digest` é
+     * assíncrono. Este código não precisa ser criptográfico — precisa ser curto,
+     * estável e igual dos dois lados.
      */
     public static function codigoDoErro(string $message, string $stack): string
     {
-        return strtoupper(substr(hash('sha256', $message."\n".$stack), 0, 6));
+        $hash = 0x811C9DC5;
+
+        foreach (self::unidadesUtf16($message."\n".$stack) as $unidade) {
+            $hash ^= $unidade;
+            // Multiplicação pelo primo do FNV, mantida em 32 bits sem sinal —
+            // o equivalente do `Math.imul` que o JavaScript usa para não
+            // estourar para ponto flutuante.
+            $hash = ($hash * 0x01000193) & 0xFFFFFFFF;
+        }
+
+        return substr(str_pad(strtoupper(dechex($hash)), 6, '0', STR_PAD_LEFT), 0, 6);
+    }
+
+    /**
+     * O texto como o JavaScript o percorre: unidades UTF-16, não bytes.
+     *
+     * `charCodeAt` devolve unidade UTF-16. Em ASCII dá no mesmo que byte, mas
+     * em "Não foi possível" não dá — o PHP leria dois bytes onde o JS lê um
+     * caractere, e o código divergiria justamente nas mensagens em português.
+     * Converter para UTF-16BE resolve, e faz par de surrogates de emoji cair
+     * igual nos dois lados, porque é assim que o JS também os enxerga.
+     *
+     * @return list<int>
+     */
+    private static function unidadesUtf16(string $texto): array
+    {
+        $utf16 = mb_convert_encoding($texto, 'UTF-16BE', 'UTF-8');
+
+        if ($utf16 === false || $utf16 === '') {
+            return [];
+        }
+
+        /** @var list<int> $unidades */
+        $unidades = array_values(unpack('n*', $utf16) ?: []);
+
+        return $unidades;
     }
 }

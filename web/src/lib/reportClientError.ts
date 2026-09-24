@@ -20,6 +20,8 @@
  * logo depois de um erro.
  */
 
+import { authStorageKey } from '../stores/authStorageKey'
+
 const LIMITE_STACK = 4000
 const MAXIMO_POR_SESSAO = 10
 
@@ -57,10 +59,19 @@ type ErroParaRelatar = {
  * usuários dá o mesmo código, e "três pessoas ligaram com o código A3F2" vira
  * uma informação útil em vez de três investigações.
  *
- * Espelha `ErroClienteController::codigoDoErro` no backend — os dois precisam
- * concordar, senão o código da tela não acha a linha do log. É um hash FNV-1a
- * de 32 bits em hexadecimal: o backend usa sha256, mas o que importa é que
- * cada lado seja estável consigo mesmo; o log guarda os dois.
+ * FNV-1a de 32 bits em hexadecimal, e `ErroClienteController::codigoDoErro`
+ * faz O MESMO — o PHP percorre unidades UTF-16 justamente para bater com o
+ * `charCodeAt` daqui em mensagens acentuadas.
+ *
+ * ISTO JÁ ESTEVE ERRADO, e o comentário anterior dizia o contrário: o backend
+ * usava sha256 e o texto aqui afirmava que "o log guarda os dois". Não
+ * guardava. Em 24/09/2026 a clínica leu `836920` na tela e o log tinha
+ * `5F6052` para o mesmo erro — o código não achava nada, que é a única coisa
+ * que ele precisa fazer.
+ *
+ * Quem for mostrar o código na tela usa `codigoDoRelato`, não esta função
+ * direto: é ela que garante que o hash saia sobre os mesmos valores que o
+ * relato envia.
  */
 export function codigoDoErro(message: string, stack: string): string {
   const texto = `${message}\n${stack}`
@@ -77,6 +88,67 @@ export function codigoDoErro(message: string, stack: string): string {
 }
 
 /**
+ * Mensagem e pilha exatamente como vão no relato.
+ *
+ * Um lugar só decide o que entra no hash. O corte acontecia apenas no envio, e
+ * a tela hasheava o valor inteiro — então uma pilha acima de 4000 caracteres
+ * (comum em erro de React) já daria códigos diferentes mesmo com o mesmo
+ * algoritmo dos dois lados.
+ */
+function normalizar(erro: ErroParaRelatar): { message: string; stack: string } {
+  return {
+    message: String(erro.message ?? '').slice(0, 1000),
+    stack: (erro.stack ?? '').slice(0, LIMITE_STACK),
+  }
+}
+
+/**
+ * O código do erro como o servidor vai gravá-lo.
+ *
+ * É esta a função que a tela de erro usa. Chamar `codigoDoErro` direto com o
+ * erro cru daria outro número quando a pilha passa do limite de envio.
+ */
+export function codigoDoRelato(erro: ErroParaRelatar): string {
+  try {
+    const { message, stack } = normalizar(erro)
+
+    return message === '' ? '' : codigoDoErro(message, stack)
+  } catch {
+    return ''
+  }
+}
+
+/**
+ * A credencial da sessão, quando houver.
+ *
+ * Lida do localStorage, e não do `authStore`: importar o store traria zustand e
+ * seu grafo de módulos para dentro do caminho que roda justamente quando algo
+ * já quebrou — é a mesma razão de aqui se usar `fetch` e não o axios.
+ *
+ * SEM ISSO TODO RELATO CHEGAVA ANÔNIMO. Os três erros registrados em 24/09/2026
+ * vieram de telas com usuário logado e gravaram `tenant_id: null` — porque o
+ * token nunca era anexado, e o servidor não tinha o que ler.
+ *
+ * Qualquer falha na leitura é ignorada: relato sem token é muito melhor do que
+ * relato nenhum.
+ */
+function tokenDaSessao(): string | null {
+  try {
+    const bruto = window.localStorage.getItem(authStorageKey)
+
+    if (!bruto) {
+      return null
+    }
+
+    const token = (JSON.parse(bruto) as { state?: { token?: unknown } })?.state?.token
+
+    return typeof token === 'string' && token !== '' ? token : null
+  } catch {
+    return null
+  }
+}
+
+/**
  * Relata um erro. Nunca lança, nunca devolve promessa rejeitada.
  *
  * Devolve o código do erro para quem quiser mostrá-lo na tela — e uma string
@@ -84,13 +156,12 @@ export function codigoDoErro(message: string, stack: string): string {
  */
 export function reportClientError(erro: ErroParaRelatar): string {
   try {
-    const message = String(erro.message ?? '').slice(0, 1000)
+    const { message, stack } = normalizar(erro)
 
     if (message === '') {
       return ''
     }
 
-    const stack = (erro.stack ?? '').slice(0, LIMITE_STACK)
     const codigo = codigoDoErro(message, stack)
     const chave = `${message}\n${stack}`
 
@@ -102,9 +173,18 @@ export function reportClientError(erro: ErroParaRelatar): string {
     jaEnviados.add(chave)
     enviadosNaSessao += 1
 
+    const token = tokenDaSessao()
+
     void fetch(`${apiUrl()}/erros-cliente`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        // A rota é pública de propósito (erro na tela de login também precisa
+        // chegar), mas quando há sessão o token é o que diz de qual clínica e de
+        // qual pessoa veio o erro.
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
       body: JSON.stringify({
         message,
         stack,

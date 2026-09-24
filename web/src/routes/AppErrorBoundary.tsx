@@ -2,7 +2,7 @@ import { ErrorBoundary, type FallbackProps } from 'react-error-boundary'
 import { useLocation, useNavigate } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { Botao } from '../components/ui/Botao'
-import { codigoDoErro, reportClientError } from '../lib/reportClientError'
+import { codigoDoRelato, reportClientError } from '../lib/reportClientError'
 
 /**
  * A rede que impede a tela branca.
@@ -29,9 +29,17 @@ import { codigoDoErro, reportClientError } from '../lib/reportClientError'
 function TelaDeErro({ error, resetErrorBoundary }: FallbackProps) {
   const navigate = useNavigate()
 
-  const mensagem = error instanceof Error ? error.message : String(error)
-  const pilha = error instanceof Error ? (error.stack ?? '') : ''
-  const codigo = codigoDoErro(mensagem, pilha)
+  /*
+   * O código vem de `codigoDoRelato`, e não de um cálculo próprio: ele aplica os
+   * mesmos cortes de tamanho que o envio aplica, então o número da tela é
+   * exatamente o que o servidor grava. Calculando aqui sobre a pilha inteira, um
+   * erro de React com pilha acima de 4000 caracteres mostraria um código que o
+   * log não contém.
+   */
+  const codigo = codigoDoRelato({
+    message: error instanceof Error ? error.message : String(error),
+    stack: error instanceof Error ? error.stack : null,
+  })
 
   const voltarAoInicio = () => {
     // Rearma antes de navegar: sem isto o boundary continuaria mostrando o erro

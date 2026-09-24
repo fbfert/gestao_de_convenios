@@ -48,6 +48,23 @@ async function primeiro(api: APIRequestContext, caminho: string) {
   return (corpo.data ?? corpo)[0]
 }
 
+/** A paciente que os testes desta spec escrevem nas folhas, achada pelo nome exato. */
+const PACIENTE_DA_SEMENTE = 'Ana Paula Ribeiro'
+
+async function pacienteDaSemente(api: APIRequestContext) {
+  const resposta = await api.get(`/api/pacientes?busca=${encodeURIComponent(PACIENTE_DA_SEMENTE)}`)
+  expect(resposta.ok(), `/pacientes -> ${resposta.status()}`).toBeTruthy()
+  const itens = ((await resposta.json()).data ?? []) as Array<{ id: number; nome: string }>
+  const paciente = itens.find((item) => item.nome === PACIENTE_DA_SEMENTE)
+
+  expect(
+    paciente,
+    `a paciente "${PACIENTE_DA_SEMENTE}" da semente não foi encontrada — sem ela a folha "ANA P. RIBEIRO" não tem com quem conferir`,
+  ).toBeTruthy()
+
+  return paciente!
+}
+
 function hoje(): string {
   return new Date().toISOString().slice(0, 10)
 }
@@ -71,7 +88,20 @@ async function guiaParaLancamento(
   const convenio = convenios.find((item) => item.connector_driver !== 'unimed_rda')
   expect(convenio, 'esperava ao menos um convênio sem automação').toBeTruthy()
 
-  const paciente = await primeiro(api, '/pacientes')
+  /*
+   * A paciente da semente PELO NOME, e não "a primeira da listagem".
+   *
+   * `/api/pacientes` ordena por nome, e a suíte inteira divide um banco: basta
+   * um spec anterior criar um paciente cujo nome ordene antes de "Ana Paula
+   * Ribeiro" (`pacientes-edicao` cria "AAA Edicao E2E …") para o "primeiro"
+   * virar outra pessoa. Aí a guia nasce no paciente errado, a folha lida diz
+   * "ANA P. RIBEIRO", e a divergência que aparece é legítima — o teste que
+   * afirma "tudo confere" reprova por uma premissa que ninguém escreveu.
+   *
+   * Achado em 24/09/2026, depois de 96/97 verdes com memória liberada: era a
+   * única falha que não era a máquina.
+   */
+  const paciente = await pacienteDaSemente(api)
   const cid = await primeiro(api, '/cids')
   const medico = await primeiro(api, '/medicos')
   const profissional = await primeiro(api, '/profissionais')

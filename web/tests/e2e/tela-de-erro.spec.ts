@@ -118,6 +118,78 @@ test('erro de renderização vira tela de erro, e Voltar ao início recupera', a
   await expect(page.getByTestId('app-erro')).toHaveCount(0)
 })
 
+/**
+ * O código na tela é o código que o servidor grava.
+ *
+ * Em 24/09/2026 não era: a tela mostrava `836920` (FNV-1a) e o log guardava
+ * `5F6052` (sha256) para o mesmo erro. O código existe só para casar o
+ * telefonema da clínica com a linha do registro, então divergir é o mesmo que
+ * não existir.
+ *
+ * Aqui se prova o lado do navegador: o número na tela é derivado exatamente do
+ * `message` e do `stack` que saíram no corpo da requisição. O lado do servidor
+ * está em `ErroClienteApiTest::test_o_codigo_bate_com_o_do_navegador`, com os
+ * mesmos valores de referência.
+ */
+test('o código na tela é derivado do que foi enviado ao servidor', async ({ page }) => {
+  await login(page)
+
+  const relato = page.waitForRequest(
+    (requisicao) =>
+      requisicao.method() === 'POST' && requisicao.url().includes('/erros-cliente'),
+    { timeout: 15000 },
+  )
+
+  await page.goto('/erro-simulado', { waitUntil: 'domcontentloaded' })
+  await expect(page.getByTestId('app-erro')).toBeVisible({ timeout: 15000 })
+
+  const corpo = JSON.parse((await relato).postData() ?? '{}')
+  const naTela = await page.getByTestId('app-erro-codigo').innerText()
+
+  // O mesmo FNV-1a dos dois lados, calculado aqui sobre o que foi enviado.
+  const esperado = await page.evaluate(
+    ({ message, stack }) => {
+      const texto = `${message}\n${stack ?? ''}`
+      let hash = 0x811c9dc5
+
+      for (let i = 0; i < texto.length; i += 1) {
+        hash ^= texto.charCodeAt(i)
+        hash = Math.imul(hash, 0x01000193)
+      }
+
+      return (hash >>> 0).toString(16).toUpperCase().padStart(6, '0').slice(0, 6)
+    },
+    { message: corpo.message as string, stack: corpo.stack as string | null },
+  )
+
+  expect(naTela.trim()).toBe(esperado)
+})
+
+/**
+ * O relato de quem está logado leva a credencial.
+ *
+ * Sem ela o servidor grava `tenant_id: null`, e um erro que ninguém sabe de qual
+ * clínica veio é um erro que ninguém pode investigar. Foi o que produção mostrou
+ * em 24/09/2026 — o teste de PHPUnit não pegava porque usa `Sanctum::actingAs`,
+ * que dispensa o cabeçalho.
+ */
+test('o relato de usuário logado leva o token', async ({ page }) => {
+  await login(page)
+
+  const relato = page.waitForRequest(
+    (requisicao) =>
+      requisicao.method() === 'POST' && requisicao.url().includes('/erros-cliente'),
+    { timeout: 15000 },
+  )
+
+  await page.goto('/erro-simulado', { waitUntil: 'domcontentloaded' })
+  await expect(page.getByTestId('app-erro')).toBeVisible({ timeout: 15000 })
+
+  const cabecalhos = (await relato).headers()
+
+  expect(cabecalhos.authorization ?? '').toMatch(/^Bearer .+/)
+})
+
 test('o erro de renderização chega ao servidor', async ({ page }) => {
   await login(page)
 

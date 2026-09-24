@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
+import { authStorageKey } from './authStorageKey'
 
 export type AuthTenant = {
   id: number
@@ -69,8 +70,6 @@ type AuthState = {
   logout: () => void
   isAuthenticated: () => boolean
 }
-
-const authStorageKey = 'gestao-convenios-auth'
 
 export const useAuthStore = create<AuthState>()(
   persist(

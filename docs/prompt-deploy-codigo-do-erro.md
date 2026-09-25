@@ -1,5 +1,8 @@
 # Prompt de deploy na VPS — change `codigo-de-erro-que-encontra-o-log`
 
+> **SUBSTITUÍDO em 25/09/2026** por `prompt-deploy-tooltip-e-codigo-do-erro.md`, que sobe esta change
+> junto com a correção do tooltip que derrubava Solicitações. Use aquele. Este fica como registro.
+
 > Para colar numa sessão do Claude Code rodando **na VPS**, dentro de `/opt/gescon`.
 > Copie tudo abaixo da linha.
 

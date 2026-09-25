@@ -56,10 +56,26 @@ export function Tooltip({
   const painelRef = useRef<HTMLSpanElement>(null)
 
   /*
+   * UMA medicao por abertura, e nenhuma que dependa da anterior.
+   *
    * Corre antes da pintura para o painel nunca aparecer na posicao errada e
-   * pular. `getBoundingClientRect` ja vem com o deslocamento atual aplicado,
-   * entao ele e descontado antes da conta — sem isso cada medicao realimenta a
-   * anterior e o painel caminha para o lado a cada abertura.
+   * pular. Zera o `transform` no proprio DOM antes de medir: assim a medicao
+   * e a posicao natural do painel, independente de qualquer render anterior,
+   * e o efeito grava o deslocamento uma vez e nao roda de novo ate fechar.
+   *
+   * ISTO JA FOI UM LACO. A versao anterior dependia de `[aberto, deslocamentoX]`
+   * e descontava o deslocamento da medicao para achar a posicao natural. O
+   * desconto resolve quando a segunda medicao e exata — e NAO resolve quando
+   * ela nao e: zoom do navegador, Windows a 125%, barra de rolagem aparecendo
+   * com o painel aberto. Ai `natural + novo` medido nao devolve `natural`, o
+   * proximo `novo` difere por uma fracao, `novo !== deslocamentoX` e sempre
+   * verdadeiro, e o React desiste na 50a renderizacao com o erro 185. Foi o
+   * que derrubou a tela de Solicitacoes em 24 e 25/09/2026, seis vezes, sempre
+   * na dica da coluna Info — que fica na borda direita.
+   *
+   * `Math.round` tira a fracao de pixel do `translateX`. Nao e o que impede o
+   * laco (isso e a dependencia unica), mas e onde o subpixel comecava a se
+   * acumular; um pixel num painel de 288px ninguem ve.
    */
   useLayoutEffect(() => {
     if (!aberto) {
@@ -70,23 +86,20 @@ export function Tooltip({
     const painel = painelRef.current
     if (!painel) return
 
+    painel.style.transform = 'none'
     const caixa = painel.getBoundingClientRect()
-    const esquerdaNatural = caixa.left - deslocamentoX
-    const direitaNatural = caixa.right - deslocamentoX
     const limite = document.documentElement.clientWidth
 
     let novo = 0
-    if (direitaNatural > limite - MARGEM_VIEWPORT) {
-      novo = limite - MARGEM_VIEWPORT - direitaNatural
+    if (caixa.right > limite - MARGEM_VIEWPORT) {
+      novo = limite - MARGEM_VIEWPORT - caixa.right
     }
-    if (esquerdaNatural + novo < MARGEM_VIEWPORT) {
-      novo = MARGEM_VIEWPORT - esquerdaNatural
+    if (caixa.left + novo < MARGEM_VIEWPORT) {
+      novo = MARGEM_VIEWPORT - caixa.left
     }
 
-    if (novo !== deslocamentoX) {
-      setDeslocamentoX(novo)
-    }
-  }, [aberto, deslocamentoX])
+    setDeslocamentoX(Math.round(novo))
+  }, [aberto])
 
   return (
     <span

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Botao } from '../components/ui/Botao'
+import { Tooltip } from '../components/ui/Tooltip'
 
 /**
  * Andaimes que existem SÓ no modo `e2e`.
@@ -47,8 +48,38 @@ function BotaoQueCarrega() {
   )
 }
 
+/**
+ * Um `Tooltip` de verdade encostado na borda direita, numa coordenada
+ * fracionária.
+ *
+ * Reproduz o erro 185 do React ("Maximum update depth exceeded") que derrubou
+ * a tela de Solicitações em 24 e 25/09/2026: o tooltip media o próprio painel
+ * para caber na viewport e gravava o deslocamento no estado — e, quando o
+ * painel precisa se deslocar e a posição tem fração de pixel (zoom do
+ * navegador, Windows a 125%), a medição seguinte não devolve exatamente o
+ * mesmo número, o efeito grava de novo, e assim para sempre.
+ *
+ * O `paddingLeft` em `calc(100vw - 40.4px)` põe o gatilho a 40,4px da borda:
+ * o painel de 288px tem de se deslocar, e a fração é o que faz a conta
+ * oscilar. O teste roda com `deviceScaleFactor` fracionário para garantir que
+ * a coordenada não caia num inteiro por acaso.
+ */
+function TooltipNaBorda() {
+  return (
+    <div style={{ paddingLeft: 'calc(100vw - 40.4px)' }} data-testid="tooltip-na-borda">
+      <Tooltip rotulo="Dica na borda">
+        Um texto comprido o bastante para o painel precisar se deslocar para caber na tela sem
+        estourar a margem direita.
+      </Tooltip>
+    </div>
+  )
+}
+
 /** `null` fora do modo e2e: quem monta a rota decide pelo valor. */
 export const RotaDeErroSimulado = ativo ? Explode : null
+
+/** Idem. Ver TooltipNaBorda. */
+export const RotaDeTooltipNaBorda = ativo ? TooltipNaBorda : null
 
 /** Idem. Ver BotaoQueCarrega. */
 export const RotaDeBotaoCarregando = ativo ? BotaoQueCarrega : null

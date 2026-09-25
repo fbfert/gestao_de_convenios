@@ -3,7 +3,7 @@ import { LoginPage } from './LoginPage'
 import { AutomacoesPage } from '../features/automacoes/AutomacoesPage'
 import { AutomacoesConfiguracoesPage } from '../features/automacoes/AutomacoesConfiguracoesPage'
 import { ProtectedRoute } from './ProtectedRoute'
-import { RotaDeBotaoCarregando, RotaDeErroSimulado } from './RotaDeErroSimulado'
+import { RotaDeBotaoCarregando, RotaDeErroSimulado, RotaDeTooltipNaBorda } from './RotaDeErroSimulado'
 import { ShellLayout } from './ShellLayout'
 import { SolicitacoesPage } from '../features/solicitacoes/SolicitacoesPage'
 import { LerPedidoMedicoPage } from '../features/solicitacoes/LerPedidoMedicoPage'
@@ -60,6 +60,9 @@ export function AppRoutes() {
           ) : null}
           {RotaDeBotaoCarregando ? (
             <Route path="/botao-carregando" element={<RotaDeBotaoCarregando />} />
+          ) : null}
+          {RotaDeTooltipNaBorda ? (
+            <Route path="/tooltip-na-borda" element={<RotaDeTooltipNaBorda />} />
           ) : null}
           <Route path="/inicio" element={<GestaoConveniosPage />} />
           <Route path="/relatorios" element={<RelatoriosPage />} />
